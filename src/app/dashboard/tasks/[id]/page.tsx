@@ -261,7 +261,7 @@ export default function TaskDetailPage() {
       const notificationRecords = assignedReports.map(r => ({
         user_id: r.assignee_id,
         title: "Nhắc hoàn thành báo cáo [HỎA TỐC]",
-        content: `${profile?.full_name} yêu cầu hoàn thành khẩn cấp báo cáo "${task.title}" của phòng ${r.departments?.name || 'phòng ban'}`,
+        content: `Yêu cầu ${r.departments?.name || 'phòng ban'} khẩn trương hoàn thành báo cáo "${task.title}".`,
         link: `/dashboard/tasks/${r.id}`
       }));
 
