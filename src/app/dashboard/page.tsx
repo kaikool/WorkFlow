@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic';
 import React, { useState, useEffect } from "react";
 import { 
  TrendingUp, 
+ TrendingDown, 
  CheckCircle2, 
  Clock, 
  Target,
@@ -237,81 +238,73 @@ export default function DashboardPage() {
 
  {/* Modern Stats Grid */}
  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 px-4 sm:px-0">
- {/* Productivity Card */}
- <div className="premium-card p-5 md:p-6 border-none flex flex-col justify-between min-h-[150px] md:min-h-[160px] group transition-all hover:scale-[1.02]">
- <div className="flex items-center justify-between">
- <div className="p-3 bg-primary/10 rounded-2xl text-primary shadow-sm group-hover:rotate-12 transition-transform">
- <Trophy className="w-5 h-5" />
- </div>
- <div className={cn(
- "flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ",
- stats.productivityChange >= 0 ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-600"
- )}>
- {stats.productivityChange >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
- {Math.abs(stats.productivityChange)}%
- </div>
- </div>
- <div className="space-y-1 mt-4 md:mt-0">
- <p className="text-xs font-bold text-slate-500 uppercase truncate whitespace-nowrap">NĂNG SUẤT TUẦN</p>
- <div className="flex items-baseline gap-2">
- <p className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight tabular-nums">{stats.productivity}</p>
- <span className="text-xs font-bold text-slate-500 uppercase truncate whitespace-nowrap">Hoàn tất</span>
- </div>
- </div>
- </div>
+    {/* Productivity Card */}
+    <div className="premium-card p-6 border-none flex items-center gap-5 group transition-all hover:scale-[1.02]">
+      <div className="p-4 bg-primary/10 rounded-xl text-primary shrink-0 shadow-sm group-hover:rotate-12 transition-transform">
+        <Trophy className="w-6 h-6" />
+      </div>
+      <div className="space-y-1 min-w-0 flex-1">
+        <p className="text-[12px] font-medium text-slate-500 uppercase">Năng suất tuần</p>
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-2xl font-bold text-slate-900 tracking-tight tabular-nums">{stats.productivity}</p>
+          <span className={cn(
+            "flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase shrink-0",
+            stats.productivityChange >= 0 ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-600"
+          )}>
+            {stats.productivityChange >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+            {Math.abs(stats.productivityChange)}%
+          </span>
+        </div>
+      </div>
+    </div>
 
- {/* Active Tasks Card */}
- <div className="premium-card p-5 md:p-6 border-none flex flex-col justify-between min-h-[150px] md:min-h-[160px] group transition-all hover:scale-[1.02]">
- <div className="flex items-center justify-between">
- <div className="p-3 bg-slate-100 rounded-2xl text-slate-600 shadow-sm group-hover:rotate-12 transition-transform">
- <Clock className="w-5 h-5" />
- </div>
- {stats.urgentTasks > 0 && (
- <Badge className="bg-red-500 text-white border-none text-[9px] font-bold px-2 py-0.5 rounded-full animate-pulse shadow-lg shadow-red-200">
- {stats.urgentTasks} KHẨN
- </Badge>
- )}
- </div>
- <div className="space-y-1 mt-4 md:mt-0">
- <p className="text-xs font-bold text-slate-500 uppercase truncate whitespace-nowrap">ĐANG XỬ LÝ</p>
- <div className="flex items-baseline gap-2">
- <p className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight tabular-nums">{stats.activeTasks}</p>
- <span className="text-xs font-bold text-slate-500 uppercase truncate whitespace-nowrap">Công việc</span>
- </div>
- </div>
- </div>
+    {/* Active Tasks Card */}
+    <div className="premium-card p-6 border-none flex items-center gap-5 group transition-all hover:scale-[1.02]">
+      <div className="p-4 bg-slate-100 rounded-xl text-slate-600 shrink-0 shadow-sm group-hover:rotate-12 transition-transform">
+        <Clock className="w-6 h-6" />
+      </div>
+      <div className="space-y-1 min-w-0 flex-1">
+        <p className="text-[12px] font-medium text-slate-500 uppercase">Đang xử lý</p>
+        <div className="flex items-center gap-2">
+          <p className="text-2xl font-bold text-slate-900 tracking-tight tabular-nums">{stats.activeTasks}</p>
+          {stats.urgentTasks > 0 && (
+            <Badge className="bg-red-500 text-white border-none text-[9px] font-bold px-2 py-0.5 rounded-full animate-pulse shadow-lg shadow-red-200">
+              {stats.urgentTasks} KHẨN
+            </Badge>
+          )}
+        </div>
+      </div>
+    </div>
 
- {/* KPI Progress Card */}
- <div className="premium-card p-5 md:p-6 border-none flex flex-col justify-between min-h-[150px] md:min-h-[160px] group transition-all hover:scale-[1.02] bg-slate-900 shadow-slate-900/20">
- <div className="flex items-center justify-between">
- <div className="p-3 bg-primary/20 rounded-2xl text-primary shadow-sm group-hover:rotate-12 transition-transform">
- <Target className="w-5 h-5" />
- </div>
- <div className="text-[10px] md:text-xs font-bold text-primary uppercase bg-primary/10 px-2.5 py-1 rounded-full whitespace-nowrap truncate">
- LỘ TRÌNH: {stats.kpiCount} CHỈ TIÊU
- </div>
- </div>
- <div className="space-y-3 mt-4 md:mt-0">
- <div className="space-y-1">
- <p className="text-xs font-bold text-slate-500 uppercase truncate whitespace-nowrap">TIẾN ĐỘ KẾ HOẠCH</p>
- <p className="text-2xl md:text-3xl font-bold text-white tracking-tight tabular-nums">{stats.kpiProgress}%</p>
- </div>
- <div className="flex gap-1.5">
- {[1, 2, 3, 4, 5, 6].map((i) => (
- <div 
- key={i} 
- className={cn(
- "h-1 flex-1 rounded-full transition-all duration-700", 
- stats.kpiProgress >= (i * 16.6) ? "bg-primary shadow-[0_0_8px_rgba(59,130,246,0.5)]" : "bg-slate-800"
- )} 
- />
- ))}
- </div>
- </div>
- </div>
- </div>
+    {/* KPI Progress Card */}
+    <div className="premium-card p-6 border-none flex items-center gap-5 group transition-all hover:scale-[1.02] bg-slate-900 shadow-slate-900/20">
+      <div className="p-4 bg-primary/20 rounded-xl text-primary shrink-0 shadow-sm group-hover:rotate-12 transition-transform">
+        <Target className="w-6 h-6" />
+      </div>
+      <div className="space-y-2 min-w-0 flex-1">
+        <p className="text-[12px] font-medium text-slate-400 uppercase">Tiến độ kế hoạch</p>
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-2xl font-bold text-white tracking-tight tabular-nums">{stats.kpiProgress}%</p>
+          <span className="text-[10px] font-bold text-primary uppercase bg-primary/10 px-2 py-0.5 rounded-full whitespace-nowrap truncate shrink-0">
+            {stats.kpiCount} CHỈ TIÊU
+          </span>
+        </div>
+        <div className="flex gap-1">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div 
+              key={i} 
+              className={cn(
+                "h-1 flex-1 rounded-full transition-all duration-700", 
+                stats.kpiProgress >= (i * 16.6) ? "bg-primary shadow-[0_0_8px_rgba(59,130,246,0.5)]" : "bg-slate-800"
+              )} 
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  </div>
 
- <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pt-4 px-4 sm:px-0">
+  <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pt-4 px-4 sm:px-0">
  {/* Feed Section */}
  <div className="lg:col-span-8 space-y-6">
  <div className="flex items-center justify-between px-2 mb-4">
