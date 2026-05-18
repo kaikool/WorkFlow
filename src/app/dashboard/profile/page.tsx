@@ -10,6 +10,8 @@ import {
   Briefcase,
   LogOut,
   History,
+  Phone,
+  Calendar,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -46,6 +48,8 @@ export default function ProfilePage() {
   const [newName, setNewName] = useState("");
   const [newDept, setNewDept] = useState("");
   const [newRole, setNewRole] = useState("");
+  const [newPhone, setNewPhone] = useState("");
+  const [newBirthday, setNewBirthday] = useState("");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -78,6 +82,8 @@ export default function ProfilePage() {
       setNewName(data.full_name || "");
       setNewDept(data.department_id || "");
       setNewRole(data.role || "");
+      setNewPhone(data.phone || "");
+      setNewBirthday(data.birthday || "");
     } catch (error: any) {
       toast({ variant: "destructive", title: "Lỗi", description: error.message });
     } finally {
@@ -143,7 +149,9 @@ export default function ProfilePage() {
     try {
       const updateData: any = {
         full_name: newName,
-        department_id: newDept || null
+        department_id: newDept || null,
+        phone: newPhone || null,
+        birthday: newBirthday || null
       };
 
       if (profile.role === 'admin') {
@@ -249,6 +257,16 @@ export default function ProfilePage() {
                       </div>
 
                       <div className="space-y-2">
+                        <Label className="text-xs font-bold text-slate-500 uppercase truncate">Số điện thoại</Label>
+                        <Input type="tel" value={newPhone} onChange={(e) => setNewPhone(e.target.value)} className="h-10 bg-slate-50 border-none rounded-xl font-medium text-[14px]" placeholder="VD: 0912345678" />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-xs font-bold text-slate-500 uppercase truncate">Ngày sinh</Label>
+                        <Input type="date" value={newBirthday} onChange={(e) => setNewBirthday(e.target.value)} className="h-10 bg-slate-50 border-none rounded-xl font-medium text-[14px]" />
+                      </div>
+
+                      <div className="space-y-2">
                         <Label className="text-xs font-bold text-slate-500 uppercase truncate">Phòng ban công tác</Label>
                         <Select value={newDept} onValueChange={setNewDept}>
                           <SelectTrigger className="h-10 bg-slate-50 border-none rounded-xl font-medium text-[14px]">
@@ -339,6 +357,30 @@ export default function ProfilePage() {
                   <span className="text-[14px] font-medium text-slate-900 truncate">{roleLabels[profile.role] || "Cán bộ"}</span>
                 </div>
               </div>
+              
+              {profile.phone && (
+                <div className="space-y-1.5">
+                  <p className="text-[11px] font-bold text-slate-500 uppercase truncate">Số điện thoại</p>
+                  <div className="px-4 py-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center gap-3 min-w-0 group">
+                    <Phone className="w-4 h-4 text-blue-500 shrink-0" />
+                    <a href={`tel:${profile.phone}`} className="text-[14px] font-medium text-slate-900 truncate hover:text-blue-600 hover:underline">
+                      {profile.phone}
+                    </a>
+                  </div>
+                </div>
+              )}
+
+              {profile.birthday && (
+                <div className="space-y-1.5">
+                  <p className="text-[11px] font-bold text-slate-500 uppercase truncate">Ngày sinh</p>
+                  <div className="px-4 py-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center gap-3 min-w-0">
+                    <Calendar className="w-4 h-4 text-amber-500 shrink-0" />
+                    <span className="text-[14px] font-medium text-slate-900 truncate">
+                      {new Date(profile.birthday).toLocaleDateString('vi-VN')}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

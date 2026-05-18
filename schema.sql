@@ -41,8 +41,14 @@ CREATE TABLE IF NOT EXISTS profiles (
     department_id UUID REFERENCES departments(id),
     role user_role DEFAULT 'staff',
     avatar_url TEXT,
+    phone TEXT,
+    birthday DATE,
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Thêm các cột mới nếu bảng đã được tạo trước đó
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS phone TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS birthday DATE;
 
 -- 4. Tạo bảng Tasks (Công việc & Mục tiêu)
 CREATE TABLE IF NOT EXISTS tasks (

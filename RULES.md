@@ -88,7 +88,14 @@ src/app/dashboard/[module]/
 ## 6. Triển khai Tính năng Mới
 
 - **Liên kết chức năng**: Khi phát triển một tính năng mới, bắt buộc phải xem xét cách nó liên kết và ảnh hưởng tới các tính năng đã có sẵn.
-- **Hệ thống thông báo**: Mọi luồng quy trình (workflow), phê duyệt, giao việc hay thay đổi trạng thái quan trọng đều **bắt buộc** phải tích hợp tính năng gửi thông báo (notifications) đến những người liên quan. Không triển khai tính năng "cụt" mà người dùng không nhận được tín hiệu gì.
+- **Hệ thống thông báo (CỰC KỲ QUAN TRỌNG)**: 
+  Mọi thao tác thay đổi dữ liệu hoặc trạng thái làm việc đều **bắt buộc** phải tạo ra dòng record (thông báo) gửi vào bảng `notifications`. Tuyệt đối không được code tính năng mà quên mất phần thông báo.
+  **Các luồng BẮT BUỘC phải có Notification:**
+  - *Khởi tạo:* Giao việc mới, giao KPI, mời họp.
+  - *Cập nhật trạng thái:* Chuyển công việc sang Đang làm, Hoàn thành, Hủy bỏ.
+  - *Tương tác:* Comment vào công việc/báo cáo, gửi báo cáo mới, phản hồi/duyệt báo cáo.
+  - *Hạn chót:* Cảnh báo sắp trễ hạn, quá hạn.
+  - *Cá nhân/Nội bộ:* Sinh nhật, thông báo chúc mừng KPI.
 
 ---
 

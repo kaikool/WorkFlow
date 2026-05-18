@@ -8,7 +8,7 @@
 3. **Toàn bộ bằng tiếng Việt** — comment, giải thích, phản hồi
 4. **Không file nào vượt 500 dòng** — nếu gần chạm ngưỡng, tách module ngay
 5. **Không để comment kiểu marker** — không `[FIX]`, `[NEW]`, `[UPDATE]`, `[v2]`
-6. **Triển khai tính năng mới**: Phải luôn kết nối với các tính năng có sẵn (vd: **tối thiểu phải tích hợp sẵn sàng hệ thống thông báo** cho người dùng).
+6. **Triển khai tính năng mới**: Phải luôn kết nối với các tính năng có sẵn (vd: **BẮT BUỘC phải tạo record `notifications`** cho MỌI hành động thay đổi dữ liệu như Đổi trạng thái, Thêm Comment, Cập nhật tiến độ). Không được phép code thiếu bước bắn thông báo.
 
 ## Tài liệu tham khảo theo thứ tự ưu tiên
 

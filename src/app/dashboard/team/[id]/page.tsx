@@ -17,7 +17,8 @@ import {
  Calendar,
  Mail,
  Globe,
- Users as UsersIcon
+ Users as UsersIcon,
+ Phone
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -353,6 +354,36 @@ export default function MemberDetailPage() {
  </div>
 
  <div className="lg:col-span-4 space-y-10">
+ {(member.phone || member.birthday) && (
+ <div className="premium-card p-6 border-none space-y-6">
+ <p className="text-[10px] font-bold text-slate-500 uppercase pl-1 truncate whitespace-nowrap">Thông tin cá nhân</p>
+ <div className="space-y-4">
+ {member.phone && (
+ <div className="flex items-center gap-3">
+ <div className="p-2.5 bg-blue-50/80 text-blue-500 rounded-2xl border border-blue-100/50">
+ <Phone className="w-4 h-4" />
+ </div>
+ <div className="flex-1 min-w-0 space-y-0.5">
+ <p className="text-[10px] font-bold text-slate-500 uppercase">Điện thoại</p>
+ <a href={`tel:${member.phone}`} className="text-[14px] font-bold text-slate-900 truncate hover:text-blue-600 hover:underline block">{member.phone}</a>
+ </div>
+ </div>
+ )}
+ {member.birthday && (
+ <div className="flex items-center gap-3">
+ <div className="p-2.5 bg-amber-50/80 text-amber-500 rounded-2xl border border-amber-100/50">
+ <Calendar className="w-4 h-4" />
+ </div>
+ <div className="flex-1 min-w-0 space-y-0.5">
+ <p className="text-[10px] font-bold text-slate-500 uppercase">Ngày sinh</p>
+ <p className="text-[14px] font-bold text-slate-900 truncate">{new Date(member.birthday).toLocaleDateString('vi-VN')}</p>
+ </div>
+ </div>
+ )}
+ </div>
+ </div>
+ )}
+
  <div className="premium-card p-6 border-none space-y-6">
  <div className="space-y-2">
  <p className="text-[10px] font-bold text-slate-500 uppercase pl-1 truncate whitespace-nowrap">Đánh giá năng lực</p>
