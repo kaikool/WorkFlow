@@ -74,6 +74,8 @@ export default function TaskDetailPage() {
  const [deptProfiles, setDeptProfiles] = useState<any[]>([]);
  const [delegationOpen, setDelegationOpen] = useState(false);
  const [selectedDelegate, setSelectedDelegate] = useState('');
+  const [siblingReports, setSiblingReports] = useState<any[]>([]);
+  const [remindingId, setRemindingId] = useState<string | null>(null);
 
  useEffect(() => {
  const fetchData = async () => {
@@ -120,6 +122,27 @@ export default function TaskDetailPage() {
  }
 
  setTask(data);
+  
+  if (data && data.task_type === 'report') {
+    const { data: siblings } = await supabase
+      .from('tasks')
+      .select(`
+        id,
+        status,
+        progress,
+        due_date,
+        assignee_id,
+        department_id,
+        departments(name),
+        assignee:profiles!tasks_assignee_id_fkey(id, full_name, avatar_url)
+      `)
+      .eq('title', data.title)
+      .eq('created_by', data.created_by)
+      .eq('task_type', 'report')
+      .order('created_at', { ascending: true });
+    
+    setSiblingReports(siblings || []);
+  }
 
  // Gộp người đảm nhiệm chính và danh sách phụ
  const allAssignees = [...(data.task_assignees || [])];
@@ -181,7 +204,36 @@ export default function TaskDetailPage() {
   }
  }, [profile, supabase]);
 
- const handleDelegate = async () => {
+ const handleSendReminder = async (siblingId: string, assigneeId: string, deptName: string) => {
+    if (!assigneeId) {
+      toast({
+        variant: "destructive",
+        title: "Không thể nhắc nhở",
+        description: `Phòng ${deptName} chưa có cán bộ tiếp nhận để gửi thông báo.`,
+      });
+      return;
+    }
+    setRemindingId(siblingId);
+    try {
+      const { error } = await supabase.from('notifications').insert({
+        user_id: assigneeId,
+        title: "Nhắc hoàn thành báo cáo [HỎA TỐC]",
+        content: `${profile?.full_name} nhắc nhở hoàn thành báo cáo "${task.title}" của phòng ${deptName}`,
+        link: `/dashboard/tasks/${siblingId}`
+      });
+      if (error) throw error;
+      toast({
+        title: "Đã gửi nhắc nhở",
+        description: `Gửi thông báo đôn đốc thành công tới phòng ${deptName}!`,
+      });
+    } catch (err: any) {
+      toast({ variant: "destructive", title: "Lỗi", description: err.message });
+    } finally {
+      setRemindingId(null);
+    }
+  };
+
+  const handleDelegate = async () => {
    if (!selectedDelegate) return;
    setSaving(true);
    try {
@@ -536,6 +588,7 @@ export default function TaskDetailPage() {
  if (!task) return <div className="p-20 text-center font-bold text-slate-500">Không tìm thấy dữ liệu.</div>;
 
  const isStrategicPlan = task.task_type === 'kpi';
+  const isCreatorOrAdmin = task?.created_by === profile?.id || profile?.role === 'admin' || profile?.role === 'director';
  
  const displayProgress = isStrategicPlan 
  ? (task.target_value ? Math.round(((task.current_value || 0) / task.target_value) * 100) : 0)
@@ -614,7 +667,7 @@ export default function TaskDetailPage() {
  </div>
 
  {/* Progress / Quantitative Card */}
- {task.task_type !== 'report' && (
+ {task.task_type !== 'report' ? (
  <div className="premium-card p-6 md:p-8 border-none space-y-6 md:space-y-8">
  <div className="flex items-center justify-between">
  <h3 className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2 truncate whitespace-nowrap">
@@ -809,11 +862,150 @@ export default function TaskDetailPage() {
  </div>
  )}
  </div>
- )}
+  ) : (
+    /* Our Master Tracking Panel or report progress card */
+    task.task_type === 'report' && (
+      isCreatorOrAdmin ? (
+        /* Master Tracking Panel for report creator */
+        <div className="premium-card p-6 md:p-8 border-none space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+            <div>
+              <h3 className="text-xs font-bold text-indigo-600 uppercase flex items-center gap-2">
+                <Target className="w-4 h-4 text-indigo-500" /> Theo dõi tiến độ các phòng ban
+              </h3>
+              <p className="text-[11px] text-slate-500 font-medium mt-1">
+                Tổng số: {siblingReports.length} đơn vị nhận yêu cầu báo cáo
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Badge className="bg-emerald-50 text-emerald-600 border-none font-bold text-[10px]">
+                ĐÃ NỘP: {siblingReports.filter(r => r.status === 'done').length}
+              </Badge>
+              <Badge className="bg-amber-50 text-amber-600 border-none font-bold text-[10px]">
+                CHƯA NỘP: {siblingReports.filter(r => r.status !== 'done').length}
+              </Badge>
+            </div>
+          </div>
 
- {/* Discussion */}
- {task.task_type !== 'report' && (
- <div className="space-y-6 pt-4">
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse text-left">
+              <thead>
+                <tr className="border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  <th className="pb-3 pl-2">Đơn vị tiếp nhận</th>
+                  <th className="pb-3">Cán bộ phụ trách</th>
+                  <th className="pb-3 text-center">Trạng thái nộp</th>
+                  <th className="pb-3 text-right pr-2">Hành động</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {siblingReports.map((sib) => {
+                  const isDone = sib.status === 'done';
+                  const isClosed = sib.status === 'closed';
+                  
+                  return (
+                    <tr key={sib.id} className="group hover:bg-slate-50/30 transition-colors">
+                      <td className="py-4 pl-2 font-bold text-xs text-slate-900">
+                        <Link href={`/dashboard/tasks/${sib.id}`} className="hover:text-primary transition-colors flex items-center gap-2">
+                          <span className="p-1 bg-indigo-50 text-indigo-500 rounded-lg shrink-0">
+                            <Target className="w-3.5 h-3.5" />
+                          </span>
+                          {sib.departments?.name || 'Phòng chuyên môn'}
+                        </Link>
+                      </td>
+                      <td className="py-4">
+                        {sib.assignee ? (
+                          <div className="flex items-center gap-2">
+                            <Avatar className="h-6 w-6 border shadow-sm">
+                              <AvatarImage src={sib.assignee.avatar_url} className="object-cover" />
+                              <AvatarFallback className="text-[8px] font-bold bg-slate-100 text-slate-500">
+                                {sib.assignee.full_name?.[0]}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="text-[11px] font-bold text-slate-700">{sib.assignee.full_name}</span>
+                          </div>
+                        ) : (
+                          <span className="text-[11px] font-medium text-slate-400 italic">Chưa tiếp nhận</span>
+                        )}
+                      </td>
+                      <td className="py-4 text-center">
+                        {isDone ? (
+                          <Badge className="bg-emerald-50 text-emerald-600 border-none font-bold text-[10px] px-2.5 py-0.5 rounded-full inline-flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3" /> Đã hoàn thành
+                          </Badge>
+                        ) : isClosed ? (
+                          <Badge className="bg-slate-100 text-slate-500 border-none font-bold text-[10px] px-2.5 py-0.5 rounded-full inline-flex items-center gap-1">
+                            Đã đóng
+                          </Badge>
+                        ) : (
+                          <div className="inline-flex flex-col items-center gap-1">
+                            <Badge className="bg-amber-50 text-amber-600 border-none font-bold text-[10px] px-2.5 py-0.5 rounded-full inline-flex items-center gap-1">
+                              <Clock className="w-3 h-3" /> Chưa hoàn thành
+                            </Badge>
+                            <span className="text-[9px] font-bold text-slate-400">Tiến độ: {sib.progress || 0}%</span>
+                          </div>
+                        )}
+                      </td>
+                      <td className="py-4 text-right pr-2">
+                        {!isDone && !isClosed && (
+                          <Button
+                            size="sm"
+                            disabled={remindingId === sib.id}
+                            onClick={() => handleSendReminder(sib.id, sib.assignee_id, sib.departments?.name || 'Phòng chuyên môn')}
+                            className="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border-none rounded-lg text-[10px] font-bold h-7 px-2.5 transition-all shadow-sm active:scale-95 flex items-center gap-1 ml-auto"
+                          >
+                            {remindingId === sib.id ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <Zap className="w-3 h-3 fill-current" />
+                            )}
+                            Nhắc hoàn thành báo cáo
+                          </Button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : (
+        /* Normal progress steps for report assignee */
+        <div className="premium-card p-6 md:p-8 border-none space-y-6">
+          <h3 className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2 truncate whitespace-nowrap">
+            <TrendingUp className="w-4 h-4 text-primary" /> TIẾN ĐỘ BÁO CÁO CỦA TÔI
+          </h3>
+          <div className="space-y-6">
+            <div className="flex gap-2 h-2">
+              {[25, 50, 75, 100].map((val) => (
+                <button 
+                  key={val} 
+                  onClick={() => canEdit && updateProgress(val)}
+                  className={cn(
+                    "flex-1 rounded-full transition-all duration-300",
+                    (task.progress || 0) >= val ? "bg-primary" : "bg-slate-100",
+                    !canEdit && "cursor-default"
+                  )}
+                />
+              ))}
+            </div>
+            <div className="flex justify-between px-1">
+              {["Tiếp nhận", "Thực hiện", "Kiểm soát", "Hoàn tất"].map((label, i) => (
+                <span key={i} className={cn(
+                  "text-[11px] font-medium transition-colors",
+                  (task.progress || 0) >= (i+1)*25 ? "text-primary" : "text-slate-500"
+                )}>{label}</span>
+              ))}
+            </div>
+          </div>
+        </div>
+      )
+    )
+  )}
+
+  {/* Discussion */}
+ {task.task_type !== 'kpi' && (
+  <div className="space-y-6 pt-4">
  <h3 className="text-xs font-bold text-slate-500 uppercase pl-2 flex items-center gap-2 truncate whitespace-nowrap">
  <MessageSquare className="w-4 h-4 text-primary" /> LUỒNG THẢO LUẬN
  </h3>
