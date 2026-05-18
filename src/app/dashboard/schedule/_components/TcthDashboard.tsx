@@ -3,7 +3,6 @@
 import React from "react";
 import { Clock, MapPin, Car, DoorOpen, CheckCircle2, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
@@ -21,117 +20,121 @@ export default function TcthDashboard({ schedules, vehicles, rooms, selectedDate
   const pendingVehicles = schedules.filter(s => s.use_vehicle && !s.vehicle_id);
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="space-y-6 md:space-y-10 animate-fade-in-up">
       {/* 1. Yêu cầu cần xử lý */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold text-slate-900 flex items-center gap-3 tabular-nums tracking-tighter">
-            <ShieldCheck className="w-6 h-6 text-orange-500" /> Danh sách yêu cầu cần xử lý
+      <div className="space-y-6">
+        <div className="flex items-center justify-between gap-4">
+          <h2 className="text-base font-bold text-slate-900 flex items-center gap-2 tabular-nums tracking-tighter truncate">
+            <ShieldCheck className="w-5 h-5 text-orange-500 shrink-0" /> DANH SÁCH YÊU CẦU CẦN XỬ LÝ
           </h2>
-          <Badge className="bg-orange-100 text-orange-600 border-none font-bold px-4 py-1.5 rounded-xl">
-            {pendingVehicles.length} YÊU CẦU MỚI
+          <Badge className="bg-orange-100 text-orange-700 border-none font-bold px-3 py-1 rounded-full whitespace-nowrap shrink-0">
+            {pendingVehicles.length} MỚI
           </Badge>
         </div>
 
-        <div className="grid grid-cols-1 gap-4">
+        <div className="grid grid-cols-1 gap-6">
           {pendingVehicles.length === 0 ? (
-            <Card className="rounded-2xl border-dashed border-2 border-slate-200 bg-slate-50/30 p-10 flex flex-col items-center justify-center text-center">
-              <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mb-4">
-                <CheckCircle2 className="w-8 h-8 text-emerald-500" />
+            <div className="premium-card p-6 flex flex-col items-center justify-center text-center border-dashed border-2 border-slate-200 bg-slate-50 shadow-none">
+              <div className="w-14 h-14 bg-emerald-100 rounded-full flex items-center justify-center mb-4">
+                <CheckCircle2 className="w-7 h-7 text-emerald-600" />
               </div>
-              <h3 className="text-base font-bold text-slate-800">Tuyệt vời!</h3>
-              <p className="text-slate-500 font-bold text-xs max-w-xs mt-1">Hiện tại không còn yêu cầu gán xe nào đang bị treo.</p>
-            </Card>
+              <h3 className="text-[15px] font-bold text-slate-800">Tuyệt vời!</h3>
+              <p className="text-slate-500 font-medium text-[13px] max-w-xs mt-1">Hiện tại không còn yêu cầu gán xe nào đang bị treo.</p>
+            </div>
           ) : (
             pendingVehicles.map(s => (
-              <Card key={s.id} className="rounded-xl border-none shadow-sm hover:shadow-xl transition-all duration-500 group overflow-hidden bg-white">
-                <div className="flex flex-col sm:flex-row items-center p-1">
-                  <div className="flex-1 p-4 space-y-3">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-11 w-11 border-2 border-slate-50 shadow-sm">
-                        <AvatarImage src={s.creator?.avatar_url} />
-                        <AvatarFallback className="bg-slate-100 font-bold text-xs">{s.creator?.full_name?.[0]}</AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="text-sm font-bold text-slate-900">{s.creator?.full_name}</p>
-                        <p className="text-[13px] font-medium text-slate-500">{s.departments?.name || "Cán bộ nghiệp vụ"}</p>
-                      </div>
-                    </div>
-                    <div className="space-y-0.5">
-                      <h4 className="font-bold text-slate-800 text-sm">{s.title}</h4>
-                      <div className="flex items-center gap-3 text-[13px] font-medium text-slate-500">
-                        <div className="flex items-center gap-1"><Clock className="w-3 h-3" /> {format(new Date(s.start_time), 'dd/MM HH:mm')}</div>
-                        <div className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {s.location}</div>
-                      </div>
+              <div key={s.id} className="premium-card p-6 border-none flex flex-col sm:flex-row sm:items-center gap-6 group">
+                {/* Info */}
+                <div className="flex-1 space-y-4 min-w-0">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-10 w-10 border border-slate-100 shadow-sm shrink-0">
+                      <AvatarImage src={s.creator?.avatar_url} />
+                      <AvatarFallback className="bg-slate-100 font-bold text-xs">{s.creator?.full_name?.[0]}</AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0">
+                      <p className="text-[14px] font-bold text-slate-900 truncate">{s.creator?.full_name}</p>
+                      <p className="text-[12px] font-medium text-slate-500 truncate">{s.departments?.name || "Cán bộ nghiệp vụ"}</p>
                     </div>
                   </div>
-
-                  <div className="w-px h-16 bg-slate-100 hidden sm:block" />
-
-                  <div className="p-4 flex items-center gap-6">
-                    <div className="flex flex-col items-center gap-1">
-                      <span className="text-[13px] font-medium text-slate-500">Yêu cầu xe</span>
-                      <Badge className="bg-orange-500 text-white border-none font-bold px-3 py-1 rounded-lg shadow-lg shadow-orange-500/20">
-                        {s.requested_vehicle_type}
-                      </Badge>
+                  <div className="space-y-1.5 min-w-0">
+                    <h4 className="font-bold text-slate-800 text-[15px] truncate">{s.title}</h4>
+                    <div className="flex flex-wrap items-center gap-4 text-[12px] font-medium text-slate-500">
+                      <div className="flex items-center gap-1.5 whitespace-nowrap">
+                        <Clock className="w-3.5 h-3.5 shrink-0 text-slate-400" /> {format(new Date(s.start_time), 'dd/MM HH:mm')}
+                      </div>
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <MapPin className="w-3.5 h-3.5 shrink-0 text-slate-400" /> <span className="truncate">{s.location}</span>
+                      </div>
                     </div>
-                    <Button
-                      className="rounded-xl bg-slate-900 hover:bg-primary text-white h-12 md:h-10 px-6 font-bold text-xs uppercase transition-all shadow-xl active:scale-95 truncate whitespace-nowrap"
-                      onClick={() => onSelectSchedule(s)}
-                    >
-                      Gán Xe & Lái xe
-                    </Button>
                   </div>
                 </div>
-              </Card>
+
+                <div className="w-full h-px sm:w-px sm:h-16 bg-slate-100 shrink-0" />
+
+                {/* Actions */}
+                <div className="flex items-center sm:flex-col sm:items-end justify-between gap-4 shrink-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-bold text-slate-500 uppercase whitespace-nowrap">Loại xe:</span>
+                    <Badge className="bg-orange-50 text-orange-700 border border-orange-200 font-bold px-2 py-0.5 rounded-md whitespace-nowrap shadow-sm">
+                      {s.requested_vehicle_type}
+                    </Badge>
+                  </div>
+                  <Button
+                    className="bg-primary hover:bg-primary/90 h-9 px-5 rounded-xl font-medium text-[13px] whitespace-nowrap active:scale-95 transition-all w-full sm:w-auto"
+                    onClick={() => onSelectSchedule(s)}
+                  >
+                    Gán Xe & Lái xe
+                  </Button>
+                </div>
+              </div>
             ))
           )}
         </div>
       </div>
 
       {/* 2. Giám sát tài nguyên */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Đội xe */}
         <div className="space-y-4">
-          <h3 className="text-[11px] font-bold text-slate-500 uppercase flex items-center gap-2 pl-2 truncate whitespace-nowrap">
-            <Car className="w-4 h-4 text-emerald-500" /> Giám sát Đội xe thời gian thực
+          <h3 className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2 truncate">
+            <Car className="w-4 h-4 text-emerald-500 shrink-0" /> Giám sát Đội xe
           </h3>
-          <div className="grid grid-cols-1 gap-3">
+          <div className="grid grid-cols-1 gap-4">
             {vehicles.map(v => {
               const currentTrip = schedules.find(s => s.vehicle_id === v.id && (s.status === 'approved' || s.status === 'pending') && isSameDay(new Date(s.start_time), selectedDate));
               const isBusy = currentTrip?.status === 'approved';
               const isPending = currentTrip?.status === 'pending';
               return (
-                <Card key={v.id} className="rounded-xl border-none shadow-sm bg-white overflow-hidden group">
-                  <div className="p-4 flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className={cn("p-4 rounded-2xl transition-all group-hover:scale-110 duration-500", isBusy ? "bg-orange-50 text-orange-500" : isPending ? "bg-amber-50 text-amber-500" : "bg-emerald-50 text-emerald-500")}>
-                        <Car className="w-6 h-6" />
+                <div key={v.id} className="premium-card p-5 border-none group">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={cn("p-3 rounded-xl transition-all duration-300 shrink-0", isBusy ? "bg-orange-50 text-orange-600" : isPending ? "bg-amber-50 text-amber-600" : "bg-emerald-50 text-emerald-600")}>
+                        <Car className="w-4 h-4" />
                       </div>
-                      <div>
-                        <p className="font-bold text-slate-900">{v.name}</p>
-                        <p className="text-[11px] text-slate-500 truncate">{v.plate_number}</p>
+                      <div className="min-w-0">
+                        <p className="font-bold text-slate-900 text-[14px] truncate">{v.name}</p>
+                        <p className="text-[11px] font-medium text-slate-500 truncate tabular-nums">{v.plate_number}</p>
                       </div>
                     </div>
-                    <Badge className={cn("rounded-lg font-bold text-[9px] uppercase px-3 py-1", isBusy ? "bg-orange-500 text-white" : "bg-emerald-500 text-white")}>
-                      {isBusy ? "Bận" : "Sẵn sàng"}
+                    <Badge className={cn("rounded-md font-bold text-[10px] uppercase px-2.5 py-1 whitespace-nowrap shrink-0 border-none", isBusy ? "bg-orange-500 text-white" : isPending ? "bg-amber-100 text-amber-700" : "bg-emerald-50 text-emerald-600")}>
+                      {isBusy ? "Bận" : isPending ? "Chờ duyệt" : "Sẵn sàng"}
                     </Badge>
                   </div>
                   {isBusy && (
-                    <div className="px-6 py-4 bg-orange-50/50 border-t border-orange-100/50 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Avatar className="h-6 w-6">
+                    <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Avatar className="h-5 w-5 shrink-0">
                           <AvatarImage src={currentTrip.creator?.avatar_url} />
                           <AvatarFallback className="text-[8px] font-bold">{currentTrip.creator?.full_name?.[0]}</AvatarFallback>
                         </Avatar>
-                        <span className="text-xs font-bold text-slate-600">{currentTrip.creator?.full_name}</span>
+                        <span className="text-[12px] font-medium text-slate-600 truncate">{currentTrip.creator?.full_name}</span>
                       </div>
-                      <span className="text-[10px] font-bold text-orange-600 uppercase truncate whitespace-nowrap">
+                      <span className="text-[10px] font-bold text-orange-600 uppercase whitespace-nowrap shrink-0 tabular-nums bg-orange-50 px-2 py-0.5 rounded-md">
                         {format(new Date(currentTrip.start_time), 'HH:mm')} - {format(new Date(currentTrip.end_time), 'HH:mm')}
                       </span>
                     </div>
                   )}
-                </Card>
+                </div>
               );
             })}
           </div>
@@ -139,31 +142,45 @@ export default function TcthDashboard({ schedules, vehicles, rooms, selectedDate
 
         {/* Phòng họp */}
         <div className="space-y-4">
-          <h3 className="text-[11px] font-bold text-slate-500 uppercase flex items-center gap-2 pl-2 truncate whitespace-nowrap">
-            <DoorOpen className="w-4 h-4 text-blue-500" /> Tình trạng Phòng họp
+          <h3 className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2 truncate">
+            <DoorOpen className="w-4 h-4 text-blue-500 shrink-0" /> Tình trạng Phòng họp
           </h3>
-          <div className="grid grid-cols-1 gap-3">
+          <div className="grid grid-cols-1 gap-4">
             {rooms.map(r => {
               const currentMeeting = schedules.find(s => s.room_id === r.id && (s.status === 'approved' || s.status === 'pending') && isSameDay(new Date(s.start_time), selectedDate));
               const isBusy = currentMeeting?.status === 'approved';
               const isPending = currentMeeting?.status === 'pending';
               return (
-                <Card key={r.id} className="rounded-xl border-none shadow-sm bg-white overflow-hidden group">
-                  <div className="p-4 flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className={cn("p-4 rounded-2xl transition-all group-hover:scale-110 duration-500", isBusy ? "bg-blue-50 text-blue-500" : "bg-emerald-50 text-emerald-500")}>
-                        <DoorOpen className="w-5 h-5" />
+                <div key={r.id} className="premium-card p-5 border-none group">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={cn("p-3 rounded-xl transition-all duration-300 shrink-0", isBusy ? "bg-blue-50 text-blue-600" : isPending ? "bg-amber-50 text-amber-600" : "bg-emerald-50 text-emerald-600")}>
+                        <DoorOpen className="w-4 h-4" />
                       </div>
-                      <div>
-                        <p className="font-bold text-slate-900 text-sm">{r.name}</p>
-                        <p className="text-[9px] font-bold text-slate-500 uppercase">{r.capacity} chỗ • {r.location}</p>
+                      <div className="min-w-0">
+                        <p className="font-bold text-slate-900 text-[14px] truncate">{r.name}</p>
+                        <p className="text-[11px] font-medium text-slate-500 truncate">{r.capacity} chỗ • {r.location}</p>
                       </div>
                     </div>
-                    <Badge className={cn("rounded-lg font-bold text-[9px] uppercase px-3 py-1", isBusy ? "bg-blue-600 text-white" : isPending ? "bg-amber-100 text-amber-600 shadow-none border-none" : "bg-emerald-500 text-white")}>
+                    <Badge className={cn("rounded-md font-bold text-[10px] uppercase px-2.5 py-1 whitespace-nowrap shrink-0 border-none", isBusy ? "bg-blue-600 text-white" : isPending ? "bg-amber-100 text-amber-700" : "bg-emerald-50 text-emerald-600")}>
                       {isBusy ? "Họp" : isPending ? "Chờ duyệt" : "Trống"}
                     </Badge>
                   </div>
-                </Card>
+                  {isBusy && (
+                    <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Avatar className="h-5 w-5 shrink-0">
+                          <AvatarImage src={currentMeeting.creator?.avatar_url} />
+                          <AvatarFallback className="text-[8px] font-bold">{currentMeeting.creator?.full_name?.[0]}</AvatarFallback>
+                        </Avatar>
+                        <span className="text-[12px] font-medium text-slate-600 truncate">{currentMeeting.creator?.full_name}</span>
+                      </div>
+                      <span className="text-[10px] font-bold text-blue-600 uppercase whitespace-nowrap shrink-0 tabular-nums bg-blue-50 px-2 py-0.5 rounded-md">
+                        {format(new Date(currentMeeting.start_time), 'HH:mm')} - {format(new Date(currentMeeting.end_time), 'HH:mm')}
+                      </span>
+                    </div>
+                  )}
+                </div>
               );
             })}
           </div>
