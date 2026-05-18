@@ -314,9 +314,21 @@ export default function SchedulePage() {
  checkIds = [...new Set([...checkIds, ...selectedBGD])];
  }
 
- if (deptMode === 'all' && participantMode !== 'staff') {
- const allStaffIds = allProfiles.filter(p => p.role !== 'admin').map(p => p.id);
+ if (deptMode === 'all') {
+ const allStaffIds = allProfiles.filter(p => p.role !== 'admin' && p.role !== 'director').map(p => p.id);
  checkIds = [...new Set([...checkIds, ...allStaffIds])];
+ } else if (filterDepts.length > 0) {
+ if (participantMode === 'all') {
+ const deptStaffIds = allProfiles
+ .filter(p => filterDepts.includes(p.department_id))
+ .map(p => p.id);
+ checkIds = [...new Set([...checkIds, ...deptStaffIds])];
+ } else if (participantMode === 'manager') {
+ const deptManagerIds = allProfiles
+ .filter(p => filterDepts.includes(p.department_id) && p.role === 'manager')
+ .map(p => p.id);
+ checkIds = [...new Set([...checkIds, ...deptManagerIds])];
+ }
  }
 
  if (checkIds.length === 0) return [];
@@ -337,18 +349,18 @@ export default function SchedulePage() {
  const isOverlapping = (start < sEnd && end > sStart);
  
  if (isOverlapping) {
- s.participants?.forEach((p: any) => {
- if (checkIds.includes(p.profile_id)) {
- foundConflicts.push(`${p.profile?.full_name} đang bận${isPending ? ' (Chờ duyệt)' : ''}: ${s.title} (${format(sStart, 'HH:mm')} - ${format(sEnd, 'HH:mm')})`);
- }
- });
+  s.participants?.forEach((p: any) => {
+  if (checkIds.includes(p.profile?.id)) {
+  foundConflicts.push(`${p.profile?.full_name} đang bận${isPending ? ' (Chờ duyệt)' : ''}: ${s.title} (${format(sStart, 'HH:mm')} - ${format(sEnd, 'HH:mm')})`);
+  }
+  });
  }
  });
  return Array.from(new Set(foundConflicts));
  } catch (e) {
  return [];
  }
- }, [startDate, endDate, startTime, endTime, selectedParticipants, selectedBGD, bgdMode, deptMode, participantMode, allProfiles, schedules]);
+ }, [startDate, endDate, startTime, endTime, selectedParticipants, selectedBGD, bgdMode, deptMode, participantMode, allProfiles, schedules, filterDepts]);
 
  const isTCTH = profile?.role === 'admin' || profile?.departments?.name === 'Tổ chức Tổng hợp';
 
@@ -362,7 +374,7 @@ export default function SchedulePage() {
  s.status === 'approved' && 
  new Date(s.start_time) <= now && 
  new Date(s.end_time) >= now &&
- s.participants?.some((p: any) => p.profile_id === profile.id)
+ s.participants?.some((p: any) => p.profile?.id === profile.id)
  );
 
  let targetStatus = 'online';
@@ -517,6 +529,11 @@ export default function SchedulePage() {
  const handleCreateSchedule = async () => {
  if (!newSchedule.title || !startDate || !endDate) {
  toast({ variant: "destructive", title: "Lỗi", description: "Vui lòng điền đầy đủ thông tin bắt buộc." });
+ return;
+ }
+
+ if (conflicts.length > 0) {
+ toast({ variant: "destructive", title: "Trùng lịch trình", description: "Vui lòng điều chỉnh lại thời gian hoặc thành phần tham gia do có người đang bận." });
  return;
  }
 
@@ -687,7 +704,7 @@ export default function SchedulePage() {
  <Select value={startTime} onValueChange={(v) => {
  setStartTime(v);
  const [h, m] = v.split(':');
- const endH = (parseInt(h) + 4) % 24;
+ const endH = Math.min(parseInt(h) + 1, 18);
  setEndTime(`${endH.toString().padStart(2, '0')}:${m}`);
  }}>
  <SelectTrigger className="h-10 bg-slate-50 border-none rounded-xl font-medium text-[14px]">
@@ -695,8 +712,8 @@ export default function SchedulePage() {
  <SelectValue />
  </SelectTrigger>
  <SelectContent className="rounded-xl border-none shadow-lg">
- {Array.from({ length: 24 * 4 }).map((_, i) => {
- const time = `${Math.floor(i/4).toString().padStart(2, '0')}:${((i%4)*15).toString().padStart(2, '0')}`;
+ {Array.from({ length: 12 }).map((_, i) => {
+ const time = `${(i + 7).toString().padStart(2, '0')}:00`;
  return <SelectItem key={time} value={time}>{time}</SelectItem>;
  })}
  </SelectContent>
@@ -740,8 +757,8 @@ export default function SchedulePage() {
  <SelectValue />
  </SelectTrigger>
  <SelectContent className="rounded-xl border-none shadow-lg">
- {Array.from({ length: 24 * 4 }).map((_, i) => {
- const time = `${Math.floor(i/4).toString().padStart(2, '0')}:${((i%4)*15).toString().padStart(2, '0')}`;
+ {Array.from({ length: 12 }).map((_, i) => {
+ const time = `${(i + 7).toString().padStart(2, '0')}:00`;
  return <SelectItem key={time} value={time}>{time}</SelectItem>;
  })}
  </SelectContent>
@@ -1029,6 +1046,20 @@ export default function SchedulePage() {
 
     </div>
   </div>
+
+  {conflicts.length > 0 && (
+    <div className="p-3 bg-red-50/50 rounded-2xl border border-red-100 mt-4 space-y-2 animate-in fade-in zoom-in-95">
+      <div className="flex items-center gap-2">
+        <AlertCircle className="w-4 h-4 text-red-600" />
+        <span className="text-[13px] font-semibold text-red-700">Cảnh báo trùng lịch</span>
+      </div>
+      <ul className="list-disc pl-5 text-xs font-medium text-red-600/80 space-y-1">
+        {conflicts.map((c, i) => (
+          <li key={i} className="leading-relaxed">{c}</li>
+        ))}
+      </ul>
+    </div>
+  )}
 </div>
   <DialogFooter className="pt-4 border-t border-slate-100">
   <Button onClick={handleCreateSchedule} className="w-full h-10 rounded-xl font-semibold">Xác nhận đăng ký</Button>

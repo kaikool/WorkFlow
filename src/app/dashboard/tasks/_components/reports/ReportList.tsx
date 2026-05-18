@@ -1,0 +1,222 @@
+'use client'
+
+import React, { useState, useEffect } from 'react'
+import { createClient } from '@/utils/supabase/client'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Checkbox } from '@/components/ui/checkbox'
+import {
+  Search, Filter, Loader2, Calendar, Zap, Users, FileText
+} from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { useToast } from '@/hooks/use-toast'
+import { cn } from '@/lib/utils'
+
+const STATUS_MAP: Record<string, { label: string; color: string; dot: string; light: string }> = {
+  todo:   { label: 'Đang chờ',   color: 'text-muted-foreground', dot: 'bg-slate-400',  light: 'bg-muted'       },
+  doing:  { label: 'Đang làm',   color: 'text-primary',          dot: 'bg-primary',    light: 'bg-primary/5'   },
+  done:   { label: 'Hoàn thành', color: 'text-emerald-700',      dot: 'bg-emerald-500',light: 'bg-emerald-50'  },
+  late:   { label: 'Trễ hạn',    color: 'text-red-600',          dot: 'bg-red-500',    light: 'bg-red-50'      },
+  closed: { label: 'Đã đóng',    color: 'text-slate-700',        dot: 'bg-slate-600',  light: 'bg-slate-100'   },
+}
+
+export function ReportList() {
+  const searchParams  = useSearchParams()
+  const initialStatus = searchParams.get('status') || 'all'
+
+  const [tasks,        setTasks]   = useState<any[]>([])
+  const [loading,      setLoading] = useState(true)
+  const [profile,      setProfile] = useState<any>(null)
+  const [searchQuery,  setSearch]  = useState('')
+  const [filterStatus, setFilter]  = useState<string>(initialStatus)
+  const supabase = createClient()
+  const router   = useRouter()
+  const { toast } = useToast()
+
+  useEffect(() => { fetchReports() }, [])
+
+  const fetchReports = async () => {
+    setLoading(true)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      let query = supabase
+        .from('tasks')
+        .select(`*, creator:profiles!tasks_created_by_fkey(full_name,avatar_url,department_id), department:departments(name), task_assignees(profile:profiles(id,full_name,avatar_url))`)
+        .eq('task_type', 'report')
+
+      if (user) {
+        const { data: p } = await supabase.from('profiles').select('*').eq('id', user.id).single()
+        setProfile(p)
+        if (p && p.role !== 'admin' && p.role !== 'director' && p.department_id) {
+          query = query.or(`department_id.eq.${p.department_id},created_by.eq.${user.id},assignee_id.eq.${user.id}`)
+        }
+      }
+
+      const { data } = await query.order('created_at', { ascending: false })
+      setTasks(data || [])
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleToggleStatus = async (e: React.MouseEvent, taskId: string, currentStatus: string) => {
+    e.stopPropagation()
+    const newStatus = currentStatus === 'done' ? 'todo' : 'done'
+    try {
+      const { error } = await supabase.from('tasks').update({ status: newStatus }).eq('id', taskId)
+      if (error) throw error
+      setTasks(tasks.map(t => t.id === taskId ? { ...t, status: newStatus } : t))
+      toast({ title: 'Cập nhật thành công', description: 'Đã thay đổi trạng thái báo cáo.' })
+    } catch (err: any) {
+      toast({ variant: 'destructive', title: 'Lỗi', description: err.message })
+    }
+  }
+
+  // Lọc danh sách, bỏ bản sao (người tạo/admin thấy 1 đại diện mỗi nhóm)
+  const allFiltered = tasks.filter(t => {
+    if (filterStatus === 'all') {
+      if (!searchQuery && t.status === 'done') return false
+      if (t.is_archived) return false
+    } else {
+      if (t.status !== filterStatus) return false
+    }
+    return t.title.toLowerCase().includes(searchQuery.toLowerCase())
+  })
+
+  const seenKeys   = new Set<string>()
+  const displayData = allFiltered.filter(t => {
+    const isCreator    = t.created_by === profile?.id
+    const isAdminOrDir = profile?.role === 'admin' || profile?.role === 'director'
+    if (isCreator || isAdminOrDir) {
+      const key = `${t.title}_${t.created_by}`
+      if (seenKeys.has(key)) return false
+      seenKeys.add(key)
+    }
+    return true
+  })
+
+  if (loading) {
+    return <div className="flex h-96 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Thanh tìm kiếm & lọc */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1 group">
+          <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 group-focus-within:text-primary transition-colors" />
+          <Input
+            placeholder="Tìm tên báo cáo..."
+            className="finance-input finance-search-input w-full pl-12 h-10 text-[14px] font-medium"
+            value={searchQuery}
+            onChange={e => setSearch(e.target.value)}
+          />
+        </div>
+        <Select value={filterStatus} onValueChange={setFilter}>
+          <SelectTrigger className="w-full sm:w-48 h-10 bg-white border-slate-200 rounded-xl font-medium text-slate-600 px-4 hover:border-primary/30 transition-all text-[14px]">
+            <div className="flex items-center gap-2">
+              <Filter className="w-4 h-4 text-primary/60" />
+              <SelectValue placeholder="Trạng thái" />
+            </div>
+          </SelectTrigger>
+          <SelectContent className="rounded-xl border-none shadow-premium-hover p-2">
+            <SelectItem value="all"    className="rounded-xl py-3 font-semibold">Tất cả trạng thái</SelectItem>
+            <SelectItem value="todo"   className="rounded-xl py-3 font-semibold">Chưa hoàn thành</SelectItem>
+            <SelectItem value="done"   className="rounded-xl py-3 font-semibold">Đã hoàn thành</SelectItem>
+            <SelectItem value="late"   className="rounded-xl py-3 font-semibold text-red-600">Trễ hạn</SelectItem>
+            <SelectItem value="closed" className="rounded-xl py-3 font-semibold text-slate-600">Đã đóng</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Danh sách báo cáo */}
+      <div className="space-y-3">
+        {displayData.length === 0 && (
+          <div className="text-center py-12 bg-white rounded-2xl border border-slate-100 shadow-sm">
+            <FileText className="w-12 h-12 text-slate-200 mx-auto mb-3" />
+            <p className="text-slate-500 font-medium">Chưa có báo cáo nào</p>
+          </div>
+        )}
+        {displayData.map(task => {
+          const status        = STATUS_MAP[task.status] || STATUS_MAP.todo
+          const isLate        = task.status !== 'done' && new Date(task.due_date) < new Date()
+          const firstAssignee = task.task_assignees?.[0]?.profile
+          const deptName      = task.department?.name
+
+          // Tính số phòng đã nộp trong nhóm báo cáo này
+          const siblings = tasks.filter(t => t.title === task.title && t.created_by === task.created_by)
+          const totalDepts  = siblings.length
+          const doneDepts   = siblings.filter(t => t.status === 'done').length
+          const isCreator    = task.created_by === profile?.id
+          const isAdminOrDir = profile?.role === 'admin' || profile?.role === 'director'
+
+          return (
+            <div
+              key={task.id}
+              className="premium-card p-6 flex items-center gap-4 cursor-pointer hover:bg-slate-50/50 transition-all"
+              onClick={() => router.push(`/dashboard/tasks/${task.id}`)}
+            >
+              {/* Checkbox toggle nộp báo cáo */}
+              <div
+                className="flex items-center justify-center pt-1 self-start"
+                onClick={e => {
+                  if (task.status !== 'closed') {
+                    handleToggleStatus(e, task.id, task.status)
+                  } else {
+                    e.stopPropagation()
+                  }
+                }}
+              >
+                <Checkbox checked={task.status === 'done'} className="w-5 h-5 rounded-[6px]" />
+              </div>
+
+              <div className="flex-1 space-y-1.5">
+                <div className="flex items-center gap-2 flex-wrap">
+                  {task.priority === 'high' && <Zap className="w-3 h-3 text-red-500 fill-red-500 shrink-0" />}
+                  <h3 className={cn('font-bold text-[15px] transition-colors', task.status === 'done' ? 'text-slate-500 line-through' : 'text-slate-900')}>
+                    {task.title}
+                  </h3>
+                  {(isCreator || isAdminOrDir) && totalDepts > 0 && (
+                    <Badge className={cn(
+                      'border-none text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm select-none',
+                      doneDepts === totalDepts
+                        ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-50'
+                        : 'bg-red-50 text-red-600 hover:bg-red-50'
+                    )}>
+                      {doneDepts}/{totalDepts} phòng
+                    </Badge>
+                  )}
+                </div>
+                <div className="flex flex-wrap items-center gap-3 text-xs font-medium text-slate-500">
+                  <span className="flex items-center gap-1">
+                    <Calendar className="w-3.5 h-3.5" />
+                    <span className={cn(isLate && 'text-red-600 font-bold')}>
+                      {new Date(task.due_date).toLocaleDateString('vi-VN')}
+                    </span>
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Users className="w-3.5 h-3.5" />
+                    {firstAssignee?.full_name || deptName || 'Chưa giao'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="hidden sm:block shrink-0">
+                <div className={cn('inline-flex items-center px-3 py-1 rounded-full text-[11px] font-medium', status.light, status.color)}>
+                  <div className={cn('w-1 h-1 rounded-full mr-2 opacity-60', status.dot)} />
+                  {status.label}
+                </div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
