@@ -1,0 +1,77 @@
+
+{
+  "entities": {
+    "UserProfile": {
+      "title": "Hồ sơ Cán bộ",
+      "description": "Thông tin nhân sự và phân quyền trong hệ thống.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "name": { "type": "string" },
+        "adAccount": { "type": "string" },
+        "role": { "type": "string", "enum": ["director", "manager", "staff"] },
+        "isAdmin": { "type": "boolean" },
+        "avatarUrl": { "type": "string" },
+        "department": { "type": "string" },
+        "email": { "type": "string" },
+        "createdAt": { "type": "object" }
+      },
+      "required": ["uid", "name", "role"]
+    },
+    "Task": {
+      "title": "Nhiệm vụ",
+      "description": "Các đầu việc được giao và theo dõi tiến độ thời gian thực.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "assigneeId": { "type": "string" },
+        "assigneeName": { "type": "string" },
+        "status": { "type": "string", "enum": ["Đang làm", "Chờ duyệt", "Hoàn thành", "Từ chối"] },
+        "priority": { "type": "string", "enum": ["Khẩn cấp", "Cao", "Trung bình"] },
+        "progress": { "type": "number" },
+        "dueDate": { "type": "string" },
+        "description": { "type": "string" },
+        "createdAt": { "type": "object" },
+        "comments": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "senderId": { "type": "string" },
+              "senderName": { "type": "string" },
+              "text": { "type": "string" },
+              "timestamp": { "type": "string" }
+            }
+          }
+        }
+      },
+      "required": ["title", "assigneeId", "status"]
+    },
+    "Goal": {
+      "title": "Mục tiêu & KPIs",
+      "description": "Các chỉ số KPIs chiến lược của chi nhánh.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "assignee": { "type": "string" },
+        "type": { "type": "string" },
+        "progress": { "type": "number" },
+        "status": { "type": "string" },
+        "deadline": { "type": "string" },
+        "description": { "type": "string" }
+      },
+      "required": ["title", "progress"]
+    }
+  },
+  "firestore": {
+    "/users/{uid}": {
+      "schema": "#/entities/UserProfile"
+    },
+    "/tasks/{taskId}": {
+      "schema": "#/entities/Task"
+    },
+    "/goals/{goalId}": {
+      "schema": "#/entities/Goal"
+    }
+  }
+}

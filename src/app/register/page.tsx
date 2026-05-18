@@ -1,0 +1,191 @@
+'use client'
+
+import { useState, useEffect, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { createClient } from '@/utils/supabase/client'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { Label } from '@/components/ui/label'
+import { toast } from '@/hooks/use-toast'
+import { Workflow, Loader2, Lock, Mail, User, ShieldCheck } from 'lucide-react'
+
+export const dynamic = 'force-dynamic';
+
+function RegisterContent() {
+ const [email, setEmail] = useState('')
+ const [password, setPassword] = useState('')
+ const [fullName, setFullName] = useState('')
+ const [loading, setLoading] = useState(false)
+ const router = useRouter()
+ const searchParams = useSearchParams()
+ const supabase = createClient()
+ 
+ const inviteCode = searchParams.get('invite')
+
+ const handleSignUp = async (e: React.FormEvent) => {
+ e.preventDefault()
+ setLoading(true)
+
+ try {
+ const { error } = await supabase.auth.signUp({
+ email,
+ password,
+ options: {
+ data: {
+ full_name: fullName,
+ role: 'staff', // Mặc định là nhân viên khi đăng ký qua link mời
+ },
+ },
+ })
+ 
+ if (error) throw error
+
+ toast({
+ title: "Đăng ký thành công",
+ description: "Chào mừng bạn gia nhập đội ngũ WorkFlow!",
+ })
+ 
+ router.push('/dashboard')
+ } catch (error: any) {
+ toast({
+ variant: "destructive",
+ title: "Lỗi đăng ký",
+ description: error.message || "Đã có lỗi xảy ra, vui lòng thử lại.",
+ })
+ } finally {
+ setLoading(false)
+ }
+ }
+
+ if (!inviteCode) {
+ return (
+ <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
+ <Card className="w-full max-w-md shadow-xl border-t-4 border-t-red-500">
+ <CardHeader className="text-center">
+ <CardTitle className="text-xl font-bold text-red-600 tabular-nums tracking-tighter">Link không hợp lệ</CardTitle>
+ <CardDescription>Bạn cần có mã mời từ Lãnh đạo để đăng ký tài khoản.</CardDescription>
+ </CardHeader>
+ <CardFooter>
+ <Button onClick={() => router.push('/login')} className="w-full">Quay lại Đăng nhập</Button>
+ </CardFooter>
+ </Card>
+ </div>
+ )
+ }
+
+ return (
+ <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-4 relative overflow-hidden">
+ <div className="absolute inset-0 z-0">
+ <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[100px] opacity-60" />
+ </div>
+
+ <div className="w-full max-w-md z-10 flex flex-col items-center gap-6">
+ <Card className="w-full shadow-2xl border-none rounded-[2.5rem] bg-white/80 backdrop-blur-xl overflow-hidden">
+ <div className="bg-primary p-8 text-white text-center relative overflow-hidden">
+ <div className="absolute top-0 right-0 p-4 opacity-10">
+ <Workflow className="w-24 h-24 rotate-12" />
+ </div>
+ <div className="relative z-10 flex flex-col items-center">
+ <div className="bg-white/80 p-3 rounded-2xl mb-4 backdrop-blur-md">
+ <ShieldCheck className="h-8 w-8 text-white" />
+ </div>
+ <CardTitle className="text-2xl font-bold tracking-tight tabular-nums">Gia nhập WorkFlow</CardTitle>
+ <CardDescription className="text-primary-foreground/70 mt-2 font-medium">Hệ thống điều hành và quản trị mục tiêu</CardDescription>
+ </div>
+ </div>
+
+ <form onSubmit={handleSignUp}>
+ <CardContent className="p-8 space-y-5">
+ <div className="space-y-2">
+ <Label htmlFor="fullName" className="text-xs md:text-[11px] font-bold uppercase text-slate-500 ml-1 truncate whitespace-nowrap">Họ và tên</Label>
+ <div className="relative">
+ <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+ <Input
+ id="fullName"
+ placeholder="Nhập họ và tên cán bộ"
+ className="pl-11 h-12 bg-slate-50 border-none rounded-xl font-medium text-base md:text-sm"
+ value={fullName}
+ onChange={(e) => setFullName(e.target.value)}
+ required
+ />
+ </div>
+ </div>
+
+ <div className="space-y-2">
+ <Label htmlFor="email" className="text-xs md:text-[11px] font-bold uppercase text-slate-500 ml-1 truncate whitespace-nowrap">Email</Label>
+ <div className="relative">
+ <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+ <Input
+ id="email"
+ type="email"
+ placeholder="name@bank.com.vn"
+ className="pl-11 h-12 bg-slate-50 border-none rounded-xl font-medium text-base md:text-sm"
+ value={email}
+ onChange={(e) => setEmail(e.target.value)}
+ required
+ />
+ </div>
+ </div>
+
+ <div className="space-y-2">
+ <Label htmlFor="password" className="text-xs md:text-[11px] font-bold uppercase text-slate-500 ml-1 truncate whitespace-nowrap">Mật khẩu</Label>
+ <div className="relative">
+ <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+ <Input
+ id="password"
+ type="password"
+ placeholder="••••••••"
+ className="pl-11 h-12 bg-slate-50 border-none rounded-xl font-medium text-base md:text-sm"
+ value={password}
+ onChange={(e) => setPassword(e.target.value)}
+ required
+ />
+ </div>
+ </div>
+ 
+ <div className="pt-2">
+ <div className="bg-amber-50 p-3 rounded-xl border border-amber-100 flex items-start gap-3">
+ <div className="w-2 h-2 bg-amber-500 rounded-full mt-1.5 shrink-0" />
+ <p className="text-xs md:text-[11px] text-amber-700 font-medium leading-relaxed">Mã mời hợp lệ: <span className="font-bold">{inviteCode}</span>. Bạn đang đăng ký với vai trò cán bộ chi nhánh.</p>
+ </div>
+ </div>
+ </CardContent>
+
+ <CardFooter className="p-8 pt-0 flex flex-col space-y-4">
+ <Button type="submit" className="w-full h-12 bg-primary hover:bg-primary/90 rounded-xl font-bold shadow-lg shadow-primary/20" disabled={loading}>
+ {loading ? (
+ <>
+ <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+ Đang xử lý...
+ </>
+ ) : 'Hoàn tất đăng ký'}
+ </Button>
+ <button
+ type="button"
+ className="text-sm font-bold text-slate-500 hover:text-primary transition-colors"
+ onClick={() => router.push('/login')}
+ >
+ Đã có tài khoản? Đăng nhập
+ </button>
+ </CardFooter>
+ </form>
+ </Card>
+ 
+ <p className="text-[11px] font-medium text-slate-500 italic">made by phuctd</p>
+ </div>
+ </div>
+ )
+}
+
+export default function RegisterPage() {
+ return (
+ <Suspense fallback={
+ <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50">
+ <Loader2 className="h-10 w-10 animate-spin text-primary" />
+ </div>
+ }>
+ <RegisterContent />
+ </Suspense>
+ )
+}
