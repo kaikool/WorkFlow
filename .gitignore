@@ -38,5 +38,5 @@ next-env.d.ts
 # agent tools
 .agent
 .gemini
-*.md
+/*.md
 !README.md

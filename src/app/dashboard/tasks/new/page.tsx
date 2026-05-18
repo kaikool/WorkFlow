@@ -82,7 +82,9 @@ export default function NewTaskPage() {
     
     let finalAssigneeId = null;
     let finalAssigneesList: string[] = [];
-    let targetDeptId = creatorProfil     if (formType === 'report' && assignType === 'department') {
+    let targetDeptId = creatorProfile?.department_id;
+
+    if (formType === 'report' && assignType === 'department') {
        if (selectedDepartments.length === 0) {
          toast({ variant: "destructive", title: "Lỗi", description: "Vui lòng chọn ít nhất một phòng ban nhận báo cáo." });
          setLoading(false); return;
