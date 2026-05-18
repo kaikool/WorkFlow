@@ -220,7 +220,7 @@ export default function AdminPage() {
  
  if (checkError) throw checkError;
  
- if (count && count > 0) {
+ if (count && count.length > 0) {
  toast({ 
  variant: "destructive", 
  title: "Không thể xóa", 
@@ -250,7 +250,7 @@ export default function AdminPage() {
  
  if (checkError) throw checkError;
  
- if (count && count > 0) {
+ if (count && count.length > 0) {
  toast({ 
  variant: "destructive", 
  title: "Không thể xóa", 
@@ -281,7 +281,7 @@ export default function AdminPage() {
  const filteredUsers = users.filter(u => u.full_name?.toLowerCase().includes(searchQuery.toLowerCase()));
 
  return (
- <div className="max-w-7xl mx-auto space-y-10 animate-fade-in pb-20 px-4 sm:px-0">
+ <div className="max-w-7xl mx-auto px-4 sm:px-6 space-y-10 animate-fade-in pb-20">
  {/* Header */}
  <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6">
  <div className="space-y-1">

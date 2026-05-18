@@ -76,6 +76,7 @@ export default function TaskDetailPage() {
  const [selectedDelegate, setSelectedDelegate] = useState('');
   const [siblingReports, setSiblingReports] = useState<any[]>([]);
   const [remindingId, setRemindingId] = useState<string | null>(null);
+  const [isRemindingAll, setIsRemindingAll] = useState(false);
 
  useEffect(() => {
  const fetchData = async () => {
@@ -230,6 +231,53 @@ export default function TaskDetailPage() {
       toast({ variant: "destructive", title: "Lỗi", description: err.message });
     } finally {
       setRemindingId(null);
+    }
+  };
+  const handleSendReminderAll = async () => {
+    const uncompletedReports = siblingReports.filter(r => r.status !== 'done' && r.status !== 'closed');
+    
+    if (uncompletedReports.length === 0) {
+      toast({
+        title: "Không cần nhắc nhở",
+        description: "Tất cả các phòng ban đã hoàn thành báo cáo này!",
+      });
+      return;
+    }
+
+    const assignedReports = uncompletedReports.filter(r => r.assignee_id);
+    const unassignedDepts = uncompletedReports.filter(r => !r.assignee_id).map(r => r.departments?.name || 'Phòng chuyên môn');
+
+    if (assignedReports.length === 0) {
+      toast({
+        variant: "destructive",
+        title: "Không thể nhắc nhở",
+        description: "Các phòng ban chưa hoàn thành hiện tại chưa có cán bộ tiếp nhận.",
+      });
+      return;
+    }
+
+    setIsRemindingAll(true);
+    try {
+      const notificationRecords = assignedReports.map(r => ({
+        user_id: r.assignee_id,
+        title: "Nhắc hoàn thành báo cáo [HỎA TỐC]",
+        content: `${profile?.full_name} yêu cầu hoàn thành khẩn cấp báo cáo "${task.title}" của phòng ${r.departments?.name || 'phòng ban'}`,
+        link: `/dashboard/tasks/${r.id}`
+      }));
+
+      const { error } = await supabase.from('notifications').insert(notificationRecords);
+      if (error) throw error;
+
+      toast({
+        title: "Đã đôn đốc hỏa tốc!",
+        description: `Đã gửi thông báo đôn đốc thành công tới ${assignedReports.length} phòng ban chưa hoàn thành!${
+          unassignedDepts.length > 0 ? ` (Không thể gửi tới: ${unassignedDepts.join(', ')} do chưa có người tiếp nhận)` : ''
+        }`,
+      });
+    } catch (err: any) {
+      toast({ variant: "destructive", title: "Lỗi", description: err.message });
+    } finally {
+      setIsRemindingAll(false);
     }
   };
 
@@ -595,8 +643,8 @@ export default function TaskDetailPage() {
  : (task.progress || 0);
 
  return (
- <div className="max-w-6xl mx-auto px-0 sm:px-6 space-y-6 animate-fade-in-up pb-20">
- <div className="flex items-center justify-between px-4 sm:px-0">
+ <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-6 animate-fade-in-up pb-20">
+ <div className="flex items-center justify-between">
  <Button variant="ghost" asChild className="p-0 hover:bg-transparent text-slate-500 hover:text-primary transition-colors group">
  <Link href={isStrategicPlan ? "/dashboard/kpi" : "/dashboard/tasks"} className="flex items-center gap-2">
  <div className="p-2 rounded-xl group-hover:bg-primary/5 transition-colors">
@@ -628,7 +676,7 @@ export default function TaskDetailPage() {
  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
  <div className="lg:col-span-8 space-y-6">
  {/* Header Card */}
- <div className="premium-card p-6 md:p-8 border-none space-y-6 relative overflow-hidden">
+ <div className="premium-card p-6 border-none space-y-6 relative overflow-hidden">
  <div className="absolute -top-12 -right-12 p-8 text-primary/5 opacity-5 pointer-events-none">
  <Target className="w-48 h-48 rotate-12" />
  </div>
@@ -636,7 +684,7 @@ export default function TaskDetailPage() {
  <div className="flex items-center gap-2 relative z-10 flex-wrap">
  <Badge className={cn(
  "px-3 py-1 text-[11px] font-medium rounded-full border-none",
- isStrategicPlan ? "bg-primary text-white shadow-primary-glow" : (task?.task_type === 'report' ? "bg-indigo-500 text-white shadow-sm" : "bg-slate-100 text-slate-500")
+ isStrategicPlan ? "bg-primary text-white shadow-primary-glow" : (task?.task_type === 'report' ? "bg-slate-900 text-white shadow-sm" : "bg-slate-100 text-slate-500")
  )}>
  {task?.task_type === 'report' ? 'Yêu cầu báo cáo' : isStrategicPlan ? 'Kế hoạch KPIs' : 'Công việc nghiệp vụ'}
  </Badge>
@@ -658,7 +706,7 @@ export default function TaskDetailPage() {
      <h1 className="text-xl md:text-2xl font-semibold text-slate-900 tracking-tight leading-tight">{task.title}</h1>
      {((task.created_by === profile?.id || profile?.role === 'admin') || (task.task_type !== 'report' && canEdit)) && !isClosed && <Button variant="ghost" size="sm" onClick={() => { setEditData(task); setIsEditingTask(true); }}>Sửa</Button>}
     </div>
-    <div className="bg-slate-50/50 p-4 md:p-5 rounded-2xl border border-slate-100/50 relative z-10">
+    <div className="bg-slate-50/50 p-4 rounded-xl border border-slate-100/50 relative z-10">
      <p className="text-sm text-slate-500 font-medium leading-relaxed italic">"{task.description || (isStrategicPlan ? 'Chưa có mô tả chi tiết cho chỉ tiêu này.' : 'Chưa có mô tả chi tiết cho nhiệm vụ này.')}"</p>
     </div>
    </>
@@ -668,7 +716,7 @@ export default function TaskDetailPage() {
 
  {/* Progress / Quantitative Card */}
  {task.task_type !== 'report' ? (
- <div className="premium-card p-6 md:p-8 border-none space-y-6 md:space-y-8">
+ <div className="premium-card p-6 border-none space-y-6">
  <div className="flex items-center justify-between">
  <h3 className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2 truncate whitespace-nowrap">
  <TrendingUp className="w-4 h-4 text-primary" />
@@ -867,11 +915,11 @@ export default function TaskDetailPage() {
     task.task_type === 'report' && (
       isCreatorOrAdmin ? (
         /* Master Tracking Panel for report creator */
-        <div className="premium-card p-6 md:p-8 border-none space-y-6">
+        <div className="premium-card p-6 border-none space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
             <div>
-              <h3 className="text-xs font-bold text-indigo-600 uppercase flex items-center gap-2">
-                <Target className="w-4 h-4 text-indigo-500" /> Theo dõi tiến độ các phòng ban
+              <h3 className="text-xs font-bold text-slate-900 uppercase flex items-center gap-2">
+                <Target className="w-4 h-4 text-slate-900" /> Theo dõi tiến độ các phòng ban
               </h3>
               <p className="text-[11px] text-slate-500 font-medium mt-1">
                 Tổng số: {siblingReports.length} đơn vị nhận yêu cầu báo cáo
@@ -891,10 +939,8 @@ export default function TaskDetailPage() {
             <table className="w-full border-collapse text-left">
               <thead>
                 <tr className="border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                  <th className="pb-3 pl-2">Đơn vị tiếp nhận</th>
-                  <th className="pb-3">Cán bộ phụ trách</th>
-                  <th className="pb-3 text-center">Trạng thái nộp</th>
-                  <th className="pb-3 text-right pr-2">Hành động</th>
+                  <th className="pb-3 pl-2 w-1/2">Đơn vị tiếp nhận</th>
+                  <th className="pb-3 w-1/2">Cán bộ phụ trách</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
@@ -903,11 +949,30 @@ export default function TaskDetailPage() {
                   const isClosed = sib.status === 'closed';
                   
                   return (
-                    <tr key={sib.id} className="group hover:bg-slate-50/30 transition-colors">
-                      <td className="py-4 pl-2 font-bold text-xs text-slate-900">
+                    <tr 
+                      key={sib.id} 
+                      className={cn(
+                        "transition-colors",
+                        (!isDone && !isClosed) 
+                          ? "bg-amber-50/30 hover:bg-amber-50/50" 
+                          : "hover:bg-slate-50/30"
+                      )}
+                    >
+                      <td className="py-4 pl-2 font-semibold text-xs text-slate-900">
                         <Link href={`/dashboard/tasks/${sib.id}`} className="hover:text-primary transition-colors flex items-center gap-2">
-                          <span className="p-1 bg-indigo-50 text-indigo-500 rounded-lg shrink-0">
-                            <Target className="w-3.5 h-3.5" />
+                          <span className={cn(
+                            "p-1 rounded-lg shrink-0",
+                            isDone 
+                              ? "bg-emerald-50 text-emerald-600" 
+                              : isClosed 
+                                ? "bg-slate-100 text-slate-500" 
+                                : "bg-amber-50 text-amber-600"
+                          )}>
+                            {isDone ? (
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                            ) : (
+                              <Target className="w-3.5 h-3.5" />
+                            )}
                           </span>
                           {sib.departments?.name || 'Phòng chuyên môn'}
                         </Link>
@@ -921,45 +986,10 @@ export default function TaskDetailPage() {
                                 {sib.assignee.full_name?.[0]}
                               </AvatarFallback>
                             </Avatar>
-                            <span className="text-[11px] font-bold text-slate-700">{sib.assignee.full_name}</span>
+                            <span className="text-[11px] font-semibold text-slate-700">{sib.assignee.full_name}</span>
                           </div>
                         ) : (
                           <span className="text-[11px] font-medium text-slate-400 italic">Chưa tiếp nhận</span>
-                        )}
-                      </td>
-                      <td className="py-4 text-center">
-                        {isDone ? (
-                          <Badge className="bg-emerald-50 text-emerald-600 border-none font-bold text-[10px] px-2.5 py-0.5 rounded-full inline-flex items-center gap-1">
-                            <CheckCircle2 className="w-3 h-3" /> Đã hoàn thành
-                          </Badge>
-                        ) : isClosed ? (
-                          <Badge className="bg-slate-100 text-slate-500 border-none font-bold text-[10px] px-2.5 py-0.5 rounded-full inline-flex items-center gap-1">
-                            Đã đóng
-                          </Badge>
-                        ) : (
-                          <div className="inline-flex flex-col items-center gap-1">
-                            <Badge className="bg-amber-50 text-amber-600 border-none font-bold text-[10px] px-2.5 py-0.5 rounded-full inline-flex items-center gap-1">
-                              <Clock className="w-3 h-3" /> Chưa hoàn thành
-                            </Badge>
-                            <span className="text-[9px] font-bold text-slate-400">Tiến độ: {sib.progress || 0}%</span>
-                          </div>
-                        )}
-                      </td>
-                      <td className="py-4 text-right pr-2">
-                        {!isDone && !isClosed && (
-                          <Button
-                            size="sm"
-                            disabled={remindingId === sib.id}
-                            onClick={() => handleSendReminder(sib.id, sib.assignee_id, sib.departments?.name || 'Phòng chuyên môn')}
-                            className="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border-none rounded-lg text-[10px] font-bold h-7 px-2.5 transition-all shadow-sm active:scale-95 flex items-center gap-1 ml-auto"
-                          >
-                            {remindingId === sib.id ? (
-                              <Loader2 className="w-3 h-3 animate-spin" />
-                            ) : (
-                              <Zap className="w-3 h-3 fill-current" />
-                            )}
-                            Nhắc hoàn thành báo cáo
-                          </Button>
                         )}
                       </td>
                     </tr>
@@ -968,10 +998,28 @@ export default function TaskDetailPage() {
               </tbody>
             </table>
           </div>
+
+          {/* Single High-Impact Remind Action Button at the Bottom */}
+          {siblingReports.some(r => r.status !== 'done' && r.status !== 'closed') && (
+            <div className="pt-4 border-t border-slate-100 flex justify-center">
+              <Button
+                disabled={isRemindingAll}
+                onClick={handleSendReminderAll}
+                className="bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border-none rounded-xl text-[11px] font-bold h-9 px-5 transition-all shadow-sm active:scale-95 flex items-center gap-2"
+              >
+                {isRemindingAll ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Zap className="w-3.5 h-3.5 fill-current" />
+                )}
+                Nhắc báo cáo
+              </Button>
+            </div>
+          )}
         </div>
       ) : (
         /* Normal progress steps for report assignee */
-        <div className="premium-card p-6 md:p-8 border-none space-y-6">
+        <div className="premium-card p-6 border-none space-y-6">
           <h3 className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2 truncate whitespace-nowrap">
             <TrendingUp className="w-4 h-4 text-primary" /> TIẾN ĐỘ BÁO CÁO CỦA TÔI
           </h3>
@@ -1011,7 +1059,7 @@ export default function TaskDetailPage() {
  </h3>
  <div className="space-y-4">
  {comments.map((c) => (
- <div key={c.id} className="flex gap-4 p-4 md:p-5 premium-card border-none">
+ <div key={c.id} className="premium-card p-6 border-none flex gap-4">
  <Avatar className="h-11 w-11 shrink-0 border shadow-sm ring-1 ring-slate-100">
  <AvatarImage src={c.user?.avatar_url} className="object-cover" />
  <AvatarFallback className="bg-slate-100 text-slate-500 font-bold">{c.user?.full_name?.[0]}</AvatarFallback>
@@ -1044,7 +1092,7 @@ export default function TaskDetailPage() {
 
  {/* Sidebar */}
  <div className="lg:col-span-4 space-y-6">
- <div className="premium-card p-5 md:p-6 border-none space-y-8">
+ <div className="premium-card p-6 border-none space-y-6">
  <div className="space-y-4">
  <p className="text-[13px] font-medium text-slate-500">Trạng thái hiện tại</p>
  <Select disabled={(!canEdit && task.created_by !== profile?.id) || saving} value={task.status} onValueChange={handleUpdateStatus}>

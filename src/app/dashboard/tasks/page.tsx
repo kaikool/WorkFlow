@@ -110,21 +110,29 @@ function TasksContent() {
  };
 
  const displayData = tasks.filter(task => {
- const isReport = task.task_type === 'report';
- if (viewMode === 'task' && isReport) return false;
- if (viewMode === 'report' && !isReport) return false;
+  // 1. Không hiển thị các cards của KPI
+  if (task.task_type === 'kpi') return false;
 
- if (filterStatus === 'all') {
-   // Mặc định ở chế độ Tất cả, không hiển thị các báo cáo đã đóng hoặc công việc đã lưu trữ
-   if (task.status === 'closed') return false;
-   if (task.is_archived) return false;
- } else {
-   if (task.status !== filterStatus) return false;
- }
+  const isReport = task.task_type === 'report';
+  if (viewMode === 'task' && isReport) return false;
+  if (viewMode === 'report' && !isReport) return false;
 
- const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase())
- return matchesSearch
- })
+  // 2. Trạng thái hoàn thành/đóng thì ẩn đi khi không tìm kiếm, nhưng vẫn cho phép tìm kiếm
+  if (!searchQuery) {
+    if (task.status === 'done' || task.status === 'closed') return false;
+  }
+ 
+  if (filterStatus === 'all') {
+    // Mặc định ở chế độ Tất cả, không hiển thị các báo cáo đã đóng hoặc công việc đã lưu trữ
+    if (task.status === 'closed') return false;
+    if (task.is_archived) return false;
+  } else {
+    if (task.status !== filterStatus) return false;
+  }
+ 
+  const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase())
+  return matchesSearch
+  })
 
  const statusMap: Record<string, { label: string, color: string, dot: string, light: string }> = {
  todo: { label: 'Đang chờ', color: 'text-muted-foreground', dot: 'bg-slate-400', light: 'bg-muted' },
@@ -143,8 +151,8 @@ function TasksContent() {
  }
 
  return (
- <div className="max-w-6xl mx-auto space-y-6 md:space-y-10 animate-fade-in-up pb-20">
- <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 md:gap-6 px-4 sm:px-0 pt-4 sm:pt-0">
+ <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-6 md:space-y-10 animate-fade-in-up pb-20">
+ <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 md:gap-6 pt-4 sm:pt-0">
  <div className="space-y-1">
  <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">
  {viewMode === 'task' ? 'Công việc' : 'Yêu cầu báo cáo'}
@@ -168,7 +176,7 @@ function TasksContent() {
   </Tabs>
  </div>
 
- <div className="flex flex-col sm:flex-row gap-4 px-4 sm:px-0">
+ <div className="flex flex-col sm:flex-row gap-4">
  <div className="relative flex-1 group">
  <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 group-focus-within:text-primary transition-colors" />
  <Input 
@@ -199,14 +207,14 @@ function TasksContent() {
  {viewMode === 'task' ? (
    <>
    {/* Mobile Card View (Tasks) */}
-   <div className="block sm:hidden space-y-4 px-4 sm:px-0">
+   <div className="block sm:hidden space-y-4">
    {displayData.map((task) => {
    const status = statusMap[task.status] || statusMap.todo;
    const firstAssignee = task.task_assignees?.[0]?.profile;
    const otherCount = (task.task_assignees?.length || 0) - 1;
 
    return (
-   <div key={task.id} className="premium-card p-4 md:p-5 space-y-4 active:scale-[0.98] transition-transform" onClick={() => router.push(`/dashboard/tasks/${task.id}`)}>
+   <div key={task.id} className="premium-card p-6 space-y-4 active:scale-[0.98] transition-transform" onClick={() => router.push(`/dashboard/tasks/${task.id}`)}>
    <div className="flex justify-between items-start gap-4">
    <div className="space-y-1 flex-1">
    <h3 className="font-bold text-slate-900 text-[15px] md:text-base line-clamp-2 leading-snug">{task.title}</h3>
@@ -245,7 +253,7 @@ function TasksContent() {
    </div>
 
    {/* Desktop Table View (Tasks) */}
-   <div className="hidden sm:block premium-card border-none overflow-hidden px-4 sm:px-0">
+   <div className="hidden sm:block premium-card border-none overflow-hidden">
    <Table>
    <TableHeader>
    <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 border-b border-slate-100 h-14">
@@ -337,7 +345,7 @@ function TasksContent() {
  ) : (
    <>
     {/* List view for Reports */}
-    <div className="space-y-3 px-4 sm:px-0">
+    <div className="space-y-3">
       {displayData.length === 0 && (
         <div className="text-center py-12 bg-white rounded-2xl border border-slate-100 shadow-sm">
           <FileText className="w-12 h-12 text-slate-200 mx-auto mb-3" />
@@ -353,7 +361,7 @@ function TasksContent() {
         return (
           <div 
             key={task.id} 
-            className="premium-card p-4 flex items-center gap-4 cursor-pointer hover:bg-slate-50/50 transition-all"
+            className="premium-card p-6 flex items-center gap-4 cursor-pointer hover:bg-slate-50/50 transition-all"
             onClick={() => router.push(`/dashboard/tasks/${task.id}`)}
           >
             <div className="flex items-center justify-center pt-1 self-start" onClick={(e) => {

@@ -80,7 +80,7 @@ export default function NewTaskPage() {
     setLoading(true);
     const formData = new FormData(e.currentTarget);
     
-    let finalAssigneeId = null;
+    let finalAssigneeId: string | null = null;
     let finalAssigneesList: string[] = [];
     let targetDeptId = creatorProfile?.department_id;
 
@@ -109,7 +109,7 @@ export default function NewTaskPage() {
          // Tạo riêng biệt mỗi phòng ban một bản ghi báo cáo
          for (const deptId of selectedDepartments) {
            const manager = managers.find(m => m.department_id === deptId);
-           const managerId = manager.id;
+           const managerId = manager?.id;
 
            const { data: newTask, error: taskError } = await supabase.from('tasks').insert({
              title: formData.get('title'),
@@ -231,8 +231,8 @@ export default function NewTaskPage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-0 sm:px-6 space-y-10 animate-fade-in-up pb-20">
-      <div className="flex items-center justify-between mb-6 px-4 sm:px-0 pt-4 sm:pt-0">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-10 animate-fade-in-up pb-20">
+      <div className="flex items-center justify-between mb-6 pt-4 sm:pt-0">
         <Button variant="ghost" asChild className="p-0 hover:bg-transparent text-slate-500 hover:text-slate-900 transition-colors">
           <Link href="/dashboard/tasks" className="flex items-center gap-2">
             <ChevronLeft className="w-4 h-4" />
@@ -251,9 +251,9 @@ export default function NewTaskPage() {
           </Tabs>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 px-4 sm:px-0">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           <div className="lg:col-span-8 space-y-6">
-            <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+            <div className="premium-card p-6 border-none space-y-4">
               <div className="flex items-center gap-2">
                 <Badge className="px-2 py-0.5 text-[11px] font-medium rounded-md border-none bg-primary text-white">
                   {formType === 'task' ? 'Công việc' : 'Báo cáo'}
@@ -286,7 +286,7 @@ export default function NewTaskPage() {
           </div>
 
           <div className="lg:col-span-4 space-y-6">
-            <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-6">
+            <div className="premium-card p-6 border-none space-y-6">
               
               <div className="space-y-3">
                 <Label className="text-[13px] font-medium text-slate-500">Người / Phòng nhận</Label>

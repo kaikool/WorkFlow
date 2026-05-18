@@ -131,7 +131,7 @@ export default function GoalsPage() {
  setTeam(members || []);
  }
 
- await fetchGoals();
+ await fetchGoals(p);
  } catch (error: any) {
  console.error(error);
  } finally {
@@ -252,9 +252,9 @@ export default function GoalsPage() {
  if (loading) return <div className="flex h-96 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
 
  return (
- <div className="max-w-6xl mx-auto space-y-10 animate-fade-in-up pb-20">
+ <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-10 animate-fade-in-up pb-20">
  {/* Header Section */}
- <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 px-4 sm:px-0 pt-4 sm:pt-0">
+ <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 pt-4 sm:pt-0">
  <div className="space-y-1">
  <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">
  Mục tiêu
@@ -442,70 +442,68 @@ export default function GoalsPage() {
  )}
  </div>
 
- {/* KPI Stats Overview */}
- <div className="grid grid-cols-1 md:grid-cols-3 gap-6 px-4 sm:px-0">
- <div className="premium-card p-6 border-none flex items-center gap-5">
- <div className="bg-primary/10 p-4 rounded-xl text-primary shrink-0 shadow-sm">
- <TrendingUp className="w-6 h-6" />
- </div>
- <div className="space-y-1 min-w-0 flex-1">
- <p className="text-[12px] font-medium text-slate-500">Tiến độ chung</p>
- <div className="flex items-center justify-between gap-3">
- <p className="text-2xl font-bold text-slate-900 tracking-tight tabular-nums">{avgProgress}%</p>
- <div className="flex-1 h-2 max-w-[80px]">
- <Progress value={avgProgress} className="h-full bg-slate-50 shadow-inner" />
- </div>
- </div>
- </div>
- </div>
+  {/* KPI Stats Overview - Single Unified Card */}
+  <div className="premium-card p-6 border-none">
+    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+      {/* Left side: Overall progress tracker with large font */}
+      <div className="flex items-center gap-5 flex-1 min-w-0">
+        <div className="bg-primary/10 p-4 rounded-xl text-primary shrink-0 shadow-sm">
+          <TrendingUp className="w-6 h-6" />
+        </div>
+        <div className="space-y-1.5 flex-1 min-w-0">
+          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Tiến độ chung hệ thống chỉ tiêu</p>
+          <div className="flex items-center gap-4">
+            <p className="text-3xl font-extrabold text-slate-900 tracking-tight tabular-nums">{avgProgress}%</p>
+            <div className="flex-1 h-2 max-w-[200px] bg-slate-100 rounded-full overflow-hidden">
+              <div className="h-full bg-primary transition-all duration-500" style={{ width: `${avgProgress}%` }} />
+            </div>
+          </div>
+        </div>
+      </div>
 
- <div className="premium-card p-6 border-none flex items-center gap-5">
- <div className="bg-slate-100 p-4 rounded-xl text-slate-600 shrink-0 shadow-sm">
- <Activity className="w-6 h-6" />
- </div>
- <div className="space-y-1 min-w-0 flex-1">
- <p className="text-[12px] font-medium text-slate-500">Chỉ tiêu đang chạy</p>
- <div className="flex items-center gap-2">
- <p className="text-2xl font-bold text-slate-900 tracking-tight tabular-nums">{goals.length}</p>
- <Badge className="bg-primary/10 text-primary border-none font-bold text-[9px] px-2.5 py-0.5 uppercase rounded-full">Active</Badge>
- </div>
- </div>
- </div>
+      {/* Right side: Detailed counters divided by vertical border on desktop */}
+      <div className="flex items-center gap-8 md:border-l md:border-slate-100 md:pl-8 shrink-0">
+        <div className="space-y-1">
+          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+            Đang chạy
+          </p>
+          <p className="text-2xl font-bold text-slate-900 tracking-tight tabular-nums">{goals.length}</p>
+        </div>
 
- <div className="premium-card p-6 border-none flex items-center gap-5">
- <div className="bg-emerald-100 p-4 rounded-xl text-emerald-600 shrink-0 shadow-sm">
- <Trophy className="w-6 h-6" />
- </div>
- <div className="space-y-1 min-w-0 flex-1">
- <p className="text-[12px] font-medium text-slate-500">Đã hoàn thành</p>
- <div className="flex items-center gap-2">
- <p className="text-2xl font-bold text-emerald-600 tracking-tight tabular-nums">{goals.filter(g => g.progress >= 100).length}</p>
- <div className="p-1 bg-emerald-50 rounded-full">
- <CheckCircle2 className="w-3 h-3 text-emerald-500" />
- </div>
- </div>
- </div>
- </div>
- </div>
+        <div className="space-y-1">
+          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            Hoàn thành
+          </p>
+          <div className="flex items-center gap-2">
+            <p className="text-2xl font-bold text-slate-900 tracking-tight tabular-nums">
+              {goals.filter(g => g.progress >= 100).length}
+            </p>
+            <span className="text-emerald-500 text-xs font-bold bg-emerald-50 px-2 py-0.5 rounded-full">
+              100%
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
- {/* KPI List */}
- <div className="space-y-6 pt-2 px-4 sm:px-0">
- <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-4 sm:px-0">
- <div className="flex items-center justify-between">
- {/* Header was here */}
- </div>
- <div className="relative group w-full">
- <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 group-focus-within:text-primary transition-colors" />
- <Input
- placeholder="Tìm tên nhiệm vụ, mã hồ sơ..."
- className="finance-input finance-search-input h-10 pl-12 text-[14px] font-medium"
- value={searchQuery}
- onChange={(e) => setSearchQuery(e.target.value)}
- />
- </div>
- </div>
+   {/* KPI List */}
+  <div className="space-y-6 pt-2">
+  <div className="flex flex-col sm:flex-row gap-4">
+  <div className="relative flex-1 group">
+  <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 group-focus-within:text-primary transition-colors" />
+  <Input
+  placeholder="Tìm tên nhiệm vụ, mã hồ sơ..."
+  className="finance-input finance-search-input w-full pl-12 h-10 text-[14px] font-medium"
+  value={searchQuery}
+  onChange={(e) => setSearchQuery(e.target.value)}
+  />
+  </div>
+  </div>
 
- <div className="hidden md:block premium-card border-none overflow-hidden px-4 sm:px-0">
+ <div className="hidden md:block premium-card border-none overflow-hidden">
  <Table>
  <TableHeader>
  <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 border-b border-slate-100 h-14">
@@ -573,7 +571,7 @@ export default function GoalsPage() {
  </Table>
  </div>
 
- <div className="grid grid-cols-1 gap-4 md:hidden px-4 sm:px-0">
+ <div className="grid grid-cols-1 gap-4 md:hidden">
  {filteredGoals.map((goal) => {
  const category = KPI_CATEGORIES.find(c => c.id === goal.metadata?.category) || KPI_CATEGORIES[4];
  const CatIcon = category.icon;

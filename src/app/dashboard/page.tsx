@@ -80,148 +80,192 @@ export default function DashboardPage() {
  };
  }, []);
 
- const fetchDashboardData = async () => {
- setLoading(true);
- try {
- const { data: { user } } = await supabase.auth.getUser();
- if (!user) return;
+   const fetchDashboardData = async () => {
+  setLoading(true);
+  try {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
 
- const { data: currentProfile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
- setProfile(currentProfile);
+  const { data: currentProfile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+  setProfile(currentProfile);
 
- // 1. Đếm các chỉ số công việc (Tận dụng RLS, không cần fetch hết)
- const { count: activeCount } = await supabase
- .from('tasks')
- .select('*', { count: 'exact', head: true })
- .neq('status', 'done')
- .neq('task_type', 'kpi');
+  const isPowerUser = currentProfile?.role === 'admin' || currentProfile?.role === 'director';
 
- const { count: urgentCount } = await supabase
- .from('tasks')
- .select('*', { count: 'exact', head: true })
- .neq('status', 'done')
- .eq('priority', 'high');
-
- const { count: completedCount } = await supabase
- .from('tasks')
- .select('*', { count: 'exact', head: true })
- .eq('status', 'done');
-
-  // 2. Lấy dữ liệu KPI
-  const { data: kpis } = await supabase
+  // 1. Đếm các chỉ số công việc (Tận dụng RLS hoặc filter tường minh theo phòng ban)
+  let activeQuery = supabase
   .from('tasks')
-  .select(`
-    *,
-    creator:profiles!tasks_created_by_fkey(role, department_id),
-    assignee:profiles!tasks_assignee_id_fkey(role, department_id)
-  `)
-  .eq('task_type', 'kpi');
+  .select('*', { count: 'exact', head: true })
+  .neq('status', 'done')
+  .neq('task_type', 'kpi');
 
-  // Phân quyền ưu tiên hàng đầu:
-  // - Mọi thành viên đều nhìn thấy ưu tiên của Admin và Ban giám đốc (director)
-  // - Cán bộ trong phòng (bao gồm cả LDP và cán bộ) chỉ nhìn thấy ưu tiên của chính mình
-  const filteredKpis = (kpis || []).filter((k: any) => {
-    const isFromAdminOrDirector = 
-      k.creator?.role === 'admin' || 
-      k.creator?.role === 'director' || 
-      k.assignee?.role === 'admin' || 
-      k.assignee?.role === 'director';
-      
-    if (isFromAdminOrDirector) return true;
+  let urgentQuery = supabase
+  .from('tasks')
+  .select('*', { count: 'exact', head: true })
+  .neq('status', 'done')
+  .eq('priority', 'high');
 
-    return k.assignee_id === user.id || k.created_by === user.id;
+  let completedQuery = supabase
+  .from('tasks')
+  .select('*', { count: 'exact', head: true })
+  .eq('status', 'done');
+
+  if (!isPowerUser && currentProfile?.department_id) {
+    const filterStr = `department_id.eq.${currentProfile.department_id},created_by.eq.${user.id},assignee_id.eq.${user.id}`;
+    activeQuery = activeQuery.or(filterStr);
+    urgentQuery = urgentQuery.or(filterStr);
+    completedQuery = completedQuery.or(filterStr);
+  }
+
+  const { count: activeCount } = await activeQuery;
+  const { count: urgentCount } = await urgentQuery;
+  const { count: completedCount } = await completedQuery;
+
+   // 2. Lấy dữ liệu KPI
+   const { data: kpis } = await supabase
+   .from('tasks')
+   .select(`
+     *,
+     creator:profiles!tasks_created_by_fkey(role, department_id),
+     assignee:profiles!tasks_assignee_id_fkey(role, department_id)
+   `)
+   .eq('task_type', 'kpi');
+
+   // Phân quyền ưu tiên hàng đầu:
+   // - Mọi thành viên đều nhìn thấy ưu tiên của Admin và Ban giám đốc (director)
+   // - Cán bộ trong phòng (bao gồm cả LDP và cán bộ) chỉ nhìn thấy ưu tiên của chính mình / của phòng mình
+   const filteredKpis = (kpis || []).filter((k: any) => {
+     const isFromAdminOrDirector = 
+       k.creator?.role === 'admin' || 
+       k.creator?.role === 'director' || 
+       k.assignee?.role === 'admin' || 
+       k.assignee?.role === 'director';
+       
+     if (isFromAdminOrDirector) return true;
+
+     return k.assignee_id === user.id || k.created_by === user.id || (currentProfile?.department_id && k.department_id === currentProfile.department_id);
+   });
+
+   const kpiProg = filteredKpis.length > 0 
+   ? Math.round(filteredKpis.reduce((acc, k) => {
+   const prog = k.target_value ? Math.round(((k.current_value || 0) / k.target_value) * 100) : (k.progress || 0);
+   return acc + prog;
+   }, 0) / filteredKpis.length)
+   : 0;
+
+  // 3. Tính toán năng suất (7 ngày gần nhất)
+  const now = new Date();
+  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000).toISOString();
+
+  let thisWeekQuery = supabase
+  .from('tasks')
+  .select('*', { count: 'exact', head: true })
+  .eq('status', 'done')
+  .gte('created_at', sevenDaysAgo);
+
+  let lastWeekQuery = supabase
+  .from('tasks')
+  .select('*', { count: 'exact', head: true })
+  .eq('status', 'done')
+  .gte('created_at', fourteenDaysAgo)
+  .lt('created_at', sevenDaysAgo);
+
+  if (!isPowerUser && currentProfile?.department_id) {
+    const filterStr = `department_id.eq.${currentProfile.department_id},created_by.eq.${user.id},assignee_id.eq.${user.id}`;
+    thisWeekQuery = thisWeekQuery.or(filterStr);
+    lastWeekQuery = lastWeekQuery.or(filterStr);
+  }
+
+  const { count: thisWeekCount } = await thisWeekQuery;
+  const { count: lastWeekCount } = await lastWeekQuery;
+  
+  let change = 0;
+  if (lastWeekCount && lastWeekCount > 0) {
+  change = Math.round((( (thisWeekCount || 0) - lastWeekCount) / lastWeekCount) * 100);
+  } else if (thisWeekCount && thisWeekCount > 0) {
+  change = 100;
+  }
+
+  // 4. Luồng hoạt động gần đây (Chỉ lấy top 5 của phòng ban được phép xem)
+  let recentTasksQuery = supabase
+  .from('tasks')
+  .select('*')
+  .order('created_at', { ascending: false });
+
+  if (!isPowerUser && currentProfile?.department_id) {
+    const filterStr = `department_id.eq.${currentProfile.department_id},created_by.eq.${user.id},assignee_id.eq.${user.id}`;
+    recentTasksQuery = recentTasksQuery.or(filterStr);
+  }
+  const { data: recentTasksList } = await recentTasksQuery.limit(5);
+
+  let recsQuery = supabase
+  .from('recognitions')
+  .select(`*, sender:profiles!recognitions_sender_id_fkey(full_name, avatar_url), receiver:profiles!recognitions_receiver_id_fkey(full_name, avatar_url)`)
+  .order('created_at', { ascending: false });
+
+  if (!isPowerUser && currentProfile?.department_id) {
+    recsQuery = recsQuery.or(`department_id.eq.${currentProfile.department_id},sender_id.eq.${user.id},receiver_id.eq.${user.id}`);
+  }
+  const { data: recs } = await recsQuery.limit(5);
+
+  let commentsQuery = supabase
+  .from('task_comments')
+  .select(`*, user:profiles(full_name, avatar_url), task:tasks(title)`)
+  .order('created_at', { ascending: false });
+
+  if (!isPowerUser && currentProfile?.department_id) {
+    const { data: deptTasks } = await supabase
+      .from('tasks')
+      .select('id')
+      .or(`department_id.eq.${currentProfile.department_id},created_by.eq.${user.id},assignee_id.eq.${user.id}`);
+    const deptTaskIds = deptTasks?.map(t => t.id) || [];
+    if (deptTaskIds.length > 0) {
+      commentsQuery = commentsQuery.in('task_id', deptTaskIds);
+    } else {
+      commentsQuery = commentsQuery.in('task_id', ['00000000-0000-0000-0000-000000000000']);
+    }
+  }
+  const { data: comments } = await commentsQuery.limit(5);
+
+  const activityFeed = [
+  ...(recentTasksList?.map(t => ({ ...t, type: 'task' })) || []),
+  ...(recs?.map(r => ({ ...r, type: 'recognition' })) || []),
+  ...(comments?.map(c => ({ ...c, type: 'comment' })) || [])
+  ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 8);
+
+  // 5. Tìm KPI trọng tâm
+  const topKpi = [...filteredKpis].sort((a, b) => {
+  if (a.metadata?.is_focal && !b.metadata?.is_focal) return -1;
+  if (!a.metadata?.is_focal && b.metadata?.is_focal) return 1;
+  const pMap: any = { high: 0, medium: 1, low: 2 };
+  if (pMap[a.priority] !== pMap[b.priority]) return pMap[a.priority] - pMap[b.priority];
+  return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+  })[0] || null;
+  
+  setStats({
+  productivity: thisWeekCount || 0,
+  productivityChange: change,
+  activeTasks: activeCount || 0,
+  urgentTasks: urgentCount || 0,
+  completedTasks: completedCount || 0,
+  kpiProgress: kpiProg,
+  kpiCount: filteredKpis.length,
+  topKpi: topKpi,
+  recentTasks: activityFeed
   });
 
-  const kpiProg = filteredKpis.length > 0 
-  ? Math.round(filteredKpis.reduce((acc, k) => {
-  const prog = k.target_value ? Math.round(((k.current_value || 0) / k.target_value) * 100) : (k.progress || 0);
-  return acc + prog;
-  }, 0) / filteredKpis.length)
-  : 0;
+  } catch (error) {
+  console.error(error);
+  } finally {
+  setLoading(false);
+  }
+  };
 
- // 3. Tính toán năng suất (7 ngày gần nhất)
- const now = new Date();
- const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
- const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000).toISOString();
-
- const { count: thisWeekCount } = await supabase
- .from('tasks')
- .select('*', { count: 'exact', head: true })
- .eq('status', 'done')
- .gte('created_at', sevenDaysAgo);
-
- const { count: lastWeekCount } = await supabase
- .from('tasks')
- .select('*', { count: 'exact', head: true })
- .eq('status', 'done')
- .gte('created_at', fourteenDaysAgo)
- .lt('created_at', sevenDaysAgo);
- 
- let change = 0;
- if (lastWeekCount && lastWeekCount > 0) {
- change = Math.round((( (thisWeekCount || 0) - lastWeekCount) / lastWeekCount) * 100);
- } else if (thisWeekCount && thisWeekCount > 0) {
- change = 100;
- }
-
- // 4. Luồng hoạt động gần đây (Chỉ lấy top 5 mỗi loại để ghép)
- const { data: recentTasksList } = await supabase
- .from('tasks')
- .select('*')
- .order('created_at', { ascending: false })
- .limit(5);
-
- const { data: recs } = await supabase
- .from('recognitions')
- .select(`*, sender:profiles!recognitions_sender_id_fkey(full_name, avatar_url), receiver:profiles!recognitions_receiver_id_fkey(full_name, avatar_url)`)
- .order('created_at', { ascending: false })
- .limit(5);
-
- const { data: comments } = await supabase
- .from('task_comments')
- .select(`*, user:profiles(full_name, avatar_url), task:tasks(title)`)
- .order('created_at', { ascending: false })
- .limit(5);
-
- const activityFeed = [
- ...(recentTasksList?.map(t => ({ ...t, type: 'task' })) || []),
- ...(recs?.map(r => ({ ...r, type: 'recognition' })) || []),
- ...(comments?.map(c => ({ ...c, type: 'comment' })) || [])
- ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 8);
-
- // 5. Tìm KPI trọng tâm
- const topKpi = [...filteredKpis].sort((a, b) => {
- if (a.metadata?.is_focal && !b.metadata?.is_focal) return -1;
- if (!a.metadata?.is_focal && b.metadata?.is_focal) return 1;
- const pMap: any = { high: 0, medium: 1, low: 2 };
- if (pMap[a.priority] !== pMap[b.priority]) return pMap[a.priority] - pMap[b.priority];
- return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
- })[0] || null;
- 
- setStats({
- productivity: thisWeekCount || 0,
- productivityChange: change,
- activeTasks: activeCount || 0,
- urgentTasks: urgentCount || 0,
- completedTasks: completedCount || 0,
- kpiProgress: kpiProg,
- kpiCount: filteredKpis.length,
- topKpi: topKpi,
- recentTasks: activityFeed
- });
-
- } catch (error) {
- console.error(error);
- } finally {
- setLoading(false);
- }
- };
-
- if (loading) return <div className="flex h-96 items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+  if (loading) return <div className="flex h-96 items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
 
  return (
- <div className="max-w-6xl mx-auto space-y-6 md:space-y-10 animate-fade-in-up pb-20">
- <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 px-4 sm:px-0 pt-4 sm:pt-0">
+ <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-6 md:space-y-10 animate-fade-in-up pb-20">
+ <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pt-4 sm:pt-0">
  <div className="space-y-1">
  <h1 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight tabular-nums">Xin chào, {profile?.full_name?.split(' ').pop()}!</h1>
  <div className="flex items-center gap-2 text-slate-500">
@@ -237,7 +281,7 @@ export default function DashboardPage() {
  </header>
 
  {/* Modern Stats Grid */}
- <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 px-4 sm:px-0">
+ <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
     {/* Productivity Card */}
     <div className="premium-card p-6 border-none flex items-center gap-5 group transition-all hover:scale-[1.02]">
       <div className="p-4 bg-primary/10 rounded-xl text-primary shrink-0 shadow-sm group-hover:rotate-12 transition-transform">
@@ -304,7 +348,7 @@ export default function DashboardPage() {
     </div>
   </div>
 
-  <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pt-4 px-4 sm:px-0">
+  <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pt-4">
  {/* Feed Section */}
  <div className="lg:col-span-8 space-y-6">
  <div className="flex items-center justify-between px-2 mb-4">
@@ -377,7 +421,7 @@ export default function DashboardPage() {
  <h3 className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2 px-2 truncate whitespace-nowrap">
  <AlertCircle className="w-4 h-4 text-primary" /> ƯU TIÊN HÀNG ĐẦU
  </h3>
- <div className="premium-card p-5 md:p-6 border-none relative overflow-hidden group">
+ <div className="premium-card p-6 border-none relative overflow-hidden group">
  {stats.topKpi ? (
  <div className="space-y-6">
  <div className="p-4 bg-primary/5 text-primary w-fit rounded-2xl shadow-sm transition-transform duration-500 group-hover:scale-110">

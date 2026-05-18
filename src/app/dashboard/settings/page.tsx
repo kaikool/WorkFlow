@@ -39,9 +39,9 @@ export default function SettingsPage() {
  };
 
  return (
- <div className="max-w-6xl mx-auto px-0 sm:px-6 space-y-10 animate-fade-in-up pb-20">
+ <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-10 animate-fade-in-up pb-20">
  {/* System Standard Header */}
- <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 px-4 sm:px-0 pt-4 sm:pt-0 mb-10">
+ <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6  pt-4 sm:pt-0 mb-10">
  <div className="space-y-1">
  <h1 className="text-3xl font-bold text-slate-900 tracking-tight tabular-nums">
  Cài đặt hệ thống

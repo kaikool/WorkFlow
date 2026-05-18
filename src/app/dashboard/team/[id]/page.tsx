@@ -173,7 +173,7 @@ export default function MemberDetailPage() {
  const { data: deptProfiles } = await supabase.from('profiles').select('id').eq('department_id', member.department_id);
  targetUserIds = deptProfiles?.map(p => p.id) || [];
  } else {
- targetUserIds = [id]; // Mặc định chỉ gửi cho người nhận
+ targetUserIds = [id as string]; // Mặc định chỉ gửi cho người nhận
  }
 
  if (targetUserIds.length > 0) {
@@ -204,8 +204,8 @@ export default function MemberDetailPage() {
  const perf = getPerf(stats.avgProgress);
 
  return (
- <div className="max-w-6xl mx-auto px-0 sm:px-6 animate-fade-in-up pb-20">
- <div className="flex items-center justify-between mb-8 px-4 sm:px-0 pt-4 sm:pt-0">
+ <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-10 animate-fade-in-up pb-20">
+ <div className="flex items-center justify-between mb-8 pt-4 sm:pt-0">
  <Button variant="ghost" asChild className="p-0 hover:bg-transparent text-slate-500 hover:text-primary transition-colors group">
  <Link href="/dashboard/team" className="flex items-center gap-2">
  <div className="p-2 rounded-xl group-hover:bg-primary/5 transition-colors">
@@ -226,7 +226,7 @@ export default function MemberDetailPage() {
  </div>
  ) : (
  <>
- <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-8 px-4 sm:px-0">
+ <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-8">
  <div className="flex items-center gap-8">
  <div className="relative">
  <Avatar className="h-24 w-24 border-4 border-white shadow-premium ring-1 ring-slate-100">
@@ -311,7 +311,7 @@ export default function MemberDetailPage() {
  )}
  </div>
 
- <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 px-4 sm:px-0">
+ <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
  <div className="lg:col-span-8 space-y-8">
  <div className="flex items-center justify-between pl-1">
  <h3 className="text-[11px] font-bold text-slate-500 uppercase flex items-center gap-2 truncate whitespace-nowrap">
@@ -322,7 +322,7 @@ export default function MemberDetailPage() {
  {memberTasks.length > 0 ? (
  memberTasks.map((t) => (
  <Link key={t.id} href={`/dashboard/tasks/${t.id}`} className="block">
- <div className="premium-card p-4 flex items-center justify-between group border-none active:scale-[0.99] transition-all">
+ <div className="premium-card p-6 flex items-center justify-between group border-none active:scale-[0.99] transition-all">
  <div className="space-y-1.5 flex-1 min-w-0">
  <p className="text-[14px] font-bold text-slate-900 group-hover:text-primary transition-colors leading-tight truncate">{t.title}</p>
  <div className="flex items-center gap-3 text-[9px] text-slate-500 font-bold uppercase ">
@@ -353,7 +353,7 @@ export default function MemberDetailPage() {
  </div>
 
  <div className="lg:col-span-4 space-y-10">
- <div className="premium-card p-8 border-none space-y-8">
+ <div className="premium-card p-6 border-none space-y-6">
  <div className="space-y-2">
  <p className="text-[10px] font-bold text-slate-500 uppercase pl-1 truncate whitespace-nowrap">Đánh giá năng lực</p>
  <div className="p-5 bg-slate-50 rounded-3xl border border-slate-100/50 text-center">

@@ -121,8 +121,8 @@ export default function TeamPage() {
  if (loading) return <div className="flex h-96 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
 
  return (
- <div className="max-w-6xl mx-auto space-y-10 animate-fade-in-up pb-20">
- <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 px-4 sm:px-0 pt-4 sm:pt-0">
+ <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-10 animate-fade-in-up pb-20">
+ <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 pt-4 sm:pt-0">
  <div className="space-y-1">
  <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">
  Nhân sự
@@ -159,7 +159,7 @@ export default function TeamPage() {
  )}
  </div>
 
- <div className="relative group w-full px-4 sm:px-0">
+ <div className="relative group w-full">
  <Search className="absolute left-9 sm:left-5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 group-focus-within:text-primary transition-colors" />
  <Input 
  placeholder="Tìm tên cán bộ hoặc phòng ban..." 
@@ -169,7 +169,7 @@ export default function TeamPage() {
  />
  </div>
 
- <div className="hidden sm:block premium-card border-none overflow-hidden px-4 sm:px-0">
+ <div className="hidden sm:block premium-card border-none overflow-hidden">
  <Table>
  <TableHeader>
  <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 border-b border-slate-100 h-14">
@@ -214,9 +214,9 @@ export default function TeamPage() {
  </Table>
  </div>
 
- <div className="block sm:hidden space-y-4 px-4 sm:px-0">
+ <div className="block sm:hidden space-y-4">
  {filteredMembers.map((member) => (
- <div key={member.id} className="premium-card p-5 flex items-center justify-between active:scale-[0.98] transition-transform" onClick={() => router.push(`/dashboard/team/${member.id}`)}>
+ <div key={member.id} className="premium-card p-6 flex items-center justify-between active:scale-[0.98] transition-transform" onClick={() => router.push(`/dashboard/team/${member.id}`)}>
  <div className="flex items-center gap-4">
  <Avatar className="h-12 w-12 border-2 border-white shadow-sm ring-1 ring-slate-100">
  <AvatarImage src={member.avatar_url} className="object-cover" />

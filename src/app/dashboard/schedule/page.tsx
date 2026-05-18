@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { 
  Calendar as CalendarIcon,
  ChevronLeft, 
@@ -69,7 +69,168 @@ export default function SchedulePage() {
  const [rooms, setRooms] = useState<any[]>([]);
  const [loading, setLoading] = useState(true);
  const [profile, setProfile] = useState<any>(null);
- const [isCreateOpen, setIsCreateOpen] = useState(false);
+ const timelineContainerRef = useRef<HTMLDivElement>(null);
+
+  const getDirectorColor = (fullName: string) => {
+    const name = fullName ? fullName.trim() : '';
+    const colors = [
+      {
+        bg: 'bg-indigo-50/80',
+        border: 'border-indigo-200',
+        text: 'text-indigo-700',
+        bullet: 'bg-indigo-500',
+        pill: 'bg-indigo-50/80 text-indigo-700 border-indigo-200 hover:bg-indigo-100',
+        hover: 'hover:bg-indigo-100'
+      },
+      {
+        bg: 'bg-emerald-50/80',
+        border: 'border-emerald-200',
+        text: 'text-emerald-700',
+        bullet: 'bg-emerald-500',
+        pill: 'bg-emerald-50/80 text-emerald-700 border-emerald-200 hover:bg-emerald-100',
+        hover: 'hover:bg-emerald-100'
+      },
+      {
+        bg: 'bg-rose-50/80',
+        border: 'border-rose-200',
+        text: 'text-rose-700',
+        bullet: 'bg-rose-500',
+        pill: 'bg-rose-50/80 text-rose-700 border-rose-200 hover:bg-rose-100',
+        hover: 'hover:bg-rose-100'
+      },
+      {
+        bg: 'bg-amber-50/80',
+        border: 'border-amber-200',
+        text: 'text-amber-700',
+        bullet: 'bg-amber-500',
+        pill: 'bg-amber-50/80 text-amber-700 border-amber-200 hover:bg-amber-100',
+        hover: 'hover:bg-amber-100'
+      },
+      {
+        bg: 'bg-sky-50/80',
+        border: 'border-sky-200',
+        text: 'text-sky-700',
+        bullet: 'bg-sky-500',
+        pill: 'bg-sky-50/80 text-sky-700 border-sky-200 hover:bg-sky-100',
+        hover: 'hover:bg-sky-100'
+      },
+      {
+        bg: 'bg-fuchsia-50/80',
+        border: 'border-fuchsia-200',
+        text: 'text-fuchsia-700',
+        bullet: 'bg-fuchsia-500',
+        pill: 'bg-fuchsia-50/80 text-fuchsia-700 border-fuchsia-200 hover:bg-fuchsia-100',
+        hover: 'hover:bg-fuchsia-100'
+      },
+      {
+        bg: 'bg-teal-50/80',
+        border: 'border-teal-200',
+        text: 'text-teal-700',
+        bullet: 'bg-teal-500',
+        pill: 'bg-teal-50/80 text-teal-700 border-teal-200 hover:bg-teal-100',
+        hover: 'hover:bg-teal-100'
+      },
+      {
+        bg: 'bg-violet-50/80',
+        border: 'border-violet-200',
+        text: 'text-violet-700',
+        bullet: 'bg-violet-500',
+        pill: 'bg-violet-50/80 text-violet-700 border-violet-200 hover:bg-violet-100',
+        hover: 'hover:bg-violet-100'
+      }
+    ];
+
+    // Get active BGD list dynamically to assign collision-free colors based on alphabetical list index
+    const bgdList = allProfiles
+      .filter(p => (p.role === 'director' || p.full_name?.toLowerCase().includes('giám đốc')) && !p.full_name?.toLowerCase().includes('admin') && p.role !== 'admin')
+      .map(p => p.full_name)
+      .sort();
+    
+    const index = bgdList.indexOf(fullName);
+    if (index !== -1) {
+      return colors[index % colors.length];
+    }
+
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+      hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return colors[Math.abs(hash) % colors.length];
+  };
+
+  const renderParticipants = (schedule: any) => {
+    if (!schedule || !schedule.participants) return null;
+    
+    // Get all BGD profiles from allProfiles
+    const bgdProfiles = allProfiles.filter(p => 
+      (p.role === 'director' || p.full_name?.toLowerCase().includes('giám đốc')) && 
+      !p.full_name?.toLowerCase().includes('admin') && 
+      p.role !== 'admin'
+    );
+    
+    // Get all staff profiles
+    const staffProfiles = allProfiles.filter(p => 
+      p.role !== 'admin' && 
+      p.role !== 'director' && 
+      !p.full_name?.toLowerCase().includes('admin') &&
+      !p.full_name?.toLowerCase().includes('giám đốc')
+    );
+
+    const participantIds = schedule.participants.map((p: any) => p.profile?.id);
+    
+    const hasAllBgd = bgdProfiles.length > 0 && bgdProfiles.every(p => participantIds.includes(p.id));
+    const hasAllStaff = staffProfiles.length > 0 && staffProfiles.every(p => participantIds.includes(p.id));
+
+    const elements = [];
+
+    if (hasAllBgd) {
+      elements.push(
+        <Badge key="all-bgd" variant="outline" className="bg-red-50 border-red-200 text-red-700 rounded-full px-3 py-1.5 flex items-center gap-2 font-bold shadow-sm">
+          <Users className="w-3.5 h-3.5" />
+          Toàn bộ Ban Giám đốc
+        </Badge>
+      );
+    }
+
+    if (hasAllStaff) {
+      elements.push(
+        <Badge key="all-staff" variant="outline" className="bg-blue-50 border-blue-200 text-blue-700 rounded-full px-3 py-1.5 flex items-center gap-2 font-bold shadow-sm">
+          <Users className="w-3.5 h-3.5" />
+          Toàn bộ Đơn vị / Phòng ban
+        </Badge>
+      );
+    }
+
+    // Get other participants who are not part of the groups that are fully invited
+    const remainingParticipants = schedule.participants.filter((p: any) => {
+      const isBgd = bgdProfiles.some(bp => bp.id === p.profile?.id);
+      const isStaff = staffProfiles.some(sp => sp.id === p.profile?.id);
+      
+      if (isBgd && hasAllBgd) return false;
+      if (isStaff && hasAllStaff) return false;
+      return true;
+    });
+
+    remainingParticipants.forEach((p: any, idx: number) => {
+      elements.push(
+        <Badge key={`p-${idx}`} variant="outline" className="bg-white border-slate-200 rounded-full px-3 py-1.5 flex items-center gap-2 font-medium text-slate-600 shadow-sm">
+          <Avatar className="h-4 w-4">
+            <AvatarImage src={p.profile?.avatar_url} />
+            <AvatarFallback className="text-[8px]">{p.profile?.full_name?.[0]}</AvatarFallback>
+          </Avatar>
+          {p.profile?.full_name}
+        </Badge>
+      );
+    });
+
+    return (
+      <div className="flex flex-wrap gap-2">
+        {elements}
+      </div>
+    );
+  };
+
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
  const [selectedDate, setSelectedDate] = useState(new Date());
  const [selectedSchedule, setSelectedSchedule] = useState<any>(null);
  const [isDetailOpen, setIsDetailOpen] = useState(false);
@@ -79,6 +240,7 @@ export default function SchedulePage() {
  description: "",
  location: "",
  department_id: "",
+ type: "meeting",
  use_room: false,
  room_id: "",
  use_vehicle: false,
@@ -110,6 +272,34 @@ export default function SchedulePage() {
  const [participantMode, setParticipantMode] = useState<'all' | 'manager' | 'staff'>('all');
  const [selectedVehicleType, setSelectedVehicleType] = useState<string>('4 chỗ');
 
+  useEffect(() => {
+    if (filterType === 'bgd' && timelineContainerRef.current) {
+      const now = new Date();
+      const currentHour = now.getHours();
+      const currentMinutes = now.getMinutes();
+      
+      if (currentHour >= 8 && currentHour <= 17) {
+        const startLimit = 8;
+        const totalHours = 9; // 8 to 17
+        const totalMinutes = totalHours * 60;
+        const minutesElapsed = (currentHour - startLimit) * 60 + currentMinutes;
+        const percentElapsed = minutesElapsed / totalMinutes;
+        
+        setTimeout(() => {
+          if (timelineContainerRef.current) {
+            const containerWidth = timelineContainerRef.current.scrollWidth;
+            const clientWidth = timelineContainerRef.current.clientWidth;
+            const scrollTarget = containerWidth * percentElapsed - clientWidth / 2;
+            timelineContainerRef.current.scrollTo({
+              left: Math.max(0, scrollTarget),
+              behavior: 'smooth'
+            });
+          }
+        }, 300);
+      }
+    }
+  }, [filterType, loading]);
+
  // Logic kiểm tra xung đột lịch trình
  const conflicts = React.useMemo(() => {
  if (!startDate || !endDate) return [];
@@ -118,7 +308,7 @@ export default function SchedulePage() {
  let checkIds = [...selectedParticipants];
  
  if (bgdMode === 'all') {
- const bgdIds = allProfiles.filter(p => p.role === 'director' || p.role === 'admin').map(p => p.id);
+ const bgdIds = allProfiles.filter(p => (p.role === 'director' || p.full_name?.toLowerCase().includes('giám đốc')) && !p.full_name?.toLowerCase().includes('admin') && p.role !== 'admin').map(p => p.id);
  checkIds = [...new Set([...checkIds, ...bgdIds])];
  } else {
  checkIds = [...new Set([...checkIds, ...selectedBGD])];
@@ -223,7 +413,7 @@ export default function SchedulePage() {
  room:rooms(name),
  vehicle:vehicles(name, plate_number),
  participants:schedule_participants(
- profile:profiles(full_name, avatar_url)
+ profile:profiles(id, full_name, avatar_url, role)
  )
  `)
  .gte('start_time', start.toISOString())
@@ -362,7 +552,7 @@ export default function SchedulePage() {
  
  // 1. Xử lý BGĐ
  if (bgdMode === 'all') {
- const bgdIds = allProfiles.filter(p => p.role === 'director' || p.role === 'admin').map(p => p.id);
+ const bgdIds = allProfiles.filter(p => (p.role === 'director' || p.full_name?.toLowerCase().includes('giám đốc')) && !p.full_name?.toLowerCase().includes('admin') && p.role !== 'admin').map(p => p.id);
  finalParticipants = [...new Set([...finalParticipants, ...bgdIds])];
  } else {
  finalParticipants = [...new Set([...finalParticipants, ...selectedBGD])];
@@ -435,11 +625,19 @@ export default function SchedulePage() {
  rejected: { label: "Từ chối", color: "bg-red-100 text-red-600" }
  };
 
+  const isTodaySelected = isSameDay(selectedDate, new Date());
+  const now = new Date();
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const startLimit = 8 * 60; // 08:00
+  const endLimit = 17 * 60;  // 17:00
+  const duration = endLimit - startLimit;
+  const isWithinWorkingHours = currentMinutes >= startLimit && currentMinutes <= endLimit;
+  const currentTimePercent = isWithinWorkingHours ? ((currentMinutes - startLimit) / duration) * 100 : -1;
 
  return (
- <div className="max-w-6xl mx-auto space-y-10 animate-fade-in-up pb-20">
+ <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-10 animate-fade-in-up pb-20">
  {/* Header */}
- <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 px-4 pt-4 sm:pt-0">
+ <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 pt-4 sm:pt-0">
  <div className="space-y-1">
  <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">
  Lịch trình
@@ -453,11 +651,11 @@ export default function SchedulePage() {
  <Plus className="w-5 h-5 mr-2" /> Đăng ký lịch mới
  </Button>
  </DialogTrigger>
- <DialogContent className="rounded-2xl max-w-lg">
- <DialogHeader>
- <DialogTitle className="text-[17px] font-semibold text-slate-900">Thiết lập lịch trình mới</DialogTitle>
- </DialogHeader>
- <div className="space-y-5 py-4 max-h-[70vh] overflow-y-auto px-1">
+ <DialogContent className="rounded-2xl border-none shadow-2xl max-w-lg p-6">
+  <DialogHeader>
+  <DialogTitle className="text-[17px] font-semibold text-slate-900">Thiết lập lịch trình mới</DialogTitle>
+  </DialogHeader>
+  <div className="space-y-5 py-4 max-h-[65vh] overflow-y-auto px-1">
  {/* 1. Thời gian */}
  <div className="grid grid-cols-2 gap-4">
  <div className="space-y-2">
@@ -657,7 +855,7 @@ export default function SchedulePage() {
  </div>
 
  {/* 4. Thành phần tham gia */}
- <div className="space-y-6 bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+  <div className="space-y-6 bg-slate-50/50 p-5 rounded-2xl border border-slate-100">
  <div className="flex items-center gap-2">
  <Users className="w-4 h-4 text-primary" />
  <Label className="text-[13px] font-semibold text-slate-900">Thành phần tham gia</Label>
@@ -686,7 +884,7 @@ export default function SchedulePage() {
  
  {bgdMode === 'specific' && (
  <div className="flex flex-wrap gap-2 pl-3 animate-in fade-in slide-in-from-top-1">
- {allProfiles.filter(p => p.role === 'director' || p.role === 'admin').map(p => (
+ {allProfiles.filter(p => (p.role === 'director' || p.full_name?.toLowerCase().includes('giám đốc')) && !p.full_name?.toLowerCase().includes('admin') && p.role !== 'admin').map(p => (
  <button 
  key={p.id}
  type="button"
@@ -810,16 +1008,16 @@ export default function SchedulePage() {
  </div>
  </div>
  </div>
- <DialogFooter>
- <Button onClick={handleCreateSchedule} className="w-full h-10 rounded-xl font-semibold">Xác nhận đăng ký</Button>
- </DialogFooter>
+ <DialogFooter className="pt-4 border-t border-slate-100">
+  <Button onClick={handleCreateSchedule} className="w-full h-10 rounded-xl font-semibold">Xác nhận đăng ký</Button>
+  </DialogFooter>
  </DialogContent>
  </Dialog>
  </div>
  </div>
 
  {/* Date Navigator */}
- <div className="w-full px-4 sm:px-0">
+ <div className="w-full">
  <div className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm flex flex-col gap-3">
  <div className="flex items-center justify-between">
  <div className="flex items-center gap-1.5">
@@ -879,7 +1077,7 @@ export default function SchedulePage() {
  </div>
 
  {/* Tabs System for different views */}
- <Tabs defaultValue="calendar" className="space-y-8 w-full px-4 sm:px-0">
+ <Tabs defaultValue="calendar" className="space-y-8 w-full">
  <TabsList className="bg-slate-100/60 p-1 rounded-xl h-auto w-full flex">
  <TabsTrigger value="calendar" className="flex-1 rounded-lg px-5 py-2 font-medium text-[14px] data-[state=active]:bg-white data-[state=active]:shadow-sm">
  <CalendarIcon className="w-4 h-4 mr-2" /> Lịch biểu
@@ -897,178 +1095,280 @@ export default function SchedulePage() {
  </TabsList>
 
  <TabsContent value="calendar" className="space-y-8 animate-in fade-in duration-500">
- {/* Smart Filters */}
- <div className="flex bg-slate-100/60 p-1 rounded-xl w-full">
- <button 
- type="button"
- onClick={() => setFilterType('all')}
- className={cn("flex-1 px-2 md:px-5 py-2 text-[12px] md:text-[14px] font-medium rounded-lg transition-all", filterType === 'all' ? "bg-white text-primary shadow-sm" : "text-slate-500")}
- >Toàn chi nhánh</button>
- <button 
- type="button"
- onClick={() => setFilterType('bgd')}
- className={cn("flex-1 px-2 md:px-5 py-2 text-[12px] md:text-[14px] font-medium rounded-lg transition-all", filterType === 'bgd' ? "bg-white text-primary shadow-sm" : "text-slate-500")}
- >Ban giám đốc</button>
- <button 
- type="button"
- onClick={() => setFilterType('dept')}
- className={cn("flex-1 px-2 md:px-5 py-2 text-[12px] md:text-[14px] font-medium rounded-lg transition-all", filterType === 'dept' ? "bg-white text-primary shadow-sm" : "text-slate-500")}
- >Phòng của tôi</button>
- </div>
+  {/* Smart Filters */}
+  <div className="flex bg-slate-100/60 p-1 rounded-xl w-full">
+  <button 
+  type="button"
+  onClick={() => setFilterType('all')}
+  className={cn("flex-1 px-2 md:px-5 py-2 text-[12px] md:text-[14px] font-medium rounded-lg transition-all", filterType === 'all' ? "bg-white text-primary shadow-sm" : "text-slate-500")}
+  >Toàn chi nhánh</button>
+  <button 
+  type="button"
+  onClick={() => setFilterType('bgd')}
+  className={cn("flex-1 px-2 md:px-5 py-2 text-[12px] md:text-[14px] font-medium rounded-lg transition-all", filterType === 'bgd' ? "bg-white text-primary shadow-sm" : "text-slate-500")}
+  >Ban giám đốc</button>
+  <button 
+  type="button"
+  onClick={() => setFilterType('dept')}
+  className={cn("flex-1 px-2 md:px-5 py-2 text-[12px] md:text-[14px] font-medium rounded-lg transition-all", filterType === 'dept' ? "bg-white text-primary shadow-sm" : "text-slate-500")}
+  >Phòng của tôi</button>
+  </div>
 
- {/* Schedule List */}
- <div className="space-y-4">
- <h3 className="text-[13px] font-medium text-slate-500 flex items-center gap-2 px-2">
- <Clock className="w-3.5 h-3.5 text-primary" /> Lịch trình ngày {format(selectedDate, 'dd/MM/yyyy')}
- </h3>
+  {/* Schedule List */}
+  <div className="space-y-4">
+  <h3 className="text-[13px] font-medium text-slate-500 flex items-center gap-2 px-2">
+  <Clock className="w-3.5 h-3.5 text-primary" /> Lịch trình ngày {format(selectedDate, 'dd/MM/yyyy')}
+  </h3>
 
- {loading ? (
- <div className="flex h-48 items-center justify-center bg-white rounded-2xl border border-slate-100 shadow-sm">
- <Loader2 className="h-6 w-6 animate-spin text-primary" />
- </div>
- ) : (
- <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
- {schedules
- .filter(s => {
- const onDay = isSameDay(new Date(s.start_time), selectedDate);
- if (!onDay) return false;
- if (filterType === 'bgd') return s.participants?.some((p: any) => p.profile?.role === 'director' || p.profile?.role === 'admin');
- if (filterType === 'dept') return s.department_id === profile?.department_id;
- return true;
- })
- .map((item) => {
- const type = typeLabels[item.type] || typeLabels.meeting;
- const status = statusLabels[item.status];
- const isTrip = item.type === 'trip';
- 
- return (
- <Card key={item.id} className={cn(
- "rounded-2xl overflow-hidden border-none shadow-sm hover:shadow-xl transition-all duration-500 group",
- isTrip ? "hover:bg-orange-50/30" : "hover:bg-blue-50/30"
- )}>
- <CardContent className="p-0 cursor-pointer" onClick={() => { setSelectedSchedule(item); setIsDetailOpen(true); }}>
- <div className="flex">
- {/* Left color bar */}
- <div className={cn("w-2 transition-all duration-500 group-hover:w-3", isTrip ? "bg-orange-400" : "bg-blue-500")} />
- 
- <div className="flex-1 p-4 space-y-3">
- <div className="flex items-start justify-between">
- <div className="space-y-1.5 flex-1 min-w-0 pr-2">
- <div className="flex flex-wrap items-center gap-1.5 md:gap-2">
- <Badge variant="outline" className={cn("text-[10px] md:text-[11px] font-bold uppercase px-2 py-0.5 rounded-md whitespace-nowrap", type.color)}>
- <type.icon className="w-3 h-3 mr-1 shrink-0" /> {type.label}
- </Badge>
- {item.use_vehicle && !item.vehicle_id && (
- <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 border-none font-bold text-[10px] md:text-[11px] px-2 py-0.5 rounded-md flex items-center gap-1 whitespace-nowrap">
- <Car className="w-2.5 h-2.5 shrink-0" /> CHỜ ĐIỀU XE
- </Badge>
- )}
- <Badge className={cn("text-[10px] md:text-[11px] font-bold uppercase px-2 py-0.5 rounded-md whitespace-nowrap", status.color)}>
- {status.label}
- </Badge>
- </div>
- <h3 className="text-[15px] md:text-base font-bold text-slate-900 leading-tight line-clamp-2 pt-1">{item.title}</h3>
- </div>
- 
- <div className="bg-slate-50 p-2 rounded-xl group-hover:bg-white transition-colors">
- <MoreVertical className="w-3.5 h-3.5 text-slate-500" />
- </div>
- </div>
+  {loading ? (
+   <div className="flex h-48 items-center justify-center bg-white rounded-2xl border border-slate-100 shadow-sm">
+   <Loader2 className="h-6 w-6 animate-spin text-primary" />
+   </div>
+   ) : (
+    filterType === 'bgd' ? (
+      <div className="premium-card p-6 border-none space-y-4 overflow-hidden">
+        {/* Scrollable Container on Mobile */}
+        <div 
+          ref={timelineContainerRef}
+          className="overflow-x-auto pb-4 -mx-6 px-6 scrollbar-thin scrollbar-thumb-slate-200"
+        >
+          <div className="min-w-[850px] space-y-4">
+            
+            {/* Timeline Header Row (Hours Grid) */}
+            <div className="relative h-6 text-[10px] font-bold text-slate-500 select-none w-full border-b border-slate-100 pb-2 mb-4">
+              <span className="absolute left-[0%] -translate-x-1/2">08:00</span>
+              <span className="absolute left-[11.11%] -translate-x-1/2">09:00</span>
+              <span className="absolute left-[22.22%] -translate-x-1/2">10:00</span>
+              <span className="absolute left-[33.33%] -translate-x-1/2">11:00</span>
+              <span className="absolute left-[44.44%] -translate-x-1/2">12:00</span>
+              <span className="absolute left-[55.55%] -translate-x-1/2">13:00</span>
+              <span className="absolute left-[66.66%] -translate-x-1/2">14:00</span>
+              <span className="absolute left-[77.77%] -translate-x-1/2">15:00</span>
+              <span className="absolute left-[88.88%] -translate-x-1/2">16:00</span>
+              <span className="absolute left-[100%] -translate-x-1/2">17:00</span>
+            </div>
 
- <div className="grid grid-cols-2 gap-4">
- <div className="flex items-center gap-3">
- <div className={cn("p-2 rounded-xl", isTrip ? "bg-orange-100 text-orange-600" : "bg-blue-100 text-blue-600")}>
- <Clock className="w-4 h-4" />
- </div>
- <div className="flex flex-col">
- <span className="text-[14px] font-medium text-slate-900">
- {format(new Date(item.start_time), 'HH:mm')}
- </span>
- <span className="text-[11px] text-slate-500 truncate">Bắt đầu</span>
- </div>
- </div>
- <div className="flex items-center gap-3">
- <div className="p-2 bg-slate-100 text-slate-500 rounded-xl">
- <Clock className="w-4 h-4" />
- </div>
- <div className="flex flex-col">
- <span className="text-[14px] font-medium text-slate-900">
- {format(new Date(item.end_time), 'HH:mm')}
- </span>
- <span className="text-[11px] text-slate-500 truncate">Kết thúc</span>
- </div>
- </div>
- </div>
+            {/* Directors Rows */}
+            <div className="space-y-3">
+              {allProfiles.filter(p => (p.role === 'director' || p.full_name?.toLowerCase().includes('giám đốc')) && !p.full_name?.toLowerCase().includes('admin') && p.role !== 'admin').map(dir => {
+                const dirColor = getDirectorColor(dir.full_name);
+                const dirSchedules = schedules.filter(s => {
+                  const onDay = isSameDay(new Date(s.start_time), selectedDate);
+                  if (!onDay) return false;
+                  return s.participants?.some((p: any) => p.profile?.id === dir.id);
+                });
 
- <div className="flex flex-wrap gap-4 pt-2 border-t border-slate-50">
- <div className="flex items-center gap-2">
- <Users className="w-3.5 h-3.5 text-slate-500" />
- <div className="flex -space-x-2 overflow-hidden">
- {item.participants?.slice(0, 5).map((p: any, idx: number) => (
- <Avatar key={idx} className="h-6 w-6 border-2 border-white">
- <AvatarImage src={p.profile?.avatar_url} />
- <AvatarFallback className="text-[8px] font-bold">{p.profile?.full_name?.[0]}</AvatarFallback>
- </Avatar>
- ))}
- {item.participants?.length > 5 && (
- <div className="h-6 w-6 rounded-full bg-slate-100 border-2 border-white flex items-center justify-center text-[8px] font-bold text-slate-500">
- +{item.participants.length - 5}
- </div>
- )}
- </div>
- </div>
- 
- {item.room && (
- <div className="flex items-center gap-1.5 max-w-[140px]">
- <DoorOpen className="w-3.5 h-3.5 text-blue-500 shrink-0" />
- <span className="text-[11px] md:text-xs font-bold text-blue-600 truncate">{item.room.name}</span>
- </div>
- )}
+                return (
+                  <div key={dir.id} className="relative w-full bg-slate-50/40 h-10 rounded-xl border border-slate-100 overflow-hidden flex items-center">
+                    
+                    {/* 9 columns grid for hours 08:00 to 17:00 */}
+                    <div className="absolute inset-0 pointer-events-none flex">
+                      {Array.from({ length: 9 }).map((_, idx) => (
+                        <div key={idx} className="flex-1 border-r border-slate-200/30 last:border-none" />
+                      ))}
+                    </div>
 
- {item.vehicle && (
- <div className="flex items-center gap-1.5 max-w-[120px]">
- <Car className="w-3.5 h-3.5 text-orange-500 shrink-0" />
- <span className="text-[11px] md:text-xs font-bold text-orange-600 truncate">{item.vehicle.plate_number}</span>
- </div>
- )}
+                    {/* Current time line marker */}
+                    {isTodaySelected && currentTimePercent >= 0 && (
+                      <div 
+                        style={{ left: `${currentTimePercent}%` }}
+                        className="absolute top-0 bottom-0 w-0.5 bg-red-500/80 z-20 pointer-events-none"
+                      >
+                        <div className="absolute top-0 -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-red-500 ring-2 ring-red-500/20 animate-pulse" />
+                      </div>
+                    )}
 
- {!item.room && !item.vehicle && item.location && (
- <div className="flex items-center gap-2">
- <MapPin className="w-3.5 h-3.5 text-slate-500" />
- <span className="text-xs font-bold text-slate-600 truncate max-w-[150px]">{item.location}</span>
- </div>
- )}
- </div>
- {/* TCTH Actions */}
- {isTCTH && item.status === 'pending' && (
- <div className="flex gap-2 pt-4 border-t border-slate-50">
- <Button 
- size="sm" 
- onClick={(e) => { e.stopPropagation(); handleStatusUpdate(item.id, 'approved'); }}
- className="bg-emerald-500 hover:bg-emerald-600 h-10 md:h-9 rounded-xl font-bold text-xs md:text-[11px] shadow-lg shadow-emerald-500/20 px-4"
- >
- Duyệt lịch
- </Button>
- <Button 
- size="sm" 
- variant="outline" 
- onClick={(e) => { e.stopPropagation(); handleStatusUpdate(item.id, 'rejected'); }}
- className="h-10 md:h-9 rounded-xl font-bold text-xs md:text-[11px] border-red-100 text-red-500 hover:bg-red-50 hover:text-red-600 px-4"
- >
- Từ chối
- </Button>
- </div>
- )}
- </div>
- </div>
- </CardContent>
- </Card>
- );
- })}
- </div>
- )}
- </div>
- </TabsContent>
+                    {dirSchedules.length === 0 ? (
+                      <span className="text-[10px] text-slate-400 font-semibold italic pl-4 z-10">Không có lịch trình</span>
+                    ) : (
+                      <div className="relative w-full h-full z-10 flex items-center">
+                        {dirSchedules.map(sched => {
+                          const sTime = new Date(sched.start_time);
+                          const eTime = new Date(sched.end_time);
+                          
+                          const sMin = sTime.getHours() * 60 + sTime.getMinutes();
+                          const eMin = eTime.getHours() * 60 + eTime.getMinutes();
+                          
+                          const leftPercent = Math.max(0, Math.min(100, ((sMin - startLimit) / duration) * 100));
+                          const widthPercent = Math.max(8, Math.min(100 - leftPercent, ((eMin - sMin) / duration) * 100));
+                          
+                          return (
+                            <div
+                              key={sched.id}
+                              onClick={() => { setSelectedSchedule(sched); setIsDetailOpen(true); }}
+                              style={{ left: `${leftPercent}%`, width: `${widthPercent}%` }}
+                              className={`absolute top-1 bottom-1 rounded-md border flex flex-col justify-center px-3 cursor-pointer transition-all hover:shadow-md active:scale-[0.98] select-none text-[9px] font-bold shadow-xs whitespace-nowrap overflow-hidden text-ellipsis leading-tight ${dirColor.pill}`}
+                              title={`${sched.title} (${format(sTime, 'HH:mm')} - ${format(eTime, 'HH:mm')})`}
+                            >
+                              <span className="truncate">{sched.title}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Legend Row below the table */}
+        <div className="flex flex-wrap items-center justify-center gap-6 pt-4 border-t border-slate-100 mt-4">
+          {allProfiles.filter(p => (p.role === 'director' || p.full_name?.toLowerCase().includes('giám đốc')) && !p.full_name?.toLowerCase().includes('admin') && p.role !== 'admin').map(dir => {
+            const dirColor = getDirectorColor(dir.full_name);
+            return (
+              <div key={dir.id} className="flex items-center gap-2">
+                <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${dirColor.bullet} shadow-sm ring-2 ring-white`} />
+                <span className={`text-[11px] font-bold ${dirColor.text}`}>{dir.full_name}</span>
+                <span className="text-[9px] font-semibold text-slate-400 uppercase">({(dir.role === 'director' && !dir.full_name?.toLowerCase().includes('phó')) ? 'GIÁM ĐỐC' : 'PHÓ GIÁM ĐỐC'})</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    ) : (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {schedules
+      .filter(s => {
+      const onDay = isSameDay(new Date(s.start_time), selectedDate);
+      if (!onDay) return false;
+      if (filterType === 'dept') return s.department_id === profile?.department_id;
+      return true;
+      })
+      .map((item) => {
+        const type = typeLabels[item.type] || typeLabels.meeting;
+        const status = statusLabels[item.status];
+        const isTrip = item.type === 'trip';
+        
+        return (
+        <Card key={item.id} className={cn(
+        "rounded-2xl overflow-hidden border-none shadow-sm hover:shadow-xl transition-all duration-500 group",
+        isTrip ? "hover:bg-orange-50/30" : "hover:bg-blue-50/30"
+        )}>
+        <CardContent className="p-0 cursor-pointer" onClick={() => { setSelectedSchedule(item); setIsDetailOpen(true); }}>
+        <div className="flex">
+        {/* Left color bar */}
+        <div className={cn("w-2 transition-all duration-500 group-hover:w-3", isTrip ? "bg-orange-400" : "bg-blue-500")} />
+        
+        <div className="flex-1 p-4 space-y-3">
+        <div className="flex items-start justify-between">
+        <div className="space-y-1.5 flex-1 min-w-0 pr-2">
+        <div className="flex flex-wrap items-center gap-1.5 md:gap-2">
+        <Badge variant="outline" className={cn("text-[10px] md:text-[11px] font-bold uppercase px-2 py-0.5 rounded-md whitespace-nowrap", type.color)}>
+        <type.icon className="w-3 h-3 mr-1 shrink-0" /> {type.label}
+        </Badge>
+        {item.use_vehicle && !item.vehicle_id && (
+        <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 border-none font-bold text-[10px] md:text-[11px] px-2 py-0.5 rounded-md flex items-center gap-1 whitespace-nowrap">
+        <Car className="w-2.5 h-2.5 shrink-0" /> CHỜ ĐIỀU XE
+        </Badge>
+        )}
+        <Badge className={cn("text-[10px] md:text-[11px] font-bold uppercase px-2 py-0.5 rounded-md whitespace-nowrap", status.color)}>
+        {status.label}
+        </Badge>
+        </div>
+        <h3 className="text-[15px] md:text-base font-bold text-slate-900 leading-tight line-clamp-2 pt-1">{item.title}</h3>
+        </div>
+        
+        <div className="bg-slate-50 p-2 rounded-xl group-hover:bg-white transition-colors">
+        <MoreVertical className="w-3.5 h-3.5 text-slate-500" />
+        </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+        <div className="flex items-center gap-3">
+        <div className={cn("p-2 rounded-xl", isTrip ? "bg-orange-100 text-orange-600" : "bg-blue-100 text-blue-600")}>
+        <Clock className="w-4 h-4" />
+        </div>
+        <div className="flex flex-col">
+        <span className="text-[14px] font-medium text-slate-900">
+        {format(new Date(item.start_time), 'HH:mm')}
+        </span>
+        <span className="text-[11px] text-slate-500 truncate">Bắt đầu</span>
+        </div>
+        </div>
+        <div className="flex items-center gap-3">
+        <div className="p-2 bg-slate-100 text-slate-500 rounded-xl">
+        <Clock className="w-4 h-4" />
+        </div>
+        <div className="flex flex-col">
+        <span className="text-[14px] font-medium text-slate-900">
+        {format(new Date(item.end_time), 'HH:mm')}
+        </span>
+        <span className="text-[11px] text-slate-500 truncate">Kết thúc</span>
+        </div>
+        </div>
+        </div>
+
+        <div className="flex flex-wrap gap-4 pt-2 border-t border-slate-50">
+        <div className="flex items-center gap-2">
+        <Users className="w-3.5 h-3.5 text-slate-500" />
+        <div className="flex -space-x-2 overflow-hidden">
+        {item.participants?.slice(0, 5).map((p: any, idx: number) => (
+        <Avatar key={idx} className="h-6 w-6 border-2 border-white">
+        <AvatarImage src={p.profile?.avatar_url} />
+        <AvatarFallback className="text-[8px] font-bold">{p.profile?.full_name?.[0]}</AvatarFallback>
+        </Avatar>
+        ))}
+        {item.participants?.length > 5 && (
+        <div className="h-6 w-6 rounded-full bg-slate-100 border-2 border-white flex items-center justify-center text-[8px] font-bold text-slate-500">
+        +{item.participants.length - 5}
+        </div>
+        )}
+        </div>
+        </div>
+        
+        {item.room && (
+        <div className="flex items-center gap-1.5 max-w-[140px]">
+        <DoorOpen className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+        <span className="text-[11px] md:text-xs font-bold text-blue-600 truncate">{item.room.name}</span>
+        </div>
+        )}
+
+        {item.vehicle && (
+        <div className="flex items-center gap-1.5 max-w-[120px]">
+        <Car className="w-3.5 h-3.5 text-orange-500 shrink-0" />
+        <span className="text-[11px] md:text-xs font-bold text-orange-600 truncate">{item.vehicle.plate_number}</span>
+        </div>
+        )}
+
+        {!item.room && !item.vehicle && item.location && (
+        <div className="flex items-center gap-2">
+        <MapPin className="w-3.5 h-3.5 text-slate-500" />
+        <span className="text-xs font-bold text-slate-600 truncate max-w-[150px]">{item.location}</span>
+        </div>
+        )}
+        </div>
+        {isTCTH && item.status === 'pending' && (
+        <div className="flex gap-2 pt-4 border-t border-slate-50">
+        <Button 
+        size="sm" 
+        onClick={(e) => { e.stopPropagation(); handleStatusUpdate(item.id, 'approved'); }}
+        className="bg-emerald-500 hover:bg-emerald-600 h-10 md:h-9 rounded-xl font-bold text-xs md:text-[11px] shadow-lg shadow-emerald-500/20 px-4"
+        >
+        Duyệt lịch
+        </Button>
+        <Button 
+        size="sm" 
+        variant="outline" 
+        onClick={(e) => { e.stopPropagation(); handleStatusUpdate(item.id, 'rejected'); }}
+        className="h-10 md:h-9 rounded-xl font-bold text-xs md:text-[11px] border-red-100 text-red-500 hover:bg-red-50 hover:text-red-600 px-4"
+        >
+        Từ chối
+        </Button>
+        </div>
+        )}
+        </div>
+        </div>
+        </CardContent>
+        </Card>
+        );
+      })}
+      </div>
+    )
+  )}
+  </div>
+  </TabsContent>
 
  {/* TCTH Operational Dashboard */}
  {profile?.departments?.name === 'Tổ chức Tổng hợp' && (
@@ -1225,7 +1525,7 @@ export default function SchedulePage() {
  </Tabs>
 
  {/* Legacy Admin Quick Status (Keep hidden from normal flow or remove if redundant) */}
- <div className="hidden px-4 sm:px-0 grid grid-cols-1 lg:grid-cols-2 gap-8 mt-12">
+ <div className="hidden grid grid-cols-1 lg:grid-cols-2 gap-8 mt-12">
  {/* Fleet Status */}
  <div className="space-y-6">
  <div className="flex items-center justify-between px-2">
@@ -1241,7 +1541,7 @@ export default function SchedulePage() {
  const isBusy = !!currentTrip;
 
  return (
- <div key={v.id} className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all group relative overflow-hidden">
+ <div key={v.id} className="premium-card p-6 border-none hover:shadow-md transition-all group relative overflow-hidden">
  <div className="flex items-center justify-between relative z-10">
  <div className="flex items-center gap-4">
  <div className={cn("p-3 rounded-2xl transition-colors", isBusy ? "bg-orange-50 text-orange-500" : "bg-emerald-50 text-emerald-500")}>
@@ -1288,7 +1588,7 @@ export default function SchedulePage() {
  const isBusy = !!currentMeeting;
 
  return (
- <div key={r.id} className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all group relative overflow-hidden">
+ <div key={r.id} className="premium-card p-6 border-none hover:shadow-md transition-all group relative overflow-hidden">
  <div className="flex items-center justify-between relative z-10">
  <div className="flex items-center gap-4">
  <div className={cn("p-3 rounded-2xl transition-colors", isBusy ? "bg-blue-50 text-blue-500" : "bg-emerald-50 text-emerald-500")}>
@@ -1323,13 +1623,13 @@ export default function SchedulePage() {
  <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
  <DialogContent className="rounded-2xl border-none shadow-2xl max-w-xl p-0 overflow-hidden">
  <DialogHeader className="sr-only">
- <DialogTitle>Chi tiết lịch trình</DialogTitle>
+ <DialogTitle className="text-[17px] font-semibold text-slate-900">Chi tiết lịch trình</DialogTitle>
  </DialogHeader>
  {selectedSchedule && (
  <div className="flex flex-col">
- <div className={cn("p-8 text-white relative overflow-hidden", selectedSchedule.type === 'trip' ? "bg-orange-500" : "bg-blue-600")}>
+ <div className={cn("p-6 text-white relative overflow-hidden", selectedSchedule.type === 'trip' ? "bg-amber-600" : "bg-slate-900")}>
  <div className="relative z-10 space-y-2">
- <Badge className="bg-white/80 text-white border-none font-bold text-[10px] px-3 py-1">
+ <Badge className="bg-white text-slate-900 border-none font-bold text-[10px] px-3 py-1">
  {typeLabels[selectedSchedule.type]?.label.toUpperCase()}
  </Badge>
  <h2 className="text-2xl font-bold leading-tight tabular-nums tracking-tighter">{selectedSchedule.title}</h2>
@@ -1343,7 +1643,7 @@ export default function SchedulePage() {
  <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-white/80 rounded-full blur-3xl" />
  </div>
 
- <div className="p-8 space-y-8 max-h-[60vh] overflow-y-auto">
+ <div className="p-6 space-y-6 max-h-[60vh] overflow-y-auto">
  {/* Description */}
  {selectedSchedule.description && (
  <div className="space-y-2">
@@ -1414,7 +1714,7 @@ export default function SchedulePage() {
  </div>
  
  <Select onValueChange={(v) => handleAssignVehicle(selectedSchedule.id, v)}>
- <SelectTrigger className="h-12 bg-white border-none rounded-2xl font-bold shadow-sm">
+ <SelectTrigger className="h-10 bg-white border-none rounded-xl font-medium shadow-sm text-[13px]">
  <SelectValue placeholder={`Chọn xe ${selectedSchedule.requested_vehicle_type}...`} />
  </SelectTrigger>
  <SelectContent className="rounded-xl border-none shadow-lg">
@@ -1435,34 +1735,24 @@ export default function SchedulePage() {
  )}
 
  {/* Participants */}
- <div className="space-y-3">
- <p className="text-[13px] font-medium text-slate-500">Thành phần tham gia ({selectedSchedule.participants?.length})</p>
- <div className="flex flex-wrap gap-2">
- {selectedSchedule.participants?.map((p: any, idx: number) => (
- <Badge key={idx} variant="outline" className="bg-white border-slate-100 rounded-xl px-3 py-1.5 flex items-center gap-2 font-bold text-slate-600">
- <Avatar className="h-4 w-4">
- <AvatarImage src={p.profile?.avatar_url} />
- <AvatarFallback className="text-[8px]">{p.profile?.full_name?.[0]}</AvatarFallback>
- </Avatar>
- {p.profile?.full_name}
- </Badge>
- ))}
- </div>
- </div>
+  <div className="space-y-3">
+    <p className="text-[13px] font-medium text-slate-500">Thành phần tham gia</p>
+    {renderParticipants(selectedSchedule)}
+  </div>
  </div>
 
- <DialogFooter className="p-8 bg-slate-50 border-t border-slate-100 flex-row justify-between gap-4">
- <Button variant="ghost" className="rounded-2xl font-bold text-slate-500 text-xs md:text-[10px]" onClick={() => setIsDetailOpen(false)}>Đóng cửa sổ</Button>
- {isTCTH && selectedSchedule.vehicle_id && (
- <Button 
- variant="outline" 
- className="rounded-2xl font-bold text-xs md:text-[10px] uppercase border-red-100 text-red-500 hover:bg-red-50 truncate whitespace-nowrap"
- onClick={() => handleAssignVehicle(selectedSchedule.id, null)}
- >
- Hủy gán xe
- </Button>
- )}
- </DialogFooter>
+ <DialogFooter className="pt-4 border-t border-slate-100 flex flex-row justify-between gap-4">
+  <Button variant="ghost" className="rounded-xl font-medium text-slate-500 text-xs md:text-[11px]" onClick={() => setIsDetailOpen(false)}>Đóng cửa sổ</Button>
+  {isTCTH && selectedSchedule.vehicle_id && (
+  <Button 
+  variant="outline" 
+  className="rounded-xl font-semibold text-xs md:text-[11px] uppercase border-red-100 text-red-500 hover:bg-red-50 truncate whitespace-nowrap"
+  onClick={() => handleAssignVehicle(selectedSchedule.id, null)}
+  >
+  Hủy gán xe
+  </Button>
+  )}
+  </DialogFooter>
  </div>
  )}
  </DialogContent>

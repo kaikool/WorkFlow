@@ -13,7 +13,8 @@ import {
  ShieldAlert,
  X,
  Search,
- Settings
+ Settings,
+ Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -28,6 +29,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { createClient } from "@/utils/supabase/client";
 
 function AppLogo({ className }: { className?: string }) {
  return (
@@ -253,7 +255,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
  </div>
  )}
 
- <main className="flex-1 p-8 md:p-12 max-w-7xl mx-auto w-full">
+ <main className="flex-1 py-6 md:py-8 w-full overflow-x-hidden">
  {children}
  </main>
  </div>
