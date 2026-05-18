@@ -1,0 +1,112 @@
+# Quy tắc phát triển ProjectFlow
+
+> Tài liệu này là **BẮT BUỘC** cho mọi thành viên phát triển (con người lẫn AI assistant).
+> Commit trực tiếp vào repo Git, áp dụng trên mọi máy.
+
+---
+
+## 1. Giới hạn kích thước file
+
+| Loại file | Giới hạn tối đa | Hành động khi vượt |
+|---|---|---|
+| Component / Page (`*.tsx`) | **500 dòng** | Phải tách thành module con trong `_components/` |
+| Logic / Hooks (`*.ts`) | **300 dòng** | Phải tách thành file nhỏ hơn trong `_lib/` hoặc `_hooks/` |
+| CSS / Style | **400 dòng** | Phải chia theo module |
+
+> ⛔ **Nghiêm cấm** để bất kỳ file nào vượt quá 500 dòng. Nếu đang viết mà gần chạm ngưỡng, phải dừng lại và tách module trước khi tiếp tục.
+
+---
+
+## 2. Cấu trúc thư mục chuẩn
+
+Mỗi module/route lớn phải tuân theo cấu trúc:
+
+```
+src/app/dashboard/[module]/
+├── page.tsx                 # Shell page: state, hooks, handlers (≤ 300 dòng)
+├── _components/             # Các component UI
+│   ├── ComponentA.tsx
+│   └── ComponentB.tsx
+└── _lib/                    # Logic, constants, utilities
+    ├── constants.ts
+    └── utils.ts
+```
+
+- `page.tsx` chỉ chứa **state, hooks, handlers và layout chính** — không chứa JSX phức tạp
+- Component con trong `_components/` phải **tự chứa** (self-contained), nhận data qua props
+- Logic tái sử dụng đặt trong `_lib/`
+
+---
+
+## 3. Quy tắc đặt tên
+
+| Đối tượng | Convention | Ví dụ |
+|---|---|---|
+| Component | PascalCase | `ScheduleCard.tsx` |
+| Utility file | camelCase | `utils.ts`, `constants.ts` |
+| Hook | camelCase, prefix `use` | `useScheduleData.ts` |
+| Thư mục private | Prefix `_` | `_components/`, `_lib/` |
+| CSS class | kebab-case | `premium-card` |
+
+---
+
+## 4. Quy tắc Code
+
+### Nguyên tắc chung
+- **Ngôn ngữ comment**: Tiếng Việt
+- **Không để comment debug**: Xóa `console.log`, `// TODO`, `// FIX` trước khi commit
+- **Không có comment version**: Không ghi `[FIX]`, `[NEW]`, `[UPDATE]`, `[v2]` trong comment
+- **Comment phản ánh bản chất**: Ngắn gọn, mô tả đúng mục đích của đoạn code
+
+### TypeScript
+- Sử dụng `interface` cho props của component
+- Tránh `any` khi có thể, dùng type cụ thể
+- Export mặc định (`export default`) cho component chính của file
+
+### React / Next.js
+- Dùng `'use client'` chỉ khi cần thiết
+- Tách logic phức tạp ra `useMemo`, `useCallback`
+- State chỉ đặt ở component cha cần thiết nhất (lift state tối thiểu)
+
+---
+
+## 5. Design System & Ngôn ngữ thiết kế
+
+> Tham khảo chi tiết: [`design-system/projectflow/MASTER.md`](design-system/projectflow/MASTER.md)
+
+**TUÂN THỦ TUYỆT ĐỐI**: Ngôn ngữ thiết kế (Design System) là bắt buộc. Không tự ý sáng tạo sai lệch với các nguyên tắc đã định ra trong file `MASTER.md`.
+
+### Tóm tắt nhanh
+- **Font**: System Font Stack (không dùng Google Fonts)
+- **Bo góc**: `rounded-xl` (12px) cho button, `rounded-2xl` (16px) cho card
+- **Spacing**: Card luôn dùng `p-6`
+- **Màu chính**: Slate-900 (primary), Amber-600 (CTA)
+- **Phong cách**: Apple HIG — tối giản, chuyên nghiệp, không rườm rà
+
+---
+
+## 6. Triển khai Tính năng Mới
+
+- **Liên kết chức năng**: Khi phát triển một tính năng mới, bắt buộc phải xem xét cách nó liên kết và ảnh hưởng tới các tính năng đã có sẵn.
+- **Hệ thống thông báo**: Mọi luồng quy trình (workflow), phê duyệt, giao việc hay thay đổi trạng thái quan trọng đều **bắt buộc** phải tích hợp tính năng gửi thông báo (notifications) đến những người liên quan. Không triển khai tính năng "cụt" mà người dùng không nhận được tín hiệu gì.
+
+---
+
+## 7. Git Workflow
+
+- **Branch chính**: `main`
+- **Commit message**: Tiếng Việt, mô tả ngắn gọn hành động
+  - ✅ `Refactor trang lịch trình`
+  - ✅ `Sửa lỗi logic trùng lịch`
+  - ❌ `fix bug`, `update code`
+- **Không commit**: `node_modules/`, `.next/`, `.env.local`
+
+---
+
+## 7. Checklist trước khi commit
+
+- [ ] Không file nào vượt 500 dòng
+- [ ] TypeScript compile thành công (`npx tsc --noEmit`)
+- [ ] Không có `console.log` thừa
+- [ ] Comment sạch, không có marker debug
+- [ ] UI nhất quán với Design System

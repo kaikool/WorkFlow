@@ -3,6 +3,8 @@
 > **LOGIC:** When building a specific page, first check `design-system/pages/[page-name].md`.
 > If that file exists, its rules **override** this Master file.
 > If not, strictly follow the rules below.
+>
+> 📋 **Quy tắc phát triển chung:** Xem [`RULES.md`](../../RULES.md) — giới hạn file size, cấu trúc thư mục, coding standards.
 
 ---
 
