@@ -13,7 +13,7 @@ export const metadata: Metadata = {
  title: 'WorkFlow CN Hoàng Mai',
  },
  icons: {
- apple: '/icon-512.png',
+ apple: '/logo.png',
  }
 };
 

@@ -157,8 +157,8 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
  {/* Sidebar Desktop */}
  <aside className="hidden lg:flex flex-col w-68 bg-slate-50/50 backdrop-blur-xl border-r border-slate-200/60 sticky top-0 h-screen shrink-0 z-50">
  <div className="px-5 py-6 flex items-center gap-3">
-    <div className="bg-primary p-2 rounded-xl">
-      <Workflow className="h-5 w-5 text-white" />
+    <div className="flex items-center justify-center p-0 rounded-xl overflow-hidden shadow-sm shrink-0">
+      <img src="/logo.png" alt="Logo" className="w-10 h-10 object-contain" />
     </div>
     <div className="flex flex-col">
       <span className="text-[15px] font-semibold text-slate-900 leading-none">WorkFlow</span>
@@ -288,8 +288,8 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
  <div className="relative w-80 bg-white h-full flex flex-col shadow-2xl animate-in slide-in-from-left duration-500">
  <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
  <div className="flex items-center gap-3">
- <div className="bg-primary p-2 rounded-xl shadow-lg shadow-primary/20">
- <Workflow className="h-5 w-5 text-white" />
+ <div className="flex items-center justify-center p-0 rounded-xl overflow-hidden shadow-lg shadow-primary/10 shrink-0">
+ <img src="/logo.png" alt="Logo" className="w-10 h-10 object-contain" />
  </div>
  <span className="font-bold text-xl text-slate-900 tracking-tighter tabular-nums">WorkFlow</span>
  </div>
