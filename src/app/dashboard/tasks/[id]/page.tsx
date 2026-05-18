@@ -155,6 +155,9 @@ export default function TaskDetailPage() {
  });
  }
  setAssignees(allAssignees);
+ 
+ // Lấy bình luận đồng bộ cho cả Cha và Con
+ await fetchComments(data, []);
 
  } catch (error: any) {
  console.error(error);
@@ -163,17 +166,26 @@ export default function TaskDetailPage() {
  }
  };
 
- const fetchComments = async () => {
+ async function fetchComments(currentTaskData: any = task, currentSiblings: any[] = siblingReports) {
+ if (!currentTaskData) return;
+ let targetIds = [currentTaskData.id];
+ if (currentTaskData.task_type === 'report') {
+   if (currentSiblings && currentSiblings.length > 0) {
+     targetIds = Array.from(new Set([currentTaskData.id, ...currentSiblings.map(s => s.id)]));
+   } else {
+     const { data: sibs } = await supabase.from('tasks').select('id').eq('title', currentTaskData.title).eq('created_by', currentTaskData.created_by).eq('task_type', 'report');
+     if (sibs) targetIds = Array.from(new Set([currentTaskData.id, ...sibs.map(s => s.id)]));
+   }
+ }
  const { data } = await supabase
  .from('task_comments')
  .select(`*, user:profiles(full_name, avatar_url)`)
- .eq('task_id', id)
+ .in('task_id', targetIds)
  .order('created_at', { ascending: true });
  setComments(data || []);
  };
 
  fetchData();
- fetchComments();
 
  // Kích hoạt Real-time để đồng bộ dữ liệu ngay lập tức giữa các máy tính
  const channel = supabase
@@ -330,6 +342,17 @@ export default function TaskDetailPage() {
       
       setTask((prev: any) => prev ? { ...prev, status: targetStatus, progress: overallProgress } : null);
       
+      // Bắn Notification cho phòng ban (người chịu trách nhiệm)
+      const sibling = updatedSiblings.find(s => s.id === siblingId);
+      if (sibling && sibling.assignee_id) {
+        await supabase.from('notifications').insert({
+          user_id: sibling.assignee_id,
+          title: newStatus === 'done' ? "Báo cáo được ghi nhận" : "Hủy ghi nhận báo cáo",
+          content: newStatus === 'done' ? `Lãnh đạo đã xác nhận báo cáo "${task.title}" của đơn vị bạn.` : `Lãnh đạo đã hủy xác nhận nộp báo cáo "${task.title}".`,
+          link: `/dashboard/tasks/${siblingId}`
+        });
+      }
+
       toast({
         title: "Cập nhật thành công",
         description: newStatus === 'done' ? "Ghi nhận phòng ban đã hoàn thành báo cáo." : "Đã hủy ghi nhận báo cáo.",
@@ -402,9 +425,18 @@ export default function TaskDetailPage() {
  });
  if (error) throw error;
  
- // Thông báo cho các thành viên khác
- const notifyUsers = assignees.filter(a => a.user_id !== profile?.id).map(a => ({
- user_id: a.user_id,
+ // Thông báo cho tất cả những người liên quan trong Cây Báo cáo
+ let notifyUserIds = new Set(assignees.map(a => a.user_id));
+ if (task.task_type === 'report') {
+   if (task.created_by) notifyUserIds.add(task.created_by);
+   siblingReports.forEach(s => {
+     if (s.assignee_id) notifyUserIds.add(s.assignee_id);
+   });
+ }
+ notifyUserIds.delete(profile?.id);
+
+ const notifyUsers = Array.from(notifyUserIds).map(uid => ({
+ user_id: uid,
  title: `Thảo luận: ${task.title}`,
  content: `${profile.full_name}: "${newComment.length > 60 ? newComment.substring(0, 60) + '...' : newComment}"`,
  link: `/dashboard/tasks/${id}`
@@ -415,12 +447,7 @@ export default function TaskDetailPage() {
 
  setNewComment("");
  
- const { data } = await supabase
- .from('task_comments')
- .select(`*, user:profiles(full_name, avatar_url)`)
- .eq('task_id', id)
- .order('created_at', { ascending: true });
- setComments(data || []);
+ await fetchComments(task, siblingReports);
  } catch (error: any) {
  toast({ variant: "destructive", title: "Lỗi", description: error.message });
  } finally {
@@ -430,7 +457,8 @@ export default function TaskDetailPage() {
 
  const updateProgress = async (val: number) => {
  try {
- const { error } = await supabase.from('tasks').update({ progress: val }).eq('id', id);
+ const newStatus = val === 100 ? 'done' : val > 0 ? 'doing' : 'todo';
+ const { error } = await supabase.from('tasks').update({ progress: val, status: newStatus }).eq('id', id);
  if (error) throw error;
  
  const notificationTitle = `Tiến độ mới: ${task.title}`;
@@ -458,7 +486,7 @@ export default function TaskDetailPage() {
  await supabase.from('notifications').insert(notifyAssignees);
  }
 
- setTask({ ...task, progress: val });
+ setTask({ ...task, progress: val, status: newStatus });
  toast({ title: `Cập nhật: ${val}%` });
  } catch (error: any) {
  toast({ variant: "destructive", title: "Lỗi", description: error.message });
@@ -1075,34 +1103,22 @@ export default function TaskDetailPage() {
           )}
         </div>
       ) : (
-        /* Normal progress steps for report assignee */
-        <div className="premium-card p-6 border-none space-y-6">
-          <h3 className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2 truncate whitespace-nowrap">
-            <TrendingUp className="w-4 h-4 text-primary" /> TIẾN ĐỘ BÁO CÁO CỦA TÔI
-          </h3>
-          <div className="space-y-6">
-            <div className="flex gap-2 h-2">
-              {[25, 50, 75, 100].map((val) => (
-                <button 
-                  key={val} 
-                  onClick={() => canEdit && updateProgress(val)}
-                  className={cn(
-                    "flex-1 rounded-full transition-all duration-300",
-                    (task.progress || 0) >= val ? "bg-primary" : "bg-slate-100",
-                    !canEdit && "cursor-default"
-                  )}
-                />
-              ))}
-            </div>
-            <div className="flex justify-between px-1">
-              {["Tiếp nhận", "Thực hiện", "Kiểm soát", "Hoàn tất"].map((label, i) => (
-                <span key={i} className={cn(
-                  "text-[11px] font-medium transition-colors",
-                  (task.progress || 0) >= (i+1)*25 ? "text-primary" : "text-slate-500"
-                )}>{label}</span>
-              ))}
-            </div>
-          </div>
+        /* Simplified completion toggle for report assignee */
+        <div className="flex items-center justify-center p-2">
+            <Button
+              disabled={!canEdit || saving}
+              onClick={() => updateProgress((task.progress || 0) >= 100 ? 0 : 100)}
+              className={cn(
+                "w-full sm:max-w-[300px] h-12 rounded-xl font-bold transition-all shadow-sm flex items-center justify-center gap-2 text-[14px]",
+                (task.progress || 0) >= 100 ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/50" : "bg-primary text-white hover:bg-primary/90 hover:shadow-primary-glow"
+              )}
+            >
+              {(task.progress || 0) >= 100 ? (
+                <><CheckCircle2 className="w-5 h-5" /> Đã nộp báo cáo (Hủy)</>
+              ) : (
+                <><CheckCircle2 className="w-5 h-5" /> Xác nhận nộp báo cáo</>
+              )}
+            </Button>
         </div>
       )
     )
@@ -1194,7 +1210,7 @@ export default function TaskDetailPage() {
  </div>
  )}
 
- {task.task_type !== 'report' && (
+ {!(task.task_type === 'report' && task.created_by === profile?.id) && (
   <div className="space-y-3">
  <div className="flex items-center justify-between">
    <p className="text-xs font-bold text-slate-500 uppercase pl-1 truncate whitespace-nowrap">Cán bộ tiếp nhận</p>
