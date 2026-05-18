@@ -83,12 +83,12 @@ function RegisterContent() {
  <div className="w-full max-w-md z-10 flex flex-col items-center gap-6">
  <Card className="w-full shadow-2xl border-none rounded-[2.5rem] bg-white/80 backdrop-blur-xl overflow-hidden">
  <div className="bg-primary p-8 text-white text-center relative overflow-hidden">
- <div className="absolute top-0 right-0 p-4 opacity-10">
- <Workflow className="w-24 h-24 rotate-12" />
+ <div className="absolute top-0 right-0 p-4 opacity-5">
+ <img src="/logo.png" alt="" className="w-24 h-24 rotate-12 grayscale" />
  </div>
  <div className="relative z-10 flex flex-col items-center">
- <div className="bg-white/80 p-3 rounded-2xl mb-4 backdrop-blur-md">
- <ShieldCheck className="h-8 w-8 text-white" />
+ <div className="bg-white p-2 rounded-2xl mb-4 shadow-lg shadow-primary/20 flex items-center justify-center">
+ <img src="/logo.png" alt="Logo" className="h-12 w-12 object-contain" />
  </div>
  <CardTitle className="text-2xl font-bold tracking-tight tabular-nums">Gia nhập WorkFlow</CardTitle>
  <CardDescription className="text-primary-foreground/70 mt-2 font-medium">Hệ thống điều hành và quản trị mục tiêu</CardDescription>
