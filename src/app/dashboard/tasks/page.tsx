@@ -13,6 +13,7 @@ import {
  TableRow 
 } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { 
  Plus, 
  Search, 
@@ -109,30 +110,44 @@ function TasksContent() {
  }
  };
 
- const displayData = tasks.filter(task => {
-  // 1. Không hiển thị các cards của KPI
-  if (task.task_type === 'kpi') return false;
+   const allFilteredData = tasks.filter(task => {
+   // 1. Không hiển thị các cards của KPI
+   if (task.task_type === 'kpi') return false;
 
-  const isReport = task.task_type === 'report';
-  if (viewMode === 'task' && isReport) return false;
-  if (viewMode === 'report' && !isReport) return false;
+   const isReport = task.task_type === 'report';
+   if (viewMode === 'task' && isReport) return false;
+   if (viewMode === 'report' && !isReport) return false;
 
-  // 2. Trạng thái hoàn thành/đóng thì ẩn đi khi không tìm kiếm, nhưng vẫn cho phép tìm kiếm
-  if (!searchQuery) {
-    if (task.status === 'done' || task.status === 'closed') return false;
-  }
- 
-  if (filterStatus === 'all') {
-    // Mặc định ở chế độ Tất cả, không hiển thị các báo cáo đã đóng hoặc công việc đã lưu trữ
-    if (task.status === 'closed') return false;
-    if (task.is_archived) return false;
-  } else {
-    if (task.status !== filterStatus) return false;
-  }
- 
-  const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase())
-  return matchesSearch
-  })
+   // 2. Lọc theo trạng thái và tìm kiếm
+   if (filterStatus === 'all') {
+     if (!searchQuery) {
+       if (task.status === 'done') return false;
+     }
+     if (task.is_archived) return false;
+   } else {
+     if (task.status !== filterStatus) return false;
+   }
+  
+   const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase())
+   return matchesSearch
+   });
+
+  const seenReports = new Set();
+  const displayData = allFilteredData.filter(task => {
+    if (task.task_type === 'report') {
+      const isCreator = task.created_by === profile?.id;
+      const isAdminOrDir = profile?.role === 'admin' || profile?.role === 'director';
+      
+      if (isCreator || isAdminOrDir) {
+        const reportKey = `${task.title}_${task.created_by}`;
+        if (seenReports.has(reportKey)) {
+          return false;
+        }
+        seenReports.add(reportKey);
+      }
+    }
+    return true;
+  });
 
  const statusMap: Record<string, { label: string, color: string, dot: string, light: string }> = {
  todo: { label: 'Đang chờ', color: 'text-muted-foreground', dot: 'bg-slate-400', light: 'bg-muted' },
@@ -267,7 +282,7 @@ function TasksContent() {
    <TableBody>
    {displayData.map((task) => {
    const status = statusMap[task.status] || statusMap.todo;
-   const isLate = task.status !== 'done' && task.status !== 'closed' && new Date(task.due_date) < new Date();
+   const isLate = task.status !== 'done' && new Date(task.due_date) < new Date();
    const firstAssignee = task.task_assignees?.[0]?.profile;
    const otherCount = (task.task_assignees?.length || 0) - 1;
 
@@ -354,7 +369,7 @@ function TasksContent() {
       )}
       {displayData.map((task) => {
         const status = statusMap[task.status] || statusMap.todo;
-        const isLate = task.status !== 'done' && task.status !== 'closed' && new Date(task.due_date) < new Date();
+        const isLate = task.status !== 'done' && new Date(task.due_date) < new Date();
         const firstAssignee = task.task_assignees?.[0]?.profile;
         const deptName = task.department?.name;
 
@@ -372,18 +387,40 @@ function TasksContent() {
               }
             }}>
               <Checkbox 
-                checked={task.status === 'done' || task.status === 'closed'} 
-                disabled={task.status === 'closed'}
+                checked={task.status === 'done'} 
+                
                 className="w-5 h-5 rounded-[6px]"
               />
             </div>
             
             <div className="flex-1 space-y-1.5">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 {task.priority === 'high' && <Zap className="w-3 h-3 text-red-500 fill-red-500 shrink-0" />}
-                <h3 className={cn("font-bold text-[15px]", (task.status === 'done' || task.status === 'closed') ? "text-slate-500 line-through" : "text-slate-900")}>
+                <h3 className={cn("font-bold text-[15px] group-hover:text-primary transition-colors", task.status === 'done' ? "text-slate-500 line-through" : "text-slate-900")}>
                   {task.title}
                 </h3>
+                {(() => {
+                  const reportSiblings = tasks.filter(t => t.title === task.title && t.created_by === task.created_by && t.task_type === 'report');
+                  const totalDepts = reportSiblings.length;
+                  const doneDepts = reportSiblings.filter(t => t.status === 'done').length;
+                  const isFullReport = doneDepts === totalDepts;
+                  const isCreator = task.created_by === profile?.id;
+                  const isAdminOrDir = profile?.role === 'admin' || profile?.role === 'director';
+                  
+                  if ((isCreator || isAdminOrDir) && totalDepts > 0) {
+                    return (
+                      <Badge className={cn(
+                        "border-none text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm select-none",
+                        isFullReport 
+                          ? "bg-emerald-50 text-emerald-600 hover:bg-emerald-50" 
+                          : "bg-red-50 text-red-600 hover:bg-red-50"
+                      )}>
+                        {doneDepts}/{totalDepts} phòng
+                      </Badge>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
               <div className="flex flex-wrap items-center gap-3 text-xs font-medium text-slate-500">
                 <span className="flex items-center gap-1">

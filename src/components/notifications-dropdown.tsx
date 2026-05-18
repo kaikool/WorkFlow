@@ -156,7 +156,12 @@ export function NotificationsDropdown() {
           )}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-[360px] p-2 rounded-2xl shadow-xl border-slate-100 mt-2 bg-white">
+      <DropdownMenuContent 
+        align="end" 
+        alignOffset={-8}
+        collisionPadding={16}
+        className="w-[calc(100vw-32px)] sm:w-[380px] p-2 rounded-2xl shadow-xl border-slate-100 mt-2 bg-white"
+      >
         <div className="flex items-center justify-between px-3.5 py-3 border-b border-slate-100 mb-2">
           <div className="flex items-center gap-2">
             <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
@@ -182,10 +187,10 @@ export function NotificationsDropdown() {
                 key={n.id} 
                 onClick={() => handleNotificationClick(n)}
                 className={cn(
-                  "cursor-pointer rounded-xl p-3 border border-slate-100/60 shadow-sm flex gap-3 relative overflow-hidden transition-all mb-1.5 focus:bg-slate-50/80 focus:text-inherit select-none",
+                  "cursor-pointer rounded-xl p-3 !pl-4 border-y border-r border-slate-100/60 shadow-sm flex gap-3 relative overflow-hidden transition-all mb-1.5 focus:bg-slate-50/80 focus:text-inherit select-none",
                   !n.is_read 
-                    ? "bg-gradient-to-r from-blue-50/20 to-white border-l-[3.5px] border-l-blue-600" 
-                    : "bg-white border-l-[3.5px] border-l-slate-200"
+                    ? "bg-gradient-to-r from-blue-50/20 to-white border-l-4 border-l-blue-600" 
+                    : "bg-white border-l-4 border-l-slate-200"
                 )}
               >
                 {getNotificationIcon(n.title)}
@@ -193,7 +198,7 @@ export function NotificationsDropdown() {
                 <div className="flex-1 min-w-0 space-y-1">
                   <div className="flex justify-between items-start gap-2">
                     <span className={cn(
-                      "text-[11.5px] font-bold leading-tight tracking-tight truncate flex-1",
+                      "text-xs font-bold leading-tight tracking-tight truncate flex-1",
                       !n.is_read ? "text-blue-900" : "text-slate-800"
                     )}>
                       {n.title}
@@ -206,11 +211,11 @@ export function NotificationsDropdown() {
                   </p>
                   
                   <div className="flex items-center gap-1.5 pt-0.5">
-                    <span className="text-[9px] text-slate-400 font-bold uppercase">
+                    <span className="text-[11px] text-slate-400 font-bold uppercase">
                       {new Date(n.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
                     </span>
-                    <span className="text-[9px] text-slate-300">•</span>
-                    <span className="text-[9px] text-primary/60 font-bold uppercase">Hệ thống</span>
+                    <span className="text-[11px] text-slate-300">•</span>
+                    <span className="text-[11px] text-primary/60 font-bold uppercase">Hệ thống</span>
                   </div>
                 </div>
               </DropdownMenuItem>

@@ -257,9 +257,9 @@ export default function SchedulePage() {
  const [filterDepts, setFilterDepts] = useState<string[]>([]);
  const [filterRoles, setFilterRoles] = useState<string[]>(['manager', 'staff']);
  
- const [bgdMode, setBgdMode] = useState<'all' | 'specific'>('all');
+ const [bgdMode, setBgdMode] = useState<'all' | 'specific' | 'none'>('all');
  const [selectedBGD, setSelectedBGD] = useState<string[]>([]);
- const [deptMode, setDeptMode] = useState<'all' | 'specific'>('all');
+ const [deptMode, setDeptMode] = useState<'all' | 'specific' | 'none'>('all');
  
  const [startDate, setStartDate] = useState<Date | undefined>(new Date());
  const [endDate, setEndDate] = useState<Date | undefined>(new Date());
@@ -854,161 +854,183 @@ export default function SchedulePage() {
  )}
  </div>
 
- {/* 4. Thành phần tham gia */}
+   {/* 4. Thành phần tham gia */}
   <div className="space-y-6 bg-slate-50/50 p-5 rounded-2xl border border-slate-100">
- <div className="flex items-center gap-2">
- <Users className="w-4 h-4 text-primary" />
- <Label className="text-[13px] font-semibold text-slate-900">Thành phần tham gia</Label>
- </div>
- 
- <div className="space-y-6">
- {/* Part 1: BGĐ */}
- <div className="space-y-3">
- <div className="flex items-center justify-between">
- <div className="text-[13px] font-semibold text-slate-500 flex items-center gap-2">
- <div className="w-1 h-3 bg-red-500 rounded-full" /> 1. BAN GIÁM ĐỐC
- </div>
- <div className="flex bg-slate-100 p-0.5 rounded-lg">
- <button 
- type="button"
- onClick={() => setBgdMode('all')}
- className={cn("px-3 py-1.5 text-[13px] font-medium rounded-md transition-all", bgdMode === 'all' ? "bg-white text-primary shadow-sm" : "text-slate-500")}
- >Tất cả</button>
- <button 
- type="button"
- onClick={() => setBgdMode('specific')}
- className={cn("px-3 py-1.5 text-[13px] font-medium rounded-md transition-all", bgdMode === 'specific' ? "bg-white text-primary shadow-sm" : "text-slate-500")}
- >Chọn</button>
- </div>
- </div>
- 
- {bgdMode === 'specific' && (
- <div className="flex flex-wrap gap-2 pl-3 animate-in fade-in slide-in-from-top-1">
- {allProfiles.filter(p => (p.role === 'director' || p.full_name?.toLowerCase().includes('giám đốc')) && !p.full_name?.toLowerCase().includes('admin') && p.role !== 'admin').map(p => (
- <button 
- key={p.id}
- type="button"
- onClick={() => selectedBGD.includes(p.id) ? setSelectedBGD(selectedBGD.filter(id => id !== p.id)) : setSelectedBGD([...selectedBGD, p.id])}
- className={cn("px-3 py-1.5 rounded-lg text-[13px] font-medium transition-all border", selectedBGD.includes(p.id) ? "bg-red-500 text-white border-red-500 shadow-md shadow-red-500/10" : "bg-slate-50 text-slate-500 border-slate-100")}
- >{p.full_name}</button>
- ))}
- </div>
- )}
- </div>
+    <div className="flex items-center gap-2">
+      <Users className="w-4 h-4 text-primary" />
+      <Label className="text-[13px] font-semibold text-slate-900">Thành phần tham gia</Label>
+    </div>
+    
+    <div className="space-y-6">
+      {/* Part 1: BGĐ */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="text-[13px] font-semibold text-slate-500 flex items-center gap-2">
+            <div className="w-1 h-3 bg-red-500 rounded-full" /> 1. BAN GIÁM ĐỐC
+          </div>
+          <div className="flex bg-slate-100 p-0.5 rounded-lg shrink-0">
+            <button 
+              type="button"
+              onClick={() => setBgdMode('all')}
+              className={cn("px-2.5 py-1 text-[11px] font-bold rounded-md transition-all shrink-0", bgdMode === 'all' ? "bg-white text-primary shadow-sm" : "text-slate-500")}
+            >Tất cả</button>
+            <button 
+              type="button"
+              onClick={() => setBgdMode('specific')}
+              className={cn("px-2.5 py-1 text-[11px] font-bold rounded-md transition-all shrink-0", bgdMode === 'specific' ? "bg-white text-primary shadow-sm" : "text-slate-500")}
+            >Chọn</button>
+            <button 
+              type="button"
+              onClick={() => { setBgdMode('none'); setSelectedBGD([]); }}
+              className={cn("px-2.5 py-1 text-[11px] font-bold rounded-md transition-all shrink-0", bgdMode === 'none' ? "bg-white text-primary shadow-sm" : "text-slate-500")}
+            >Không ai</button>
+          </div>
+        </div>
+        
+        {bgdMode === 'specific' && (
+          <div className="flex flex-wrap gap-2 pl-3 animate-in fade-in slide-in-from-top-1">
+            {allProfiles.filter(p => (p.role === 'director' || p.full_name?.toLowerCase().includes('giám đốc')) && !p.full_name?.toLowerCase().includes('admin') && p.role !== 'admin').map(p => (
+              <button 
+                key={p.id}
+                type="button"
+                onClick={() => selectedBGD.includes(p.id) ? setSelectedBGD(selectedBGD.filter(id => id !== p.id)) : setSelectedBGD([...selectedBGD, p.id])}
+                className={cn("px-3 py-1.5 rounded-lg text-[13px] font-medium transition-all border", selectedBGD.includes(p.id) ? "bg-red-500 text-white border-red-500 shadow-md shadow-red-500/10" : "bg-slate-50 text-slate-500 border-slate-100")}
+              >{p.full_name}</button>
+            ))}
+          </div>
+        )}
+      </div>
 
- {/* Part 2: PHÒNG */}
- <div className="space-y-3">
- <div className="flex items-center justify-between">
- <div className="text-[13px] font-semibold text-slate-500 flex items-center gap-2">
- <div className="w-1 h-3 bg-blue-500 rounded-full" /> 2. ĐƠN VỊ / PHÒNG
- </div>
- <div className="flex bg-slate-100 p-0.5 rounded-lg">
- <button 
- type="button"
- onClick={() => setDeptMode('all')}
- className={cn("px-3 py-1.5 text-[13px] font-medium rounded-md transition-all", deptMode === 'all' ? "bg-white text-primary shadow-sm" : "text-slate-500")}
- >Tất cả</button>
- <button 
- type="button"
- onClick={() => setDeptMode('specific')}
- className={cn("px-3 py-1.5 text-[13px] font-medium rounded-md transition-all", deptMode === 'specific' ? "bg-white text-primary shadow-sm" : "text-slate-500")}
- >Chọn</button>
- </div>
- </div>
+      {/* Part 2: PHÒNG */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="text-[13px] font-semibold text-slate-500 flex items-center gap-2">
+            <div className="w-1 h-3 bg-blue-500 rounded-full" /> 2. ĐƠN VỊ / PHÒNG
+          </div>
+          <div className="flex bg-slate-100 p-0.5 rounded-lg shrink-0">
+            <button 
+              type="button"
+              onClick={() => setDeptMode('all')}
+              className={cn("px-2.5 py-1 text-[11px] font-bold rounded-md transition-all shrink-0", deptMode === 'all' ? "bg-white text-primary shadow-sm" : "text-slate-500")}
+            >Tất cả</button>
+            <button 
+              type="button"
+              onClick={() => setDeptMode('specific')}
+              className={cn("px-2.5 py-1 text-[11px] font-bold rounded-md transition-all shrink-0", deptMode === 'specific' ? "bg-white text-primary shadow-sm" : "text-slate-500")}
+            >Chọn</button>
+            <button 
+              type="button"
+              onClick={() => { setDeptMode('none'); setFilterDepts([]); setSelectedParticipants([]); }}
+              className={cn("px-2.5 py-1 text-[11px] font-bold rounded-md transition-all shrink-0", deptMode === 'none' ? "bg-white text-primary shadow-sm" : "text-slate-500")}
+            >Không ai</button>
+          </div>
+        </div>
 
- {deptMode === 'specific' && (
- <div className="flex flex-wrap gap-2 pl-3 animate-in fade-in slide-in-from-top-1">
- {departments.map(d => (
- <button 
- key={d.id}
- type="button"
- onClick={() => filterDepts.includes(d.id) ? setFilterDepts(filterDepts.filter(id => id !== d.id)) : setFilterDepts([...filterDepts, d.id])}
- className={cn("rounded-lg text-[13px] font-medium h-8 px-3 transition-all border", filterDepts.includes(d.id) ? "bg-blue-500 text-white border-blue-500 shadow-lg shadow-blue-500/20" : "bg-slate-50 text-slate-500 border-slate-100")}
- >{d.name}</button>
- ))}
- </div>
- )}
- </div>
+        {deptMode === 'specific' && (
+          <div className="flex flex-wrap gap-2 pl-3 animate-in fade-in slide-in-from-top-1">
+            {departments.map(d => (
+              <button 
+                key={d.id}
+                type="button"
+                onClick={() => filterDepts.includes(d.id) ? setFilterDepts(filterDepts.filter(id => id !== d.id)) : setFilterDepts([...filterDepts, d.id])}
+                className={cn("rounded-lg text-[13px] font-medium h-8 px-3 transition-all border", filterDepts.includes(d.id) ? "bg-blue-500 text-white border-blue-500 shadow-lg shadow-blue-500/20" : "bg-slate-50 text-slate-500 border-slate-100")}
+              >{d.name}</button>
+            ))}
+          </div>
+        )}
+      </div>
 
- {/* Part 3: CÁN BỘ */}
- {(deptMode === 'specific' && filterDepts.length > 0) && (
- <div className="space-y-3 pt-2 border-t border-slate-50 animate-in fade-in">
- <div className="flex items-center justify-between">
- <div className="text-[13px] font-semibold text-slate-500 flex items-center gap-2">
- <div className="w-1 h-3 bg-emerald-500 rounded-full" /> 3. CHI TIẾT CÁN BỘ
- </div>
- <div className="flex bg-slate-100 p-0.5 rounded-lg">
- <button 
- type="button"
- onClick={() => setParticipantMode('all')}
- className={cn("px-3 py-1.5 text-[13px] font-medium rounded-md transition-all", participantMode === 'all' ? "bg-white text-primary shadow-sm" : "text-slate-500")}
- >Tất cả</button>
- <button 
- type="button"
- onClick={() => setParticipantMode('manager')}
- className={cn("px-3 py-1.5 text-[13px] font-medium rounded-md transition-all", participantMode === 'manager' ? "bg-white text-primary shadow-sm" : "text-slate-500")}
- >Lãnh đạo</button>
- <button 
- type="button"
- onClick={() => setParticipantMode('staff')}
- className={cn("px-3 py-1.5 text-[13px] font-medium rounded-md transition-all", participantMode === 'staff' ? "bg-white text-primary shadow-sm" : "text-slate-500")}
- >Cán bộ</button>
- </div>
- </div>
+      {/* Part 3: CÁN BỘ */}
+      {(deptMode === 'specific' && filterDepts.length > 0) && (
+        <div className="space-y-3 pt-2 border-t border-slate-50 animate-in fade-in">
+          <div className="flex items-center justify-between">
+            <div className="text-[13px] font-semibold text-slate-500 flex items-center gap-2">
+              <div className="w-1 h-3 bg-emerald-500 rounded-full" /> 3. CHI TIẾT CÁN BỘ
+            </div>
+            <div className="flex bg-slate-100 p-0.5 rounded-lg shrink-0">
+              <button 
+                type="button"
+                onClick={() => setParticipantMode('all')}
+                className={cn("px-2.5 py-1 text-[11px] font-bold rounded-md transition-all shrink-0", participantMode === 'all' ? "bg-white text-primary shadow-sm" : "text-slate-500")}
+              >Tất cả</button>
+              <button 
+                type="button"
+                onClick={() => setParticipantMode('manager')}
+                className={cn("px-2.5 py-1 text-[11px] font-bold rounded-md transition-all shrink-0", participantMode === 'manager' ? "bg-white text-primary shadow-sm" : "text-slate-500")}
+              >Lãnh đạo</button>
+              <button 
+                type="button"
+                onClick={() => setParticipantMode('staff')}
+                className={cn("px-2.5 py-1 text-[11px] font-bold rounded-md transition-all shrink-0", participantMode === 'staff' ? "bg-white text-primary shadow-sm" : "text-slate-500")}
+              >Cán bộ</button>
+            </div>
+          </div>
 
- <div className="pl-3">
- {participantMode === 'staff' ? (
- <div className="max-h-32 overflow-y-auto pr-2 space-y-4 animate-in fade-in slide-in-from-top-2">
- {departments.filter(d => filterDepts.includes(d.id)).map(dept => {
- const deptMembers = allProfiles.filter(p => p.department_id === dept.id && p.role !== 'admin' && p.role !== 'director');
- if (deptMembers.length === 0) return null;
- return (
- <div key={dept.id} className="space-y-2">
- <p className="text-[10px] md:text-[13px] font-medium text-slate-500">{dept.name}</p>
- <div className="flex flex-wrap gap-1.5">
- {deptMembers.map(p => (
- <button
- key={p.id}
- type="button"
- onClick={() => selectedParticipants.includes(p.id) ? setSelectedParticipants(selectedParticipants.filter(id => id !== p.id)) : setSelectedParticipants([...selectedParticipants, p.id])}
- className={cn("px-3 py-1.5 rounded-lg text-[13px] font-medium transition-all border", selectedParticipants.includes(p.id) ? "bg-emerald-500 text-white border-emerald-500 shadow-md shadow-emerald-500/10" : "bg-slate-50 text-slate-500 border-slate-100")}
- >{p.full_name}</button>
- ))}
- </div>
- </div>
- );
- })}
- </div>
- ) : (
- <div className="py-2">
- {participantMode === 'all' && (
- <p className="text-xs font-bold text-slate-500 italic">✓ Tự động mời tất cả cán bộ thuộc các phòng đã chọn.</p>
- )}
- {participantMode === 'manager' && (
- <p className="text-xs font-bold text-slate-500 italic">✓ Tự động mời Lãnh đạo các phòng đã chọn.</p>
- )}
- </div>
- )}
- {conflicts.length > 0 && (
- <div className="p-4 bg-red-50 border border-red-100 rounded-xl space-y-2 animate-in fade-in slide-in-from-top-2">
- <div className="flex items-center gap-2 text-red-600">
- <AlertCircle className="w-4 h-4" />
- <span className="text-xs md:text-sm font-bold uppercase truncate whitespace-nowrap">Cảnh báo trùng lịch</span>
- </div>
- <div className="space-y-1 pl-6">
- {conflicts.map((c, i) => (
- <p key={i} className="text-xs font-bold text-red-500">• {c}</p>
- ))}
- </div>
- </div>
- )}
- </div>
- </div>
- )}
- </div>
- </div>
- </div>
- <DialogFooter className="pt-4 border-t border-slate-100">
+          <div className="pl-3">
+            {participantMode === 'staff' ? (
+              <div className="max-h-40 overflow-y-auto pr-2 space-y-4 animate-in fade-in slide-in-from-top-2">
+                {departments.filter(d => filterDepts.includes(d.id)).map(dept => {
+                  const deptMembers = allProfiles.filter(p => p.department_id === dept.id && p.role !== 'admin' && p.role !== 'director');
+                  if (deptMembers.length === 0) return null;
+                  return (
+                    <div key={dept.id} className="space-y-2">
+                      <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">{dept.name}</p>
+                      <div className="flex flex-wrap gap-2">
+                        {deptMembers.map(p => {
+                          const isSelected = selectedParticipants.includes(p.id);
+                          const initials = p.full_name ? p.full_name.trim().split(' ').pop()?.substring(0, 2).toUpperCase() || 'CB' : 'CB';
+                          return (
+                            <button
+                              key={p.id}
+                              type="button"
+                              onClick={() => selectedParticipants.includes(p.id) ? setSelectedParticipants(selectedParticipants.filter(id => id !== p.id)) : setSelectedParticipants([...selectedParticipants, p.id])}
+                              className={cn(
+                                "flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl border text-xs font-semibold transition-all duration-200 shrink-0",
+                                isSelected 
+                                  ? "bg-emerald-50 text-emerald-700 border-emerald-200/80 ring-2 ring-emerald-500/10 shadow-sm" 
+                                  : "bg-white text-slate-600 border-slate-200/80 hover:bg-slate-50 hover:border-slate-300"
+                              )}
+                            >
+                              <Avatar className="w-5 h-5 text-[9px] font-bold shadow-xs">
+                                {p.avatar_url ? (
+                                  <AvatarImage src={p.avatar_url} alt={p.full_name} />
+                                ) : (
+                                  <AvatarFallback className={cn(
+                                    "text-white",
+                                    isSelected ? "bg-emerald-600" : "bg-slate-400"
+                                  )}>
+                                    {initials}
+                                  </AvatarFallback>
+                                )}
+                              </Avatar>
+                              <span className="truncate max-w-[120px]">{p.full_name}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="py-2">
+                {participantMode === 'all' && (
+                  <p className="text-xs font-bold text-slate-500 italic">✓ Tự động mời tất cả cán bộ thuộc các phòng đã chọn.</p>
+                )}
+                {participantMode === 'manager' && (
+                  <p className="text-xs font-bold text-slate-500 italic">✓ Tự động mời Lãnh đạo các phòng đã chọn.</p>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+
+    </div>
+  </div>
+</div>
+  <DialogFooter className="pt-4 border-t border-slate-100">
   <Button onClick={handleCreateSchedule} className="w-full h-10 rounded-xl font-semibold">Xác nhận đăng ký</Button>
   </DialogFooter>
  </DialogContent>
@@ -1126,11 +1148,11 @@ export default function SchedulePage() {
    </div>
    ) : (
     filterType === 'bgd' ? (
-      <div className="premium-card p-6 border-none space-y-4 overflow-hidden">
-        {/* Scrollable Container on Mobile */}
+      <div className="space-y-6 overflow-hidden animate-in fade-in duration-150">
+        {/* Scrollable Container on Mobile - Được bọc nền trắng sang trọng, ẩn scrollbar xấu xí nhưng vẫn vuốt mượt mà */}
         <div 
           ref={timelineContainerRef}
-          className="overflow-x-auto pb-4 -mx-6 px-6 scrollbar-thin scrollbar-thumb-slate-200"
+          className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm overflow-x-auto pb-2 scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
         >
           <div className="min-w-[850px] space-y-4">
             
@@ -1149,7 +1171,7 @@ export default function SchedulePage() {
             </div>
 
             {/* Directors Rows */}
-            <div className="space-y-3">
+            <div className="space-y-1.5">
               {allProfiles.filter(p => (p.role === 'director' || p.full_name?.toLowerCase().includes('giám đốc')) && !p.full_name?.toLowerCase().includes('admin') && p.role !== 'admin').map(dir => {
                 const dirColor = getDirectorColor(dir.full_name);
                 const dirSchedules = schedules.filter(s => {
@@ -1159,14 +1181,19 @@ export default function SchedulePage() {
                 });
 
                 return (
-                  <div key={dir.id} className="relative w-full bg-slate-50/40 h-10 rounded-xl border border-slate-100 overflow-hidden flex items-center">
+                  <div key={dir.id} className="relative w-full h-8 flex items-center border-b border-slate-100/50 last:border-none">
                     
+
+
                     {/* 9 columns grid for hours 08:00 to 17:00 */}
                     <div className="absolute inset-0 pointer-events-none flex">
                       {Array.from({ length: 9 }).map((_, idx) => (
-                        <div key={idx} className="flex-1 border-r border-slate-200/30 last:border-none" />
+                        <div key={idx} className="flex-1 border-r border-slate-200/20 last:border-none" />
                       ))}
                     </div>
+
+                    {/* Dynamic thin background line */}
+                    <div className="absolute left-0 right-0 h-1 bg-slate-100 rounded-full mx-1 pointer-events-none" />
 
                     {/* Current time line marker */}
                     {isTodaySelected && currentTimePercent >= 0 && (
@@ -1178,9 +1205,20 @@ export default function SchedulePage() {
                       </div>
                     )}
 
-                    {dirSchedules.length === 0 ? (
-                      <span className="text-[10px] text-slate-400 font-semibold italic pl-4 z-10">Không có lịch trình</span>
-                    ) : (
+                    {/* Vẽ thanh xám phủ kín 100% dòng timeline nếu Giám đốc có lịch nghỉ phép được phê duyệt */}
+                    {dirSchedules.some(s => s.type === 'leave' && s.status === 'approved') ? (() => {
+                      const leaveSched = dirSchedules.find(s => s.type === 'leave' && s.status === 'approved');
+                      return (
+                        <div 
+                          onClick={() => { setSelectedSchedule(leaveSched); setIsDetailOpen(true); }}
+                          className="absolute inset-x-0 h-6 mx-1 bg-slate-100 hover:bg-slate-200/80 border border-slate-200/50 rounded-lg z-10 flex items-center justify-center cursor-pointer transition-all select-none shadow-2xs"
+                        >
+                          <span className="text-[9px] font-black text-slate-500 tracking-widest flex items-center gap-1.5">
+                            <CalendarDays className="w-3.5 h-3.5 text-slate-400" /> NGHỈ PHÉP
+                          </span>
+                        </div>
+                      );
+                    })() : dirSchedules.length > 0 && (
                       <div className="relative w-full h-full z-10 flex items-center">
                         {dirSchedules.map(sched => {
                           const sTime = new Date(sched.start_time);
@@ -1190,18 +1228,19 @@ export default function SchedulePage() {
                           const eMin = eTime.getHours() * 60 + eTime.getMinutes();
                           
                           const leftPercent = Math.max(0, Math.min(100, ((sMin - startLimit) / duration) * 100));
-                          const widthPercent = Math.max(8, Math.min(100 - leftPercent, ((eMin - sMin) / duration) * 100));
+                          const widthPercent = Math.max(4, Math.min(100 - leftPercent, ((eMin - sMin) / duration) * 100));
                           
+                          // Line màu trùng khớp hoàn hảo với màu đại diện của từng thành viên BGĐ
+                          const typeColor = dirColor.bullet;
+
                           return (
                             <div
                               key={sched.id}
                               onClick={() => { setSelectedSchedule(sched); setIsDetailOpen(true); }}
                               style={{ left: `${leftPercent}%`, width: `${widthPercent}%` }}
-                              className={`absolute top-1 bottom-1 rounded-md border flex flex-col justify-center px-3 cursor-pointer transition-all hover:shadow-md active:scale-[0.98] select-none text-[9px] font-bold shadow-xs whitespace-nowrap overflow-hidden text-ellipsis leading-tight ${dirColor.pill}`}
+                              className={`absolute h-2.5 rounded-full cursor-pointer transition-all hover:scale-y-125 hover:shadow-xs active:scale-[0.95] select-none ${typeColor} border-none shadow-xs`}
                               title={`${sched.title} (${format(sTime, 'HH:mm')} - ${format(eTime, 'HH:mm')})`}
-                            >
-                              <span className="truncate">{sched.title}</span>
-                            </div>
+                            />
                           );
                         })}
                       </div>
@@ -1213,15 +1252,52 @@ export default function SchedulePage() {
           </div>
         </div>
 
-        {/* Legend Row below the table */}
-        <div className="flex flex-wrap items-center justify-center gap-6 pt-4 border-t border-slate-100 mt-4">
+        {/* Legend Row below the table - Premium vertical symmetrical list bọc trong Card trắng đồng bộ */}
+        <div className="max-w-md mx-auto bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-2">
           {allProfiles.filter(p => (p.role === 'director' || p.full_name?.toLowerCase().includes('giám đốc')) && !p.full_name?.toLowerCase().includes('admin') && p.role !== 'admin').map(dir => {
             const dirColor = getDirectorColor(dir.full_name);
+            
+            // Determine real-time status dynamically based on active schedules
+            const now = new Date();
+            const onTrip = schedules.some(s => 
+              s.status === 'approved' && 
+              s.type === 'trip' && 
+              new Date(s.start_time) <= now && 
+              new Date(s.end_time) >= now &&
+              s.participants?.some((p: any) => p.profile_id === dir.id)
+            );
+            const onLeave = schedules.some(s => 
+              s.status === 'approved' && 
+              s.type === 'leave' && 
+              new Date(s.start_time) <= now && 
+              new Date(s.end_time) >= now &&
+              s.participants?.some((p: any) => p.profile_id === dir.id)
+            );
+
             return (
-              <div key={dir.id} className="flex items-center gap-2">
-                <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${dirColor.bullet} shadow-sm ring-2 ring-white`} />
-                <span className={`text-[11px] font-bold ${dirColor.text}`}>{dir.full_name}</span>
-                <span className="text-[9px] font-semibold text-slate-400 uppercase">({(dir.role === 'director' && !dir.full_name?.toLowerCase().includes('phó')) ? 'GIÁM ĐỐC' : 'PHÓ GIÁM ĐỐC'})</span>
+              <div key={dir.id} className="flex justify-between items-center py-2 border-b border-slate-100/50 last:border-none px-1">
+                {/* Left: Name and Bullet */}
+                <div className="flex items-center gap-2.5">
+                  <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${dirColor.bullet} shadow-xs ring-2 ring-white`} />
+                  <span className="text-[13px] font-bold text-slate-800 tracking-tight">{dir.full_name}</span>
+                </div>
+
+                {/* Right: Symmetrical status badge */}
+                <div>
+                  {onLeave ? (
+                    <Badge className="bg-slate-100 hover:bg-slate-100 text-slate-500 border border-slate-200/80 rounded-full font-extrabold text-[10px] px-3 py-1 shadow-2xs">
+                      Nghỉ phép
+                    </Badge>
+                  ) : onTrip ? (
+                    <Badge className="bg-orange-50 hover:bg-orange-50 text-orange-600 border border-orange-200/80 rounded-full font-extrabold text-[10px] px-3 py-1 shadow-2xs">
+                      Công tác
+                    </Badge>
+                  ) : (
+                    <Badge className="bg-emerald-50 hover:bg-emerald-50 text-emerald-600 border border-emerald-200/80 rounded-full font-extrabold text-[10px] px-3 py-1 shadow-2xs">
+                      Chi nhánh
+                    </Badge>
+                  )}
+                </div>
               </div>
             );
           })}

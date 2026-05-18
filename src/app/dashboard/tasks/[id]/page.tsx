@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
@@ -234,7 +235,7 @@ export default function TaskDetailPage() {
     }
   };
   const handleSendReminderAll = async () => {
-    const uncompletedReports = siblingReports.filter(r => r.status !== 'done' && r.status !== 'closed');
+    const uncompletedReports = siblingReports.filter(r => r.status !== 'done');
     
     if (uncompletedReports.length === 0) {
       toast({
@@ -278,6 +279,63 @@ export default function TaskDetailPage() {
       toast({ variant: "destructive", title: "Lỗi", description: err.message });
     } finally {
       setIsRemindingAll(false);
+    }
+  };
+
+  const handleToggleSiblingStatus = async (siblingId: string, currentStatus: string) => {
+    if (!isCreatorOrAdmin) return;
+    const newStatus = currentStatus === 'done' ? 'todo' : 'done';
+    const newProgress = newStatus === 'done' ? 100 : 0;
+    try {
+      // Cập nhật báo cáo con
+      const { error } = await supabase
+        .from('tasks')
+        .update({ status: newStatus, progress: newProgress })
+        .eq('id', siblingId);
+        
+      if (error) throw error;
+      
+      const updatedSiblings = siblingReports.map(s => s.id === siblingId ? { ...s, status: newStatus, progress: newProgress } : s);
+      setSiblingReports(updatedSiblings);
+      
+      // Tự động tính toán trạng thái và tiến độ tổng thể của báo cáo cha
+      const totalDepts = updatedSiblings.length;
+      const doneDepts = updatedSiblings.filter(s => s.status === 'done').length;
+      
+      let targetStatus = 'todo';
+      if (totalDepts > 0) {
+        if (doneDepts === totalDepts) {
+          targetStatus = 'done';
+        } else if (doneDepts > 0) {
+          targetStatus = 'doing';
+        } else {
+          const isLate = task.due_date ? new Date(task.due_date) < new Date() : false;
+          targetStatus = isLate ? 'late' : 'todo';
+        }
+      }
+      
+      if (targetStatus !== 'done' && task.due_date && new Date(task.due_date) < new Date()) {
+        targetStatus = 'late';
+      }
+      
+      const overallProgress = totalDepts > 0 ? Math.round((doneDepts / totalDepts) * 100) : 0;
+      
+      // Cập nhật báo cáo cha
+      const { error: parentError } = await supabase
+        .from('tasks')
+        .update({ status: targetStatus, progress: overallProgress })
+        .eq('id', id);
+        
+      if (parentError) throw parentError;
+      
+      setTask((prev: any) => prev ? { ...prev, status: targetStatus, progress: overallProgress } : null);
+      
+      toast({
+        title: "Cập nhật thành công",
+        description: newStatus === 'done' ? "Ghi nhận phòng ban đã hoàn thành báo cáo." : "Đã hủy ghi nhận báo cáo.",
+      });
+    } catch (err: any) {
+      toast({ variant: "destructive", title: "Lỗi", description: err.message });
     }
   };
 
@@ -413,7 +471,7 @@ export default function TaskDetailPage() {
   const { error } = await supabase.from('tasks').update({ status: newStatus }).eq('id', id);
   if (error) throw error;
   
-  const statusText = newStatus === 'done' ? 'Hoàn thành' : newStatus === 'closed' ? 'Đã đóng' : newStatus === 'late' ? 'Trễ hạn' : newStatus === 'doing' ? 'Đang thực hiện' : 'Đang chờ';
+  const statusText = newStatus === 'done' ? 'Hoàn thành' : newStatus === 'late' ? 'Trễ hạn' : newStatus === 'doing' ? 'Đang thực hiện' : 'Đang chờ';
   const notificationTitle = `Trạng thái mới: ${task.title}`;
   const notificationContent = `${profile?.full_name} đã chuyển trạng thái sang: ${statusText}`;
 
@@ -619,7 +677,7 @@ export default function TaskDetailPage() {
  const isAdminOrDirector = profile?.role === 'admin' || profile?.role === 'director';
  const isManagerInDept = profile?.role === 'manager' && isInDepartment;
  const isMyTask = isAssignee || task?.created_by === profile?.id;
- const isClosed = task?.status === 'closed';
+ const isClosed = false;
  const canEdit = (!isClosed) && (isAdminOrDirector || isManagerInDept || isMyTask);
  
  const statusMap: Record<string, { label: string, color: string, bg: string, icon: any }> = {
@@ -940,13 +998,13 @@ export default function TaskDetailPage() {
               <thead>
                 <tr className="border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                   <th className="pb-3 pl-2 w-1/2">Đơn vị tiếp nhận</th>
-                  <th className="pb-3 w-1/2">Cán bộ phụ trách</th>
+                  <th className="pb-3 w-1/2 text-right pr-2">Ghi nhận nộp</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
                 {siblingReports.map((sib) => {
                   const isDone = sib.status === 'done';
-                  const isClosed = sib.status === 'closed';
+                  const isClosed = false;
                   
                   return (
                     <tr 
@@ -964,9 +1022,7 @@ export default function TaskDetailPage() {
                             "p-1 rounded-lg shrink-0",
                             isDone 
                               ? "bg-emerald-50 text-emerald-600" 
-                              : isClosed 
-                                ? "bg-slate-100 text-slate-500" 
-                                : "bg-amber-50 text-amber-600"
+                              : "bg-amber-50 text-amber-600"
                           )}>
                             {isDone ? (
                               <CheckCircle2 className="w-3.5 h-3.5" />
@@ -977,20 +1033,21 @@ export default function TaskDetailPage() {
                           {sib.departments?.name || 'Phòng chuyên môn'}
                         </Link>
                       </td>
-                      <td className="py-4">
-                        {sib.assignee ? (
-                          <div className="flex items-center gap-2">
-                            <Avatar className="h-6 w-6 border shadow-sm">
-                              <AvatarImage src={sib.assignee.avatar_url} className="object-cover" />
-                              <AvatarFallback className="text-[8px] font-bold bg-slate-100 text-slate-500">
-                                {sib.assignee.full_name?.[0]}
-                              </AvatarFallback>
-                            </Avatar>
-                            <span className="text-[11px] font-semibold text-slate-700">{sib.assignee.full_name}</span>
-                          </div>
-                        ) : (
-                          <span className="text-[11px] font-medium text-slate-400 italic">Chưa tiếp nhận</span>
-                        )}
+                      <td className="py-4 text-right pr-2">
+                        <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+                          <Checkbox
+                            checked={isDone}
+                            disabled={!isCreatorOrAdmin}
+                            onCheckedChange={() => handleToggleSiblingStatus(sib.id, sib.status)}
+                            className="h-4.5 w-4.5 rounded border-slate-300 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500 transition-all cursor-pointer disabled:cursor-not-allowed"
+                          />
+                          <span className={cn(
+                            "text-[11px] font-bold select-none cursor-pointer",
+                            isDone ? "text-emerald-600" : "text-slate-400"
+                          )} onClick={() => isCreatorOrAdmin && handleToggleSiblingStatus(sib.id, sib.status)}>
+                            {isDone ? "Đã nộp" : "Chưa nộp"}
+                          </span>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -1000,7 +1057,7 @@ export default function TaskDetailPage() {
           </div>
 
           {/* Single High-Impact Remind Action Button at the Bottom */}
-          {siblingReports.some(r => r.status !== 'done' && r.status !== 'closed') && (
+          {siblingReports.some(r => r.status !== 'done') && (
             <div className="pt-4 border-t border-slate-100 flex justify-center">
               <Button
                 disabled={isRemindingAll}
@@ -1093,7 +1150,8 @@ export default function TaskDetailPage() {
  {/* Sidebar */}
  <div className="lg:col-span-4 space-y-6">
  <div className="premium-card p-6 border-none space-y-6">
- <div className="space-y-4">
+ {task.task_type !== 'report' && (
+  <div className="space-y-4">
  <p className="text-[13px] font-medium text-slate-500">Trạng thái hiện tại</p>
  <Select disabled={(!canEdit && task.created_by !== profile?.id) || saving} value={task.status} onValueChange={handleUpdateStatus}>
  <SelectTrigger className={cn(
@@ -1117,9 +1175,10 @@ export default function TaskDetailPage() {
  })}
  </SelectContent>
  </Select>
- </div>
+  </div>
+  )}
 
- {isStrategicPlan && (profile?.role === 'admin' || profile?.role === 'manager') && (
+  {isStrategicPlan && (profile?.role === 'admin' || profile?.role === 'manager') && (
  <div className="pt-2">
  <Button 
  onClick={handleToggleFocal}
@@ -1135,7 +1194,8 @@ export default function TaskDetailPage() {
  </div>
  )}
 
- <div className="space-y-3">
+ {task.task_type !== 'report' && (
+  <div className="space-y-3">
  <div className="flex items-center justify-between">
    <p className="text-xs font-bold text-slate-500 uppercase pl-1 truncate whitespace-nowrap">Cán bộ tiếp nhận</p>
    {(profile?.role === 'manager' || profile?.role === 'admin') && !isClosed && (
@@ -1196,6 +1256,7 @@ export default function TaskDetailPage() {
  )}
  </div>
  </div>
+)}
 
  <div className="pt-4 border-t border-slate-50 grid grid-cols-2 gap-4">
  <div className="space-y-2">
@@ -1228,6 +1289,7 @@ export default function TaskDetailPage() {
  </div>
  </div>
  </div>
+
  </div>
  </div>
  </div>
