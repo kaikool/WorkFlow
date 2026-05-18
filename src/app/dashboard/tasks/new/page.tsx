@@ -41,7 +41,7 @@ export default function NewTaskPage() {
   
   const [assignType, setAssignType] = useState<"profile" | "department">("profile");
   const [selectedAssignees, setSelectedAssignees] = useState<string[]>([]);
-  const [selectedDepartment, setSelectedDepartment] = useState<string>("");
+  const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
   
   const [dueDate, setDueDate] = useState<Date | undefined>(new Date());
   const [reminders, setReminders] = useState<string[]>([]);
@@ -82,81 +82,121 @@ export default function NewTaskPage() {
     
     let finalAssigneeId = null;
     let finalAssigneesList: string[] = [];
-    let targetDeptId = creatorProfile?.department_id;
+    let targetDeptId = creatorProfil     if (formType === 'report' && assignType === 'department') {
+       if (selectedDepartments.length === 0) {
+         toast({ variant: "destructive", title: "Lỗi", description: "Vui lòng chọn ít nhất một phòng ban nhận báo cáo." });
+         setLoading(false); return;
+       }
+       
+       // Lấy danh sách trưởng phòng của các phòng ban được chọn
+       const { data: managers, error: mgrError } = await supabase.from('profiles')
+         .select('id, department_id, full_name')
+         .in('department_id', selectedDepartments)
+         .eq('role', 'manager');
+       
+       if (mgrError) throw mgrError;
 
-    if (formType === 'report' && assignType === 'department') {
-      if (!selectedDepartment) {
-        toast({ variant: "destructive", title: "Lỗi", description: "Vui lòng chọn phòng ban nhận báo cáo." });
-        setLoading(false); return;
+       const missingManagerDepts = selectedDepartments.filter(deptId => !managers?.some(m => m.department_id === deptId));
+       if (missingManagerDepts.length > 0) {
+         const deptNames = missingManagerDepts.map(id => departments.find(d => d.id === id)?.name).join(', ');
+         toast({ variant: "destructive", title: "Lỗi", description: `Các phòng sau chưa có Trưởng phòng làm Cán bộ tiếp nhận: ${deptNames}` });
+         setLoading(false); return;
+       }
+
+       try {
+         // Tạo riêng biệt mỗi phòng ban một bản ghi báo cáo
+         for (const deptId of selectedDepartments) {
+           const manager = managers.find(m => m.department_id === deptId);
+           const managerId = manager.id;
+
+           const { data: newTask, error: taskError } = await supabase.from('tasks').insert({
+             title: formData.get('title'),
+             description: formData.get('description'),
+             assignee_id: managerId,
+             priority: formData.get('priority') || 'medium',
+             task_type: formType,
+             due_date: dueDate?.toISOString(),
+             created_by: creatorProfile?.id,
+             department_id: deptId,
+             status: 'todo',
+             progress: 0,
+             metadata: { reminders }
+           }).select().single();
+
+           if (taskError) throw taskError;
+
+           await supabase.from('task_assignees').insert({
+             task_id: newTask.id,
+             user_id: managerId
+           });
+
+           await supabase.from('notifications').insert({
+             user_id: managerId,
+             title: "Bạn có yêu cầu báo cáo mới",
+             content: `${creatorProfile?.full_name} đã yêu cầu báo cáo: ${formData.get('title')}`,
+             link: `/dashboard/tasks/${newTask.id}`
+           });
+         }
+         setIsSuccess(true);
+       } catch (error: any) {
+         toast({ variant: "destructive", title: "Lỗi", description: error.message });
+       } finally {
+         setLoading(false);
+       }
+       return;
+     } else {
+       if (selectedAssignees.length === 0) {
+         toast({ variant: "destructive", title: "Lỗi", description: "Vui lòng chọn ít nhất một người xử lý." });
+         setLoading(false); return;
+       }
+       finalAssigneeId = selectedAssignees[0];
+       finalAssigneesList = selectedAssignees;
+       
+       const p = profiles.find(x => x.id === finalAssigneeId);
+       if (p) targetDeptId = p.department_id;
+     }
+
+     try {
+       const { data: newTask, error: taskError } = await supabase.from('tasks').insert({
+         title: formData.get('title'),
+         description: formData.get('description'),
+         assignee_id: finalAssigneeId,
+         priority: formData.get('priority') || 'medium',
+         task_type: formType,
+         due_date: dueDate?.toISOString(),
+         created_by: creatorProfile?.id,
+         department_id: targetDeptId,
+         status: 'todo',
+         progress: 0,
+         metadata: { reminders }
+       }).select().single();
+
+       if (taskError) throw taskError;
+
+       const assigneeData = finalAssigneesList.map(userId => ({
+         task_id: newTask.id,
+         user_id: userId
+       }));
+
+       const { error: assigneeError } = await supabase.from('task_assignees').insert(assigneeData);
+       if (assigneeError) throw assigneeError;
+
+       if (finalAssigneesList.length > 0) {
+         const notifications = finalAssigneesList.map(userId => ({
+           user_id: userId,
+           title: formType === 'report' ? "Bạn có yêu cầu báo cáo mới" : "Bạn có công việc mới",
+           content: `${creatorProfile?.full_name} đã giao cho bạn: ${formData.get('title')}`,
+           link: `/dashboard/tasks/${newTask.id}`
+         }));
+         await supabase.from('notifications').insert(notifications);
+       }
+
+       setIsSuccess(true);
+      } catch (error: any) {
+        toast({ variant: "destructive", title: "Lỗi", description: error.message });
+      } finally {
+        setLoading(false);
       }
-      // Giao cho Trưởng phòng của phòng ban đó
-      const { data: managers } = await supabase.from('profiles')
-        .select('id')
-        .eq('department_id', selectedDepartment)
-        .eq('role', 'manager')
-        .limit(1);
-      
-      if (managers && managers.length > 0) {
-        finalAssigneeId = managers[0].id;
-        finalAssigneesList = [managers[0].id];
-        targetDeptId = selectedDepartment;
-      } else {
-        toast({ variant: "destructive", title: "Lỗi", description: "Phòng ban này chưa có Trưởng phòng để nhận việc." });
-        setLoading(false); return;
-      }
-    } else {
-      if (selectedAssignees.length === 0) {
-        toast({ variant: "destructive", title: "Lỗi", description: "Vui lòng chọn ít nhất một người xử lý." });
-        setLoading(false); return;
-      }
-      finalAssigneeId = selectedAssignees[0];
-      finalAssigneesList = selectedAssignees;
-      
-      const p = profiles.find(x => x.id === finalAssigneeId);
-      if (p) targetDeptId = p.department_id;
-    }
-
-    try {
-      const { data: newTask, error: taskError } = await supabase.from('tasks').insert({
-        title: formData.get('title'),
-        description: formData.get('description'),
-        assignee_id: finalAssigneeId,
-        priority: formData.get('priority') || 'medium',
-        task_type: formType,
-        due_date: dueDate?.toISOString(),
-        created_by: creatorProfile?.id,
-        department_id: targetDeptId,
-        status: 'todo',
-        progress: 0,
-        metadata: { reminders }
-      }).select().single();
-
-      if (taskError) throw taskError;
-
-      const assigneeData = finalAssigneesList.map(userId => ({
-        task_id: newTask.id,
-        user_id: userId
-      }));
-
-      const { error: assigneeError } = await supabase.from('task_assignees').insert(assigneeData);
-      if (assigneeError) throw assigneeError;
-
-      if (finalAssigneesList.length > 0) {
-        const notifications = finalAssigneesList.map(userId => ({
-          user_id: userId,
-          title: formType === 'report' ? "Bạn có yêu cầu báo cáo mới" : "Bạn có công việc mới",
-          content: `${creatorProfile?.full_name} đã giao cho bạn: ${formData.get('title')}`,
-          link: `/dashboard/tasks/${newTask.id}`
-        }));
-        await supabase.from('notifications').insert(notifications);
-      }
-
-      setIsSuccess(true);
-    } catch (error: any) {
-      toast({ variant: "destructive", title: "Lỗi", description: error.message });
-    } finally {
-      setLoading(false);
-    }
   };
 
   const toggleAssignee = (id: string) => {
@@ -300,19 +340,46 @@ export default function NewTaskPage() {
                     </PopoverContent>
                   </Popover>
                 ) : (
-                  <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
-                    <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-none font-bold text-slate-900 px-4 shadow-sm hover:bg-slate-100 transition-all">
-                      <div className="flex items-center gap-2">
-                        <Building2 className="w-4 h-4 text-primary" />
-                        <SelectValue placeholder="Chọn phòng ban nhận..." />
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="w-full h-auto min-h-[44px] rounded-xl border-none bg-slate-50 justify-between px-4 py-2 text-left font-bold text-slate-900 shadow-sm transition-all hover:bg-slate-100">
+                        <div className="flex flex-wrap gap-1.5 overflow-hidden">
+                          {selectedDepartments.length === 0 ? <span className="text-slate-400 font-normal">Chọn các phòng ban...</span> : 
+                           selectedDepartments.map(id => departments.find(d => d.id === id)).filter(Boolean).map(d => (
+                            <Badge key={d.id} variant="secondary" className="bg-primary text-white border-none px-2 py-0.5 rounded-md flex items-center gap-1 shrink-0 text-[12px] font-medium whitespace-nowrap truncate">
+                              {d.name}
+                            </Badge>
+                          ))}
+                        </div>
+                        <ChevronLeft className="w-4 h-4 text-slate-500 -rotate-90 shrink-0" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[300px] p-2 rounded-xl border border-slate-200 shadow-lg" align="end">
+                      <div className="max-h-[300px] overflow-y-auto space-y-1 p-1">
+                        {departments.map((d) => (
+                          <div
+                            key={d.id}
+                            onClick={() => {
+                              setSelectedDepartments(prev => 
+                                prev.includes(d.id) ? prev.filter(x => x !== d.id) : [...prev, d.id]
+                              );
+                            }}
+                            className={cn(
+                              "flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all",
+                              selectedDepartments.includes(d.id) ? "bg-primary/5 text-primary" : "hover:bg-slate-50"
+                            )}
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className={cn("w-4 h-4 rounded-md border flex items-center justify-center transition-all", selectedDepartments.includes(d.id) ? "bg-primary border-primary" : "border-slate-300")}>
+                                {selectedDepartments.includes(d.id) && <Check className="w-3 h-3 text-white" />}
+                              </div>
+                              <span className="text-xs font-bold">{d.name}</span>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl border border-slate-200 shadow-lg">
-                      {departments.map(d => (
-                        <SelectItem key={d.id} value={d.id} className="font-medium text-[13px] py-2">{d.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    </PopoverContent>
+                  </Popover>
                 )}
                 {isStaff && <p className="text-xs text-slate-500 font-medium pl-1 italic">Bạn đang tự giao việc cho chính mình.</p>}
               </div>
