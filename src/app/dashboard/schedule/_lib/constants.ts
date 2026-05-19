@@ -3,13 +3,14 @@ import {
   Users,
   DoorOpen,
   Car,
+  Palmtree,
 } from "lucide-react";
 
 export const typeLabels: any = {
-  briefing: { label: "Họp giao ban", color: "bg-red-50 text-red-600 border-red-100", icon: Users },
   meeting: { label: "Họp nội bộ", color: "bg-blue-50 text-blue-600 border-blue-100", icon: DoorOpen },
   trip: { label: "Đi công tác", color: "bg-orange-50 text-orange-600 border-orange-100", icon: Car },
-  event: { label: "Sự kiện chi nhánh", color: "bg-purple-50 text-purple-600 border-purple-100", icon: CalendarIcon }
+  event: { label: "Sự kiện chi nhánh", color: "bg-purple-50 text-purple-600 border-purple-100", icon: CalendarIcon },
+  leave: { label: "Nghỉ phép", color: "bg-slate-100 text-slate-600 border-slate-200", icon: Palmtree },
 };
 
 export const statusLabels: any = {

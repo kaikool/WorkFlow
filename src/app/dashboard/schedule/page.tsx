@@ -114,7 +114,7 @@ export default function SchedulePage() {
   // Tự động cập nhật trạng thái online/bận
   useEffect(() => {
     const updatePresenceStatus = async () => {
-      if (!profile || schedules.length === 0) return;
+      if (!profile) return;
       const now = new Date();
       const currentAct = schedules.find(s =>
         s.status === 'approved' &&
@@ -126,10 +126,12 @@ export default function SchedulePage() {
       if (currentAct) {
         targetStatus = currentAct.type === 'trip' ? 'on_trip' : 'in_meeting';
       }
-      if (profile.status !== targetStatus && targetStatus !== 'online') {
+      // Luôn cập nhật để đảm bảo trạng thái trở về 'online' sau khi lịch kết thúc
+      if (profile.status !== targetStatus) {
         await supabase.from('profiles').update({
           status: targetStatus, last_seen: new Date().toISOString()
         }).eq('id', profile.id);
+        setProfile((prev: any) => prev ? { ...prev, status: targetStatus } : prev);
       }
     };
     updatePresenceStatus();
@@ -153,10 +155,11 @@ export default function SchedulePage() {
     try {
       const start = startOfWeek(selectedDate, { weekStartsOn: 1 });
       const end = endOfWeek(selectedDate, { weekStartsOn: 1 });
+      // Lấy tất cả lịch có start_time trong tuần HOẶC end_time >= đầu tuần để bắt lịch nhiều ngày chạy qua tuần
       const { data: scheds, error: sError } = await supabase
         .from('schedules')
         .select(`*, creator:profiles(full_name, avatar_url), room:rooms(name), vehicle:vehicles(name, plate_number), participants:schedule_participants(profile:profiles(id, full_name, avatar_url, role))`)
-        .gte('start_time', start.toISOString())
+        .gte('end_time', start.toISOString())
         .lte('start_time', end.toISOString())
         .order('start_time');
       if (sError) throw sError;
@@ -223,7 +226,6 @@ export default function SchedulePage() {
       toast({ variant: "destructive", title: "Lỗi", description: error.message });
     }
   };
-
   const handleDeleteSchedule = async (id: string) => {
     if (!confirm('Bạn có chắc chắn muốn xóa lịch trình này?')) return;
     try {
@@ -237,12 +239,51 @@ export default function SchedulePage() {
     }
   };
 
+  const handleUpdateEndTime = async (id: string, newEndTimeStr: string) => {
+    try {
+      // Get current schedule to compare and notify
+      const schedule = schedules.find(s => s.id === id);
+      if (!schedule) return;
+      
+      const newEndTime = new Date(newEndTimeStr);
+      const isEndEarly = newEndTime <= new Date();
+
+      const { error } = await supabase.from('schedules').update({ end_time: newEndTime.toISOString() }).eq('id', id);
+      if (error) throw error;
+
+      // Ghi nhận lịch sử / cảnh báo cho những người khác (thông báo)
+      if (schedule.participants?.length > 0) {
+        const otherParticipantIds = schedule.participants
+          .filter((p: any) => p.profile?.id !== profile?.id)
+          .map((p: any) => p.profile?.id);
+        
+        if (otherParticipantIds.length > 0) {
+          await supabase.from('notifications').insert(
+            otherParticipantIds.map((uid: string) => ({
+              user_id: uid,
+              title: isEndEarly ? "Lịch trình kết thúc sớm" : "Lịch trình thay đổi thời gian",
+              content: `${profile?.full_name || 'Ai đó'} vừa cập nhật thời gian kết thúc của "${schedule.title}" thành ${format(newEndTime, 'HH:mm dd/MM')}.`,
+              link: "/dashboard/schedule"
+            }))
+          );
+        }
+      }
+
+      toast({ title: "Thành công", description: "Đã cập nhật thời gian kết thúc." });
+      fetchData();
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Lỗi", description: error.message });
+    }
+  };
+
+
   const handleCreateSchedule = async () => {
     if (!newSchedule.title || !startDate || !endDate) {
       toast({ variant: "destructive", title: "Lỗi", description: "Vui lòng điền đầy đủ thông tin bắt buộc." });
       return;
     }
-    if (conflicts.length > 0) {
+    // Chỉ kiểm tra xung đột khi không phải nghỉ phép
+    if (newSchedule.type !== 'leave' && conflicts.length > 0) {
       toast({ variant: "destructive", title: "Trùng lịch trình", description: "Vui lòng điều chỉnh lại thời gian hoặc thành phần tham gia do có người đang bận." });
       return;
     }
@@ -254,25 +295,30 @@ export default function SchedulePage() {
     const [eHour, eMin] = endTime.split(':');
     end.setHours(parseInt(eHour), parseInt(eMin));
 
+    const isLeave = newSchedule.type === 'leave';
+
     try {
       const { use_vehicle, participants, vehicle_id, ...insertData } = newSchedule;
       const { data: createdSchedule, error } = await supabase.from('schedules').insert({
         ...insertData,
         start_time: start.toISOString(),
         end_time: end.toISOString(),
-        room_id: (newSchedule.location === 'Chi nhánh' && newSchedule.room_id !== "none") ? newSchedule.room_id : null,
+        room_id: (!isLeave && newSchedule.location === 'Chi nhánh' && newSchedule.room_id !== "none") ? newSchedule.room_id : null,
         vehicle_id: null,
-        requested_vehicle_type: use_vehicle ? newSchedule.requested_vehicle_type : null,
-        use_vehicle: use_vehicle,
+        requested_vehicle_type: (!isLeave && use_vehicle) ? newSchedule.requested_vehicle_type : null,
+        use_vehicle: !isLeave && use_vehicle,
         created_by: profile?.id,
         department_id: profile?.department_id,
         status: (profile?.role === 'admin' || profile?.departments?.name === 'Tổ chức Tổng hợp') ? 'approved' : 'pending'
       }).select().single();
       if (error) throw error;
 
-      const finalParticipants = resolveParticipantIds({
-        selectedParticipants, bgdMode, selectedBGD, deptMode, filterDepts, participantMode, allProfiles
-      });
+      // Nghỉ phép: chỉ thêm chính người tạo làm participant
+      // Lịch thường: resolve theo lựa chọn thành phần
+      const finalParticipants = isLeave
+        ? [profile?.id].filter(Boolean)
+        : resolveParticipantIds({ selectedParticipants, bgdMode, selectedBGD, deptMode, filterDepts, participantMode, allProfiles });
+
       if (finalParticipants.length > 0) {
         await supabase.from('schedule_participants').insert(
           finalParticipants.map(pid => ({ schedule_id: createdSchedule.id, profile_id: pid }))
@@ -280,19 +326,42 @@ export default function SchedulePage() {
       }
 
       if (createdSchedule.status === 'pending') {
-        const tcthUsers = allProfiles.filter(p => p.departments?.name === 'Tổ chức Tổng hợp');
-        if (tcthUsers.length > 0) {
+        // Nghỉ phép: thông báo cho lãnh đạo phòng + TCTH
+        // Lịch thường: thông báo chỉ cho TCTH
+        const notifyTargets = isLeave
+          ? allProfiles.filter(p =>
+              p.departments?.name === 'Tổ chức Tổng hợp' ||
+              (p.department_id === profile?.department_id && p.role === 'manager')
+            )
+          : allProfiles.filter(p => p.departments?.name === 'Tổ chức Tổng hợp');
+
+        if (notifyTargets.length > 0) {
           await supabase.from('notifications').insert(
-            tcthUsers.map(user => ({
-              user_id: user.id, title: "Yêu cầu lịch trình mới",
-              content: `${profile?.full_name} vừa đăng ký lịch: ${newSchedule.title}. Vui lòng điều phối xe/phòng.`,
+            notifyTargets.map(user => ({
+              user_id: user.id,
+              title: isLeave ? "Đơn xin nghỉ phép mới" : "Yêu cầu lịch trình mới",
+              content: isLeave
+                ? `${profile?.full_name} xin nghỉ phép: ${newSchedule.title}. Vui lòng phê duyệt đơn.`
+                : `${profile?.full_name} vừa đăng ký lịch: ${newSchedule.title}. Vui lòng điều phối xe/phòng.`,
               link: "/dashboard/schedule"
             }))
           );
         }
       }
 
-      toast({ title: "Thành công", description: "Lịch trình đã được đăng ký." });
+      toast({ title: "Thành công", description: isLeave ? "Đơn nghỉ phép đã được gửi." : "Lịch trình đã được đăng ký." });
+      // Reset toàn bộ form về trạng thái mặc định
+      setNewSchedule({ title: "", description: "", location: "", department_id: "", type: "meeting", use_room: false, room_id: "", use_vehicle: false, vehicle_id: "", requested_vehicle_type: "4 chỗ", participants: [] });
+      setStartDate(new Date());
+      setEndDate(new Date());
+      setStartTime("08:00");
+      setEndTime("09:00");
+      setBgdMode('all');
+      setSelectedBGD([]);
+      setDeptMode('all');
+      setFilterDepts([]);
+      setParticipantMode('all');
+      setSelectedParticipants([]);
       setIsCreateOpen(false);
       fetchData();
     } catch (error: any) {
@@ -385,7 +454,9 @@ export default function SchedulePage() {
         isOpen={isDetailOpen} setIsOpen={setIsDetailOpen}
         schedule={selectedSchedule} vehicles={vehicles}
         isTCTH={isTCTH} allProfiles={allProfiles}
+        currentProfile={profile}
         onAssignVehicle={handleAssignVehicle}
+        onUpdateEndTime={handleUpdateEndTime}
       />
     </div>
   );

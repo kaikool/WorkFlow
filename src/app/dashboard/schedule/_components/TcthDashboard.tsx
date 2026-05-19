@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
-import { format, isSameDay } from "date-fns";
+import { format } from "date-fns";
 
 interface TcthDashboardProps {
   schedules: any[];
@@ -101,7 +101,14 @@ export default function TcthDashboard({ schedules, vehicles, rooms, selectedDate
           </h3>
           <div className="grid grid-cols-1 gap-4">
             {vehicles.map(v => {
-              const currentTrip = schedules.find(s => s.vehicle_id === v.id && (s.status === 'approved' || s.status === 'pending') && isSameDay(new Date(s.start_time), selectedDate));
+              const now = new Date();
+              // Lịch đang diễn ra thực sự theo giờ hiện tại (không chỉ theo ngày)
+              const currentTrip = schedules.find(s =>
+                s.vehicle_id === v.id &&
+                (s.status === 'approved' || s.status === 'pending') &&
+                new Date(s.start_time) <= now &&
+                new Date(s.end_time) >= now
+              );
               const isBusy = currentTrip?.status === 'approved';
               const isPending = currentTrip?.status === 'pending';
               return (
@@ -147,7 +154,14 @@ export default function TcthDashboard({ schedules, vehicles, rooms, selectedDate
           </h3>
           <div className="grid grid-cols-1 gap-4">
             {rooms.map(r => {
-              const currentMeeting = schedules.find(s => s.room_id === r.id && (s.status === 'approved' || s.status === 'pending') && isSameDay(new Date(s.start_time), selectedDate));
+              const now = new Date();
+              // Lịch đang diễn ra thực sự theo giờ hiện tại (không chỉ theo ngày)
+              const currentMeeting = schedules.find(s =>
+                s.room_id === r.id &&
+                (s.status === 'approved' || s.status === 'pending') &&
+                new Date(s.start_time) <= now &&
+                new Date(s.end_time) >= now
+              );
               const isBusy = currentMeeting?.status === 'approved';
               const isPending = currentMeeting?.status === 'pending';
               return (

@@ -23,7 +23,9 @@ interface ScheduleDetailDialogProps {
   vehicles: any[];
   isTCTH: boolean;
   allProfiles: any[];
+  currentProfile: any;
   onAssignVehicle: (scheduleId: string, vehicleId: string | null) => void;
+  onUpdateEndTime: (scheduleId: string, newEndTime: string) => void;
 }
 
 function RenderParticipants({ schedule, allProfiles }: { schedule: any; allProfiles: any[] }) {
@@ -63,10 +65,10 @@ function RenderParticipants({ schedule, allProfiles }: { schedule: any; allProfi
 
   remaining.forEach((p: any, idx: number) => {
     elements.push(
-      <Badge key={`p-${idx}`} variant="outline" className="bg-white border-slate-200 rounded-full px-3 py-1.5 flex items-center gap-2 font-medium text-slate-600 shadow-sm">
-        <Avatar className="h-4 w-4">
+      <Badge key={`p-${idx}`} variant="outline" className="bg-white border-slate-200 rounded-full px-3 py-1.5 flex items-center gap-2 font-semibold text-slate-700 shadow-sm">
+        <Avatar className="h-5 w-5">
           <AvatarImage src={p.profile?.avatar_url} />
-          <AvatarFallback className="text-[8px]">{p.profile?.full_name?.[0]}</AvatarFallback>
+          <AvatarFallback className="text-[9px] bg-slate-100">{p.profile?.full_name?.[0]}</AvatarFallback>
         </Avatar>
         {p.profile?.full_name}
       </Badge>
@@ -77,34 +79,82 @@ function RenderParticipants({ schedule, allProfiles }: { schedule: any; allProfi
 }
 
 export default function ScheduleDetailDialog({
-  isOpen, setIsOpen, schedule, vehicles, isTCTH, allProfiles, onAssignVehicle
+  isOpen, setIsOpen, schedule, vehicles, isTCTH, allProfiles, currentProfile, onAssignVehicle, onUpdateEndTime
 }: ScheduleDetailDialogProps) {
+  const [isEditingTime, setIsEditingTime] = React.useState(false);
+  const [newEndTime, setNewEndTime] = React.useState("");
+
+  React.useEffect(() => {
+    if (schedule?.end_time && isOpen) {
+      setNewEndTime(format(new Date(schedule.end_time), "yyyy-MM-dd'T'HH:mm"));
+      setIsEditingTime(false);
+    }
+  }, [schedule, isOpen]);
+
   if (!schedule) return null;
 
   const matchedVehicle = vehicles.find(v => v.id === schedule.vehicle_id);
 
+  const headerBgMap: any = {
+    meeting: "bg-blue-50/80",
+    trip: "bg-orange-50/80",
+    event: "bg-purple-50/80", // Using a very light subtle tint
+    leave: "bg-slate-100/80",
+  };
+  const badgeColorMap: any = {
+    meeting: "text-blue-700 border-blue-200/50",
+    trip: "text-orange-700 border-orange-200/50",
+    event: "text-purple-700 border-purple-200/50",
+    leave: "text-slate-700 border-slate-200/50",
+  };
+  const headerBg = headerBgMap[schedule.type] || "bg-slate-50/80";
+  const badgeColor = badgeColorMap[schedule.type] || "text-slate-700 border-slate-200/50";
+
+  const isParticipant = schedule.participants?.some((p: any) => p.profile?.id === currentProfile?.id);
+  const isCreator = schedule.created_by === currentProfile?.id;
+  const canEdit = isParticipant || isCreator || isTCTH;
+
+  const handleSaveTime = () => {
+    if (!newEndTime) return;
+    const confirmMsg = "Bạn có chắc chắn muốn thay đổi thời gian kết thúc của lịch trình này không? Tất cả những người tham gia sẽ nhận được thông báo.";
+    if (confirm(confirmMsg)) {
+      onUpdateEndTime(schedule.id, new Date(newEndTime).toISOString());
+      setIsEditingTime(false);
+    }
+  };
+
+  const handleEndNow = () => {
+    const confirmMsg = "Bạn có chắc chắn muốn báo kết thúc lịch trình này ngay bây giờ? Tất cả những người tham gia sẽ nhận được thông báo.";
+    if (confirm(confirmMsg)) {
+      onUpdateEndTime(schedule.id, new Date().toISOString());
+      setIsEditingTime(false);
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="rounded-2xl border-none shadow-2xl max-w-xl p-0 overflow-hidden">
+      <DialogContent className="rounded-2xl border-none shadow-2xl max-w-xl p-0 overflow-hidden bg-white">
         <DialogHeader className="sr-only">
           <DialogTitle className="text-[17px] font-semibold text-slate-900">Chi tiết lịch trình</DialogTitle>
         </DialogHeader>
         <div className="flex flex-col">
           {/* Header */}
-          <div className={cn("p-6 text-white relative overflow-hidden", schedule.type === 'trip' ? "bg-amber-600" : "bg-slate-900")}>
-            <div className="relative z-10 space-y-2">
-              <Badge className="bg-white text-slate-900 border-none font-bold text-[10px] px-3 py-1">
-                {typeLabels[schedule.type]?.label.toUpperCase()}
+          <div className={cn("p-6 relative overflow-hidden backdrop-blur-xl border-b border-slate-100", headerBg)}>
+            <div className="relative z-10 space-y-3">
+              <Badge className={cn("bg-white/60 backdrop-blur-md shadow-sm font-bold text-[10px] px-3 py-1 uppercase tracking-wider", badgeColor)}>
+                {typeLabels[schedule.type]?.label}
               </Badge>
-              <h2 className="text-2xl font-bold leading-tight tabular-nums tracking-tighter">{schedule.title}</h2>
-              <div className="flex items-center gap-4 text-white/80 text-xs font-bold pt-2">
+              <DialogTitle className="text-xl md:text-2xl font-bold leading-tight tabular-nums tracking-tighter text-slate-900">
+                {schedule.title}
+              </DialogTitle>
+              <div className="flex items-center gap-4 text-slate-600 text-[13px] font-semibold pt-1">
                 <div className="flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5" />
+                  <Clock className="w-4 h-4 text-slate-400" />
                   {format(new Date(schedule.start_time), 'HH:mm dd/MM')} - {format(new Date(schedule.end_time), 'HH:mm dd/MM')}
                 </div>
               </div>
             </div>
-            <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-white/80 rounded-full blur-3xl" />
+            <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-white/60 rounded-full blur-3xl pointer-events-none" />
           </div>
 
           {/* Body */}
@@ -200,14 +250,45 @@ export default function ScheduleDetailDialog({
               <p className="text-[13px] font-medium text-slate-500">Thành phần tham gia</p>
               <RenderParticipants schedule={schedule} allProfiles={allProfiles} />
             </div>
+            {/* Điều chỉnh thời gian (Nếu có quyền) */}
+            {canEdit && (
+              <div className="space-y-3 pt-4 border-t border-slate-100">
+                <div className="flex items-center justify-between">
+                  <p className="text-[13px] font-semibold text-slate-700">Điều chỉnh lịch trình</p>
+                  {!isEditingTime && new Date(schedule.end_time) > new Date() && (
+                    <div className="flex gap-2">
+                       <Button variant="outline" size="sm" className="h-8 px-3 rounded-lg text-xs font-semibold text-slate-600 border-slate-200" onClick={() => setIsEditingTime(true)}>Sửa giờ kết thúc</Button>
+                       <Button variant="outline" size="sm" className="h-8 px-3 rounded-lg text-xs font-semibold border-orange-200 text-orange-600 hover:bg-orange-50" onClick={handleEndNow}>Kết thúc sớm</Button>
+                    </div>
+                  )}
+                </div>
+                {isEditingTime && (
+                  <div className="flex flex-col gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-200 animate-in zoom-in-95 duration-200">
+                    <div>
+                      <p className="text-[11px] font-bold text-slate-500 uppercase mb-1.5">Giờ kết thúc mới</p>
+                      <input 
+                        type="datetime-local" 
+                        value={newEndTime}
+                        onChange={(e) => setNewEndTime(e.target.value)}
+                        className="flex h-10 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary shadow-sm"
+                      />
+                    </div>
+                    <div className="flex gap-2 justify-end mt-1">
+                      <Button variant="ghost" size="sm" className="h-9 px-4 rounded-xl text-xs font-semibold text-slate-500" onClick={() => setIsEditingTime(false)}>Hủy</Button>
+                      <Button size="sm" className="h-9 px-4 rounded-xl text-xs font-semibold bg-primary text-white shadow-sm" onClick={handleSaveTime}>Lưu thay đổi</Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
-          <DialogFooter className="pt-4 border-t border-slate-100 flex flex-row justify-between gap-4">
-            <Button variant="ghost" className="rounded-xl font-medium text-slate-500 text-xs md:text-[11px]" onClick={() => setIsOpen(false)}>Đóng cửa sổ</Button>
+          <DialogFooter className="px-6 py-4 border-t border-slate-100 bg-slate-50/50 flex flex-row justify-between items-center gap-4">
+            <Button variant="ghost" className="h-10 px-4 rounded-xl font-medium text-slate-600 text-[13px] hover:bg-slate-200" onClick={() => setIsOpen(false)}>Đóng cửa sổ</Button>
             {isTCTH && schedule.vehicle_id && (
               <Button
                 variant="outline"
-                className="rounded-xl font-semibold text-xs md:text-[11px] uppercase border-red-100 text-red-500 hover:bg-red-50 hover:text-red-600 truncate whitespace-nowrap"
+                className="h-10 px-5 rounded-xl font-bold text-[12px] uppercase border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 shadow-sm transition-all"
                 onClick={() => onAssignVehicle(schedule.id, null)}
               >
                 Hủy gán xe

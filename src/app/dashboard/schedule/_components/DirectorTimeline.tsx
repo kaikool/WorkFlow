@@ -91,14 +91,17 @@ export default function DirectorTimeline({
                         const leftPercent = Math.max(0, Math.min(100, ((sMin - startLimit) / duration) * 100));
                         const widthPercent = Math.max(4, Math.min(100 - leftPercent, ((eMin - sMin) / duration) * 100));
                         const typeColor = dirColor.bullet;
+                        // Phát hiện lịch bị cắt bớt ngoài khung 8-17h
+                        const isCutLeft = sMin < startLimit;
+                        const isCutRight = eMin > (startLimit + duration);
 
                         return (
                           <div
                             key={sched.id}
                             onClick={() => onSelectSchedule(sched)}
                             style={{ left: `${leftPercent}%`, width: `${widthPercent}%` }}
-                            className={`absolute h-2.5 rounded-full cursor-pointer transition-all hover:scale-y-125 hover:shadow-xs active:scale-[0.95] select-none ${typeColor} border-none shadow-xs`}
-                            title={`${sched.title} (${format(sTime, 'HH:mm')} - ${format(eTime, 'HH:mm')})`}
+                            className={`absolute h-2.5 rounded-full cursor-pointer transition-all hover:scale-y-125 hover:shadow-xs active:scale-[0.95] select-none ${typeColor} border-none shadow-xs ${(isCutLeft || isCutRight) ? 'opacity-60' : ''}`}
+                            title={`${sched.title} (${format(sTime, 'HH:mm')} - ${format(eTime, 'HH:mm')})${isCutLeft ? ' ◀ ngoài khung' : ''}${isCutRight ? ' ▶ ngoài khung' : ''}`}
                           />
                         );
                       })}

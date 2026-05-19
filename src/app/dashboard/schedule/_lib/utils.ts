@@ -66,7 +66,8 @@ export function resolveParticipantIds(params: {
   if (deptMode === 'all') {
     const allStaffIds = allProfiles.filter(p => p.role !== 'admin' && p.role !== 'director').map(p => p.id);
     ids = [...new Set([...ids, ...allStaffIds])];
-  } else if (filterDepts.length > 0) {
+  } else if (deptMode === 'specific' && filterDepts.length > 0) {
+    // Chỉ lấy theo phòng ban được chọn
     if (participantMode === 'all') {
       const deptIds = allProfiles.filter(p => filterDepts.includes(p.department_id)).map(p => p.id);
       ids = [...new Set([...ids, ...deptIds])];
@@ -74,7 +75,9 @@ export function resolveParticipantIds(params: {
       const mgrIds = allProfiles.filter(p => filterDepts.includes(p.department_id) && p.role === 'manager').map(p => p.id);
       ids = [...new Set([...ids, ...mgrIds])];
     }
+    // participantMode = 'staff': không thêm lãnh đạo phòng
   }
+  // deptMode = 'none' hoặc 'specific' mà chưa chọn phòng: không thêm ai
 
   return ids;
 }
