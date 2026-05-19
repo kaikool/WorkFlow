@@ -11,14 +11,11 @@ import {
  LogOut, 
  Menu,
  X,
- Settings,
  Building2,
- Workflow,
  RefreshCw,
  Loader2,
  CalendarDays,
- ShieldCheck,
- Database
+ ShieldCheck
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -159,10 +156,10 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
  </AlertDialog>
 
  {/* Sidebar Desktop */}
- <aside className="hidden lg:flex flex-col w-68 bg-slate-50/50 backdrop-blur-xl border-r border-slate-200/60 sticky top-0 h-screen shrink-0 z-50">
- <div className="px-5 py-6 flex items-center gap-3">
+ <aside className="hidden lg:flex flex-col w-[272px] bg-[#f5f5f7]/90 backdrop-blur-xl border-r border-slate-200/70 sticky top-0 h-screen shrink-0 z-50">
+ <div className="px-4 py-5 flex items-center gap-3">
     <div className="flex items-center justify-center shrink-0">
-      <img src="/logo.png" alt="Logo" className="w-10 h-10 object-contain" />
+      <img src="/logo.png" alt="Logo" className="w-9 h-9 object-contain" />
     </div>
     <div className="flex flex-col">
       <span className="text-[15px] font-semibold text-slate-900 leading-none">WorkFlow</span>
@@ -170,49 +167,51 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
     </div>
   </div>
 
- <nav className="flex-1 px-5 space-y-2 mt-6">
+ <nav className="flex-1 px-3 space-y-1 mt-3">
  {navItems.map((item) => {
  const isActive = pathname === item.href;
  return (
  <Link
  key={item.name}
  href={item.href}
+ aria-current={isActive ? "page" : undefined}
  className={cn(
- "flex items-center gap-3 px-3 py-2.5 rounded-lg text-[14px] font-medium transition-all duration-150",
+ "flex h-10 items-center gap-3 rounded-xl px-3 text-[13px] font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20",
               isActive
-                ? "bg-slate-900 text-white"
-                : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                ? "bg-white text-slate-950 shadow-sm ring-1 ring-slate-200/70"
+                : "text-slate-600 hover:bg-white/70 hover:text-slate-950"
  )}
  >
- <item.icon className={cn("w-[18px] h-[18px] shrink-0", isActive ? "text-white" : "text-slate-500")} />
+ <item.icon className={cn("w-[18px] h-[18px] shrink-0", isActive ? "text-primary" : "text-slate-500")} />
  {item.name}
  </Link>
  );
  })}
  
  {canManageSystem && (
- <div className="mt-8 pt-6 border-t border-slate-100 space-y-1">
- <p className="px-3 text-[11px] font-semibold text-slate-400 mb-1">Hệ thống</p>
+ <div className="mt-7 pt-5 border-t border-slate-200/70 space-y-1">
+ <p className="px-3 text-[11px] font-medium text-slate-500 mb-1">Hệ thống</p>
  <Link
  href="/dashboard/admin"
+ aria-current={pathname === "/dashboard/admin" ? "page" : undefined}
  className={cn(
- "flex items-center gap-3 px-3 py-2.5 rounded-lg text-[14px] font-medium transition-all duration-150",
+ "flex h-10 items-center gap-3 rounded-xl px-3 text-[13px] font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20",
                 pathname === "/dashboard/admin"
-                  ? "bg-slate-900 text-white"
-                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                  ? "bg-white text-slate-950 shadow-sm ring-1 ring-slate-200/70"
+                  : "text-slate-600 hover:bg-white/70 hover:text-slate-950"
  )}
  >
- <ShieldCheck className={cn("w-[18px] h-[18px] shrink-0", pathname === "/dashboard/admin" ? "text-white" : "text-slate-500")} />
+ <ShieldCheck className={cn("w-[18px] h-[18px] shrink-0", pathname === "/dashboard/admin" ? "text-primary" : "text-slate-500")} />
  Quản trị
  </Link>
  </div>
  )}
  </nav>
 
- <div className="p-6">
+ <div className="p-4">
  <div className="flex items-center gap-3 px-2 py-2 mb-2">
  <div className="flex items-center gap-3">
- <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
+ <div className="w-7 h-7 rounded-lg bg-white/80 shadow-sm ring-1 ring-slate-200/70 flex items-center justify-center shrink-0">
  <Building2 className="w-4 h-4 text-slate-500" />
  </div>
  <div className="flex flex-col min-w-0">
@@ -225,7 +224,7 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
  </div>
  <Button 
  variant="ghost" 
- className="w-full justify-start text-red-500 hover:bg-red-50 hover:text-red-600 rounded-lg h-9 font-medium text-[14px] px-3" 
+ className="w-full justify-start text-red-600 hover:bg-red-50 hover:text-red-700 rounded-xl h-10 font-medium text-[13px] px-3 focus-visible:ring-2 focus-visible:ring-red-500/20" 
  onClick={() => setIsLogoutDialogOpen(true)}
  >
  <LogOut className="w-4 h-4 mr-2.5" />
@@ -289,46 +288,46 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
  {isMobileMenuOpen && (
  <div className="lg:hidden fixed inset-0 z-[100] flex animate-in fade-in duration-300">
  <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setIsMobileMenuOpen(false)}></div>
- <div className="relative w-80 bg-white h-full flex flex-col shadow-2xl animate-in slide-in-from-left duration-500">
- <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+ <div className="relative w-[300px] bg-white h-full flex flex-col shadow-2xl animate-in slide-in-from-left duration-500">
+ <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-[#f5f5f7]/80">
  <div className="flex items-center gap-3">
  <div className="flex items-center justify-center shrink-0">
- <img src="/logo.png" alt="Logo" className="w-10 h-10 object-contain" />
+ <img src="/logo.png" alt="Logo" className="w-9 h-9 object-contain" />
  </div>
- <span className="font-bold text-xl text-slate-900 tracking-tighter tabular-nums">WorkFlow</span>
+ <span className="font-semibold text-lg text-slate-900 tabular-nums">WorkFlow</span>
  </div>
- <Button variant="ghost" size="icon" onClick={() => setIsMobileMenuOpen(false)} className="rounded-xl"><X className="w-6 h-6 text-slate-500" /></Button>
+ <Button variant="ghost" size="icon" onClick={() => setIsMobileMenuOpen(false)} className="rounded-xl"><X className="w-5 h-5 text-slate-500" /></Button>
  </div>
- <nav className="flex-1 p-6 space-y-2 overflow-y-auto">
- <p className="text-[10px] font-bold text-slate-500 uppercase mb-4 pl-2 truncate whitespace-nowrap">MENU ĐIỀU HƯỚNG</p>
+ <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+ <p className="text-[11px] font-medium text-slate-500 mb-3 pl-2 truncate whitespace-nowrap">Menu điều hướng</p>
  {navItems.map((item) => (
- <Link key={item.name} href={item.href} onClick={() => setIsMobileMenuOpen(false)} className={cn("flex items-center gap-4 px-5 py-5 rounded-2xl text-[15px] font-bold uppercase transition-all", pathname === item.href ? "bg-primary text-white shadow-primary-glow" : "text-slate-500 hover:bg-slate-50")}>
- <item.icon className="w-6 h-6" />{item.name}
+ <Link key={item.name} href={item.href} onClick={() => setIsMobileMenuOpen(false)} className={cn("flex h-12 items-center gap-3 rounded-xl px-4 text-[14px] font-medium transition-colors", pathname === item.href ? "bg-slate-100 text-slate-950" : "text-slate-600 hover:bg-slate-50 hover:text-slate-950")}>
+ <item.icon className="w-5 h-5" />{item.name}
  </Link>
  ))}
  
  {canManageSystem && (
- <div className="pt-6 mt-6 border-t border-slate-100 space-y-2">
- <p className="text-[10px] font-bold text-slate-500 uppercase mb-2 pl-2 truncate whitespace-nowrap">HỆ THỐNG</p>
+ <div className="pt-5 mt-5 border-t border-slate-100 space-y-1">
+ <p className="text-[11px] font-medium text-slate-500 mb-2 pl-2 truncate whitespace-nowrap">Hệ thống</p>
  <Link 
  href="/dashboard/admin" 
  onClick={() => setIsMobileMenuOpen(false)} 
  className={cn(
- "flex items-center gap-4 px-5 py-5 rounded-2xl text-[15px] font-bold uppercase transition-all", 
- pathname === "/dashboard/admin" ? "bg-primary text-white shadow-primary-glow" : "text-slate-500 hover:bg-slate-50"
+ "flex h-12 items-center gap-3 rounded-xl px-4 text-[14px] font-medium transition-colors", 
+ pathname === "/dashboard/admin" ? "bg-slate-100 text-slate-950" : "text-slate-600 hover:bg-slate-50 hover:text-slate-950"
  )}
  >
- <ShieldCheck className="w-6 h-6" />Quản trị hệ thống
+ <ShieldCheck className="w-5 h-5" />Quản trị hệ thống
  </Link>
  </div>
  )}
- <div className="pt-6 mt-6 border-t border-slate-100 space-y-4">
- <div className="p-5 bg-slate-50 rounded-3xl border border-slate-100 space-y-2">
- <p className="text-[10px] font-bold text-slate-500 uppercase truncate whitespace-nowrap">ĐANG ĐĂNG NHẬP</p>
- <p className="text-sm font-bold text-slate-900">{profile?.full_name}</p>
+ <div className="pt-5 mt-5 border-t border-slate-100 space-y-3">
+ <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-1.5">
+ <p className="text-[11px] font-medium text-slate-500 truncate whitespace-nowrap">Đang đăng nhập</p>
+ <p className="text-sm font-medium text-slate-900">{profile?.full_name}</p>
  </div>
- <Button variant="ghost" className="w-full justify-start text-red-500 hover:bg-red-50 font-bold px-6 py-8 text-base rounded-2xl" onClick={() => { setIsMobileMenuOpen(false); setIsLogoutDialogOpen(true); }}>
- <LogOut className="w-6 h-6 mr-4" /> ĐĂNG XUẤT
+ <Button variant="ghost" className="w-full h-12 justify-start text-red-600 hover:bg-red-50 hover:text-red-700 font-medium px-4 text-[14px] rounded-xl" onClick={() => { setIsMobileMenuOpen(false); setIsLogoutDialogOpen(true); }}>
+ <LogOut className="w-5 h-5 mr-3" /> Đăng xuất
  </Button>
  </div>
  </nav>
