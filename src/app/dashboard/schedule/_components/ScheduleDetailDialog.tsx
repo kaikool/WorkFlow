@@ -11,7 +11,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from "@/components/ui/select";
-import { cn } from "@/lib/utils";
+import { cn, compareProfilesByHierarchy } from "@/lib/utils";
 import { format } from "date-fns";
 import { typeLabels } from "../_lib/constants";
 import { filterBGD, filterStaff } from "../_lib/utils";
@@ -63,7 +63,7 @@ function RenderParticipants({ schedule, allProfiles }: { schedule: any; allProfi
     return true;
   });
 
-  remaining.forEach((p: any, idx: number) => {
+  remaining.sort((a: any, b: any) => compareProfilesByHierarchy(a.profile, b.profile)).forEach((p: any, idx: number) => {
     elements.push(
       <Badge key={`p-${idx}`} variant="outline" className="bg-white border-slate-200 rounded-full px-3 py-1.5 flex items-center gap-2 font-semibold text-slate-700 shadow-sm">
         <Avatar className="h-5 w-5">

@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/select'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useToast } from '@/hooks/use-toast'
-import { cn } from '@/lib/utils'
+import { cn, compareProfilesByHierarchy } from '@/lib/utils'
 
 const STATUS_MAP: Record<string, { label: string; color: string; dot: string; light: string }> = {
   todo:   { label: 'Đang chờ',   color: 'text-muted-foreground', dot: 'bg-slate-400',  light: 'bg-muted'       },
@@ -45,7 +45,7 @@ export function ReportList({ searchQuery, filterStatus }: ReportListProps) {
       const { data: { user } } = await supabase.auth.getUser()
       let query = supabase
         .from('tasks')
-        .select(`*, creator:profiles!tasks_created_by_fkey(full_name,avatar_url,department_id), department:departments(name), task_assignees(profile:profiles(id,full_name,avatar_url))`)
+        .select(`*, creator:profiles!tasks_created_by_fkey(full_name,avatar_url,department_id), department:departments(name), task_assignees(profile:profiles(id,full_name,avatar_url,role,is_department_head))`)
         .eq('task_type', 'report')
 
       if (user) {
@@ -118,7 +118,8 @@ export function ReportList({ searchQuery, filterStatus }: ReportListProps) {
         {(showAllReports ? displayData : displayData.slice(0, 5)).map(task => {
           const status        = STATUS_MAP[task.status] || STATUS_MAP.todo
           const isLate        = task.status !== 'done' && new Date(task.due_date) < new Date()
-          const firstAssignee = task.task_assignees?.[0]?.profile
+          const sortedAssignees = [...(task.task_assignees || [])].sort((a: any, b: any) => compareProfilesByHierarchy(a.profile, b.profile))
+          const firstAssignee = sortedAssignees[0]?.profile
           const deptName      = task.department?.name
 
           // Tính số phòng đã nộp trong nhóm báo cáo này

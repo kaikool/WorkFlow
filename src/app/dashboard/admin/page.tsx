@@ -56,7 +56,7 @@ import {
  DialogTitle,
  DialogTrigger,
 } from "@/components/ui/dialog";
-import { cn } from "@/lib/utils";
+import { cn, sortProfilesByHierarchy } from "@/lib/utils";
 import { createClient } from "@/utils/supabase/client";
 
 export default function AdminPage() {
@@ -128,7 +128,7 @@ export default function AdminPage() {
  const { data: vehicleList } = await supabase.from('vehicles').select('*').order('name');
  
  setStats({ tasks: 0, goals: 0, members: memberCount || 0 });
- setUsers(userList || []);
+ setUsers(sortProfilesByHierarchy(userList || []));
  setRooms(roomList || []);
  setVehicles(vehicleList || []);
  } catch (error: any) {

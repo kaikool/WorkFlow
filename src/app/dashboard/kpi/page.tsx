@@ -52,7 +52,7 @@ import {
  TableRow
 } from '@/components/ui/table'
 import { useToast } from "@/hooks/use-toast";
-import { cn } from "@/lib/utils";
+import { cn, sortProfilesByHierarchy } from "@/lib/utils";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
 
@@ -125,10 +125,10 @@ export default function GoalsPage() {
  if (p?.department_id) {
  const { data: members } = await supabase
  .from('profiles')
- .select('id, full_name, avatar_url, role')
+ .select('id, full_name, avatar_url, role, is_department_head')
  .eq('department_id', p.department_id)
  .order('full_name');
- setTeam(members || []);
+ setTeam(sortProfilesByHierarchy(members || []));
  }
 
  await fetchGoals(p);

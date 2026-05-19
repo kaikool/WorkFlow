@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { cn } from "@/lib/utils";
+import { cn, compareProfilesByHierarchy } from "@/lib/utils";
 import { format } from "date-fns";
 import { typeLabels, statusLabels } from "../_lib/constants";
 
@@ -21,6 +21,7 @@ export default function ScheduleCard({ item, isTCTH, onSelect, onStatusUpdate }:
   const type = typeLabels[item.type] || typeLabels.meeting;
   const status = statusLabels[item.status];
   const isTrip = item.type === 'trip';
+  const sortedParticipants = [...(item.participants || [])].sort((a: any, b: any) => compareProfilesByHierarchy(a.profile, b.profile));
 
   return (
     <Card className={cn(
@@ -79,15 +80,15 @@ export default function ScheduleCard({ item, isTCTH, onSelect, onStatusUpdate }:
               <div className="flex items-center gap-2">
                 <Users className="w-3.5 h-3.5 text-slate-500" />
                 <div className="flex -space-x-2 overflow-hidden">
-                  {item.participants?.slice(0, 5).map((p: any, idx: number) => (
+                  {sortedParticipants.slice(0, 5).map((p: any, idx: number) => (
                     <Avatar key={idx} className="h-6 w-6 border-2 border-white">
                       <AvatarImage src={p.profile?.avatar_url} />
                       <AvatarFallback className="text-[8px] font-bold">{p.profile?.full_name?.[0]}</AvatarFallback>
                     </Avatar>
                   ))}
-                  {item.participants?.length > 5 && (
+                  {sortedParticipants.length > 5 && (
                     <div className="h-6 w-6 rounded-full bg-slate-100 border-2 border-white flex items-center justify-center text-[8px] font-bold text-slate-500">
-                      +{item.participants.length - 5}
+                      +{sortedParticipants.length - 5}
                     </div>
                   )}
                 </div>

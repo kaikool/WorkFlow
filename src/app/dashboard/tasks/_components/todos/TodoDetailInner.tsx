@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { useToast } from "@/hooks/use-toast"
-import { cn } from "@/lib/utils"
+import { cn, compareProfilesByHierarchy, sortProfilesByHierarchy } from "@/lib/utils"
 import { createClient } from "@/utils/supabase/client"
 import Link from "next/link"
 
@@ -53,7 +53,7 @@ export function TodoDetailInner({ id }: { id: string }) {
           p = data; setProfile(data)
         }
         const { data, error } = await supabase.from("tasks")
-          .select("*, creator:profiles!tasks_created_by_fkey(full_name,avatar_url,department_id,departments(name)), assignee:profiles!tasks_assignee_id_fkey(id,full_name,avatar_url), task_assignees(user_id,profile:profiles(full_name,avatar_url,role))")
+          .select("*, creator:profiles!tasks_created_by_fkey(full_name,avatar_url,department_id,departments(name)), assignee:profiles!tasks_assignee_id_fkey(id,full_name,avatar_url,role,is_department_head), task_assignees(user_id,profile:profiles(full_name,avatar_url,role,is_department_head))")
           .eq("id", id).single()
         if (error) throw error
         const isOwner = data.created_by === user?.id
@@ -67,7 +67,7 @@ export function TodoDetailInner({ id }: { id: string }) {
         setTask(data)
         const all = [...(data.task_assignees || [])]
         if (data.assignee_id && !all.find((a: any) => a.user_id === data.assignee_id)) all.push({ user_id: data.assignee_id, profile: data.assignee })
-        setAssignees(all)
+        setAssignees(all.sort((a: any, b: any) => compareProfilesByHierarchy(a.profile, b.profile)))
         const { data: cmts } = await supabase.from("task_comments").select("*, user:profiles(full_name,avatar_url)").eq("task_id", id).order("created_at", { ascending: true })
         setComments(cmts || [])
       } catch (err: any) { console.error(err) }
@@ -84,7 +84,7 @@ export function TodoDetailInner({ id }: { id: string }) {
 
   useEffect(() => {
     if (profile?.department_id)
-      supabase.from("profiles").select("*").eq("department_id", profile.department_id).neq("role", "manager").then(({ data }) => setDeptProfiles(data || []))
+      supabase.from("profiles").select("*").eq("department_id", profile.department_id).neq("role", "manager").then(({ data }) => setDeptProfiles(sortProfilesByHierarchy(data || [])))
   }, [profile])
   const handleDelegate = async () => {
     if (!selectedDelegate) return; setSaving(true)
@@ -95,7 +95,7 @@ export function TodoDetailInner({ id }: { id: string }) {
         await supabase.from("notifications").insert({ user_id: selectedDelegate, title: "Công việc được phân công", content: `${profile?.full_name} đã phân công: ${task.title}`, link: `/dashboard/tasks/${id}` })
         toast({ title: "Đã phân công công việc" }); setDelegationOpen(false)
         const sel = deptProfiles.find(x => x.id === selectedDelegate)
-        if (sel) setAssignees([...assignees, { user_id: selectedDelegate, profile: sel }])
+        if (sel) setAssignees([...assignees, { user_id: selectedDelegate, profile: sel }].sort((a: any, b: any) => compareProfilesByHierarchy(a.profile, b.profile)))
       } else { toast({ title: "Cán bộ này đã có trong danh sách." }) }
     } catch (err: any) { toast({ variant: "destructive", title: "Lỗi", description: err.message }) }
     finally { setSaving(false) }

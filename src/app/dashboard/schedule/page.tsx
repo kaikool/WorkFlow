@@ -180,7 +180,7 @@ export default function SchedulePage() {
       // Lấy tất cả lịch có start_time trong tuần HOẶC end_time >= đầu tuần để bắt lịch nhiều ngày chạy qua tuần
       const { data: scheds, error: sError } = await supabase
         .from('schedules')
-        .select(`*, creator:profiles(full_name, avatar_url, department_id, is_department_head), room:rooms(name), vehicle:vehicles(name, plate_number), participants:schedule_participants(profile:profiles(id, full_name, avatar_url, role))`)
+        .select(`*, creator:profiles(full_name, avatar_url, department_id, is_department_head), room:rooms(name), vehicle:vehicles(name, plate_number), participants:schedule_participants(profile:profiles(id, full_name, avatar_url, role, is_department_head))`)
         .gte('end_time', start.toISOString())
         .lte('start_time', end.toISOString())
         .order('start_time');
@@ -191,7 +191,7 @@ export default function SchedulePage() {
       setVehicles(vData || []);
       const { data: rData } = await supabase.from('rooms').select('*');
       setRooms(rData || []);
-      const { data: pData } = await supabase.from('profiles').select('id, full_name, role, department_id, departments(name)');
+      const { data: pData } = await supabase.from('profiles').select('id, full_name, role, department_id, is_department_head, departments(name)');
       setAllProfiles(pData || []);
       const { data: dData } = await supabase.from('departments').select('*');
       setDepartments(dData || []);

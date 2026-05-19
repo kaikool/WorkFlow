@@ -19,7 +19,7 @@ import { format } from 'date-fns'
 import { vi } from 'date-fns/locale'
 import { useToast } from '@/hooks/use-toast'
 import { createClient } from '@/utils/supabase/client'
-import { cn } from '@/lib/utils'
+import { cn, sortProfilesByHierarchy } from '@/lib/utils'
 import Link from 'next/link'
 
 export function NewTodoForm() {
@@ -53,28 +53,7 @@ export function NewTodoForm() {
     // Không đưa Ban giám đốc và Admin vào danh sách giao việc
     let filteredMembers = (members || []).filter((m: any) => m.role !== 'director' && m.role !== 'admin')
     
-    // Sắp xếp thống nhất: Director -> Manager -> Staff/Thư ký/HR. Ưu tiên cấp trưởng (is_department_head), sau đó theo alphabet.
-    filteredMembers.sort((a: any, b: any) => {
-      const getRolePriority = (p: any) => {
-        const r = p.role || '';
-        const t = p.title?.toLowerCase() || '';
-        const n = p.full_name?.toLowerCase() || '';
-        if (r === 'director' || t.includes('giám đốc') || n.includes('giám đốc')) return 0;
-        if (r === 'manager' || t.includes('trưởng phòng') || p.is_department_head === true) return 1;
-        return 2;
-      };
-      const pA = getRolePriority(a);
-      const pB = getRolePriority(b);
-      if (pA !== pB) return pA - pB;
-
-      const headA = a.is_department_head === true ? 0 : 1;
-      const headB = b.is_department_head === true ? 0 : 1;
-      if (headA !== headB) return headA - headB;
-
-      return (a.full_name || '').localeCompare(b.full_name || '', 'vi');
-    })
-    
-    setProfiles(filteredMembers)
+    setProfiles(sortProfilesByHierarchy(filteredMembers))
     setAssignees([user.id])
   }
 

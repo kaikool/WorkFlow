@@ -32,6 +32,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/utils/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { sortProfilesByHierarchy } from "@/lib/utils";
 
 export default function UserManagementPage() {
  const [users, setUsers] = useState<any[]>([]);
@@ -56,25 +57,7 @@ export default function UserManagementPage() {
  .order('full_name');
  
  if (pError) throw pError;
-  const sortedProfiles = (profiles || []).sort((a: any, b: any) => {
-    const getRolePriority = (p: any) => {
-      const r = p.role || '';
-      const t = p.title?.toLowerCase() || '';
-      const n = p.full_name?.toLowerCase() || '';
-      if (r === 'director' || t.includes('giám đốc') || n.includes('giám đốc')) return 0;
-      if (r === 'manager' || t.includes('trưởng phòng') || p.is_department_head === true) return 1;
-      return 2;
-    };
-    const pA = getRolePriority(a);
-    const pB = getRolePriority(b);
-    if (pA !== pB) return pA - pB;
-
-    const headA = a.is_department_head === true ? 0 : 1;
-    const headB = b.is_department_head === true ? 0 : 1;
-    if (headA !== headB) return headA - headB;
-
-    return (a.full_name || '').localeCompare(b.full_name || '', 'vi');
-  });
+  const sortedProfiles = sortProfilesByHierarchy(profiles || []);
  setUsers(sortedProfiles);
 
  const { data: depts, error: dError } = await supabase

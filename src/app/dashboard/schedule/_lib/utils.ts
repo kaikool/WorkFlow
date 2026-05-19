@@ -1,5 +1,6 @@
 import { directorColors } from "./constants";
 import { format } from "date-fns";
+import { sortProfilesByHierarchy } from "@/lib/utils";
 
 // Lọc danh sách Ban Giám đốc (Sắp xếp đồng bộ: Cấp trưởng lên đầu -> Alphabet Việt)
 export function filterBGD(profiles: any[]) {
@@ -9,15 +10,7 @@ export function filterBGD(profiles: any[]) {
     p.role !== 'admin'
   );
 
-  return filtered.sort((a: any, b: any) => {
-    // 1. Cấp trưởng vs cấp phó (is_department_head === true luôn lên đầu)
-    const headA = a.is_department_head === true ? 0 : 1;
-    const headB = b.is_department_head === true ? 0 : 1;
-    if (headA !== headB) return headA - headB;
-
-    // 2. Alphabet tiếng Việt full_name
-    return (a.full_name || '').localeCompare(b.full_name || '', 'vi');
-  });
+  return sortProfilesByHierarchy(filtered);
 }
 
 // Lọc nhân viên (không phải admin, director) - Sắp xếp đồng bộ: Manager -> Staff -> Cấp trưởng -> Alphabet Việt
@@ -29,33 +22,14 @@ export function filterStaff(profiles: any[]) {
     !p.full_name?.toLowerCase().includes('giám đốc')
   );
 
-  return filtered.sort((a: any, b: any) => {
-    // 1. Vai trò (manager -> others)
-    const getRolePriority = (role: string) => {
-      if (role === 'manager') return 0;
-      return 1;
-    };
-    const pA = getRolePriority(a.role || 'staff');
-    const pB = getRolePriority(b.role || 'staff');
-    if (pA !== pB) return pA - pB;
-
-    // 2. Cấp trưởng vs cấp phó (is_department_head === true luôn lên đầu)
-    const headA = a.is_department_head === true ? 0 : 1;
-    const headB = b.is_department_head === true ? 0 : 1;
-    if (headA !== headB) return headA - headB;
-
-    // 3. Alphabet tiếng Việt full_name
-    return (a.full_name || '').localeCompare(b.full_name || '', 'vi');
-  });
+  return sortProfilesByHierarchy(filtered);
 }
 
 // Gán màu cho từng thành viên BGĐ
 export function getDirectorColor(fullName: string, allProfiles: any[]) {
   const name = fullName ? fullName.trim() : '';
 
-  const bgdList = filterBGD(allProfiles)
-    .map(p => p.full_name)
-    .sort();
+  const bgdList = filterBGD(allProfiles).map(p => p.full_name);
 
   const index = bgdList.indexOf(fullName);
   if (index !== -1) {

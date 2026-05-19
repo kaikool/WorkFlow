@@ -21,7 +21,7 @@ import { format } from 'date-fns'
 import { vi } from 'date-fns/locale'
 import { useToast } from '@/hooks/use-toast'
 import { createClient } from '@/utils/supabase/client'
-import { cn } from '@/lib/utils'
+import { cn, sortProfilesByHierarchy } from '@/lib/utils'
 import Link from 'next/link'
 
 export function NewReportForm() {
@@ -54,7 +54,7 @@ export function NewReportForm() {
       query = query.eq('department_id', p.department_id)
     }
     const { data: members } = await query.order('full_name')
-    setProfiles((members || []).filter((m: any) => m.role !== 'director' && m.role !== 'admin'))
+    setProfiles(sortProfilesByHierarchy((members || []).filter((m: any) => m.role !== 'director' && m.role !== 'admin')))
 
     const { data: depts } = await supabase.from('departments').select('*').order('name')
     setDepts(depts || [])

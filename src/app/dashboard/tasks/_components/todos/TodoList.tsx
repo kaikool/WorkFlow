@@ -16,7 +16,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Progress } from '@/components/ui/progress'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { cn } from '@/lib/utils'
+import { cn, compareProfilesByHierarchy } from '@/lib/utils'
 
 const STATUS_MAP: Record<string, { label: string; color: string; dot: string; light: string }> = {
   todo:   { label: 'Đang chờ',   color: 'text-muted-foreground', dot: 'bg-slate-400',  light: 'bg-muted'       },
@@ -46,7 +46,7 @@ export function TodoList({ searchQuery, filterStatus }: TodoListProps) {
       const { data: { user } } = await supabase.auth.getUser()
       let query = supabase
         .from('tasks')
-        .select(`*, creator:profiles!tasks_created_by_fkey(full_name,avatar_url,department_id), department:departments(name), task_assignees(profile:profiles(id,full_name,avatar_url))`)
+        .select(`*, creator:profiles!tasks_created_by_fkey(full_name,avatar_url,department_id), department:departments(name), task_assignees(profile:profiles(id,full_name,avatar_url,role,is_department_head))`)
         // Chỉ lấy công việc (task), không lấy báo cáo hay KPI
         .neq('task_type', 'report')
 
@@ -88,8 +88,9 @@ export function TodoList({ searchQuery, filterStatus }: TodoListProps) {
       <div className="block sm:hidden space-y-4">
         {(showAllTasks ? displayData : displayData.slice(0, 5)).map(task => {
           const status       = STATUS_MAP[task.status] || STATUS_MAP.todo
-          const firstAssignee = task.task_assignees?.[0]?.profile
-          const otherCount   = (task.task_assignees?.length || 0) - 1
+          const sortedAssignees = [...(task.task_assignees || [])].sort((a: any, b: any) => compareProfilesByHierarchy(a.profile, b.profile))
+          const firstAssignee = sortedAssignees[0]?.profile
+          const otherCount   = sortedAssignees.length - 1
           return (
             <div
               key={task.id}
@@ -112,7 +113,7 @@ export function TodoList({ searchQuery, filterStatus }: TodoListProps) {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="flex -space-x-2">
-                      {task.task_assignees?.slice(0, 3).map((a: any, i: number) => (
+                      {sortedAssignees.slice(0, 3).map((a: any, i: number) => (
                         <Avatar key={i} className="h-6 w-6 border-2 border-white shadow-sm">
                           <AvatarImage src={a.profile?.avatar_url} className="object-cover" />
                           <AvatarFallback className="bg-primary text-white text-[10px] font-bold">{a.profile?.full_name?.[0]}</AvatarFallback>
@@ -148,8 +149,9 @@ export function TodoList({ searchQuery, filterStatus }: TodoListProps) {
             {(showAllTasks ? displayData : displayData.slice(0, 5)).map(task => {
               const status        = STATUS_MAP[task.status] || STATUS_MAP.todo
               const isLate        = task.status !== 'done' && new Date(task.due_date) < new Date()
-              const firstAssignee = task.task_assignees?.[0]?.profile
-              const otherCount    = (task.task_assignees?.length || 0) - 1
+              const sortedAssignees = [...(task.task_assignees || [])].sort((a: any, b: any) => compareProfilesByHierarchy(a.profile, b.profile))
+              const firstAssignee = sortedAssignees[0]?.profile
+              const otherCount    = sortedAssignees.length - 1
               return (
                 <TableRow
                   key={task.id}
@@ -183,7 +185,7 @@ export function TodoList({ searchQuery, filterStatus }: TodoListProps) {
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <div className="flex -space-x-3 overflow-hidden">
-                        {task.task_assignees?.slice(0, 3).map((a: any, i: number) => (
+                        {sortedAssignees.slice(0, 3).map((a: any, i: number) => (
                           <Avatar key={i} className="h-8 w-8 border-2 border-white shadow-sm ring-1 ring-slate-100/50">
                             <AvatarImage src={a.profile?.avatar_url} className="object-cover" />
                             <AvatarFallback className="bg-primary text-white text-[10px] font-bold">{a.profile?.full_name?.[0]}</AvatarFallback>
