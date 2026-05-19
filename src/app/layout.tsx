@@ -12,9 +12,10 @@ export const metadata: Metadata = {
  statusBarStyle: 'default',
  title: 'WorkFlow CN Hoàng Mai',
  },
- icons: {
- apple: '/logo.png',
- }
+  icons: {
+    icon: '/icon-512.png',
+    apple: '/icon-512.png',
+  }
 };
 
 export const viewport: Viewport = {

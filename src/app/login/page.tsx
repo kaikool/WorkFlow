@@ -188,8 +188,8 @@ export default function LoginPage() {
       <div className="w-full max-w-md z-10 flex flex-col items-center gap-8">
         <Card className="w-full shadow-2xl border-none rounded-[2.5rem] bg-white/80 backdrop-blur-xl overflow-hidden transition-all duration-500">
           <CardHeader className="space-y-1 flex flex-col items-center p-8 pb-4">
-            <div className="bg-white p-2 rounded-2xl mb-3 shadow-lg shadow-primary/20 transition-transform hover:scale-105 flex items-center justify-center">
-              <img src="/logo.png" alt="Logo" className="h-14 w-14 object-contain" />
+            <div className="mb-3 transition-transform hover:scale-105 flex items-center justify-center">
+              <img src="/logo.png" alt="Logo" className="h-16 w-16 object-contain" />
             </div>
             <CardTitle className="text-2xl font-bold text-slate-900 tracking-tight">
               WorkFlow Portal
