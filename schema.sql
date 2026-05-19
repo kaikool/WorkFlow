@@ -4,6 +4,9 @@ DO $$ BEGIN
 EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
+ALTER TYPE user_role ADD VALUE IF NOT EXISTS 'secretary';
+ALTER TYPE user_role ADD VALUE IF NOT EXISTS 'hr_officer';
+ALTER TYPE user_role ADD VALUE IF NOT EXISTS 'driver';
 
 DO $$ BEGIN
     CREATE TYPE task_status AS ENUM ('todo', 'doing', 'done', 'late');
@@ -49,6 +52,8 @@ CREATE TABLE IF NOT EXISTS profiles (
 -- Thêm các cột mới nếu bảng đã được tạo trước đó
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS phone TEXT;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS birthday DATE;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS title TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS is_department_head BOOLEAN DEFAULT false;
 
 -- 4. Tạo bảng Tasks (Công việc & Mục tiêu)
 CREATE TABLE IF NOT EXISTS tasks (
@@ -116,6 +121,7 @@ CREATE TABLE IF NOT EXISTS notifications (
     user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
     title TEXT NOT NULL,
     content TEXT,
+    type TEXT,
     link TEXT,
     is_read BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMPTZ DEFAULT NOW()
@@ -184,16 +190,6 @@ CREATE POLICY "Public read schedule_participants" ON schedule_participants FOR S
 CREATE POLICY "Anyone can join/be invited to schedules" ON schedule_participants FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
 
 -- 11. Tạo bảng Notifications (Thông báo)
-CREATE TABLE IF NOT EXISTS notifications (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID REFERENCES profiles(id),
-    title TEXT NOT NULL,
-    content TEXT,
-    type TEXT,
-    is_read BOOLEAN DEFAULT false,
-    link TEXT,
-    created_at TIMESTAMPTZ DEFAULT NOW()
-);
 INSERT INTO departments (name) 
 VALUES 
 ('Tín dụng'), 
@@ -249,14 +245,22 @@ USING (
     auth.uid() = assignee_id 
     OR auth.uid() = created_by 
     OR department_id = (SELECT department_id FROM profiles WHERE id = auth.uid())
-    OR (SELECT role FROM profiles WHERE id = auth.uid()) IN ('admin', 'director', 'manager')
+    OR (SELECT role FROM profiles WHERE id = auth.uid()) IN ('admin', 'director')
 );
 
 CREATE POLICY "Anyone can create tasks" ON tasks FOR INSERT 
 WITH CHECK (auth.uid() IS NOT NULL);
 
 CREATE POLICY "Managers, Directors and Admin can update tasks" ON tasks FOR UPDATE 
-USING ((SELECT role FROM profiles WHERE id = auth.uid()) IN ('admin', 'director', 'manager') OR auth.uid() = assignee_id);
+USING (
+    auth.uid() = assignee_id
+    OR auth.uid() = created_by
+    OR (SELECT role FROM profiles WHERE id = auth.uid()) IN ('admin', 'director')
+    OR (
+        (SELECT role FROM profiles WHERE id = auth.uid()) = 'manager'
+        AND department_id = (SELECT department_id FROM profiles WHERE id = auth.uid())
+    )
+);
 
 ALTER TABLE task_comments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
@@ -299,20 +303,50 @@ USING (
     )
 );
 
--- Policies cho Phòng và Xe (Admin toàn quyền, User chỉ xem)
+-- Policies cho Phòng và Xe (Admin và Thư ký Tổ chức Tổng hợp toàn quyền, User chỉ xem)
 DROP POLICY IF EXISTS "Public read vehicles" ON vehicles;
 CREATE POLICY "Public read vehicles" ON vehicles FOR SELECT USING (true);
 DROP POLICY IF EXISTS "Admin write vehicles" ON vehicles;
-CREATE POLICY "Admin write vehicles" ON vehicles FOR ALL 
-USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'))
-WITH CHECK (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'));
+DROP POLICY IF EXISTS "Admin and Secretary write vehicles" ON vehicles;
+CREATE POLICY "Admin and Secretary write vehicles" ON vehicles FOR ALL 
+USING (
+    EXISTS (
+        SELECT 1 FROM profiles p 
+        LEFT JOIN departments d ON p.department_id = d.id 
+        WHERE p.id = auth.uid() 
+        AND (p.role IN ('admin', 'secretary') OR d.name = 'Tổ chức Tổng hợp')
+    )
+)
+WITH CHECK (
+    EXISTS (
+        SELECT 1 FROM profiles p 
+        LEFT JOIN departments d ON p.department_id = d.id 
+        WHERE p.id = auth.uid() 
+        AND (p.role IN ('admin', 'secretary') OR d.name = 'Tổ chức Tổng hợp')
+    )
+);
 
 DROP POLICY IF EXISTS "Public read rooms" ON rooms;
 CREATE POLICY "Public read rooms" ON rooms FOR SELECT USING (true);
 DROP POLICY IF EXISTS "Admin write rooms" ON rooms;
-CREATE POLICY "Admin write rooms" ON rooms FOR ALL 
-USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'))
-WITH CHECK (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'));
+DROP POLICY IF EXISTS "Admin and Secretary write rooms" ON rooms;
+CREATE POLICY "Admin and Secretary write rooms" ON rooms FOR ALL 
+USING (
+    EXISTS (
+        SELECT 1 FROM profiles p 
+        LEFT JOIN departments d ON p.department_id = d.id 
+        WHERE p.id = auth.uid() 
+        AND (p.role IN ('admin', 'secretary') OR d.name = 'Tổ chức Tổng hợp')
+    )
+)
+WITH CHECK (
+    EXISTS (
+        SELECT 1 FROM profiles p 
+        LEFT JOIN departments d ON p.department_id = d.id 
+        WHERE p.id = auth.uid() 
+        AND (p.role IN ('admin', 'secretary') OR d.name = 'Tổ chức Tổng hợp')
+    )
+);
 
 -- 8. Trigger tự động tạo Profile khi Signup
 CREATE OR REPLACE FUNCTION public.handle_new_user()

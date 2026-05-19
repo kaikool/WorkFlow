@@ -56,7 +56,26 @@ export default function UserManagementPage() {
  .order('full_name');
  
  if (pError) throw pError;
- setUsers(profiles || []);
+  const sortedProfiles = (profiles || []).sort((a: any, b: any) => {
+    const getRolePriority = (p: any) => {
+      const r = p.role || '';
+      const t = p.title?.toLowerCase() || '';
+      const n = p.full_name?.toLowerCase() || '';
+      if (r === 'director' || t.includes('giám đốc') || n.includes('giám đốc')) return 0;
+      if (r === 'manager' || t.includes('trưởng phòng') || p.is_department_head === true) return 1;
+      return 2;
+    };
+    const pA = getRolePriority(a);
+    const pB = getRolePriority(b);
+    if (pA !== pB) return pA - pB;
+
+    const headA = a.is_department_head === true ? 0 : 1;
+    const headB = b.is_department_head === true ? 0 : 1;
+    if (headA !== headB) return headA - headB;
+
+    return (a.full_name || '').localeCompare(b.full_name || '', 'vi');
+  });
+ setUsers(sortedProfiles);
 
  const { data: depts, error: dError } = await supabase
  .from('departments')
@@ -107,9 +126,9 @@ export default function UserManagementPage() {
  if (loading) return <div className="flex h-96 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
 
  return (
- <div className="max-w-6xl mx-auto space-y-10 animate-fade-in-up pb-20">
+ <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-10 animate-fade-in-up pb-20">
  {/* Header */}
- <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 px-4 sm:px-0 pt-4 sm:pt-0">
+ <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 pt-4 sm:pt-0">
  <div className="space-y-1">
  <h1 className="text-3xl font-bold text-slate-900 tracking-tight tabular-nums">
  Quản lý nhân sự
@@ -119,23 +138,27 @@ export default function UserManagementPage() {
  </div>
 
  {/* Filters */}
- <div className="px-4 sm:px-0">
- <div className="bg-white p-2 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-2">
- <div className="relative flex-1">
- <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
- <Input 
- placeholder="Tìm kiếm cán bộ hoặc chức danh..." 
- value={searchQuery}
- onChange={(e) => setSearchQuery(e.target.value)}
- className="pl-11 bg-transparent border-none focus-visible:ring-0 h-11 font-bold text-slate-600"
- />
- </div>
- </div>
+ {/* Unified Search & Filter Bar */}
+ <div className="flex items-center gap-2 bg-slate-50/60 p-1.5 rounded-2xl border border-slate-100/80 shadow-sm w-full h-13 sm:h-14">
+   <div className="flex items-center gap-2 px-2 shrink-0">
+     <Shield className="w-4 h-4 text-primary shrink-0" />
+     <span className="text-xs font-bold text-slate-600 uppercase tracking-wider hidden sm:inline">Cấu hình phân quyền ({filteredUsers.length})</span>
+     <span className="text-xs font-bold text-slate-600 tracking-wider inline sm:hidden">({filteredUsers.length})</span>
+   </div>
+   <div className="relative flex-1 group">
+     <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500 group-focus-within:text-primary transition-colors" />
+     <Input 
+       placeholder="Tìm kiếm cán bộ hoặc chức danh..." 
+       className="w-full pl-9 pr-3 h-10 text-xs font-semibold bg-white border-slate-200/60 rounded-xl focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary transition-all" 
+       value={searchQuery}
+       onChange={(e) => setSearchQuery(e.target.value)}
+     />
+   </div>
  </div>
 
  {/* User Table */}
- <div className="px-4 sm:px-0">
- <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+ <div className="">
+ <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
  <Table>
  <TableHeader className="bg-slate-50/50">
  <TableRow className="hover:bg-transparent border-slate-50">

@@ -272,12 +272,12 @@ export function NewReportForm() {
               ) : (
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-full h-auto min-h-[44px] rounded-xl border-none bg-slate-50 justify-between px-4 py-2 text-left font-bold text-slate-900 shadow-sm transition-all hover:bg-slate-100">
+                    <Button variant="outline" className="w-full h-auto min-h-[44px] rounded-xl border-none bg-slate-50 justify-between px-4 py-2 text-left font-bold text-slate-900 shadow-sm transition-all hover:bg-slate-100 active:scale-95">
                       <div className="flex flex-wrap gap-1.5 overflow-hidden">
                         {selectedDepartments.length === 0
                           ? <span className="text-slate-400 font-normal">Chọn các phòng ban...</span>
                           : selectedDepartments.map(id => departments.find(d => d.id === id)).filter(Boolean).map(d => (
-                              <Badge key={d.id} variant="secondary" className="bg-primary text-white border-none px-2 py-0.5 rounded-md text-[12px] font-medium whitespace-nowrap truncate">
+                              <Badge key={d.id} variant="secondary" className="bg-primary text-white border-none px-2.5 py-0.5 rounded-full text-[12px] font-bold uppercase whitespace-nowrap truncate">
                                 {d.name}
                               </Badge>
                             ))
@@ -312,7 +312,7 @@ export function NewReportForm() {
                 <Label className="text-[13px] font-medium text-slate-500">Hạn hoàn thành</Label>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" className={cn('w-full h-11 rounded-xl bg-slate-50 border-none font-bold text-slate-900 justify-start px-4 shadow-sm', !dueDate && 'text-muted-foreground')}>
+                    <Button variant="outline" className={cn('w-full h-11 rounded-xl bg-slate-50 border-none font-bold text-slate-900 justify-start px-4 shadow-sm active:scale-95 transition-all', !dueDate && 'text-muted-foreground')}>
                       <Calendar className="mr-2 h-4 w-4 text-primary" />
                       {dueDate ? format(dueDate, 'dd/MM/yyyy') : <span>Chọn ngày</span>}
                     </Button>
@@ -362,10 +362,10 @@ export function NewReportForm() {
 
             {/* Nút submit */}
             <div className="pt-6 border-t border-slate-50 space-y-3">
-              <Button type="submit" disabled={loading} className="w-full bg-primary hover:bg-primary/90 h-10 rounded-xl font-medium text-[14px]">
+              <Button type="submit" disabled={loading} className="w-full bg-primary hover:bg-primary/90 h-10 rounded-xl font-medium text-[14px] active:scale-95 transition-all">
                 {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Gửi yêu cầu báo cáo'}
               </Button>
-              <Button type="button" variant="ghost" onClick={() => router.back()} className="text-slate-500 font-bold h-10 w-full rounded-xl hover:bg-slate-50 text-xs">
+              <Button type="button" variant="ghost" onClick={() => router.back()} className="text-slate-500 font-bold h-10 w-full rounded-xl hover:bg-slate-50 text-xs active:scale-95 transition-all">
                 Hủy bỏ
               </Button>
             </div>

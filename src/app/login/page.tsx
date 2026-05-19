@@ -8,15 +8,15 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { toast } from '@/hooks/use-toast'
-import { 
-  Workflow, 
-  Loader2, 
-  Lock, 
-  Mail, 
-  User, 
-  Building2, 
-  Briefcase, 
-  Clock, 
+import {
+  Workflow,
+  Loader2,
+  Lock,
+  Mail,
+  User,
+  Building2,
+  Briefcase,
+  Clock,
   ArrowLeft,
   CheckCircle2
 } from 'lucide-react'
@@ -35,11 +35,11 @@ export default function LoginPage() {
   const [role, setRole] = useState('staff')
   const [departmentId, setDepartmentId] = useState('')
   const [departments, setDepartments] = useState<any[]>([])
-  
+
   const [loading, setLoading] = useState(false)
   const [isSignUp, setIsSignUp] = useState(false)
   const [isPendingApproval, setIsPendingApproval] = useState(false)
-  
+
   const router = useRouter()
   const supabase = createClient()
 
@@ -70,6 +70,9 @@ export default function LoginPage() {
     e.preventDefault()
     setLoading(true)
 
+    // Tự động gán domain ảo nếu người dùng đăng nhập bằng Username (không có ký tự @)
+    const finalEmail = email.includes('@') ? email.trim() : `${email.trim()}@bank.local`
+
     try {
       if (isSignUp) {
         // Gửi yêu cầu đăng ký vào bảng account_requests
@@ -77,7 +80,7 @@ export default function LoginPage() {
           .from('account_requests')
           .insert({
             full_name: fullName,
-            email,
+            email: finalEmail,
             role,
             department_id: departmentId,
             password // Lưu mật khẩu để Admin duyệt sẽ tạo tài khoản Auth
@@ -85,7 +88,7 @@ export default function LoginPage() {
 
         if (error) {
           if (error.code === '23505') {
-            throw new Error('Email này đã được đăng ký hoặc đang chờ phê duyệt.')
+            throw new Error('Tên đăng nhập này đã được đăng ký hoặc đang chờ phê duyệt.')
           }
           throw error
         }
@@ -97,11 +100,11 @@ export default function LoginPage() {
         })
       } else {
         const { error } = await supabase.auth.signInWithPassword({
-          email,
+          email: finalEmail,
           password,
         })
         if (error) throw error
-        
+
         router.refresh()
         setTimeout(() => {
           router.push('/dashboard')
@@ -132,7 +135,7 @@ export default function LoginPage() {
               <Clock className="w-10 h-10 animate-pulse text-primary" />
               <div className="absolute -top-1 -right-1 w-4 h-4 bg-amber-400 rounded-full animate-ping" />
             </div>
-            
+
             <div className="space-y-2">
               <h2 className="text-xl font-bold text-slate-900 tracking-tight">Yêu cầu đã được gửi!</h2>
               <p className="text-slate-500 text-xs font-semibold leading-relaxed px-2">
@@ -147,8 +150,8 @@ export default function LoginPage() {
                 <span className="text-slate-900 font-extrabold">{fullName}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span>Email đăng ký</span>
-                <span className="text-slate-900 font-extrabold normal-case">{email}</span>
+                <span>Tên đăng nhập</span>
+                <span className="text-slate-900 font-extrabold normal-case">{email.includes('@') ? email.split('@')[0] : email}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span>Chức danh</span>
@@ -160,14 +163,14 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <Button 
+            <Button
               onClick={() => {
                 setIsSignUp(false)
                 setIsPendingApproval(false)
                 setEmail('')
                 setPassword('')
                 setFullName('')
-              }} 
+              }}
               className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl font-bold shadow-lg shadow-primary/20 active:scale-95 transition-all text-xs uppercase"
             >
               Quay lại Đăng nhập
@@ -198,7 +201,7 @@ export default function LoginPage() {
               {isSignUp ? 'YÊU CẦU CẤP TÀI KHOẢN MỚI' : 'QUẢN LÝ CÔNG VIỆC NỘI BỘ CHI NHÁNH NGÂN HÀNG'}
             </CardDescription>
           </CardHeader>
-          
+
           <form onSubmit={handleAuth}>
             <CardContent className="p-8 pt-4 space-y-4">
               {/* Chế độ Đăng ký: Thêm Họ tên, Chức danh, Phòng ban */}
@@ -262,13 +265,13 @@ export default function LoginPage() {
 
               {/* Email */}
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-[10px] font-bold uppercase text-slate-500 ml-1 tracking-wider">Email</Label>
+                <Label htmlFor="email" className="text-[10px] font-bold uppercase text-slate-500 ml-1 tracking-wider">Tên đăng nhập</Label>
                 <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
                   <Input
                     id="email"
-                    type="email"
-                    placeholder="name@bank.com.vn"
+                    type="text"
+                    placeholder="VD: UserAD"
                     className="pl-11 h-12 bg-slate-50 border-none rounded-xl font-medium text-sm"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -296,9 +299,9 @@ export default function LoginPage() {
             </CardContent>
 
             <CardFooter className="p-8 pt-0 flex flex-col space-y-4">
-              <Button 
-                type="submit" 
-                className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl font-bold shadow-lg shadow-primary/20 active:scale-95 transition-all text-xs uppercase" 
+              <Button
+                type="submit"
+                className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl font-bold shadow-lg shadow-primary/20 active:scale-95 transition-all text-xs uppercase"
                 disabled={loading}
               >
                 {loading ? (

@@ -102,9 +102,9 @@ export default function AdminPage() {
  
  setUserProfile(profile);
 
- // Chỉ ADMIN mới được vào trang này
- if (profile?.role !== 'admin') {
- toast({ variant: "destructive", title: "Từ chối truy cập", description: "Khu vực này chỉ dành cho Quản trị viên hệ thống." });
+ // Chỉ ADMIN hoặc SECRETARY mới được vào trang này
+ if (profile?.role !== 'admin' && profile?.role !== 'secretary') {
+ toast({ variant: "destructive", title: "Từ chối truy cập", description: "Khu vực này chỉ dành cho Quản trị viên và Thư ký Ban Giám Đốc." });
  router.push('/dashboard/schedule');
  return;
  }
@@ -212,7 +212,7 @@ export default function AdminPage() {
  const handleDeleteRoom = async (room: any) => {
  try {
  // Check for future schedules using this room
- const { data: count, error: checkError } = await supabase
+ const { count: futureScheduleCount, error: checkError } = await supabase
  .from('schedules')
  .select('id', { count: 'exact', head: true })
  .eq('room_id', room.id)
@@ -220,7 +220,8 @@ export default function AdminPage() {
  
  if (checkError) throw checkError;
  
- if (count && count.length > 0) {
+ if ((futureScheduleCount || 0) > 0) {
+ const count = futureScheduleCount;
  toast({ 
  variant: "destructive", 
  title: "Không thể xóa", 
@@ -242,7 +243,7 @@ export default function AdminPage() {
  const handleDeleteVehicle = async (vehicle: any) => {
  try {
  // Check for future schedules using this vehicle
- const { data: count, error: checkError } = await supabase
+ const { count: futureScheduleCount, error: checkError } = await supabase
  .from('schedules')
  .select('id', { count: 'exact', head: true })
  .eq('vehicle_id', vehicle.id)
@@ -250,7 +251,8 @@ export default function AdminPage() {
  
  if (checkError) throw checkError;
  
- if (count && count.length > 0) {
+ if ((futureScheduleCount || 0) > 0) {
+ const count = futureScheduleCount;
  toast({ 
  variant: "destructive", 
  title: "Không thể xóa", 
@@ -281,7 +283,7 @@ export default function AdminPage() {
  const filteredUsers = users.filter(u => u.full_name?.toLowerCase().includes(searchQuery.toLowerCase()));
 
  return (
- <div className="max-w-7xl mx-auto px-4 sm:px-6 space-y-10 animate-fade-in pb-20">
+ <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-10 animate-fade-in-up pb-20">
  {/* Header */}
  <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6">
  <div className="space-y-1">
@@ -297,7 +299,7 @@ export default function AdminPage() {
 
  {/* Stats */}
  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
- <Card className="border-none shadow-sm rounded-3xl bg-blue-50/50">
+ <Card className="border-none shadow-sm rounded-[2rem] bg-blue-50/50">
  <CardContent className="p-6 flex items-center gap-4">
  <div className="p-3 bg-white rounded-2xl shadow-sm text-blue-600">
  <Users className="w-6 h-6" />
@@ -308,7 +310,7 @@ export default function AdminPage() {
  </div>
  </CardContent>
  </Card>
- <Card className="border-none shadow-sm rounded-3xl bg-purple-50/50">
+ <Card className="border-none shadow-sm rounded-[2rem] bg-purple-50/50">
  <CardContent className="p-6 flex items-center gap-4">
  <div className="p-3 bg-white rounded-2xl shadow-sm text-purple-600">
  <DoorOpen className="w-6 h-6" />
@@ -319,7 +321,7 @@ export default function AdminPage() {
  </div>
  </CardContent>
  </Card>
- <Card className="border-none shadow-sm rounded-3xl bg-emerald-50/50">
+ <Card className="border-none shadow-sm rounded-[2rem] bg-emerald-50/50">
  <CardContent className="p-6 flex items-center gap-4">
  <div className="p-3 bg-white rounded-2xl shadow-sm text-emerald-600">
  <Car className="w-6 h-6" />
@@ -332,85 +334,89 @@ export default function AdminPage() {
  </Card>
  </div>
 
- <Tabs defaultValue="users" className="space-y-8">
- <TabsList className="bg-slate-100/50 p-1 rounded-2xl h-auto border border-slate-100 w-full">
- <TabsTrigger value="users" className="flex-1 rounded-xl px-2 sm:px-6 py-2.5 font-bold text-xs uppercase data-[state=active]:bg-white data-[state=active]:shadow-sm">
- <Users className="w-3.5 h-3.5 mr-1.5 shrink-0" /> <span className="truncate">Cán bộ</span>
- </TabsTrigger>
- <TabsTrigger value="rooms" className="flex-1 rounded-xl px-2 sm:px-6 py-2.5 font-bold text-xs uppercase data-[state=active]:bg-white data-[state=active]:shadow-sm">
- <DoorOpen className="w-3.5 h-3.5 mr-1.5 shrink-0" /> <span className="truncate">Phòng họp</span>
- </TabsTrigger>
- <TabsTrigger value="vehicles" className="flex-1 rounded-xl px-2 sm:px-6 py-2.5 font-bold text-xs uppercase data-[state=active]:bg-white data-[state=active]:shadow-sm">
- <Car className="w-3.5 h-3.5 mr-1.5 shrink-0" /> <span className="truncate">Đội xe</span>
- </TabsTrigger>
- </TabsList>
+ <Tabs defaultValue={isAdmin ? "users" : "rooms"} className="space-y-8">
+  <TabsList className="bg-slate-100/50 p-1 rounded-xl h-11 border border-slate-100 w-full flex gap-1">
+  {isAdmin && (
+    <TabsTrigger value="users" className="flex-1 rounded-lg px-2 sm:px-6 py-1.5 font-bold text-xs uppercase data-[state=active]:bg-white data-[state=active]:shadow-sm flex items-center justify-center">
+    <Users className="w-3.5 h-3.5 mr-1.5 shrink-0" /> <span className="truncate">Cán bộ</span>
+    </TabsTrigger>
+  )}
+  <TabsTrigger value="rooms" className="flex-1 rounded-lg px-2 sm:px-6 py-1.5 font-bold text-xs uppercase data-[state=active]:bg-white data-[state=active]:shadow-sm flex items-center justify-center">
+  <DoorOpen className="w-3.5 h-3.5 mr-1.5 shrink-0" /> <span className="truncate">Phòng họp</span>
+  </TabsTrigger>
+  <TabsTrigger value="vehicles" className="flex-1 rounded-lg px-2 sm:px-6 py-1.5 font-bold text-xs uppercase data-[state=active]:bg-white data-[state=active]:shadow-sm flex items-center justify-center">
+  <Car className="w-3.5 h-3.5 mr-1.5 shrink-0" /> <span className="truncate">Đội xe</span>
+  </TabsTrigger>
+  </TabsList>
 
- {/* User Management Tab (Admin Only) */}
- <TabsContent value="users" className="animate-in fade-in slide-in-from-bottom-2 duration-500">
- <Card className="border-none shadow-sm rounded-[32px] overflow-hidden">
- <CardHeader className="bg-slate-50/50 pb-6 border-b border-slate-100">
- <div className="flex items-center justify-between">
- <CardTitle className="text-lg font-bold text-slate-800 uppercase tracking-tight">Danh sách Cán bộ Hệ thống</CardTitle>
- <div className="relative w-72">
- <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
- <Input 
- placeholder="Tìm theo tên..." 
- className="pl-11 h-11 bg-white border-none rounded-2xl shadow-sm font-bold"
- value={searchQuery}
- onChange={(e) => setSearchQuery(e.target.value)}
- />
- </div>
- </div>
- </CardHeader>
- <CardContent className="p-0">
- <Table>
- <TableHeader>
- <TableRow className="border-slate-100 bg-slate-50/30">
- <TableHead className="pl-8 font-bold text-xs uppercase text-slate-500 truncate whitespace-nowrap">Cán bộ</TableHead>
- <TableHead className="font-bold text-xs uppercase text-slate-500 truncate whitespace-nowrap">Bộ phận</TableHead>
- <TableHead className="font-bold text-xs uppercase text-slate-500 text-center truncate whitespace-nowrap">Vai trò</TableHead>
- <TableHead className="pr-8 font-bold text-xs uppercase text-slate-500 text-right truncate whitespace-nowrap">Điều chỉnh</TableHead>
- </TableRow>
- </TableHeader>
- <TableBody>
- {filteredUsers.map(u => (
- <TableRow key={u.id} className="border-slate-50 hover:bg-slate-50/50 transition-colors">
- <TableCell className="pl-8 py-5">
- <div className="flex items-center gap-3">
- <Avatar className="h-11 w-11 border-2 border-white shadow-sm">
- <AvatarImage src={u.avatar_url} />
- <AvatarFallback className="bg-primary text-white font-bold">{u.full_name?.[0]}</AvatarFallback>
- </Avatar>
- <span className="font-bold text-slate-700">{u.full_name}</span>
- </div>
- </TableCell>
- <TableCell className="text-xs font-bold text-slate-500 uppercase truncate whitespace-nowrap">{u.departments?.name || "Chi nhánh"}</TableCell>
- <TableCell className="text-center">
- <Badge className={cn(
- "text-[9px] font-bold uppercase px-2 py-0.5 rounded-md",
- u.role === 'admin' ? "bg-red-500 text-white" : u.role === 'manager' ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-500"
- )}>{u.role}</Badge>
- </TableCell>
- <TableCell className="pr-8 text-right">
- <Select defaultValue={u.role} onValueChange={(v) => handleUpdateRole(u.id, v)}>
- <SelectTrigger className="w-32 h-9 text-xs md:text-[10px] font-bold ml-auto bg-slate-50 border-none rounded-xl">
- <SelectValue />
- </SelectTrigger>
- <SelectContent className="rounded-xl border-none shadow-2xl">
- <SelectItem value="admin">Admin</SelectItem>
- <SelectItem value="director">Director</SelectItem>
- <SelectItem value="manager">Manager</SelectItem>
- <SelectItem value="staff">Staff</SelectItem>
- </SelectContent>
- </Select>
- </TableCell>
- </TableRow>
- ))}
- </TableBody>
- </Table>
- </CardContent>
- </Card>
- </TabsContent>
+  {/* User Management Tab (Admin Only) */}
+  {isAdmin && (
+    <TabsContent value="users" className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+    <Card className="border-none shadow-sm rounded-[32px] overflow-hidden">
+    <CardHeader className="bg-slate-50/50 pb-6 border-b border-slate-100">
+    <div className="flex items-center justify-between">
+    <CardTitle className="text-lg font-bold text-slate-800 uppercase tracking-tight">Danh sách Cán bộ Hệ thống</CardTitle>
+    <div className="relative w-72">
+    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+    <Input 
+    placeholder="Tìm theo tên..." 
+    className="pl-11 h-11 bg-white border-none rounded-2xl shadow-sm font-bold"
+    value={searchQuery}
+    onChange={(e) => setSearchQuery(e.target.value)}
+    />
+    </div>
+    </div>
+    </CardHeader>
+    <CardContent className="p-0">
+    <Table>
+    <TableHeader>
+    <TableRow className="border-slate-100 bg-slate-50/30">
+    <TableHead className="pl-8 font-bold text-xs uppercase text-slate-500 truncate whitespace-nowrap">Cán bộ</TableHead>
+    <TableHead className="font-bold text-xs uppercase text-slate-500 truncate whitespace-nowrap">Bộ phận</TableHead>
+    <TableHead className="font-bold text-xs uppercase text-slate-500 text-center truncate whitespace-nowrap">Vai trò</TableHead>
+    <TableHead className="pr-8 font-bold text-xs uppercase text-slate-500 text-right truncate whitespace-nowrap">Điều chỉnh</TableHead>
+    </TableRow>
+    </TableHeader>
+    <TableBody>
+    {filteredUsers.map(u => (
+    <TableRow key={u.id} className="border-slate-50 hover:bg-slate-50/50 transition-colors">
+    <TableCell className="pl-8 py-5">
+    <div className="flex items-center gap-3">
+    <Avatar className="h-11 w-11 border-2 border-white shadow-sm">
+    <AvatarImage src={u.avatar_url} />
+    <AvatarFallback className="bg-primary text-white font-bold">{u.full_name?.[0]}</AvatarFallback>
+    </Avatar>
+    <span className="font-bold text-slate-700">{u.full_name}</span>
+    </div>
+    </TableCell>
+    <TableCell className="text-xs font-bold text-slate-500 uppercase truncate whitespace-nowrap">{u.departments?.name || "Chi nhánh"}</TableCell>
+    <TableCell className="text-center">
+    <Badge className={cn(
+    "text-[9px] font-bold uppercase px-2 py-0.5 rounded-md",
+    u.role === 'admin' ? "bg-red-500 text-white" : u.role === 'manager' ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-500"
+    )}>{u.role}</Badge>
+    </TableCell>
+    <TableCell className="pr-8 text-right">
+    <Select defaultValue={u.role} onValueChange={(v) => handleUpdateRole(u.id, v)}>
+    <SelectTrigger className="w-32 h-9 text-xs md:text-[10px] font-bold ml-auto bg-slate-50 border-none rounded-xl">
+    <SelectValue />
+    </SelectTrigger>
+    <SelectContent className="rounded-xl border-none shadow-2xl">
+    <SelectItem value="admin">Admin</SelectItem>
+    <SelectItem value="director">Director</SelectItem>
+    <SelectItem value="manager">Manager</SelectItem>
+    <SelectItem value="staff">Staff</SelectItem>
+    </SelectContent>
+    </Select>
+    </TableCell>
+    </TableRow>
+    ))}
+    </TableBody>
+    </Table>
+    </CardContent>
+    </Card>
+    </TabsContent>
+  )}
 
  {/* Rooms Tab */}
  <TabsContent value="rooms" className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">

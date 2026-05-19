@@ -257,8 +257,8 @@ export default function ScheduleDetailDialog({
                   <p className="text-[13px] font-semibold text-slate-700">Điều chỉnh lịch trình</p>
                   {!isEditingTime && new Date(schedule.end_time) > new Date() && (
                     <div className="flex gap-2">
-                       <Button variant="outline" size="sm" className="h-8 px-3 rounded-lg text-xs font-semibold text-slate-600 border-slate-200" onClick={() => setIsEditingTime(true)}>Sửa giờ kết thúc</Button>
-                       <Button variant="outline" size="sm" className="h-8 px-3 rounded-lg text-xs font-semibold border-orange-200 text-orange-600 hover:bg-orange-50" onClick={handleEndNow}>Kết thúc sớm</Button>
+                       <Button variant="outline" size="sm" className="h-8 px-3 rounded-xl text-xs font-semibold text-slate-600 border-slate-200 active:scale-95 transition-all" onClick={() => setIsEditingTime(true)}>Sửa giờ kết thúc</Button>
+                       <Button variant="outline" size="sm" className="h-8 px-3 rounded-xl text-xs font-semibold border-orange-200 text-orange-600 hover:bg-orange-50 active:scale-95 transition-all" onClick={handleEndNow}>Kết thúc sớm</Button>
                     </div>
                   )}
                 </div>
@@ -274,8 +274,8 @@ export default function ScheduleDetailDialog({
                       />
                     </div>
                     <div className="flex gap-2 justify-end mt-1">
-                      <Button variant="ghost" size="sm" className="h-9 px-4 rounded-xl text-xs font-semibold text-slate-500" onClick={() => setIsEditingTime(false)}>Hủy</Button>
-                      <Button size="sm" className="h-9 px-4 rounded-xl text-xs font-semibold bg-primary text-white shadow-sm" onClick={handleSaveTime}>Lưu thay đổi</Button>
+                      <Button variant="ghost" size="sm" className="h-9 px-4 rounded-xl text-xs font-semibold text-slate-500 active:scale-95 transition-all" onClick={() => setIsEditingTime(false)}>Hủy</Button>
+                      <Button size="sm" className="h-9 px-4 rounded-xl text-xs font-semibold bg-primary text-white shadow-sm active:scale-95 transition-all" onClick={handleSaveTime}>Lưu thay đổi</Button>
                     </div>
                   </div>
                 )}
@@ -284,11 +284,11 @@ export default function ScheduleDetailDialog({
           </div>
 
           <DialogFooter className="px-6 py-4 border-t border-slate-100 bg-slate-50/50 flex flex-row justify-between items-center gap-4">
-            <Button variant="ghost" className="h-10 px-4 rounded-xl font-medium text-slate-600 text-[13px] hover:bg-slate-200" onClick={() => setIsOpen(false)}>Đóng cửa sổ</Button>
+            <Button variant="ghost" className="h-10 px-4 rounded-xl font-medium text-slate-600 text-[13px] hover:bg-slate-200 active:scale-95 transition-all" onClick={() => setIsOpen(false)}>Đóng cửa sổ</Button>
             {isTCTH && schedule.vehicle_id && (
               <Button
                 variant="outline"
-                className="h-10 px-5 rounded-xl font-bold text-[12px] uppercase border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 shadow-sm transition-all"
+                className="h-10 px-5 rounded-xl font-bold text-[12px] uppercase border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 shadow-sm active:scale-95 transition-all"
                 onClick={() => onAssignVehicle(schedule.id, null)}
               >
                 Hủy gán xe

@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import React, { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
@@ -21,7 +21,6 @@ const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> =
   doing:  { label: "Đang làm",    color: "text-primary",     bg: "bg-primary/5"  },
   done:   { label: "Hoàn thành",  color: "text-emerald-700", bg: "bg-emerald-50" },
   late:   { label: "Trễ hạn",     color: "text-red-700",     bg: "bg-red-50"     },
-  closed: { label: "Đã đóng",     color: "text-slate-700",   bg: "bg-slate-200"  },
 }
 
 export function TodoDetailInner({ id }: { id: string }) {
@@ -213,6 +212,7 @@ export function TodoDetailInner({ id }: { id: string }) {
   const displayProgress = isKpi ? (task.target_value ? Math.round(((task.current_value||0)/task.target_value)*100) : 0) : (task?.progress||0)
   const curStatus = task ? (STATUS_MAP[task.status]||STATUS_MAP.todo) : STATUS_MAP.todo
   const isCreatorOrAdmin = task?.created_by===profile?.id||profile?.role==="admin"||profile?.role==="director"
+  const isLeader = profile?.role === "admin" || profile?.role === "director" || profile?.role === "manager"
 
   if (loading) return <div className="flex h-96 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
   if (!task) return <div className="p-20 text-center font-bold text-slate-500">Không tìm thấy dữ liệu.</div>
@@ -238,8 +238,8 @@ export function TodoDetailInner({ id }: { id: string }) {
               <AlertDialogDescription className="text-slate-500 font-medium">Dữ liệu sẽ được gỡ khỏi hệ thống vĩnh viễn.</AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter className="mt-4 gap-3">
-              <AlertDialogCancel className="rounded-xl h-10 font-medium">Quay lại</AlertDialogCancel>
-              <AlertDialogAction onClick={async () => { await supabase.from("tasks").delete().eq("id", id); router.push(isKpi ? "/dashboard/kpi" : "/dashboard/tasks") }} className="rounded-xl h-10 bg-red-600 font-medium hover:bg-red-700 text-white border-none">Xác nhận xóa</AlertDialogAction>
+              <AlertDialogCancel className="rounded-xl h-10 font-medium active:scale-95 transition-all">Quay lại</AlertDialogCancel>
+              <AlertDialogAction onClick={async () => { await supabase.from("tasks").delete().eq("id", id); router.push(isKpi ? "/dashboard/kpi" : "/dashboard/tasks") }} className="rounded-xl h-10 bg-red-600 font-medium hover:bg-red-700 text-white border-none active:scale-95 transition-all">Xác nhận xóa</AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
@@ -261,15 +261,15 @@ export function TodoDetailInner({ id }: { id: string }) {
                 <Input value={editData.title||""} onChange={e=>setEditData({...editData,title:e.target.value})} className="text-xl font-semibold bg-white" />
                 <Input value={editData.description||""} onChange={e=>setEditData({...editData,description:e.target.value})} placeholder="Mô tả" className="bg-white" />
                 <div className="flex gap-2">
-                  <Button onClick={handleUpdateTaskInfo} disabled={saving} className="bg-primary text-white">Lưu</Button>
-                  <Button variant="outline" onClick={()=>setIsEditingTask(false)}>Hủy</Button>
+                  <Button onClick={handleUpdateTaskInfo} disabled={saving} className="bg-primary text-white rounded-xl active:scale-95 transition-all">Lưu</Button>
+                  <Button variant="outline" onClick={()=>setIsEditingTask(false)} className="rounded-xl active:scale-95 transition-all">Hủy</Button>
                 </div>
               </div>
             ) : (
               <>
                 <div className="flex justify-between items-start relative z-10">
                   <h1 className="text-xl md:text-2xl font-semibold text-slate-900 tracking-tight leading-tight">{task.title}</h1>
-                  {(task.created_by===profile?.id||profile?.role==="admin")&&<Button variant="ghost" size="sm" onClick={()=>{setEditData(task);setIsEditingTask(true)}}>Sửa</Button>}
+                  {(task.created_by===profile?.id||profile?.role==="admin")&&<Button variant="ghost" size="sm" onClick={()=>{setEditData(task);setIsEditingTask(true)}} className="rounded-xl active:scale-95 transition-all">Sửa</Button>}
                 </div>
                 <div className="bg-slate-50/50 p-4 rounded-xl border border-slate-100/50 relative z-10">
                   <p className="text-sm text-slate-500 font-medium leading-relaxed italic">"{task.description||"Chưa có mô tả chi tiết."}"</p>
@@ -304,11 +304,11 @@ export function TodoDetailInner({ id }: { id: string }) {
                     <p className="text-[13px] font-medium text-primary">Cá nhân tôi đóng góp</p>
                     <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center">
                       <div className="flex items-center gap-2 bg-primary/5 p-1.5 rounded-xl border border-primary/10 w-full md:max-w-xs">
-                        <Button type="button" variant="ghost" onClick={()=>adjustValue(-1)} className="h-11 w-11 rounded-lg hover:bg-white text-primary"><Minus className="w-4 h-4"/></Button>
+                        <Button type="button" variant="ghost" onClick={()=>adjustValue(-1)} className="h-11 w-11 rounded-xl hover:bg-white text-primary active:scale-95 transition-all"><Minus className="w-4 h-4"/></Button>
                         <Input type="number" value={currentValue} onChange={e=>setCurrentValue(e.target.value)} className="h-10 bg-transparent border-none shadow-none text-center font-bold text-xl px-2 focus-visible:ring-0 text-primary" />
-                        <Button type="button" variant="ghost" onClick={()=>adjustValue(1)} className="h-11 w-11 rounded-lg hover:bg-white text-primary"><PlusIcon className="w-4 h-4"/></Button>
+                        <Button type="button" variant="ghost" onClick={()=>adjustValue(1)} className="h-11 w-11 rounded-xl hover:bg-white text-primary active:scale-95 transition-all"><PlusIcon className="w-4 h-4"/></Button>
                       </div>
-                      <Button onClick={handleUpdateAchievement} disabled={saving} className="bg-primary hover:bg-primary/90 h-10 px-5 rounded-xl font-medium w-full md:w-auto">
+                      <Button onClick={handleUpdateAchievement} disabled={saving} className="bg-primary hover:bg-primary/90 h-10 px-5 rounded-xl font-medium w-full md:w-auto active:scale-95 transition-all">
                         {saving?<Loader2 className="w-4 h-4 animate-spin mr-2"/>:<CheckCircle2 className="w-3.5 h-3.5 mr-2"/>}Cập nhật đóng góp
                       </Button>
                     </div>
@@ -320,7 +320,6 @@ export function TodoDetailInner({ id }: { id: string }) {
                     {assignees.map((a,idx)=>{
                       const contrib=task.metadata?.contributions?.[a.user_id]||0
                       const weight=task.current_value>0?Math.min(100,Math.round((contrib/task.current_value)*100)):0
-                      const isLeader=profile?.role==="admin"||profile?.role==="manager"
                       return (
                         <div key={a.user_id} className={cn("flex flex-col p-4 sm:p-5 gap-3",idx!==0&&"border-t border-slate-50",a.user_id===profile?.id&&"bg-primary/[0.02]")}>
                           <div className="flex items-center justify-between gap-4">
@@ -349,7 +348,7 @@ export function TodoDetailInner({ id }: { id: string }) {
                         </div>
                       )
                     })}
-                    {(profile?.role==="admin"||profile?.role==="manager")&&(
+                    {isLeader && (
                       <div className="bg-slate-50/50 border-t border-slate-100 p-4 sm:p-5 flex items-center justify-between">
                         <span className="text-[12px] font-medium text-primary/60 flex items-center gap-2"><TrendingUp className="w-4 h-4"/>Hiệu chỉnh phòng</span>
                         <div className="flex items-center gap-2 bg-white p-1 rounded-xl border border-slate-200/60 shadow-sm">
@@ -416,18 +415,15 @@ export function TodoDetailInner({ id }: { id: string }) {
                 <SelectTrigger className={cn("h-11 rounded-xl border-none shadow-sm flex items-center justify-between px-4 font-medium text-[14px] transition-all",curStatus.bg,curStatus.color)}>
                   <SelectValue/>
                 </SelectTrigger>
-                <SelectContent className="rounded-xl border border-slate-200 shadow-lg p-1.5 min-w-[200px]">
-                  {Object.entries(STATUS_MAP).map(([key,val])=>{
-                    if(key==="closed"&&task.created_by!==profile?.id&&profile?.role!=="admin"&&profile?.role!=="director") return null
-                    return (
-                      <SelectItem key={key} value={key} className="rounded-lg py-2 font-medium text-[13px]">
-                        <div className="flex items-center gap-3">
-                          <div className={cn("w-2 h-2 rounded-full",key==="done"?"bg-emerald-500":key==="doing"?"bg-primary":key==="late"?"bg-red-500":key==="closed"?"bg-slate-600":"bg-slate-300")}/>
-                          {val.label}
-                        </div>
-                      </SelectItem>
-                    )
-                  })}
+                 <SelectContent className="rounded-xl border border-slate-200 shadow-lg p-1.5 min-w-[200px]">
+                  {Object.entries(STATUS_MAP).map(([key,val])=>(
+                    <SelectItem key={key} value={key} className="rounded-lg py-2 font-medium text-[13px]">
+                      <div className="flex items-center gap-3">
+                        <div className={cn("w-2 h-2 rounded-full",key==="done"?"bg-emerald-500":key==="doing"?"bg-primary":key==="late"?"bg-red-500":"bg-slate-300")}/>
+                        {val.label}
+                      </div>
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

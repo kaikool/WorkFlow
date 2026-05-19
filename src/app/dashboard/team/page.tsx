@@ -68,22 +68,34 @@ export default function TeamPage() {
 
  let query = supabase.from('profiles').select(`*, departments (name)`);
  
- // Lọc theo phòng ban nếu không phải Admin
- if (currentProfile && currentProfile.role !== 'admin' && currentProfile.role !== 'director' && currentProfile.department_id) {
+ // Lọc theo phòng ban nếu không phải Admin, Director hoặc Cán bộ Nhân sự
+ if (currentProfile && currentProfile.role !== 'admin' && currentProfile.role !== 'director' && currentProfile.role !== 'hr_officer' && currentProfile.department_id) {
  query = query.eq('department_id', currentProfile.department_id);
  }
 
  const { data, error } = await query;
  if (error) throw error;
  
- // Sắp xếp: Admin/Director/Manager lên đầu, sau đó đến Staff. Trong mỗi nhóm xếp theo tên.
- const sortedMembers = (data || []).sort((a, b) => {
- const rolePriority: any = { admin: 0, director: 1, manager: 2, staff: 3 };
- if (rolePriority[a.role] !== rolePriority[b.role]) {
- return rolePriority[a.role] - rolePriority[b.role];
- }
- return a.full_name.localeCompare(b.full_name, 'vi');
- });
+  // Sắp xếp: Director -> Manager -> Staff/Thư ký/HR. Ưu tiên cấp trưởng (is_department_head), sau đó theo alphabet.
+  const sortedMembers = (data || []).sort((a: any, b: any) => {
+    const getRolePriority = (p: any) => {
+      const r = p.role || '';
+      const t = p.title?.toLowerCase() || '';
+      const n = p.full_name?.toLowerCase() || '';
+      if (r === 'director' || t.includes('giám đốc') || n.includes('giám đốc')) return 0;
+      if (r === 'manager' || t.includes('trưởng phòng') || p.is_department_head === true) return 1;
+      return 2;
+    };
+    const pA = getRolePriority(a);
+    const pB = getRolePriority(b);
+    if (pA !== pB) return pA - pB;
+
+    const headA = a.is_department_head === true ? 0 : 1;
+    const headB = b.is_department_head === true ? 0 : 1;
+    if (headA !== headB) return headA - headB;
+
+    return (a.full_name || '').localeCompare(b.full_name || '', 'vi');
+  });
 
  setMembers(sortedMembers);
  } catch (error: any) {
@@ -115,7 +127,10 @@ export default function TeamPage() {
  admin: { label: "Quản trị hệ thống", color: "bg-slate-900 text-white shadow-sm" },
  director: { label: "Ban giám đốc", color: "bg-primary text-white shadow-primary-glow" },
  manager: { label: "Lãnh đạo đơn vị", color: "bg-amber-50 text-amber-600 border border-amber-200" },
- staff: { label: "Cán bộ", color: "bg-slate-50 text-slate-500 border border-slate-100" }
+ staff: { label: "Cán bộ", color: "bg-slate-50 text-slate-500 border border-slate-100" },
+ secretary: { label: "Thư ký TCTH", color: "bg-indigo-50 text-indigo-600 border border-indigo-200" },
+ hr_officer: { label: "Cán bộ Nhân sự", color: "bg-blue-50 text-blue-600 border border-blue-200" },
+ driver: { label: "Lái xe cơ quan", color: "bg-emerald-50 text-emerald-600 border border-emerald-200" }
  };
 
  if (loading) return <div className="flex h-96 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
@@ -159,17 +174,25 @@ export default function TeamPage() {
  )}
  </div>
 
- <div className="relative group w-full">
- <Search className="absolute left-9 sm:left-5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 group-focus-within:text-primary transition-colors" />
- <Input 
- placeholder="Tìm tên cán bộ hoặc phòng ban..." 
- className="finance-input finance-search-input h-12 pl-12" 
- value={searchQuery}
- onChange={(e) => setSearchQuery(e.target.value)}
- />
+ {/* Unified Search & Filter Bar */}
+ <div className="flex items-center gap-2 bg-slate-50/60 p-1.5 rounded-2xl border border-slate-100/80 shadow-sm w-full h-13 sm:h-14">
+   <div className="flex items-center gap-2 px-2 shrink-0">
+     <Users className="w-4 h-4 text-primary shrink-0" />
+     <span className="text-xs font-bold text-slate-600 uppercase tracking-wider hidden sm:inline">Danh sách cán bộ ({filteredMembers.length})</span>
+     <span className="text-xs font-bold text-slate-600 tracking-wider inline sm:hidden">({filteredMembers.length})</span>
+   </div>
+   <div className="relative flex-1 group">
+     <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500 group-focus-within:text-primary transition-colors" />
+     <Input 
+       placeholder="Tìm kiếm cán bộ hoặc phòng ban..." 
+       className="w-full pl-9 pr-3 h-10 text-xs font-semibold bg-white border-slate-200/60 rounded-xl focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary transition-all" 
+       value={searchQuery}
+       onChange={(e) => setSearchQuery(e.target.value)}
+     />
+   </div>
  </div>
 
- <div className="hidden sm:block premium-card border-none overflow-hidden">
+ <div className="hidden sm:block premium-card border-none overflow-hidden p-0 rounded-[2rem]">
  <Table>
  <TableHeader>
  <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 border-b border-slate-100 h-14">
@@ -225,7 +248,7 @@ export default function TeamPage() {
  <div className="space-y-1">
  <div className="flex flex-col">
  <h1 className="text-[15px] font-bold text-slate-900 leading-tight">{member.full_name}</h1>
- <p className="text-[12px] font-medium text-slate-500">{member.departments?.name || "Chi nhánh"}</p>
+ <p className="text-[12px] font-medium text-slate-500 truncate max-w-[150px] xs:max-w-none">{member.departments?.name || "Chi nhánh"}</p>
  </div>
  <Badge className={cn("px-2 py-0 text-[10px] font-medium border-none rounded-full", roleLabels[member.role]?.color)}>
  {roleLabels[member.role]?.label}

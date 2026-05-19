@@ -491,19 +491,25 @@ export default function GoalsPage() {
 
    {/* KPI List */}
   <div className="space-y-6 pt-2">
-  <div className="flex flex-col sm:flex-row gap-4">
-  <div className="relative flex-1 group">
-  <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 group-focus-within:text-primary transition-colors" />
-  <Input
-  placeholder="Tìm tên nhiệm vụ, mã hồ sơ..."
-  className="finance-input finance-search-input w-full pl-12 h-10 text-[14px] font-medium"
-  value={searchQuery}
-  onChange={(e) => setSearchQuery(e.target.value)}
-  />
-  </div>
+  {/* Unified Search & Filter Bar */}
+  <div className="flex items-center gap-2 bg-slate-50/60 p-1.5 rounded-2xl border border-slate-100/80 shadow-sm w-full h-13 sm:h-14">
+    <div className="flex items-center gap-2 px-2 shrink-0">
+      <Target className="w-4 h-4 text-primary shrink-0" />
+      <span className="text-xs font-bold text-slate-600 uppercase tracking-wider hidden sm:inline">Danh sách chỉ tiêu ({filteredGoals.length})</span>
+      <span className="text-xs font-bold text-slate-600 tracking-wider inline sm:hidden">({filteredGoals.length})</span>
+    </div>
+    <div className="relative flex-1 group">
+      <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500 group-focus-within:text-primary transition-colors" />
+      <Input 
+        placeholder="Tìm kiếm chỉ tiêu..." 
+        className="w-full pl-9 pr-3 h-10 text-xs font-semibold bg-white border-slate-200/60 rounded-xl focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary transition-all" 
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+      />
+    </div>
   </div>
 
- <div className="hidden md:block premium-card border-none overflow-hidden">
+ <div className="hidden md:block premium-card border-none overflow-hidden p-0 rounded-[2rem]">
  <Table>
  <TableHeader>
  <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 border-b border-slate-100 h-14">

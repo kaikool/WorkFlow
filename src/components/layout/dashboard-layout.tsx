@@ -118,6 +118,7 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
     // Chuyển hướng cứng (Hard reload) để dọn sạch hoàn toàn các lớp phủ Dialog Portal Radix bị kẹt và session cũ
     window.location.href = '/login';
   };
+  const canManageSystem = profile?.role === 'admin' || profile?.role === 'secretary';
 
  const navItems = [
    { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -127,12 +128,15 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
   { name: 'Cán bộ', href: '/dashboard/team', icon: Users },
  ];
 
- const roleLabels: Record<string, string> = {
- admin: "Quản trị hệ thống",
- director: "Ban giám đốc",
- manager: "Lãnh đạo phòng",
- staff: "Cán bộ"
- };
+  const roleLabels: Record<string, string> = {
+    admin: "Quản trị hệ thống",
+    director: "Ban giám đốc",
+    manager: "Lãnh đạo phòng",
+    staff: "Cán bộ",
+    hr_officer: "Cán bộ Nhân sự",
+    driver: "Tài xế",
+    secretary: "Thư ký"
+  };
 
  return (
  <div className="flex min-h-screen bg-background">
@@ -186,7 +190,7 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
  );
  })}
  
- {profile?.role === 'admin' && (
+ {canManageSystem && (
  <div className="mt-8 pt-6 border-t border-slate-100 space-y-1">
  <p className="px-3 text-[11px] font-semibold text-slate-400 mb-1">Hệ thống</p>
  <Link
@@ -231,7 +235,7 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
  </aside>
 
  <div className="flex-1 flex flex-col min-w-0">
- <header className="h-16 bg-white/80 backdrop-blur-md border border-slate-100 sticky top-4 z-40 flex items-center justify-between px-4 lg:px-8 mx-4 lg:mx-8 mt-4 rounded-2xl shadow-sm">
+ <header className="h-16 bg-white/80 backdrop-blur-md border border-slate-100 sticky top-0 sm:top-4 z-40 flex items-center justify-between px-4 lg:px-8 mx-0 sm:mx-8 mt-0 sm:mt-4 rounded-none sm:rounded-2xl shadow-sm border-x-0 sm:border-x border-t-0 sm:border-t">
  <div className="flex items-center gap-4">
  <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setIsMobileMenuOpen(true)}>
  <Menu className="w-6 h-6" />
@@ -248,9 +252,9 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
  <span className="text-sm font-bold text-slate-900 leading-none">
  {profile?.full_name || 'Cán bộ'}
  </span>
- <span className="text-[10px] font-bold text-primary uppercase mt-1.5 truncate whitespace-nowrap">
- {profile?.role === 'admin' ? 'Hệ thống' : profile?.role === 'director' ? 'Giám đốc' : profile?.role === 'manager' ? 'Lãnh đạo' : 'Cán bộ'}
- </span>
+  <span className="text-[10px] font-bold text-primary uppercase mt-1.5 truncate whitespace-nowrap">
+  {profile?.role === 'admin' ? 'Hệ thống' : profile?.role === 'director' ? 'Giám đốc' : profile?.role === 'manager' ? 'Lãnh đạo' : profile?.role === 'hr_officer' ? 'Nhân sự' : profile?.role === 'driver' ? 'Tài xế' : profile?.role === 'secretary' ? 'Thư ký' : 'Cán bộ'}
+  </span>
  </div>
 
  {mounted ? (
@@ -303,7 +307,7 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
  </Link>
  ))}
  
- {profile?.role === 'admin' && (
+ {canManageSystem && (
  <div className="pt-6 mt-6 border-t border-slate-100 space-y-2">
  <p className="text-[10px] font-bold text-slate-500 uppercase mb-2 pl-2 truncate whitespace-nowrap">HỆ THỐNG</p>
  <Link 
@@ -354,7 +358,7 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
  {/* Refreshing Overlay */}
  {isRefreshing && (
  <div className="fixed inset-0 bg-white/80 backdrop-blur-[2px] z-[999] flex flex-col items-center justify-center animate-in fade-in duration-300">
- <div className="bg-white p-6 rounded-[32px] shadow-2xl flex flex-col items-center gap-4 border border-slate-50">
+ <div className="bg-white p-6 rounded-[2rem] shadow-2xl flex flex-col items-center gap-4 border border-slate-50">
  <Loader2 className="w-8 h-8 text-primary animate-spin" />
  <span className="text-xs font-bold text-slate-900 uppercase truncate whitespace-nowrap">Đang cập nhật dữ liệu...</span>
  </div>

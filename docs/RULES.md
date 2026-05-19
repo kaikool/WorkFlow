@@ -110,10 +110,26 @@ src/app/dashboard/[module]/
 
 ---
 
-## 7. Checklist trước khi commit
+## 8. Quy tắc Phân quyền (Role Matrix)
+
+> Tham khảo chi tiết: [`docs/ROLE_MATRIX.md`](docs/ROLE_MATRIX.md)
+
+**BẮT BUỘC TUÂN THỦ**: Bất kỳ lập trình viên nào khi tham gia phát triển dự án ProjectFlow, trước khi chỉnh sửa bất kỳ dòng mã nguồn nào liên quan đến Giao diện (Frontend), API, hoặc Database (SQL Policies / RLS), bắt buộc phải đọc, hiểu rõ và tuân thủ tuyệt đối ma trận phân quyền trong file `docs/ROLE_MATRIX.md`.
+- **Tuyệt đối không** viết các câu lệnh SQL bypass RLS.
+- **Bắt buộc** khóa (disable) các ô nhập liệu chỉ tiêu KPI đối với tài khoản nhân viên (chỉ cho phép sửa `current_value`).
+- Mọi yêu cầu lịch trình có sử dụng xe/phòng họp của nhân viên/trưởng phòng đều có trạng thái mặc định là `pending` và chỉ được duyệt bởi `admin` hoặc `secretary`.
+- **Bắt buộc tuân thủ phân cấp lãnh đạo & quy tắc ưu tiên:**
+  - *Quyền lực ngang hàng theo Role:* Giám đốc/Phó Giám đốc có toàn quyền vĩ mô ngang nhau. Trưởng phòng/Phó phòng có toàn quyền quản lý đơn vị nghiệp vụ ngang nhau (giao việc cho phòng ban mình, duyệt đơn nghỉ phép của phòng, cập nhật tiến độ và hiệu chỉnh số liệu phòng).
+  - *Ưu tiên hiển thị:* Người có `is_department_head = true` (Trưởng phòng/Giám đốc điều hành chính) luôn được xếp lên đầu danh sách chọn để dễ giao việc.
+  - *Quyền tự chủ của cán bộ được giao:* Cán bộ được giao việc (`assignee`) có toàn quyền trực tiếp cập nhật tiến độ lên 100% để "Hoàn thành" báo cáo/nhiệm vụ của mình.
+
+---
+
+## 9. Checklist trước khi commit
 
 - [ ] Không file nào vượt 500 dòng
 - [ ] TypeScript compile thành công (`npx tsc --noEmit`)
 - [ ] Không có `console.log` thừa
 - [ ] Comment sạch, không có marker debug
 - [ ] UI nhất quán với Design System
+- [ ] Tuân thủ ma trận phân quyền trong `docs/ROLE_MATRIX.md`

@@ -125,7 +125,23 @@ export default function ParticipantSelector({
               {participantMode === 'staff' ? (
                 <div className="max-h-40 overflow-y-auto pr-2 space-y-4 animate-in fade-in slide-in-from-top-2">
                   {departments.filter(d => filterDepts.includes(d.id)).map(dept => {
-                    const deptMembers = allProfiles.filter(p => p.department_id === dept.id && p.role !== 'admin' && p.role !== 'director');
+                    const deptMembers = allProfiles
+                      .filter(p => p.department_id === dept.id && p.role !== 'admin' && p.role !== 'director')
+                      .sort((a, b) => {
+                        const getRolePriority = (role: string) => {
+                          if (role === 'manager') return 0;
+                          return 1;
+                        };
+                        const pA = getRolePriority(a.role || 'staff');
+                        const pB = getRolePriority(b.role || 'staff');
+                        if (pA !== pB) return pA - pB;
+
+                        const headA = a.is_department_head === true ? 0 : 1;
+                        const headB = b.is_department_head === true ? 0 : 1;
+                        if (headA !== headB) return headA - headB;
+
+                        return (a.full_name || '').localeCompare(b.full_name || '', 'vi');
+                      });
                     if (deptMembers.length === 0) return null;
                     return (
                       <div key={dept.id} className="space-y-2">

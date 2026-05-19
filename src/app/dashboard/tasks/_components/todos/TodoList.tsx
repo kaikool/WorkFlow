@@ -7,7 +7,7 @@ import {
 } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import {
-  Search, Filter, Loader2, Calendar, Zap, Users
+  Search, Filter, Loader2, Calendar, Zap, Users, ChevronDown, ChevronUp
 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import {
@@ -23,18 +23,18 @@ const STATUS_MAP: Record<string, { label: string; color: string; dot: string; li
   doing:  { label: 'Đang làm',   color: 'text-primary',          dot: 'bg-primary',    light: 'bg-primary/5'   },
   done:   { label: 'Hoàn thành', color: 'text-emerald-700',      dot: 'bg-emerald-500',light: 'bg-emerald-50'  },
   late:   { label: 'Trễ hạn',    color: 'text-red-600',          dot: 'bg-red-500',    light: 'bg-red-50'      },
-  closed: { label: 'Đã đóng',    color: 'text-slate-700',        dot: 'bg-slate-600',  light: 'bg-slate-100'   },
 }
 
-export function TodoList() {
-  const searchParams  = useSearchParams()
-  const initialStatus = searchParams.get('status') || 'all'
+interface TodoListProps {
+  searchQuery: string
+  filterStatus: string
+}
 
+export function TodoList({ searchQuery, filterStatus }: TodoListProps) {
   const [tasks,        setTasks]       = useState<any[]>([])
   const [loading,      setLoading]     = useState(true)
   const [profile,      setProfile]     = useState<any>(null)
-  const [searchQuery,  setSearch]      = useState('')
-  const [filterStatus, setFilter]      = useState<string>(initialStatus)
+  const [showAllTasks, setShowAllTasks] = useState(false)
   const supabase = createClient()
   const router   = useRouter()
 
@@ -84,37 +84,9 @@ export function TodoList() {
 
   return (
     <div className="space-y-6">
-      {/* Thanh tìm kiếm & lọc */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1 group">
-          <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 group-focus-within:text-primary transition-colors" />
-          <Input
-            placeholder="Tìm tên công việc..."
-            className="finance-input finance-search-input w-full pl-12 h-10 text-[14px] font-medium"
-            value={searchQuery}
-            onChange={e => setSearch(e.target.value)}
-          />
-        </div>
-        <Select value={filterStatus} onValueChange={setFilter}>
-          <SelectTrigger className="w-full sm:w-48 h-10 bg-white border-slate-200 rounded-xl font-medium text-slate-600 px-4 hover:border-primary/30 transition-all text-[14px]">
-            <div className="flex items-center gap-2">
-              <Filter className="w-4 h-4 text-primary/60" />
-              <SelectValue placeholder="Trạng thái" />
-            </div>
-          </SelectTrigger>
-          <SelectContent className="rounded-xl border-none shadow-premium-hover p-2">
-            <SelectItem value="all"   className="rounded-xl py-3 font-semibold">Tất cả trạng thái</SelectItem>
-            <SelectItem value="todo"  className="rounded-xl py-3 font-semibold">Chưa hoàn thành</SelectItem>
-            <SelectItem value="doing" className="rounded-xl py-3 font-semibold">Đang thực hiện</SelectItem>
-            <SelectItem value="done"  className="rounded-xl py-3 font-semibold">Đã hoàn thành</SelectItem>
-            <SelectItem value="late"  className="rounded-xl py-3 font-semibold text-red-600">Trễ hạn</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
       {/* Mobile card view */}
       <div className="block sm:hidden space-y-4">
-        {displayData.map(task => {
+        {(showAllTasks ? displayData : displayData.slice(0, 5)).map(task => {
           const status       = STATUS_MAP[task.status] || STATUS_MAP.todo
           const firstAssignee = task.task_assignees?.[0]?.profile
           const otherCount   = (task.task_assignees?.length || 0) - 1
@@ -161,7 +133,7 @@ export function TodoList() {
       </div>
 
       {/* Desktop table view */}
-      <div className="hidden sm:block premium-card border-none overflow-hidden">
+      <div className="hidden sm:block premium-card border-none overflow-hidden p-0 rounded-[2rem]">
         <Table>
           <TableHeader>
             <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 border-b border-slate-100 h-14">
@@ -173,7 +145,7 @@ export function TodoList() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {displayData.map(task => {
+            {(showAllTasks ? displayData : displayData.slice(0, 5)).map(task => {
               const status        = STATUS_MAP[task.status] || STATUS_MAP.todo
               const isLate        = task.status !== 'done' && new Date(task.due_date) < new Date()
               const firstAssignee = task.task_assignees?.[0]?.profile
@@ -244,6 +216,22 @@ export function TodoList() {
           </TableBody>
         </Table>
       </div>
+
+      {displayData.length > 5 && (
+        <div className="flex justify-center pt-2">
+          <Button 
+            variant="ghost" 
+            onClick={() => setShowAllTasks(!showAllTasks)}
+            className="text-xs font-bold text-primary uppercase hover:bg-primary/5 rounded-full px-6 py-2 flex items-center gap-1.5"
+          >
+            {showAllTasks ? (
+              <>Thu gọn <ChevronUp className="w-4 h-4" /></>
+            ) : (
+              <>Xem thêm {displayData.length - 5} công việc <ChevronDown className="w-4 h-4" /></>
+            )}
+          </Button>
+        </div>
+      )}
     </div>
   )
 }

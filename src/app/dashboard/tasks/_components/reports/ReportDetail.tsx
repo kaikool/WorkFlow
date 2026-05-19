@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import React, { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
@@ -192,7 +192,7 @@ export function ReportDetail({ id }: { id: string }) {
         {isCreatorOrAdmin && (
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="ghost" className="text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-xl px-4 h-10 text-[13px] font-medium">
+              <Button variant="ghost" className="text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-xl px-4 h-10 text-[13px] font-medium active:scale-95 transition-all">
                 <Trash2 className="w-4 h-4 mr-2"/>Xóa báo cáo
               </Button>
             </AlertDialogTrigger>
@@ -202,8 +202,8 @@ export function ReportDetail({ id }: { id: string }) {
                 <AlertDialogDescription className="text-slate-500 font-medium">Dữ liệu sẽ được gỡ khỏi hệ thống vĩnh viễn.</AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter className="mt-4 gap-3">
-                <AlertDialogCancel className="rounded-xl h-10 font-medium">Quay lại</AlertDialogCancel>
-                <AlertDialogAction onClick={async()=>{ await supabase.from("tasks").delete().eq("id",id); router.push("/dashboard/tasks") }} className="rounded-xl h-10 bg-red-600 font-medium hover:bg-red-700 text-white border-none">Xác nhận xóa</AlertDialogAction>
+                <AlertDialogCancel className="rounded-xl h-10 font-medium active:scale-95 transition-all">Quay lại</AlertDialogCancel>
+                <AlertDialogAction onClick={async()=>{ await supabase.from("tasks").delete().eq("id",id); router.push("/dashboard/tasks") }} className="rounded-xl h-10 bg-red-600 font-medium hover:bg-red-700 text-white border-none active:scale-95 transition-all">Xác nhận xóa</AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
@@ -223,15 +223,15 @@ export function ReportDetail({ id }: { id: string }) {
                 <Input value={editData.title||""} onChange={e=>setEditData({...editData,title:e.target.value})} className="text-xl font-semibold bg-white"/>
                 <Input value={editData.description||""} onChange={e=>setEditData({...editData,description:e.target.value})} placeholder="Mô tả" className="bg-white"/>
                 <div className="flex gap-2">
-                  <Button onClick={handleUpdateTaskInfo} disabled={saving} className="bg-primary text-white">Lưu</Button>
-                  <Button variant="outline" onClick={()=>setIsEditingTask(false)}>Hủy</Button>
+                  <Button onClick={handleUpdateTaskInfo} disabled={saving} className="bg-primary text-white rounded-xl active:scale-95 transition-all">Lưu</Button>
+                  <Button variant="outline" onClick={()=>setIsEditingTask(false)} className="rounded-xl active:scale-95 transition-all">Hủy</Button>
                 </div>
               </div>
             ) : (
               <>
                 <div className="flex justify-between items-start">
                   <h1 className="text-xl md:text-2xl font-semibold text-slate-900 tracking-tight leading-tight">{task.title}</h1>
-                  {isCreatorOrAdmin && <Button variant="ghost" size="sm" onClick={()=>{setEditData(task);setIsEditingTask(true)}}>Sửa</Button>}
+                  {isCreatorOrAdmin && <Button variant="ghost" size="sm" onClick={()=>{setEditData(task);setIsEditingTask(true)}} className="rounded-xl active:scale-95 transition-all">Sửa</Button>}
                 </div>
                 <div className="bg-slate-50/50 p-4 rounded-xl border border-slate-100/50">
                   <p className="text-sm text-slate-500 font-medium leading-relaxed italic">"{task.description||"Chưa có mô tả chi tiết."}"</p>
@@ -299,7 +299,7 @@ export function ReportDetail({ id }: { id: string }) {
           ) : (
             <div className="flex items-center justify-center p-2">
               <Button disabled={!canEdit||saving} onClick={async()=>{ try { const val=(task.progress||0)>=100?0:100; const ns=val>=100?"done":"todo"; await supabase.from("tasks").update({progress:val,status:ns}).eq("id",id); if(task.created_by&&task.created_by!==profile?.id) await supabase.from("notifications").insert({user_id:task.created_by,title:`Tiến độ mới: ${task.title}`,content:`${profile?.full_name} đã ${val>=100?"xác nhận nộp":"hủy nộp"} báo cáo.`,link:`/dashboard/tasks/${id}`}); setTask({...task,progress:val,status:ns}) } catch(err:any){toast({variant:"destructive",title:"Lỗi",description:err.message})} }}
-                className={cn("w-full sm:max-w-[300px] h-12 rounded-xl font-bold transition-all shadow-sm flex items-center justify-center gap-2 text-[14px]",(task.progress||0)>=100?"bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/50":"bg-primary text-white hover:bg-primary/90")}>
+                className={cn("w-full sm:max-w-[300px] h-12 rounded-xl font-bold transition-all shadow-sm flex items-center justify-center gap-2 text-[14px] active:scale-95",(task.progress||0)>=100?"bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/50":"bg-primary text-white hover:bg-primary/90")}>
                 <CheckCircle2 className="w-5 h-5"/>{(task.progress||0)>=100?"Đã nộp báo cáo (Hủy)":"Xác nhận nộp báo cáo"}
               </Button>
             </div>
@@ -328,7 +328,7 @@ export function ReportDetail({ id }: { id: string }) {
             </div>
             <form onSubmit={handlePostComment} className="flex gap-3 pt-2">
               <Input placeholder="Nhập nội dung trao đổi..." className="finance-input flex-1 h-10 text-[14px] font-medium" value={newComment} onChange={e=>setNewComment(e.target.value)} disabled={posting}/>
-              <Button type="submit" disabled={posting||!newComment.trim()} className="h-10 w-10 rounded-xl bg-slate-900 hover:bg-black shadow-sm shrink-0 p-0"><Send className="w-5 h-5 text-white"/></Button>
+              <Button type="submit" disabled={posting||!newComment.trim()} className="h-10 w-10 rounded-xl bg-slate-900 hover:bg-black shadow-sm shrink-0 p-0 active:scale-95 transition-all"><Send className="w-5 h-5 text-white"/></Button>
             </form>
           </div>
         </div>
@@ -350,7 +350,7 @@ export function ReportDetail({ id }: { id: string }) {
                             <SelectTrigger className="w-full h-9 text-[12px] rounded-lg bg-slate-50 border-slate-200"><SelectValue placeholder="Chọn cán bộ..."/></SelectTrigger>
                             <SelectContent className="rounded-lg">{deptProfiles.map(p=><SelectItem key={p.id} value={p.id} className="text-[12px]">{p.full_name}</SelectItem>)}</SelectContent>
                           </Select>
-                          <Button onClick={handleDelegate} disabled={saving} className="w-full h-9 rounded-lg text-[12px] bg-primary">Xác nhận</Button>
+                          <Button onClick={handleDelegate} disabled={saving} className="w-full h-9 rounded-xl text-[12px] bg-primary active:scale-95 transition-all">Xác nhận</Button>
                         </div>
                       </PopoverContent>
                     </Popover>

@@ -102,7 +102,7 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
               <Label className="text-[13px] font-medium text-slate-500">Từ ngày</Label>
               <Popover open={isStartOpen} onOpenChange={setIsStartOpen}>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-full h-10 bg-slate-50 border-none rounded-xl font-medium justify-start text-left text-[14px]">
+                  <Button variant="outline" className="w-full h-10 bg-slate-50 border-none rounded-xl font-medium justify-start text-left text-[14px] active:scale-95 transition-all">
                     <CalendarIcon className="mr-2 h-4 w-4 text-primary" />
                     {startDate ? format(startDate, "dd/MM/yyyy") : "Chọn ngày"}
                   </Button>
@@ -148,7 +148,7 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
               <Label className="text-[13px] font-medium text-slate-500">Đến ngày</Label>
               <Popover open={isEndOpen} onOpenChange={setIsEndOpen}>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-full h-10 bg-slate-50 border-none rounded-xl font-medium justify-start text-left text-[14px]">
+                  <Button variant="outline" className="w-full h-10 bg-slate-50 border-none rounded-xl font-medium justify-start text-left text-[14px] active:scale-95 transition-all">
                     <CalendarIcon className="mr-2 h-4 w-4 text-primary" />
                     {endDate ? format(endDate, "dd/MM/yyyy") : "Chọn ngày"}
                   </Button>
@@ -341,7 +341,7 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
           )}
         </div>
         <DialogFooter className="pt-4 border-t border-slate-100">
-          <Button onClick={onSubmit} className="w-full h-10 rounded-xl font-semibold">
+          <Button onClick={onSubmit} className="w-full h-10 rounded-xl font-semibold active:scale-95 transition-all">
             {isLeave ? 'Gửi Đơn nghỉ phép' : 'Xác nhận đăng ký'}
           </Button>
         </DialogFooter>

@@ -56,6 +56,7 @@ export default function MemberDetailPage() {
  const [isRecognizeOpen, setIsRecognizeOpen] = useState(false);
  const [recognitionText, setRecognitionText] = useState("");
  const [recognitionScope, setRecognitionScope] = useState("department");
+ const [recognitionType, setRecognitionType] = useState("praise");
  const [member, setMember] = useState<any>(null);
  const [memberTasks, setMemberTasks] = useState<any[]>([]);
  const [stats, setStats] = useState({ done: 0, pending: 0, total: 0, avgProgress: 0 });
@@ -162,7 +163,7 @@ export default function MemberDetailPage() {
  receiver_id: id,
  content: recognitionText,
  department_id: member.department_id,
- scope: recognitionScope
+ scope: recognitionScope, type: recognitionType
  });
 
  // Lấy danh sách những người cần nhận thông báo
@@ -180,14 +181,14 @@ export default function MemberDetailPage() {
  if (targetUserIds.length > 0) {
  const notifications = targetUserIds.map(userId => ({
  user_id: userId,
- title: recognitionScope === 'branch' ? "VINH DANH TOÀN CHI NHÁNH" : "Vinh danh nội bộ phòng",
- content: `${member.full_name} đã được vinh danh: "${recognitionText}"`,
+ title: recognitionType === 'remind' ? (recognitionScope === 'branch' ? "NHẮC NHỞ TOÀN CHI NHÁNH" : "Nhắc nhở nội bộ phòng") : (recognitionScope === 'branch' ? "VINH DANH TOÀN CHI NHÁNH" : "Vinh danh nội bộ phòng"),
+  content: recognitionType === 'remind' ? `Cán bộ ${member.full_name} đã được góp ý: "${recognitionText}"` : `${member.full_name} đã được vinh danh: "${recognitionText}"`,
  link: `/dashboard/team/${id}`
  }));
  await supabase.from('notifications').insert(notifications);
  }
 
- toast({ title: "Đã vinh danh nhân sự" });
+ toast({ title: recognitionType === "remind" ? "Đã gửi ý kiến nhắc nhở" : "Đã vinh danh nhân sự" });
  setIsRecognizeOpen(false);
  setRecognitionText("");
  } catch (error: any) {
@@ -255,25 +256,46 @@ export default function MemberDetailPage() {
  </div>
  </div>
  
- {currentUser?.id !== member.id && (currentUser?.role === 'admin' || currentUser?.role === 'manager') && (
+ {currentUser?.id !== member.id && (currentUser?.role === 'admin' || currentUser?.role === 'manager' || currentUser?.role === 'director') && (
  <Dialog open={isRecognizeOpen} onOpenChange={setIsRecognizeOpen}>
  <DialogTrigger asChild>
  <Button className="bg-amber-400 hover:bg-amber-500 text-white rounded-2xl font-bold px-8 h-12 shadow-lg shadow-amber-200 active:scale-95 transition-all gap-2">
- <Award className="w-5 h-5" /> VINH DANH CÁN BỘ
+ <Award className="w-5 h-5" /> VINH DANH & CHẤN CHỈNH
  </Button>
  </DialogTrigger>
- <DialogContent className="rounded-[40px] border-none p-0 overflow-hidden max-w-sm shadow-2xl">
- <div className="bg-gradient-to-br from-amber-400 to-amber-600 p-10 text-white text-center relative">
+ <DialogContent className="rounded-[2rem] border-none p-0 overflow-hidden max-w-sm shadow-2xl">
+ <div className={cn("p-10 text-white text-center relative transition-all duration-500", recognitionType === 'praise' ? "bg-gradient-to-br from-amber-400 to-amber-600" : "bg-gradient-to-br from-slate-700 to-slate-800")}>
  <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
  <Star className="w-32 h-32 -ml-16 -mt-8 rotate-12" />
  </div>
  <Star className="w-12 h-12 fill-white mx-auto mb-4 drop-shadow-lg" />
- <DialogTitle className="text-2xl font-bold uppercase tracking-tight tabular-nums">Khen tặng cán bộ</DialogTitle>
- <p className="text-[10px] font-bold text-amber-100 uppercase mt-2 opacity-90 truncate whitespace-nowrap">Ghi nhận cống hiến xuất sắc</p>
+ <DialogTitle className="text-2xl font-bold uppercase tracking-tight tabular-nums">{recognitionType === 'praise' ? "Khen tặng cán bộ" : "Góp ý & Nhắc nhở"}</DialogTitle>
+ <p className="text-[10px] font-bold text-amber-100 uppercase mt-2 opacity-90 truncate whitespace-nowrap">{recognitionType === 'praise' ? "Ghi nhận cống hiến xuất sắc" : "Chấn chỉnh & tạo động lực"}</p>
  </div>
  <div className="p-8 space-y-6">
  <div className="space-y-3">
- <label className="text-[10px] font-bold text-slate-500 uppercase pl-1 truncate whitespace-nowrap">Phạm vi công bố</label>
+  <label className="text-[10px] font-bold text-slate-500 uppercase pl-1 truncate whitespace-nowrap">Loại ghi nhận</label>
+  <Select value={recognitionType} onValueChange={setRecognitionType}>
+  <SelectTrigger className="h-12 rounded-2xl border-none bg-slate-50 font-bold text-slate-600 shadow-inner px-5">
+  <SelectValue />
+  </SelectTrigger>
+  <SelectContent className="rounded-2xl border-none shadow-2xl p-2">
+  <SelectItem value="praise" className="rounded-xl py-3 font-bold cursor-pointer">
+  <div className="flex items-center gap-3 text-amber-600">
+  <Award className="w-4 h-4" /> VINH DANH / KHEN THƯỞNG
+  </div>
+  </SelectItem>
+  <SelectItem value="remind" className="rounded-xl py-3 font-bold cursor-pointer">
+  <div className="flex items-center gap-3 text-slate-600">
+  <Clock className="w-4 h-4" /> GÓP Ý / NHẮC NHỞ
+  </div>
+  </SelectItem>
+  </SelectContent>
+  </Select>
+  </div>
+
+  <div className="space-y-3">
+  <label className="text-[10px] font-bold text-slate-500 uppercase pl-1 truncate whitespace-nowrap">Phạm vi công bố</label>
  <Select value={recognitionScope} onValueChange={setRecognitionScope}>
  <SelectTrigger className="h-12 rounded-2xl border-none bg-slate-50 font-bold text-slate-600 shadow-inner px-5">
  <SelectValue />
@@ -296,7 +318,7 @@ export default function MemberDetailPage() {
  <div className="space-y-3">
  <label className="text-[10px] font-bold text-slate-500 uppercase pl-1 truncate whitespace-nowrap">Nội dung ghi nhận</label>
  <Textarea 
- placeholder="Nhập lời khen ngợi cho những đóng góp của cán bộ..." 
+ placeholder={recognitionType === 'praise' ? "Nhập lời khen ngợi cho những đóng góp của cán bộ..." : "Nhập ý kiến nhắc nhở, chấn chỉnh tế nhị mang tính xây dựng..."} 
  className="rounded-[24px] bg-slate-50 border-none focus-visible:ring-amber-400 text-sm p-5 shadow-inner placeholder:text-slate-500 min-h-[120px]"
  value={recognitionText}
  onChange={(e) => setRecognitionText(e.target.value)}
@@ -304,7 +326,7 @@ export default function MemberDetailPage() {
  </div>
 
  <Button onClick={handleRecognize} disabled={recognizing || !recognitionText.trim()} className="w-full bg-slate-900 hover:bg-black h-14 rounded-2xl font-bold text-white shadow-xl shadow-slate-900/20 active:scale-95 transition-all">
- {recognizing ? <Loader2 className="w-5 h-5 animate-spin" /> : "XÁC NHẬN VINH DANH"}
+ {recognizing ? <Loader2 className="w-5 h-5 animate-spin" /> : (recognitionType === 'praise' ? "XÁC NHẬN VINH DANH" : "XÁC NHẬN NHẮC NHỞ")}
  </Button>
  </div>
  </DialogContent>
@@ -346,7 +368,7 @@ export default function MemberDetailPage() {
  </Link>
  ))
  ) : (
- <div className="py-20 bg-slate-50/50 rounded-[40px] text-center text-slate-500 italic text-sm border-2 border-dashed border-slate-100/50">
+ <div className="py-20 bg-slate-50/50 rounded-[2rem] text-center text-slate-500 italic text-sm border-2 border-dashed border-slate-100/50">
  Cán bộ chưa tham gia hành trình nào.
  </div>
  )}

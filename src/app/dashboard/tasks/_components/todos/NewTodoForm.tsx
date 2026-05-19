@@ -50,8 +50,31 @@ export function NewTodoForm() {
       query = query.eq('department_id', p.department_id)
     }
     const { data: members } = await query.order('full_name')
-    // Không đưa Ban giám đốc vào danh sách giao việc
-    setProfiles((members || []).filter((m: any) => m.role !== 'director' && m.role !== 'admin'))
+    // Không đưa Ban giám đốc và Admin vào danh sách giao việc
+    let filteredMembers = (members || []).filter((m: any) => m.role !== 'director' && m.role !== 'admin')
+    
+    // Sắp xếp thống nhất: Director -> Manager -> Staff/Thư ký/HR. Ưu tiên cấp trưởng (is_department_head), sau đó theo alphabet.
+    filteredMembers.sort((a: any, b: any) => {
+      const getRolePriority = (p: any) => {
+        const r = p.role || '';
+        const t = p.title?.toLowerCase() || '';
+        const n = p.full_name?.toLowerCase() || '';
+        if (r === 'director' || t.includes('giám đốc') || n.includes('giám đốc')) return 0;
+        if (r === 'manager' || t.includes('trưởng phòng') || p.is_department_head === true) return 1;
+        return 2;
+      };
+      const pA = getRolePriority(a);
+      const pB = getRolePriority(b);
+      if (pA !== pB) return pA - pB;
+
+      const headA = a.is_department_head === true ? 0 : 1;
+      const headB = b.is_department_head === true ? 0 : 1;
+      if (headA !== headB) return headA - headB;
+
+      return (a.full_name || '').localeCompare(b.full_name || '', 'vi');
+    })
+    
+    setProfiles(filteredMembers)
     setAssignees([user.id])
   }
 
@@ -138,7 +161,7 @@ export function NewTodoForm() {
         <div className="lg:col-span-8 space-y-6">
           <div className="premium-card p-6 border-none space-y-4">
             <div className="flex items-center gap-2">
-              <Badge className="px-2 py-0.5 text-[11px] font-medium rounded-md border-none bg-primary text-white">
+              <Badge className="px-2.5 py-0.5 text-[11px] font-bold uppercase rounded-full border-none bg-primary text-white">
                 Công việc
               </Badge>
             </div>
@@ -175,14 +198,14 @@ export function NewTodoForm() {
               <Popover>
                 <PopoverTrigger asChild disabled={isStaff}>
                   <Button variant="outline" className={cn(
-                    'w-full h-auto min-h-[44px] rounded-xl border-none bg-slate-50 justify-between px-4 py-2 text-left font-bold text-slate-900 shadow-sm transition-all hover:bg-slate-100',
+                    'w-full h-auto min-h-[44px] rounded-xl border-none bg-slate-50 justify-between px-4 py-2 text-left font-bold text-slate-900 shadow-sm transition-all hover:bg-slate-100 active:scale-95',
                     isStaff && 'cursor-not-allowed opacity-80'
                   )}>
                     <div className="flex flex-wrap gap-1.5 overflow-hidden">
                       {selectedAssignees.length === 0
                         ? <span className="text-slate-400 font-normal">Chọn người nhận</span>
                         : selectedAssignees.map(id => profiles.find(p => p.id === id)).filter(Boolean).map(p => (
-                            <Badge key={p.id} variant="secondary" className="bg-primary text-white border-none px-2 py-0.5 rounded-md flex items-center gap-1 shrink-0 text-[12px] font-medium whitespace-nowrap truncate">
+                            <Badge key={p.id} variant="secondary" className="bg-primary text-white border-none px-2.5 py-0.5 rounded-full flex items-center gap-1 shrink-0 text-[12px] font-bold uppercase whitespace-nowrap truncate">
                               {p.full_name}
                             </Badge>
                           ))
@@ -237,7 +260,7 @@ export function NewTodoForm() {
                 <Label className="text-[13px] font-medium text-slate-500">Hạn hoàn thành</Label>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" className={cn('w-full h-11 rounded-xl bg-slate-50 border-none font-bold text-slate-900 justify-start px-4 shadow-sm', !dueDate && 'text-muted-foreground')}>
+                    <Button variant="outline" className={cn('w-full h-11 rounded-xl bg-slate-50 border-none font-bold text-slate-900 justify-start px-4 shadow-sm active:scale-95 transition-all', !dueDate && 'text-muted-foreground')}>
                       <Calendar className="mr-2 h-4 w-4 text-primary" />
                       {dueDate ? format(dueDate, 'dd/MM/yyyy') : <span>Chọn ngày</span>}
                     </Button>
@@ -267,10 +290,10 @@ export function NewTodoForm() {
 
             {/* Nút submit */}
             <div className="pt-6 border-t border-slate-50 space-y-3">
-              <Button type="submit" disabled={loading} className="w-full bg-primary hover:bg-primary/90 h-10 rounded-xl font-medium text-[14px]">
+              <Button type="submit" disabled={loading} className="w-full bg-primary hover:bg-primary/90 h-10 rounded-xl font-medium text-[14px] active:scale-95 transition-all">
                 {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : (isStaff ? 'Tạo công việc' : 'Giao việc')}
               </Button>
-              <Button type="button" variant="ghost" onClick={() => router.back()} className="text-slate-500 font-bold h-10 w-full rounded-xl hover:bg-slate-50 text-xs">
+              <Button type="button" variant="ghost" onClick={() => router.back()} className="text-slate-500 font-bold h-10 w-full rounded-xl hover:bg-slate-50 text-xs active:scale-95 transition-all">
                 Hủy bỏ
               </Button>
             </div>

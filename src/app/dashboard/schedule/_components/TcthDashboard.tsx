@@ -72,15 +72,15 @@ export default function TcthDashboard({ schedules, vehicles, rooms, selectedDate
                 <div className="w-full h-px sm:w-px sm:h-16 bg-slate-100 shrink-0" />
 
                 {/* Actions */}
-                <div className="flex items-center sm:flex-col sm:items-end justify-between gap-4 shrink-0">
-                  <div className="flex items-center gap-2">
+                <div className="flex flex-col sm:items-end justify-between gap-4 w-full sm:w-auto shrink-0 pt-4 sm:pt-0 border-t sm:border-t-0 border-slate-50">
+                  <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
                     <span className="text-[11px] font-bold text-slate-500 uppercase whitespace-nowrap">Loại xe:</span>
                     <Badge className="bg-orange-50 text-orange-700 border border-orange-200 font-bold px-2 py-0.5 rounded-md whitespace-nowrap shadow-sm">
                       {s.requested_vehicle_type}
                     </Badge>
                   </div>
                   <Button
-                    className="bg-primary hover:bg-primary/90 h-9 px-5 rounded-xl font-medium text-[13px] whitespace-nowrap active:scale-95 transition-all w-full sm:w-auto"
+                    className="bg-primary hover:bg-primary/90 h-10 px-5 rounded-xl font-medium text-[13px] whitespace-nowrap active:scale-95 transition-all w-full sm:w-auto flex items-center justify-center"
                     onClick={() => onSelectSchedule(s)}
                   >
                     Gán Xe & Lái xe
@@ -112,7 +112,7 @@ export default function TcthDashboard({ schedules, vehicles, rooms, selectedDate
               const isBusy = currentTrip?.status === 'approved';
               const isPending = currentTrip?.status === 'pending';
               return (
-                <div key={v.id} className="premium-card p-5 border-none group">
+                <div key={v.id} className="premium-card p-6 border-none group">
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3 min-w-0">
                       <div className={cn("p-3 rounded-xl transition-all duration-300 shrink-0", isBusy ? "bg-orange-50 text-orange-600" : isPending ? "bg-amber-50 text-amber-600" : "bg-emerald-50 text-emerald-600")}>
@@ -165,7 +165,7 @@ export default function TcthDashboard({ schedules, vehicles, rooms, selectedDate
               const isBusy = currentMeeting?.status === 'approved';
               const isPending = currentMeeting?.status === 'pending';
               return (
-                <div key={r.id} className="premium-card p-5 border-none group">
+                <div key={r.id} className="premium-card p-6 border-none group">
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3 min-w-0">
                       <div className={cn("p-3 rounded-xl transition-all duration-300 shrink-0", isBusy ? "bg-blue-50 text-blue-600" : isPending ? "bg-amber-50 text-amber-600" : "bg-emerald-50 text-emerald-600")}>

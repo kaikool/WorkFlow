@@ -18,6 +18,9 @@ import ScheduleDetailDialog from "./_components/ScheduleDetailDialog";
 import DateNavigator from "./_components/DateNavigator";
 import CalendarView from "./_components/CalendarView";
 import TcthDashboard from "./_components/TcthDashboard";
+import LeaveApprovalDashboard from "./_components/LeaveApprovalDashboard";
+import DriverDashboard from "./_components/DriverDashboard";
+import { Car } from "lucide-react";
 
 export default function SchedulePage() {
   const supabase = createClient();
@@ -64,7 +67,26 @@ export default function SchedulePage() {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
 
   // Tính toán
+  const defaultTab = profile?.role === 'driver' ? 'driver-trips' : 'calendar';
   const isTCTH = profile?.role === 'admin' || profile?.departments?.name === 'Tổ chức Tổng hợp';
+
+  // Đếm số đơn nghỉ phép chờ duyệt theo phân cấp lãnh đạo
+  const getPendingLeavesCount = () => {
+    if (!profile) return 0;
+    return schedules.filter(s => {
+      if (s.type !== 'leave' || s.status !== 'pending') return false;
+      if (profile.role === 'admin' || profile.role === 'hr_officer' || profile.departments?.name === 'Tổ chức Tổng hợp') {
+        return true;
+      }
+      if (profile.role === 'director') {
+        return s.creator?.is_department_head === true;
+      }
+      if (profile.role === 'manager') {
+        return s.creator?.department_id === profile.department_id;
+      }
+      return false;
+    }).length;
+  };
 
   const weekDays = eachDayOfInterval({
     start: startOfWeek(selectedDate, { weekStartsOn: 1 }),
@@ -158,7 +180,7 @@ export default function SchedulePage() {
       // Lấy tất cả lịch có start_time trong tuần HOẶC end_time >= đầu tuần để bắt lịch nhiều ngày chạy qua tuần
       const { data: scheds, error: sError } = await supabase
         .from('schedules')
-        .select(`*, creator:profiles(full_name, avatar_url), room:rooms(name), vehicle:vehicles(name, plate_number), participants:schedule_participants(profile:profiles(id, full_name, avatar_url, role))`)
+        .select(`*, creator:profiles(full_name, avatar_url, department_id, is_department_head), room:rooms(name), vehicle:vehicles(name, plate_number), participants:schedule_participants(profile:profiles(id, full_name, avatar_url, role))`)
         .gte('end_time', start.toISOString())
         .lte('start_time', end.toISOString())
         .order('start_time');
@@ -262,7 +284,7 @@ export default function SchedulePage() {
             otherParticipantIds.map((uid: string) => ({
               user_id: uid,
               title: isEndEarly ? "Lịch trình kết thúc sớm" : "Lịch trình thay đổi thời gian",
-              content: `${profile?.full_name || 'Ai đó'} vừa cập nhật thời gian kết thúc của "${schedule.title}" thành ${format(newEndTime, 'HH:mm dd/MM')}.`,
+              content: `${profile?.full_name || 'Ai đó'} vừa cập nhật thời gian kết thúc của "${schedule.title}" thành ${String(newEndTime.getHours()).padStart(2, '0')}:${String(newEndTime.getMinutes()).padStart(2, '0')} ${String(newEndTime.getDate()).padStart(2, '0')}/${String(newEndTime.getMonth() + 1).padStart(2, '0')}.`,
               link: "/dashboard/schedule"
             }))
           );
@@ -408,19 +430,41 @@ export default function SchedulePage() {
       <DateNavigator selectedDate={selectedDate} setSelectedDate={setSelectedDate} weekDays={weekDays} />
 
       {/* Tabs */}
-      <Tabs defaultValue="calendar" className="space-y-8 w-full">
-        <TabsList className="bg-slate-100/60 p-1 rounded-xl h-auto w-full flex">
-          <TabsTrigger value="calendar" className="flex-1 rounded-lg px-5 py-2 font-medium text-[14px] data-[state=active]:bg-white data-[state=active]:shadow-sm">
-            <CalendarIcon className="w-4 h-4 mr-2" /> Lịch biểu
+      <Tabs key={defaultTab} defaultValue={defaultTab} className="space-y-8 w-full">
+        <TabsList className="bg-slate-100/60 p-1 rounded-xl h-11 w-full flex gap-1">
+          <TabsTrigger value="calendar" className="flex-1 rounded-lg py-1.5 font-medium text-[13px] md:text-[14px] data-[state=active]:bg-white data-[state=active]:shadow-sm flex items-center justify-center">
+            <CalendarIcon className="w-3.5 h-3.5 mr-1.5 shrink-0" /> 
+            <span className="hidden sm:inline">Lịch biểu</span>
+            <span className="inline sm:hidden">Lịch</span>
           </TabsTrigger>
           {profile?.departments?.name === 'Tổ chức Tổng hợp' && (
-            <TabsTrigger value="tcth" className="flex-1 rounded-lg px-5 py-2 font-medium text-[14px] data-[state=active]:bg-white data-[state=active]:text-orange-600 data-[state=active]:shadow-sm relative">
-              <ShieldCheck className="w-4 h-4 mr-2" /> Điều phối
+            <TabsTrigger value="tcth" className="flex-1 rounded-lg py-1.5 font-medium text-[13px] md:text-[14px] data-[state=active]:bg-white data-[state=active]:text-orange-600 data-[state=active]:shadow-sm flex items-center justify-center">
+              <ShieldCheck className="w-3.5 h-3.5 mr-1.5 shrink-0" /> 
+              <span>Điều phối</span>
               {schedules.filter(s => s.use_vehicle && !s.vehicle_id).length > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-orange-500 text-[10px] md:text-xs text-white shadow-sm">
+                <span className="ml-1.5 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-orange-500 text-[9px] text-white font-bold shrink-0">
                   {schedules.filter(s => s.use_vehicle && !s.vehicle_id).length}
                 </span>
               )}
+            </TabsTrigger>
+          )}
+          {(profile?.role === 'hr_officer' || profile?.role === 'admin' || profile?.departments?.name === 'Tổ chức Tổng hợp' || profile?.role === 'director' || profile?.role === 'manager') && (
+            <TabsTrigger value="leave-approval" className="flex-1 rounded-lg py-1.5 font-medium text-[13px] md:text-[14px] data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm flex items-center justify-center">
+              <CalendarIcon className="w-3.5 h-3.5 mr-1.5 shrink-0" /> 
+              <span className="hidden sm:inline">Phê duyệt nghỉ phép</span>
+              <span className="inline sm:hidden">Duyệt phép</span>
+              {getPendingLeavesCount() > 0 && (
+                <span className="ml-1.5 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-blue-500 text-[9px] text-white font-bold shrink-0">
+                  {getPendingLeavesCount()}
+                </span>
+              )}
+            </TabsTrigger>
+          )}
+          {profile?.role === 'driver' && (
+            <TabsTrigger value="driver-trips" className="flex-1 rounded-lg py-1.5 font-medium text-[13px] md:text-[14px] data-[state=active]:bg-white data-[state=active]:text-emerald-600 data-[state=active]:shadow-sm flex items-center justify-center">
+              <Car className="w-3.5 h-3.5 mr-1.5 shrink-0" /> 
+              <span className="hidden sm:inline">Lịch chạy xe</span>
+              <span className="inline sm:hidden">Lịch chạy</span>
             </TabsTrigger>
           )}
         </TabsList>
@@ -444,6 +488,25 @@ export default function SchedulePage() {
             <TcthDashboard
               schedules={schedules} vehicles={vehicles} rooms={rooms}
               selectedDate={selectedDate} onSelectSchedule={handleSelectSchedule}
+            />
+          </TabsContent>
+        )}
+        {(profile?.role === 'hr_officer' || profile?.role === 'admin' || profile?.departments?.name === 'Tổ chức Tổng hợp' || profile?.role === 'director' || profile?.role === 'manager') && (
+          <TabsContent value="leave-approval">
+            <LeaveApprovalDashboard
+              schedules={schedules}
+              profile={profile}
+              onStatusUpdate={handleStatusUpdate}
+            />
+          </TabsContent>
+        )}
+        {profile?.role === 'driver' && (
+          <TabsContent value="driver-trips">
+            <DriverDashboard
+              schedules={schedules}
+              profile={profile}
+              fetchData={fetchData}
+              toast={toast}
             />
           </TabsContent>
         )}
