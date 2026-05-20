@@ -772,7 +772,7 @@ export default function SchedulePage() {
       <DateNavigator selectedDate={selectedDate} setSelectedDate={setSelectedDate} weekDays={weekDays} schedules={schedules} />
 
       {/* Tabs */}
-      <Tabs key={defaultTab} defaultValue={defaultTab} className="space-y-8 w-full">
+      <Tabs defaultValue={profile?.role === 'driver' ? "driver-trips" : isTCTH ? "tcth" : "calendar"} className="space-y-8 w-full">
         <TabsList className="bg-slate-100/60 p-1 rounded-xl h-11 w-full flex gap-1">
           <TabsTrigger value="calendar" className="flex-1 rounded-lg py-1.5 font-medium text-[13px] md:text-[14px] data-[state=active]:bg-white data-[state=active]:shadow-sm flex items-center justify-center">
             <CalendarIcon className="w-3.5 h-3.5 mr-1.5 shrink-0" /> 
