@@ -507,11 +507,14 @@ export default function SchedulePage() {
         finalParticipantIds = Array.from(new Set([schedule.created_by, ...participant_ids].filter(Boolean)));
         addedParticipantIds = finalParticipantIds.filter((uid: string) => !oldParticipantIds.includes(uid));
 
-        await supabase.from('schedule_participants').delete().eq('schedule_id', id);
+        const { error: deleteError } = await supabase.from('schedule_participants').delete().eq('schedule_id', id);
+        if (deleteError) throw deleteError;
+
         if (finalParticipantIds.length > 0) {
-          await supabase.from('schedule_participants').insert(
+          const { error: insertError } = await supabase.from('schedule_participants').insert(
             finalParticipantIds.map((uid: string) => ({ schedule_id: id, profile_id: uid }))
           );
+          if (insertError) throw insertError;
         }
       }
 
@@ -619,9 +622,10 @@ export default function SchedulePage() {
       // Nghỉ phép: chỉ thêm chính người tạo làm participant
       // Lịch thường: resolve theo lựa chọn thành phần
       if (finalParticipants.length > 0) {
-        await supabase.from('schedule_participants').insert(
+        const { error: insertError } = await supabase.from('schedule_participants').insert(
           finalParticipants.map((pid: string) => ({ schedule_id: createdSchedule.id, profile_id: pid }))
         );
+        if (insertError) throw insertError;
       }
 
       if (createdSchedule.status === 'pending') {
@@ -805,7 +809,7 @@ export default function SchedulePage() {
       <ScheduleDetailDialog
         isOpen={isDetailOpen} setIsOpen={setIsDetailOpen}
         schedule={selectedSchedule} vehicles={vehicles} rooms={rooms}
-        isTCTH={isTCTH} allProfiles={allProfiles}
+        isTCTH={isTCTH} allProfiles={allProfiles} departments={departments}
         currentProfile={profile}
         onAssignVehicle={handleAssignVehicle}
         onUpdateEndTime={handleUpdateEndTime}

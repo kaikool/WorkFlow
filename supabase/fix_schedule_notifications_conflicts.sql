@@ -3,6 +3,24 @@ CREATE POLICY "Authenticated users can create notifications"
 ON notifications FOR INSERT
 WITH CHECK (auth.uid() IS NOT NULL);
 
+DROP POLICY IF EXISTS "Anyone can delete schedule_participants" ON schedule_participants;
+CREATE POLICY "Anyone can delete schedule_participants" ON schedule_participants FOR DELETE
+USING (
+    auth.uid() IS NOT NULL AND (
+        profile_id = auth.uid()
+        OR EXISTS (
+            SELECT 1 FROM schedules s
+            WHERE s.id = schedule_participants.schedule_id AND s.created_by = auth.uid()
+        )
+        OR EXISTS (
+            SELECT 1 FROM profiles p
+            LEFT JOIN departments d ON p.department_id = d.id
+            WHERE p.id = auth.uid()
+            AND (p.role IN ('admin', 'secretary', 'hr_officer') OR d.name = 'Tổ chức Tổng hợp')
+        )
+    )
+);
+
 CREATE OR REPLACE FUNCTION public.check_schedule_participant_conflicts(
   p_participant_ids uuid[],
   p_start timestamptz,

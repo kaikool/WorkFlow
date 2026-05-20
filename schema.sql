@@ -196,8 +196,25 @@ CREATE TABLE IF NOT EXISTS schedule_participants (
 ALTER TABLE schedule_participants ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Public read schedule_participants" ON schedule_participants;
 DROP POLICY IF EXISTS "Anyone can join/be invited to schedules" ON schedule_participants;
+DROP POLICY IF EXISTS "Anyone can delete schedule_participants" ON schedule_participants;
 CREATE POLICY "Public read schedule_participants" ON schedule_participants FOR SELECT USING (true);
 CREATE POLICY "Anyone can join/be invited to schedules" ON schedule_participants FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
+CREATE POLICY "Anyone can delete schedule_participants" ON schedule_participants FOR DELETE
+USING (
+    auth.uid() IS NOT NULL AND (
+        profile_id = auth.uid()
+        OR EXISTS (
+            SELECT 1 FROM schedules s
+            WHERE s.id = schedule_participants.schedule_id AND s.created_by = auth.uid()
+        )
+        OR EXISTS (
+            SELECT 1 FROM profiles p
+            LEFT JOIN departments d ON p.department_id = d.id
+            WHERE p.id = auth.uid()
+            AND (p.role IN ('admin', 'secretary', 'hr_officer') OR d.name = 'Tổ chức Tổng hợp')
+        )
+    )
+);
 
 -- 11. Tạo bảng Notifications (Thông báo)
 INSERT INTO departments (name) 

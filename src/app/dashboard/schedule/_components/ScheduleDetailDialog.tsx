@@ -1,12 +1,16 @@
 'use client'
 
 import React from "react";
-import { Clock, MapPin, Car, UserCheck, Users } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, MapPin, Car, UserCheck, Users, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { vi } from "date-fns/locale";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription
 } from "@/components/ui/dialog";
@@ -15,8 +19,9 @@ import {
 } from "@/components/ui/select";
 import { cn, compareProfilesByHierarchy } from "@/lib/utils";
 import { format } from "date-fns";
-import { typeLabels } from "../_lib/constants";
-import { filterBGD, filterStaff } from "../_lib/utils";
+import { typeLabels, timeOptions } from "../_lib/constants";
+import { filterBGD, filterStaff, resolveParticipantIds } from "../_lib/utils";
+import ParticipantSelector from "./ParticipantSelector";
 
 interface ScheduleDetailDialogProps {
   isOpen: boolean;
@@ -26,6 +31,7 @@ interface ScheduleDetailDialogProps {
   rooms: any[];
   isTCTH: boolean;
   allProfiles: any[];
+  departments: any[];
   currentProfile: any;
   onAssignVehicle: (scheduleId: string, vehicleId: string | null) => void;
   onUpdateEndTime: (scheduleId: string, newEndTime: string) => void;
@@ -83,30 +89,66 @@ function RenderParticipants({ schedule, allProfiles }: { schedule: any; allProfi
 }
 
 export default function ScheduleDetailDialog({
-  isOpen, setIsOpen, schedule, vehicles, rooms, isTCTH, allProfiles, currentProfile, onAssignVehicle, onUpdateEndTime, onUpdateSchedule
+  isOpen, setIsOpen, schedule, vehicles, rooms, isTCTH, allProfiles, departments, currentProfile, onAssignVehicle, onUpdateEndTime, onUpdateSchedule
 }: ScheduleDetailDialogProps) {
   const [isEditingTime, setIsEditingTime] = React.useState(false);
   const [isEditingSchedule, setIsEditingSchedule] = React.useState(false);
   const [newEndTime, setNewEndTime] = React.useState("");
   const [editData, setEditData] = React.useState<any>({});
 
+  // New States for Date & Time Pickers in Edit Mode
+  const [editStartDate, setEditStartDate] = React.useState<Date | undefined>(undefined);
+  const [editEndDate, setEditEndDate] = React.useState<Date | undefined>(undefined);
+  const [editStartTime, setEditStartTime] = React.useState<string>("08:00");
+  const [editEndTime, setEditEndTime] = React.useState<string>("09:00");
+  const [isStartOpen, setIsStartOpen] = React.useState(false);
+  const [isEndOpen, setIsEndOpen] = React.useState(false);
+
+  // States for ParticipantSelector
+  const [bgdMode, setBgdMode] = React.useState<'all' | 'specific' | 'none'>('specific');
+  const [selectedBGD, setSelectedBGD] = React.useState<string[]>([]);
+  const [deptMode, setDeptMode] = React.useState<'all' | 'specific' | 'none'>('specific');
+  const [filterDepts, setFilterDepts] = React.useState<string[]>([]);
+  const [participantMode, setParticipantMode] = React.useState<'all' | 'manager' | 'staff'>('staff');
+  const [selectedParticipants, setSelectedParticipants] = React.useState<string[]>([]);
+
   React.useEffect(() => {
     if (schedule?.end_time && isOpen) {
       setNewEndTime(format(new Date(schedule.end_time), "yyyy-MM-dd'T'HH:mm"));
       setIsEditingTime(false);
       setIsEditingSchedule(false);
+      
+      const existingIds = (schedule.participants || []).map((p: any) => p.profile?.id).filter(Boolean);
+      const bgdProfiles = filterBGD(allProfiles);
+      const bgdIds = bgdProfiles.filter(p => existingIds.includes(p.id)).map(p => p.id);
+      const otherIds = existingIds.filter((id: string) => !bgdProfiles.some(bp => bp.id === id));
+      const activeDepts = Array.from(new Set(allProfiles.filter(p => otherIds.includes(p.id)).map(p => p.department_id).filter(Boolean)));
+      
+      setBgdMode(bgdIds.length > 0 ? 'specific' : 'none');
+      setSelectedBGD(bgdIds);
+      setDeptMode(otherIds.length > 0 ? 'specific' : 'none');
+      setFilterDepts(activeDepts.length > 0 ? activeDepts : (currentProfile?.department_id ? [currentProfile.department_id] : []));
+      setParticipantMode('staff');
+      setSelectedParticipants(otherIds);
+
+      const start = new Date(schedule.start_time);
+      const end = new Date(schedule.end_time);
+      setEditStartDate(start);
+      setEditEndDate(end);
+      setEditStartTime(format(start, "HH:mm"));
+      setEditEndTime(format(end, "HH:mm"));
+
       setEditData({
         title: schedule.title || "",
         description: schedule.description || "",
         type: schedule.type || "trip",
-        start_time: format(new Date(schedule.start_time), "yyyy-MM-dd'T'HH:mm"),
-        end_time: format(new Date(schedule.end_time), "yyyy-MM-dd'T'HH:mm"),
+        start_time: format(start, "yyyy-MM-dd'T'HH:mm"),
+        end_time: format(end, "yyyy-MM-dd'T'HH:mm"),
         location: schedule.location || "",
         room_id: schedule.room_id || "none",
         use_vehicle: !!schedule.use_vehicle,
         vehicle_id: schedule.vehicle_id || "none",
         requested_vehicle_type: schedule.requested_vehicle_type || "4 chỗ",
-        participant_ids: (schedule.participants || []).map((p: any) => p.profile?.id).filter(Boolean)
       });
     }
   }, [schedule, isOpen]);
@@ -159,18 +201,25 @@ export default function ScheduleDetailDialog({
     if (!isLeave && isBranchLocation && (!editData.room_id || editData.room_id === 'none')) return;
     if (!isLeave && !isBranchLocation && !editData.location?.trim()) return;
 
+    const finalParticipantIds = isLeave 
+      ? [currentProfile?.id].filter(Boolean)
+      : resolveParticipantIds({ selectedParticipants, bgdMode, selectedBGD, deptMode, filterDepts, participantMode, allProfiles });
+
+    const startString = `${format(editStartDate || new Date(), 'yyyy-MM-dd')}T${editStartTime}`;
+    const endString = `${format(editEndDate || new Date(), 'yyyy-MM-dd')}T${editEndTime}`;
+
     onUpdateSchedule(schedule.id, {
       title: editData.title,
       description: editData.description || null,
       type: editData.type,
-      start_time: new Date(editData.start_time).toISOString(),
-      end_time: new Date(editData.end_time).toISOString(),
+      start_time: new Date(startString).toISOString(),
+      end_time: new Date(endString).toISOString(),
       location: isLeave ? null : editData.location,
       room_id: !isLeave && isBranchLocation && editData.room_id !== 'none' ? editData.room_id : null,
       use_vehicle: !isLeave && !!editData.use_vehicle,
       vehicle_id: !isLeave && editData.vehicle_id !== 'none' ? editData.vehicle_id : null,
       requested_vehicle_type: !isLeave && editData.use_vehicle ? editData.requested_vehicle_type : null,
-      participant_ids: editData.participant_ids || []
+      participant_ids: finalParticipantIds
     });
   };
 
@@ -243,9 +292,92 @@ export default function ScheduleDetailDialog({
                       </Select>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <Input type="datetime-local" value={editData.start_time || ""} onChange={(e) => setEditData({ ...editData, start_time: e.target.value })} className="h-10 bg-white rounded-xl border-slate-200 font-medium" />
-                      <Input type="datetime-local" value={editData.end_time || ""} onChange={(e) => setEditData({ ...editData, end_time: e.target.value })} className="h-10 bg-white rounded-xl border-slate-200 font-medium" />
+                    {/* Bắt đầu */}
+                    <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2">
+                      <div className="space-y-1.5">
+                        <Label className="text-[12px] font-semibold text-slate-500">Từ ngày</Label>
+                        <Popover open={isStartOpen} onOpenChange={setIsStartOpen}>
+                          <PopoverTrigger asChild>
+                            <Button type="button" variant="outline" className="w-full h-10 bg-white border border-slate-200 rounded-xl font-medium justify-start text-left text-[14px] active:scale-95 transition-all truncate">
+                              <CalendarIcon className="mr-2 h-4 w-4 text-primary shrink-0" />
+                              <span className="truncate">{editStartDate ? format(editStartDate, "dd/MM/yyyy") : "Chọn ngày"}</span>
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0 rounded-2xl border-none shadow-2xl z-[9999] pointer-events-auto" align="start" onOpenAutoFocus={(e) => e.preventDefault()}>
+                            <Calendar
+                              mode="single"
+                              selected={editStartDate}
+                              onSelect={(date) => {
+                                setEditStartDate(date);
+                                if (date && editEndDate && date > editEndDate) setEditEndDate(date);
+                                setIsStartOpen(false);
+                              }}
+                              initialFocus
+                              locale={vi}
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-[12px] font-semibold text-slate-500">Giờ đi</Label>
+                        <Select value={editStartTime} onValueChange={(v) => {
+                          setEditStartTime(v);
+                          const [h, m] = v.split(':');
+                          const endH = Math.min(parseInt(h) + 1, 23);
+                          setEditEndTime(`${endH.toString().padStart(2, '0')}:${m}`);
+                        }}>
+                          <SelectTrigger className="h-10 bg-white border border-slate-200 rounded-xl font-medium text-[14px]">
+                            <Clock className="mr-2 h-4 w-4 text-primary shrink-0" />
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl border-none shadow-lg">
+                            {timeOptions.map(time => (
+                              <SelectItem key={time} value={time}>{time}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    {/* Kết thúc */}
+                    <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2">
+                      <div className="space-y-1.5">
+                        <Label className="text-[12px] font-semibold text-slate-500">Đến ngày</Label>
+                        <Popover open={isEndOpen} onOpenChange={setIsEndOpen}>
+                          <PopoverTrigger asChild>
+                            <Button type="button" variant="outline" className="w-full h-10 bg-white border border-slate-200 rounded-xl font-medium justify-start text-left text-[14px] active:scale-95 transition-all truncate">
+                              <CalendarIcon className="mr-2 h-4 w-4 text-primary shrink-0" />
+                              <span className="truncate">{editEndDate ? format(editEndDate, "dd/MM/yyyy") : "Chọn ngày"}</span>
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0 rounded-2xl border-none shadow-2xl z-[9999] pointer-events-auto" align="start" onOpenAutoFocus={(e) => e.preventDefault()}>
+                            <Calendar
+                              mode="single"
+                              selected={editEndDate}
+                              onSelect={(date) => {
+                                setEditEndDate(date);
+                                setIsEndOpen(false);
+                              }}
+                              initialFocus
+                              locale={vi}
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-[12px] font-semibold text-slate-500">Giờ về</Label>
+                        <Select value={editEndTime} onValueChange={setEditEndTime}>
+                          <SelectTrigger className="h-10 bg-white border border-slate-200 rounded-xl font-medium text-[14px]">
+                            <Clock className="mr-2 h-4 w-4 text-primary shrink-0" />
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl border-none shadow-lg">
+                            {timeOptions.map(time => (
+                              <SelectItem key={time} value={time}>{time}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
 
                     {editData.type !== 'leave' && editData.location === 'Chi nhánh' ? (
@@ -291,43 +423,16 @@ export default function ScheduleDetailDialog({
 
                     {editData.type !== 'leave' && (
                       <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4">
-                        <div className="flex items-center gap-2">
-                          <Users className="h-4 w-4 text-primary" />
-                          <p className="text-[13px] font-semibold text-slate-700">Thêm / bớt người tham gia</p>
-                        </div>
-                        <div className="max-h-44 overflow-y-auto pr-1">
-                          <div className="flex flex-wrap gap-2">
-                            {allProfiles
-                              .filter((p: any) => p.role !== 'admin')
-                              .map((p: any) => {
-                                const selected = (editData.participant_ids || []).includes(p.id);
-                                const locked = p.id === schedule.created_by;
-                                return (
-                                  <button
-                                    key={p.id}
-                                    type="button"
-                                    disabled={locked}
-                                    onClick={() => {
-                                      const current = editData.participant_ids || [];
-                                      setEditData({
-                                        ...editData,
-                                        participant_ids: selected
-                                          ? current.filter((id: string) => id !== p.id)
-                                          : [...current, p.id]
-                                      });
-                                    }}
-                                    className={cn(
-                                      "rounded-xl border px-3 py-1.5 text-[12px] font-semibold transition-all",
-                                      selected ? "border-primary bg-primary text-white" : "border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100",
-                                      locked && "cursor-not-allowed opacity-80"
-                                    )}
-                                  >
-                                    {p.full_name}{locked ? " (người tạo)" : ""}
-                                  </button>
-                                );
-                              })}
-                          </div>
-                        </div>
+                        <ParticipantSelector
+                          allProfiles={allProfiles}
+                          departments={departments}
+                          bgdMode={bgdMode} setBgdMode={setBgdMode}
+                          selectedBGD={selectedBGD} setSelectedBGD={setSelectedBGD}
+                          deptMode={deptMode} setDeptMode={setDeptMode}
+                          filterDepts={filterDepts} setFilterDepts={setFilterDepts}
+                          participantMode={participantMode} setParticipantMode={setParticipantMode}
+                          selectedParticipants={selectedParticipants} setSelectedParticipants={setSelectedParticipants}
+                        />
                       </div>
                     )}
 
@@ -340,70 +445,82 @@ export default function ScheduleDetailDialog({
               </div>
             )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <p className="text-[11px] text-slate-500 truncate">Địa điểm / Phòng họp</p>
-                <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-100">
-                  <div className="p-2 bg-white rounded-xl shadow-sm">
-                    <MapPin className="w-4 h-4 text-blue-600" />
-                  </div>
-                  <p className="text-sm font-medium text-slate-700">{schedule.room?.name || schedule.location || "Chưa xác định"}</p>
+            {/* Địa điểm / Phòng họp */}
+            <div className="space-y-2">
+              <p className="text-[11px] text-slate-500 truncate">Địa điểm / Phòng họp</p>
+              <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                <div className="p-2 bg-white rounded-xl shadow-xs">
+                  <MapPin className="w-4 h-4 text-slate-500" />
                 </div>
+                <p className="text-sm font-semibold text-slate-700">{schedule.room?.name || schedule.location || "Chưa xác định"}</p>
               </div>
-
-              {schedule.use_vehicle && (
-                <div className="space-y-2">
-                  <p className="text-[11px] text-slate-500 truncate">Phương tiện</p>
-                  <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-100">
-                    <div className="p-2 bg-white rounded-xl shadow-sm">
-                      <Car className="w-4 h-4 text-orange-600" />
-                    </div>
-                    <p className="text-sm font-medium text-slate-700">
-                      {schedule.vehicle ? `${schedule.vehicle.name} (${schedule.vehicle.plate_number})` : `Yêu cầu: ${schedule.requested_vehicle_type}`}
-                    </p>
-                  </div>
-                </div>
-              )}
             </div>
 
-            {/* Thông tin lái xe */}
-            {matchedVehicle && (
-              <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-white rounded-xl shadow-sm">
-                      <UserCheck className="w-4 h-4 text-emerald-600" />
+            {/* Thành phần tham gia */}
+            <div className="space-y-3 border-t border-slate-100 pt-4">
+              <p className="text-[13px] font-medium text-slate-500">Thành phần tham gia</p>
+              <RenderParticipants schedule={schedule} allProfiles={allProfiles} />
+            </div>
+
+            {/* Thông tin xe & lái xe */}
+            {schedule.use_vehicle && (
+              <div className="space-y-3 border-t border-slate-100 pt-4">
+                <p className="text-[13px] font-medium text-slate-500">Thông tin xe & lái xe</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                    <div className="p-2 bg-white rounded-lg shadow-xs">
+                      <Car className="w-4 h-4 text-slate-500" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-slate-500 leading-none mb-1 truncate whitespace-nowrap">Thông tin Lái xe</p>
-                      <p className="text-sm font-bold text-emerald-800">{matchedVehicle.driver_name}</p>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Phương tiện</p>
+                      <p className="text-sm font-semibold text-slate-700">
+                        {schedule.vehicle ? `${schedule.vehicle.name} (${schedule.vehicle.plate_number})` : `Yêu cầu: ${schedule.requested_vehicle_type}`}
+                      </p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-medium text-slate-500 leading-none mb-1 truncate whitespace-nowrap">Số điện thoại</p>
-                    <p className="text-sm font-bold text-emerald-600">{matchedVehicle.driver_phone}</p>
-                  </div>
+
+                  {matchedVehicle && (
+                    <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                      <div className="p-2 bg-white rounded-lg shadow-xs">
+                        <UserCheck className="w-4 h-4 text-slate-500" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Lái xe & SĐT</p>
+                        <p className="text-sm font-semibold text-slate-700">
+                          {matchedVehicle.driver_name}
+                        </p>
+                        {matchedVehicle.driver_phone && (
+                          <a
+                            href={`tel:${matchedVehicle.driver_phone}`}
+                            className="text-xs font-bold text-primary hover:underline block mt-0.5"
+                          >
+                            {matchedVehicle.driver_phone}
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
 
             {/* Điều phối xe (TCTH) */}
             {isTCTH && schedule.use_vehicle && !schedule.vehicle_id && (
-              <div className="p-6 bg-amber-50 rounded-2xl border border-amber-100 space-y-4 animate-in slide-in-from-bottom-2 duration-300">
+              <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100 space-y-4 animate-in slide-in-from-bottom-2 duration-300">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-white rounded-xl shadow-sm">
-                    <Car className="w-4 h-4 text-amber-600" />
+                  <div className="p-2 bg-white rounded-xl shadow-xs">
+                    <Car className="w-4 h-4 text-slate-500" />
                   </div>
                   <div>
-                    <p className="text-[11px] font-bold text-amber-800 truncate whitespace-nowrap">Điều phối phương tiện</p>
-                    <p className="text-[9px] font-bold text-amber-600">Chọn xe và lái xe phù hợp cho lộ trình này</p>
+                    <p className="text-[11px] font-bold text-slate-700 truncate whitespace-nowrap">Điều phối phương tiện</p>
+                    <p className="text-[9px] font-semibold text-slate-500">Chọn xe và lái xe phù hợp cho lộ trình này</p>
                   </div>
                 </div>
                 <Select onValueChange={(v) => onAssignVehicle(schedule.id, v)}>
-                  <SelectTrigger className="h-10 bg-white border-none rounded-xl font-medium shadow-sm text-[13px]">
+                  <SelectTrigger className="h-10 bg-white border border-slate-200 rounded-xl font-medium shadow-sm text-[13px]">
                     <SelectValue placeholder={`Chọn xe ${schedule.requested_vehicle_type}...`} />
                   </SelectTrigger>
-                  <SelectContent className="rounded-xl border-none shadow-lg">
+                  <SelectContent className="rounded-xl border border-slate-200 shadow-lg">
                     {vehicles
                       .filter(v => schedule.requested_vehicle_type === 'Khác' ? !['4 chỗ', '7 chỗ'].includes(v.type) : v.type === schedule.requested_vehicle_type)
                       .map(v => (
@@ -418,12 +535,6 @@ export default function ScheduleDetailDialog({
                 </Select>
               </div>
             )}
-
-            {/* Thành phần tham gia */}
-            <div className="space-y-3">
-              <p className="text-[13px] font-medium text-slate-500">Thành phần tham gia</p>
-              <RenderParticipants schedule={schedule} allProfiles={allProfiles} />
-            </div>
             {/* Điều chỉnh thời gian (Nếu có quyền) */}
             {canEdit && (
               <div className="space-y-3 pt-4 border-t border-slate-100">
