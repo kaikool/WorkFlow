@@ -33,17 +33,17 @@ export default function ParticipantSelector({
 }: ParticipantSelectorProps) {
   return (
     <div className="space-y-6 bg-slate-50/50 p-5 rounded-2xl border border-slate-100">
-      <div className="flex items-center gap-2">
-        <Users className="w-4 h-4 text-primary" />
+      <div className="flex items-center gap-2 whitespace-nowrap">
+        <Users className="w-4 h-4 text-primary shrink-0" />
         <Label className="text-[13px] font-semibold text-slate-900">Thành phần tham gia</Label>
       </div>
       
       <div className="space-y-6">
         {/* 1. Ban Giám đốc */}
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="text-[13px] font-semibold text-slate-500 flex items-center gap-2">
-              <div className="w-1 h-3 bg-red-500 rounded-full" /> 1. Ban giám đốc
+          <div className="flex items-center justify-between gap-2">
+            <div className="text-[13px] font-semibold text-slate-500 flex items-center gap-2 whitespace-nowrap">
+              <div className="w-1 h-3 bg-red-500 rounded-full shrink-0" /> 1. Ban giám đốc
             </div>
             <div className="flex bg-slate-100 p-0.5 rounded-lg shrink-0">
               <button type="button" onClick={() => setBgdMode('all')}
@@ -72,9 +72,9 @@ export default function ParticipantSelector({
 
         {/* 2. Đơn vị / Phòng */}
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="text-[13px] font-semibold text-slate-500 flex items-center gap-2">
-              <div className="w-1 h-3 bg-blue-500 rounded-full" /> 2. Đơn vị / phòng
+          <div className="flex items-center justify-between gap-2">
+            <div className="text-[13px] font-semibold text-slate-500 flex items-center gap-2 whitespace-nowrap">
+              <div className="w-1 h-3 bg-blue-500 rounded-full shrink-0" /> 2. Phòng
             </div>
             <div className="flex bg-slate-100 p-0.5 rounded-lg shrink-0">
               <button type="button" onClick={() => setDeptMode('all')}
@@ -104,9 +104,9 @@ export default function ParticipantSelector({
         {/* 3. Chi tiết cán bộ */}
         {(deptMode === 'specific' && filterDepts.length > 0) && (
           <div className="space-y-3 pt-2 border-t border-slate-50 animate-in fade-in">
-            <div className="flex items-center justify-between">
-              <div className="text-[13px] font-semibold text-slate-500 flex items-center gap-2">
-                <div className="w-1 h-3 bg-emerald-500 rounded-full" /> 3. Chi tiết cán bộ
+            <div className="flex items-center justify-between gap-2">
+              <div className="text-[13px] font-semibold text-slate-500 flex items-center gap-2 whitespace-nowrap">
+                <div className="w-1 h-3 bg-emerald-500 rounded-full shrink-0" /> 3. Cán bộ
               </div>
               <div className="flex bg-slate-100 p-0.5 rounded-lg shrink-0">
                 <button type="button" onClick={() => setParticipantMode('all')}
@@ -155,7 +155,7 @@ export default function ParticipantSelector({
                                     </AvatarFallback>
                                   )}
                                 </Avatar>
-                                <span className="truncate max-w-[120px]">{p.full_name}</span>
+                                <span className="whitespace-nowrap">{p.full_name}</span>
                               </button>
                             );
                           })}

@@ -248,7 +248,11 @@ updated_users AS (
     raw_app_meta_data = '{"provider":"email","providers":["email"]}'::jsonb,
     raw_user_meta_data = jsonb_build_object('full_name', n.full_name, 'ad_account', n.ad_account, 'role', n.app_role),
     email_confirmed_at = COALESCE(u.email_confirmed_at, now()),
-    updated_at = now()
+    updated_at = now(),
+    confirmation_token = '',
+    recovery_token = '',
+    email_change_token_new = '',
+    email_change = ''
   FROM normalized n
   WHERE u.email = n.email
   RETURNING u.id, u.email
@@ -265,7 +269,11 @@ inserted_users AS (
     aud,
     role,
     created_at,
-    updated_at
+    updated_at,
+    confirmation_token,
+    recovery_token,
+    email_change_token_new,
+    email_change
   )
   SELECT
     gen_random_uuid(),
@@ -278,7 +286,11 @@ inserted_users AS (
     'authenticated',
     'authenticated',
     now(),
-    now()
+    now(),
+    '',
+    '',
+    '',
+    ''
   FROM normalized n
   WHERE NOT EXISTS (
     SELECT 1 FROM auth.users u WHERE u.email = n.email
