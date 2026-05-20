@@ -9,7 +9,7 @@ import {
   Car, Clock, User, CheckCircle2, Navigation, AlertTriangle, 
   MapPin, Loader2, Gauge 
 } from "lucide-react";
-import { hasTCTHPermission } from "@/lib/permissions";
+import { canCoordinateSharedResources } from "@/lib/permissions";
 
 interface DriverDashboardProps {
   schedules: any[];
@@ -86,7 +86,7 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
 
       if (Math.abs(deviationMinutes) >= THRESHOLD_MINUTES) {
         const { data: tcthStaff } = await supabase.from('profiles').select('id, role, departments(name, code)');
-        const tcthTargets = tcthStaff?.filter((p: any) => hasTCTHPermission(p)) || [];
+        const tcthTargets = tcthStaff?.filter((p: any) => canCoordinateSharedResources(p)) || [];
         if (tcthTargets.length > 0) {
           const label = deviationMinutes > 0
             ? `muộn ${deviationMinutes} phút so với lịch (đăng ký ${scheduledStart.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })})`
@@ -144,7 +144,7 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
 
       // Thông báo tự động cho Tổ chức Tổng hợp để quyết toán xăng xe
       const { data: tcthStaff } = await supabase.from('profiles').select('id, role, departments(name, code)');
-      const tcthTargets = tcthStaff?.filter((p: any) => hasTCTHPermission(p)) || [];
+      const tcthTargets = tcthStaff?.filter((p: any) => canCoordinateSharedResources(p)) || [];
 
       if (tcthTargets.length > 0) {
         await supabase.from('notifications').insert(
@@ -168,7 +168,7 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
 
       if (Math.abs(endDeviationMinutes) >= END_THRESHOLD) {
         const { data: tcthStaff2 } = await supabase.from('profiles').select('id, role, departments(name, code)');
-        const tcthTargets2 = tcthStaff2?.filter((p: any) => hasTCTHPermission(p)) || [];
+        const tcthTargets2 = tcthStaff2?.filter((p: any) => canCoordinateSharedResources(p)) || [];
         if (tcthTargets2.length > 0) {
           const endLabel = endDeviationMinutes > 0
             ? `kết thúc muộn ${endDeviationMinutes} phút (dự kiến ${scheduledEnd.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })})`
@@ -216,7 +216,7 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
 
       // Thông báo cho TCTH
       const { data: tcthStaff } = await supabase.from('profiles').select('id, role, departments(name, code)');
-      const tcthTargets = tcthStaff?.filter((p: any) => hasTCTHPermission(p)) || [];
+      const tcthTargets = tcthStaff?.filter((p: any) => canCoordinateSharedResources(p)) || [];
 
       if (tcthTargets.length > 0) {
         await supabase.from('notifications').insert(
@@ -243,9 +243,9 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+        <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
           <Car className="w-3.5 h-3.5" /> Lịch trình di chuyển của tôi
-          <span className="ml-1 inline-flex items-center justify-center w-5 h-5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-bold">{myTrips.length}</span>
+          <span className="ml-1 inline-flex min-h-6 min-w-6 items-center justify-center rounded-full bg-slate-100 px-2 text-xs font-bold text-slate-600">{myTrips.length}</span>
         </h3>
       </div>
 
@@ -268,15 +268,15 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
             const fmtDt = (d: Date) => d.toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
             return (
-              <div key={trip.id} className="rounded-2xl border border-slate-100 bg-white shadow-sm hover:shadow-md transition-shadow duration-300 flex flex-col">
+              <div key={trip.id} className="premium-card border border-slate-200 bg-white hover:shadow-md transition-shadow duration-300 flex flex-col p-0">
                 {/* Status bar */}
                 <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-slate-50">
-                  <span className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1 rounded-full ${
+                  <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full ${
                     hasEnded
                       ? "bg-slate-100 text-slate-500"
                       : hasStarted
-                        ? "bg-emerald-50 text-emerald-600 animate-pulse"
-                        : "bg-blue-50 text-blue-600"
+                        ? "bg-slate-900 text-white animate-pulse"
+                        : "bg-amber-50 text-amber-700 border border-amber-100"
                   }`}>
                     {hasEnded ? (
                       <CheckCircle2 className="w-3 h-3" />
@@ -289,7 +289,7 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
                   </span>
 
                   {hasIssue && (
-                    <span className="inline-flex items-center gap-1 text-[11px] font-bold px-3 py-1 rounded-full bg-rose-50 text-rose-600">
+                    <span className="inline-flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-full bg-amber-50 text-amber-700 border border-amber-100">
                       <AlertTriangle className="w-3 h-3 shrink-0" /> Sự cố xe
                     </span>
                   )}
@@ -334,13 +334,13 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
                   {trip.metadata?.start_km && (
                     <div className="grid grid-cols-2 gap-2">
                       <div className="bg-slate-50 rounded-xl px-3 py-2.5 text-center">
-                        <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Km xuất phát</p>
+                        <p className="text-xs font-semibold text-slate-500">Km xuất phát</p>
                         <p className="text-sm font-bold text-slate-700 flex items-center justify-center gap-1 mt-1">
                           <Gauge className="w-3 h-3 text-slate-400" /> {trip.metadata.start_km}
                         </p>
                       </div>
                       <div className="bg-slate-50 rounded-xl px-3 py-2.5 text-center">
-                        <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Km kết thúc</p>
+                        <p className="text-xs font-semibold text-slate-500">Km kết thúc</p>
                         <p className="text-sm font-bold text-slate-700 flex items-center justify-center gap-1 mt-1">
                           {hasEnded ? (
                             <><Gauge className="w-3 h-3 text-slate-400" /> {trip.metadata.end_km}</>
@@ -350,9 +350,9 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
                         </p>
                       </div>
                       {hasEnded && trip.metadata?.actual_distance != null && (
-                        <div className="col-span-2 bg-emerald-50 rounded-xl px-3 py-2.5 text-center">
-                          <p className="text-[10px] font-semibold text-emerald-500 uppercase tracking-wide">Tổng quãng đường</p>
-                          <p className="text-sm font-bold text-emerald-700 mt-1">{trip.metadata.actual_distance} km</p>
+                        <div className="col-span-2 bg-amber-50 rounded-xl px-3 py-2.5 text-center border border-amber-100">
+                          <p className="text-xs font-semibold text-amber-700">Tổng quãng đường</p>
+                          <p className="text-sm font-bold text-amber-800 mt-1">{trip.metadata.actual_distance} km</p>
                         </div>
                       )}
                     </div>
@@ -365,14 +365,14 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
                     {!hasStarted ? (
                       <Button
                         onClick={() => { setSelectedStartSchedule(trip); setIsStartOpen(true); }}
-                        className="flex-1 bg-slate-900 hover:bg-black text-white rounded-xl font-bold h-10 text-xs gap-1.5 shadow-sm active:scale-95 transition-all"
+                        className="flex-1 bg-slate-900 hover:bg-black text-white rounded-xl font-semibold min-h-11 text-sm gap-1.5 shadow-sm active:scale-95 transition-all"
                       >
                         <Navigation className="w-3.5 h-3.5" /> Bắt đầu chuyến
                       </Button>
                     ) : (
                       <Button
                         onClick={() => { setSelectedEndSchedule(trip); setIsEndOpen(true); }}
-                        className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold h-10 text-xs gap-1.5 shadow-sm active:scale-95 transition-all"
+                        className="flex-1 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-semibold min-h-11 text-sm gap-1.5 shadow-sm active:scale-95 transition-all"
                       >
                         <CheckCircle2 className="w-3.5 h-3.5" /> Kết thúc chuyến
                       </Button>
@@ -381,7 +381,7 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
                       onClick={() => { setSelectedIssueSchedule(trip); setIsIssueOpen(true); }}
                       variant="ghost"
                       title="Báo sự cố"
-                      className="hover:bg-rose-50 hover:text-rose-600 text-slate-400 rounded-xl h-10 w-10 p-0 shrink-0 flex items-center justify-center transition-colors"
+                      className="hover:bg-slate-100 hover:text-slate-900 text-slate-500 rounded-xl h-11 w-11 p-0 shrink-0 flex items-center justify-center transition-colors"
                     >
                       <AlertTriangle className="w-4 h-4" />
                     </Button>
@@ -427,11 +427,11 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
                       </Avatar>
                       <div className="min-w-0">
                         <p className="text-xs font-bold text-slate-700 truncate">{driverName}</p>
-                        <p className="text-[10px] text-slate-400 truncate">{(trip.vehicle as any)?.plate_number || "Không rõ biển số"}</p>
+                        <p className="text-xs text-slate-500 truncate">{(trip.vehicle as any)?.plate_number || "Không rõ biển số"}</p>
                       </div>
                     </div>
-                    <span className={`shrink-0 text-[9px] font-bold px-2 py-0.5 rounded-full ml-2 ${
-                      hasStarted && !hasEnded ? "bg-emerald-50 text-emerald-600" : hasEnded ? "bg-slate-100 text-slate-500" : "bg-blue-50 text-blue-600"
+                    <span className={`shrink-0 text-xs font-bold px-3 py-1 rounded-full ml-2 ${
+                      hasStarted && !hasEnded ? "bg-slate-900 text-white" : hasEnded ? "bg-slate-100 text-slate-500" : "bg-amber-50 text-amber-700 border border-amber-100"
                     }`}>
                       {hasStarted && !hasEnded ? "Đang chạy" : hasEnded ? "Xong" : "Chờ đi"}
                     </span>
@@ -470,7 +470,7 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Chỉ số KM hiện tại (Xuất phát)</label>
+              <label className="text-sm font-semibold text-slate-600">Chỉ số KM hiện tại (Xuất phát)</label>
               <Input
                 type="number"
                 placeholder="Ví dụ: 12050"
@@ -502,13 +502,13 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Chỉ số KM kết thúc</label>
+              <label className="text-sm font-semibold text-slate-600">Chỉ số KM kết thúc</label>
               <Input
                 type="number"
                 placeholder={`Phải lớn hơn ${selectedEndSchedule?.metadata?.start_km || 0}`}
                 value={endKm}
                 onChange={(e) => setEndKm(e.target.value)}
-                className="h-11 rounded-xl border-none bg-slate-50 px-4 font-bold text-slate-700 focus-visible:ring-emerald-500"
+                className="h-11 rounded-xl border-none bg-slate-50 px-4 font-bold text-slate-700 focus-visible:ring-amber-600"
               />
               {selectedEndSchedule?.metadata?.start_km && (
                 <p className="text-xs text-slate-400 pl-1">Km xuất phát đã ghi nhận: <span className="font-bold text-slate-600">{selectedEndSchedule.metadata.start_km} km</span></p>
@@ -520,7 +520,7 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
             <Button
               onClick={handleEndTrip}
               disabled={updating || !endKm}
-              className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold px-6 shadow-sm shadow-emerald-100"
+              className="bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold px-6 shadow-sm"
             >
               {updating ? <Loader2 className="w-4 h-4 animate-spin" /> : "Hoàn thành chuyến"}
             </Button>
@@ -533,18 +533,18 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
         <DialogContent className="rounded-2xl max-w-sm border-none p-6 shadow-2xl">
           <DialogHeader>
             <DialogDescription className="sr-only">Mô tả sự cố phương tiện phát sinh để gửi thông báo bảo trì.</DialogDescription>
-            <DialogTitle className="text-base font-bold flex items-center gap-2 text-rose-600">
+            <DialogTitle className="text-base font-bold flex items-center gap-2 text-slate-900">
               <AlertTriangle className="w-4 h-4 shrink-0" /> Báo cáo sự cố xe
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Mô tả chi tiết sự cố</label>
+              <label className="text-sm font-semibold text-slate-600">Mô tả chi tiết sự cố</label>
               <Textarea
                 placeholder="Ví dụ: Thủng lốp, hỏng điều hòa, động cơ báo lỗi..."
                 value={issueText}
                 onChange={(e) => setIssueText(e.target.value)}
-                className="rounded-xl bg-slate-50 border-none focus-visible:ring-rose-400 text-sm p-4 min-h-[100px] placeholder:text-slate-400"
+                className="rounded-xl bg-slate-50 border-none focus-visible:ring-amber-600 text-sm p-4 min-h-[100px] placeholder:text-slate-400"
               />
             </div>
           </div>
@@ -553,7 +553,7 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
             <Button
               onClick={handleReportIssue}
               disabled={updating || !issueText.trim()}
-              className="bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold px-6 shadow-sm shadow-rose-100"
+              className="bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold px-6 shadow-sm"
             >
               {updating ? <Loader2 className="w-4 h-4 animate-spin" /> : "Gửi báo cáo"}
             </Button>

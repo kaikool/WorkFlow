@@ -347,6 +347,7 @@ export default function AdminPage() {
  </CardContent>
  </Card>
  </div>
+ )}
 
  <Tabs defaultValue={isAdmin ? "users" : "rooms"} className="space-y-8">
   <TabsList className="bg-slate-100/50 p-1 rounded-xl h-11 border border-slate-100 w-full flex gap-1">

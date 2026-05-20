@@ -50,8 +50,8 @@ export default function TcthDashboard({ schedules, vehicles, rooms, selectedDate
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Đội xe */}
         <div className="space-y-4">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-            <Car className="w-3.5 h-3.5 text-emerald-500 shrink-0" /> Giám sát Đội xe
+          <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+            <Car className="w-3.5 h-3.5 text-slate-700 shrink-0" /> Giám sát Đội xe
           </h3>
           <div className="space-y-3">
             {vehicles.map(v => {
@@ -67,7 +67,7 @@ export default function TcthDashboard({ schedules, vehicles, rooms, selectedDate
                 <div
                   key={v.id}
                   className={cn(
-                    "rounded-2xl border bg-white shadow-sm transition-all duration-200 overflow-hidden",
+                    "premium-card border border-slate-200 bg-white transition-all duration-200 overflow-hidden p-0",
                     clickTarget ? "cursor-pointer hover:shadow-md hover:border-slate-200" : "border-slate-100",
                     isExpanded && "border-slate-200 shadow-md"
                   )}
@@ -80,22 +80,22 @@ export default function TcthDashboard({ schedules, vehicles, rooms, selectedDate
                     <div className="flex items-center gap-3 min-w-0">
                       <div className={cn(
                         "p-2.5 rounded-xl shrink-0 transition-colors",
-                        isBusy || isInProgress ? "bg-orange-50 text-orange-500" : "bg-emerald-50 text-emerald-500"
+                        isBusy || isInProgress ? "bg-amber-50 text-amber-700" : "bg-slate-100 text-slate-700"
                       )}>
                         <Car className="w-4 h-4" />
                       </div>
                       <div className="min-w-0">
                         <p className="font-bold text-slate-900 text-sm truncate">{v.name}</p>
-                        <p className="text-[11px] font-medium text-slate-400 truncate tabular-nums">{v.plate_number}</p>
+                        <p className="text-xs font-medium text-slate-500 truncate tabular-nums">{v.plate_number}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <Badge className={cn(
-                        "rounded-full font-bold text-[10px] px-2.5 py-1 border-none whitespace-nowrap",
-                        isInProgress ? "bg-blue-500 text-white" :
-                        isBusy ? "bg-orange-500 text-white" :
-                        nextTrip ? "bg-amber-50 text-amber-600" :
-                        "bg-emerald-50 text-emerald-600"
+                        "rounded-full font-bold text-xs px-3 py-1.5 whitespace-nowrap",
+                        isInProgress ? "bg-slate-900 text-white" :
+                        isBusy ? "bg-amber-600 text-white" :
+                        nextTrip ? "bg-amber-50 text-amber-700 border border-amber-100" :
+                        "bg-slate-100 text-slate-700"
                       )}>
                         {isInProgress ? "Đang chạy" : isBusy ? "Bận" : nextTrip ? "Sẵn sàng" : "Rảnh"}
                       </Badge>
@@ -111,15 +111,15 @@ export default function TcthDashboard({ schedules, vehicles, rooms, selectedDate
                   {/* Current trip inline preview */}
                   {(isBusy || isInProgress) && currentTrip && (
                     <div className="px-5 pb-3 -mt-1">
-                      <div className="bg-orange-50 rounded-xl px-3.5 py-3 flex items-center justify-between gap-3">
+                      <div className="bg-amber-50 rounded-xl px-3.5 py-3 flex items-center justify-between gap-3 border border-amber-100">
                         <div className="flex items-center gap-2 min-w-0">
                           <Avatar className="h-5 w-5 shrink-0">
                             <AvatarImage src={currentTrip.creator?.avatar_url} />
-                            <AvatarFallback className="text-[8px] font-bold">{currentTrip.creator?.full_name?.[0]}</AvatarFallback>
+                            <AvatarFallback className="text-xs font-bold">{currentTrip.creator?.full_name?.[0]}</AvatarFallback>
                           </Avatar>
-                          <span className="text-xs font-semibold text-orange-800 truncate">{currentTrip.title}</span>
+                          <span className="text-xs font-semibold text-slate-900 truncate">{currentTrip.title}</span>
                         </div>
-                        <span className="text-[11px] font-bold text-orange-600 whitespace-nowrap tabular-nums">
+                        <span className="text-xs font-bold text-amber-700 whitespace-nowrap tabular-nums">
                           {fmtTime(new Date(currentTrip.start_time))} – {fmtTime(new Date(currentTrip.end_time))}
                         </span>
                       </div>
@@ -139,7 +139,7 @@ export default function TcthDashboard({ schedules, vehicles, rooms, selectedDate
                   {/* Expanded: all upcoming trips */}
                   {isExpanded && clickTarget && (
                     <div className="border-t border-slate-100 px-5 py-4 space-y-3 bg-slate-50/50">
-                      <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Lịch trình sắp tới</p>
+                      <p className="text-xs font-semibold text-slate-600">Lịch trình sắp tới</p>
                       {upcomingTrips.length === 0 ? (
                         <p className="text-xs text-slate-400">Không có lịch trình nào.</p>
                       ) : (
@@ -150,28 +150,28 @@ export default function TcthDashboard({ schedules, vehicles, rooms, selectedDate
                               key={trip.id}
                               className={cn(
                                 "flex items-start gap-3 rounded-xl px-3.5 py-3 cursor-pointer transition-colors",
-                                isNow ? "bg-orange-50 hover:bg-orange-100" : "bg-white hover:bg-slate-50 border border-slate-100"
+                                isNow ? "bg-amber-50 hover:bg-amber-100 border border-amber-100" : "bg-white hover:bg-slate-50 border border-slate-100"
                               )}
                               onClick={(e) => { e.stopPropagation(); onSelectSchedule(trip); }}
                             >
                               <div className={cn(
                                 "mt-0.5 w-1.5 h-1.5 rounded-full shrink-0",
-                                isNow ? "bg-orange-500" : "bg-slate-300"
+                                isNow ? "bg-amber-600" : "bg-slate-300"
                               )} />
                               <div className="min-w-0 flex-1">
                                 <p className="text-xs font-bold text-slate-800 truncate">{trip.title}</p>
                                 {trip.location && (
-                                  <div className="flex items-center gap-1 text-[10px] text-slate-400 mt-0.5">
+                                  <div className="flex items-center gap-1 text-xs text-slate-500 mt-0.5">
                                     <MapPin className="w-2.5 h-2.5 shrink-0" />
                                     <span className="truncate">{trip.location}</span>
                                   </div>
                                 )}
                               </div>
                               <div className="text-right shrink-0">
-                                <p className="text-[11px] font-bold text-slate-700 tabular-nums whitespace-nowrap">
+                                <p className="text-xs font-bold text-slate-700 tabular-nums whitespace-nowrap">
                                   {fmtTime(new Date(trip.start_time))} – {fmtTime(new Date(trip.end_time))}
                                 </p>
-                                <p className="text-[10px] text-slate-400 tabular-nums">{fmtDateShort(new Date(trip.start_time))}</p>
+                                <p className="text-xs text-slate-500 tabular-nums">{fmtDateShort(new Date(trip.start_time))}</p>
                               </div>
                             </div>
                           );
@@ -187,8 +187,8 @@ export default function TcthDashboard({ schedules, vehicles, rooms, selectedDate
 
         {/* Phòng họp */}
         <div className="space-y-4">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-            <DoorOpen className="w-3.5 h-3.5 text-blue-500 shrink-0" /> Tình trạng Phòng họp
+          <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+            <DoorOpen className="w-3.5 h-3.5 text-slate-700 shrink-0" /> Tình trạng Phòng họp
           </h3>
           <div className="space-y-3">
             {rooms.map(r => {
@@ -203,7 +203,7 @@ export default function TcthDashboard({ schedules, vehicles, rooms, selectedDate
                 <div
                   key={r.id}
                   className={cn(
-                    "rounded-2xl border bg-white shadow-sm transition-all duration-200 overflow-hidden",
+                    "premium-card border border-slate-200 bg-white transition-all duration-200 overflow-hidden p-0",
                     clickTarget ? "cursor-pointer hover:shadow-md hover:border-slate-200" : "border-slate-100",
                     isExpanded && "border-slate-200 shadow-md"
                   )}
@@ -216,21 +216,21 @@ export default function TcthDashboard({ schedules, vehicles, rooms, selectedDate
                     <div className="flex items-center gap-3 min-w-0">
                       <div className={cn(
                         "p-2.5 rounded-xl shrink-0",
-                        isBusy ? "bg-blue-50 text-blue-500" : "bg-emerald-50 text-emerald-500"
+                        isBusy ? "bg-amber-50 text-amber-700" : "bg-slate-100 text-slate-700"
                       )}>
                         <DoorOpen className="w-4 h-4" />
                       </div>
                       <div className="min-w-0">
                         <p className="font-bold text-slate-900 text-sm truncate">{r.name}</p>
-                        <p className="text-[11px] font-medium text-slate-400 truncate">{r.capacity} chỗ • {r.location}</p>
+                        <p className="text-xs font-medium text-slate-500 truncate">{r.capacity} chỗ • {r.location}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <Badge className={cn(
-                        "rounded-full font-bold text-[10px] px-2.5 py-1 border-none whitespace-nowrap",
-                        isBusy ? "bg-blue-600 text-white" :
-                        nextMeeting ? "bg-amber-50 text-amber-600" :
-                        "bg-emerald-50 text-emerald-600"
+                        "rounded-full font-bold text-xs px-3 py-1.5 whitespace-nowrap",
+                        isBusy ? "bg-slate-900 text-white" :
+                        nextMeeting ? "bg-amber-50 text-amber-700 border border-amber-100" :
+                        "bg-slate-100 text-slate-700"
                       )}>
                         {isBusy ? "Đang họp" : nextMeeting ? "Trống" : "Trống"}
                       </Badge>
@@ -246,15 +246,15 @@ export default function TcthDashboard({ schedules, vehicles, rooms, selectedDate
                   {/* Current meeting inline */}
                   {isBusy && currentMeeting && (
                     <div className="px-5 pb-3 -mt-1">
-                      <div className="bg-blue-50 rounded-xl px-3.5 py-3 flex items-center justify-between gap-3">
+                      <div className="bg-slate-50 rounded-xl px-3.5 py-3 flex items-center justify-between gap-3 border border-slate-200">
                         <div className="flex items-center gap-2 min-w-0">
                           <Avatar className="h-5 w-5 shrink-0">
                             <AvatarImage src={currentMeeting.creator?.avatar_url} />
-                            <AvatarFallback className="text-[8px] font-bold">{currentMeeting.creator?.full_name?.[0]}</AvatarFallback>
+                            <AvatarFallback className="text-xs font-bold">{currentMeeting.creator?.full_name?.[0]}</AvatarFallback>
                           </Avatar>
-                          <span className="text-xs font-semibold text-blue-800 truncate">{currentMeeting.title}</span>
+                          <span className="text-xs font-semibold text-slate-900 truncate">{currentMeeting.title}</span>
                         </div>
-                        <span className="text-[11px] font-bold text-blue-600 whitespace-nowrap tabular-nums">
+                        <span className="text-xs font-bold text-slate-700 whitespace-nowrap tabular-nums">
                           {fmtTime(new Date(currentMeeting.start_time))} – {fmtTime(new Date(currentMeeting.end_time))}
                         </span>
                       </div>
@@ -274,7 +274,7 @@ export default function TcthDashboard({ schedules, vehicles, rooms, selectedDate
                   {/* Expanded: upcoming meetings list */}
                   {isExpanded && clickTarget && (
                     <div className="border-t border-slate-100 px-5 py-4 space-y-3 bg-slate-50/50">
-                      <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Lịch họp sắp tới</p>
+                      <p className="text-xs font-semibold text-slate-600">Lịch họp sắp tới</p>
                       {upcomingMeetings.length === 0 ? (
                         <p className="text-xs text-slate-400">Không có lịch họp nào.</p>
                       ) : (
@@ -285,26 +285,26 @@ export default function TcthDashboard({ schedules, vehicles, rooms, selectedDate
                               key={meeting.id}
                               className={cn(
                                 "flex items-start gap-3 rounded-xl px-3.5 py-3 cursor-pointer transition-colors",
-                                isNow ? "bg-blue-50 hover:bg-blue-100" : "bg-white hover:bg-slate-50 border border-slate-100"
+                                isNow ? "bg-slate-100 hover:bg-slate-200" : "bg-white hover:bg-slate-50 border border-slate-100"
                               )}
                               onClick={(e) => { e.stopPropagation(); onSelectSchedule(meeting); }}
                             >
                               <div className={cn(
                                 "mt-0.5 w-1.5 h-1.5 rounded-full shrink-0",
-                                isNow ? "bg-blue-500" : "bg-slate-300"
+                                isNow ? "bg-slate-900" : "bg-slate-300"
                               )} />
                               <div className="min-w-0 flex-1">
                                 <p className="text-xs font-bold text-slate-800 truncate">{meeting.title}</p>
-                                <div className="flex items-center gap-1 text-[10px] text-slate-400 mt-0.5">
+                                <div className="flex items-center gap-1 text-xs text-slate-500 mt-0.5">
                                   <User className="w-2.5 h-2.5 shrink-0" />
                                   <span className="truncate">{meeting.creator?.full_name} • {meeting.participants?.length || 0} người</span>
                                 </div>
                               </div>
                               <div className="text-right shrink-0">
-                                <p className="text-[11px] font-bold text-slate-700 tabular-nums whitespace-nowrap">
+                                <p className="text-xs font-bold text-slate-700 tabular-nums whitespace-nowrap">
                                   {fmtTime(new Date(meeting.start_time))} – {fmtTime(new Date(meeting.end_time))}
                                 </p>
-                                <p className="text-[10px] text-slate-400 tabular-nums">{fmtDateShort(new Date(meeting.start_time))}</p>
+                                <p className="text-xs text-slate-500 tabular-nums">{fmtDateShort(new Date(meeting.start_time))}</p>
                               </div>
                             </div>
                           );

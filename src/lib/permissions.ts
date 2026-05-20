@@ -1,23 +1,59 @@
-export function hasTCTHPermission(profile: any): boolean {
+export function isTcthDepartment(profile: any): boolean {
   if (!profile) return false;
-  
-  // Drivers never have TCTH permission for vehicle assignment
-  if (profile.role === 'driver') return false;
 
-  // 1. Check roles (admin, secretary, hr_officer)
-  const allowedRoles = ['admin', 'secretary', 'hr_officer'];
-  if (allowedRoles.includes(profile.role)) {
-    return true;
+  return (
+    profile.departments?.code === '13602' ||
+    profile.departments?.name === 'Tổ chức Tổng hợp'
+  );
+}
+
+export function canCoordinateSharedResources(profile: any): boolean {
+  if (!profile) return false;
+
+  if (profile.role === 'admin' || profile.role === 'secretary') return true;
+
+  return profile.role === 'manager' && isTcthDepartment(profile);
+}
+
+export function canManageResourceCatalog(profile: any): boolean {
+  if (!profile) return false;
+
+  return profile.role === 'admin' || profile.role === 'secretary';
+}
+
+export function canUseDriverWorkspace(profile: any): boolean {
+  return profile?.role === 'driver';
+}
+
+export function canUseHumanResourcesWorkspace(profile: any): boolean {
+  return profile?.role === 'hr_officer';
+}
+
+export function canAccessPeopleDirectory(profile: any): boolean {
+  if (!profile) return false;
+
+  return ['admin', 'director', 'hr_officer'].includes(profile.role) || profile.role === 'manager';
+}
+
+export function canApproveLeave(profile: any, leave?: any): boolean {
+  if (!profile) return false;
+
+  if (profile.role === 'admin' || profile.role === 'hr_officer') return true;
+
+  if (!leave) {
+    return profile.role === 'director' || profile.role === 'manager';
   }
 
-  // 2. Check if user is Manager of TCTH (department code '13602')
-  if (profile.role === 'manager' && profile.departments?.code === '13602') {
-    return true;
+  if (profile.role === 'director') {
+    return leave.creator?.is_department_head === true || leave.creator?.role === 'manager';
   }
 
-  // Legacy fallback just in case department code is not migrated yet
-  if (profile.departments?.name === 'Tổ chức Tổng hợp') {
-    return true;
+  if (profile.role === 'manager') {
+    return (
+      leave.creator?.department_id === profile.department_id &&
+      leave.created_by !== profile.id &&
+      leave.creator?.role !== 'manager'
+    );
   }
 
   return false;

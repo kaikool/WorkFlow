@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import {
   Calendar as CalendarIcon,
+  Loader2,
   ShieldCheck,
 } from "lucide-react";
 import {
@@ -21,12 +22,13 @@ import TcthDashboard from "./_components/TcthDashboard";
 import LeaveApprovalDashboard from "./_components/LeaveApprovalDashboard";
 import DriverDashboard from "./_components/DriverDashboard";
 import { Car } from "lucide-react";
-import { hasTCTHPermission } from "@/lib/permissions";
+import { canApproveLeave, canCoordinateSharedResources, canUseDriverWorkspace } from "@/lib/permissions";
 
 export default function SchedulePage() {
   const supabase = createClient();
   const { toast } = useToast();
   const timelineContainerRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
 
   // Dữ liệu chính
   const [schedules, setSchedules] = useState<any[]>([]);
@@ -68,26 +70,17 @@ export default function SchedulePage() {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
 
   // Tính toán
-  const defaultTab = profile?.role === 'driver' ? 'driver-trips' : 'calendar';
+  const defaultTab = canUseDriverWorkspace(profile) ? 'driver-trips' : 'calendar';
   const pendingVehicleCount = schedules.filter(s => s.use_vehicle && !s.vehicle_id).length;
   const pendingVehicleBadge = pendingVehicleCount > 9 ? "9+" : pendingVehicleCount;
-  const isTCTH = hasTCTHPermission(profile);
+  const canCoordinateResources = canCoordinateSharedResources(profile);
 
   // Đếm số đơn nghỉ phép chờ duyệt theo phân cấp lãnh đạo
   const getPendingLeavesCount = () => {
     if (!profile) return 0;
     return schedules.filter(s => {
       if (s.type !== 'leave' || s.status !== 'pending') return false;
-      if (profile.role === 'admin' || profile.role === 'hr_officer') {
-        return true;
-      }
-      if (profile.role === 'director') {
-        return s.creator?.is_department_head === true || s.creator?.role === 'manager';
-      }
-      if (profile.role === 'manager') {
-        return s.creator?.department_id === profile.department_id && s.created_by !== profile.id && s.creator?.role !== 'manager';
-      }
-      return false;
+      return canApproveLeave(profile, s);
     }).length;
   };
 
@@ -99,7 +92,7 @@ export default function SchedulePage() {
     return Array.isArray(dept) ? dept[0]?.name : dept?.name;
   };
 
-  const isScheduleApprover = (user: any) => hasTCTHPermission(user);
+  const isScheduleApprover = (user: any) => canCoordinateSharedResources(user);
 
   const sendNotifications = async (rows: any[]) => {
     const uniqueRows = rows.filter((row, index, arr) =>
@@ -194,6 +187,7 @@ export default function SchedulePage() {
 
   // Fetch dữ liệu và kích hoạt Real-time đồng bộ
   useEffect(() => {
+    setMounted(true);
     fetchData();
 
     // Đăng ký kênh lắng nghe thay đổi PostgreSQL của Supabase
@@ -245,7 +239,7 @@ export default function SchedulePage() {
         .lte('start_time', end.toISOString())
         .order('start_time');
 
-      const canSeePendingQueue = hasTCTHPermission(currentProfile);
+      const canSeePendingQueue = canCoordinateSharedResources(currentProfile);
       const pendingQueueQuery = canSeePendingQueue
         ? supabase
             .from('schedules')
@@ -637,7 +631,7 @@ export default function SchedulePage() {
         department_id: profile?.department_id,
         status: isLeave
           ? 'pending'
-          : hasTCTHPermission(profile) ? 'approved' : 'pending'
+          : canCoordinateSharedResources(profile) ? 'approved' : 'pending'
       }).select().single();
       if (error) throw error;
 
@@ -670,7 +664,7 @@ export default function SchedulePage() {
                 return true;
               }
               // Lãnh đạo phòng Tổ chức Tổng hợp
-              if (hasTCTHPermission(p) && (p.role === 'manager' || p.is_department_head === true)) {
+              if (canCoordinateSharedResources(p) && (p.role === 'manager' || p.is_department_head === true)) {
                 return true;
               }
               
@@ -738,6 +732,14 @@ export default function SchedulePage() {
     setIsDetailOpen(true);
   };
 
+  if (!mounted) {
+    return (
+      <div className="flex h-96 items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-10 animate-fade-in-up pb-20">
       {/* Header */}
@@ -772,38 +774,38 @@ export default function SchedulePage() {
       <DateNavigator selectedDate={selectedDate} setSelectedDate={setSelectedDate} weekDays={weekDays} schedules={schedules} />
 
       {/* Tabs */}
-      <Tabs defaultValue={profile?.role === 'driver' ? "driver-trips" : isTCTH ? "tcth" : "calendar"} className="space-y-8 w-full">
-        <TabsList className="bg-slate-100/60 p-1 rounded-xl h-11 w-full flex gap-1">
-          <TabsTrigger value="calendar" className="flex-1 rounded-lg py-1.5 font-medium text-[13px] md:text-[14px] data-[state=active]:bg-white data-[state=active]:shadow-sm flex items-center justify-center">
+      <Tabs defaultValue={canUseDriverWorkspace(profile) ? "driver-trips" : canCoordinateResources ? "tcth" : "calendar"} className="space-y-8 w-full">
+        <TabsList className="bg-slate-100/60 p-1 rounded-xl min-h-11 w-full flex gap-1">
+          <TabsTrigger value="calendar" className="flex-1 rounded-lg py-2 font-medium text-sm data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm flex items-center justify-center">
             <CalendarIcon className="w-3.5 h-3.5 mr-1.5 shrink-0" /> 
             <span className="hidden sm:inline">Lịch biểu</span>
             <span className="inline sm:hidden">Lịch</span>
           </TabsTrigger>
-          {isTCTH && (
-            <TabsTrigger value="tcth" className="flex-1 rounded-lg py-1.5 font-medium text-[13px] md:text-[14px] data-[state=active]:bg-white data-[state=active]:text-orange-600 data-[state=active]:shadow-sm flex items-center justify-center">
+          {canCoordinateResources && (
+            <TabsTrigger value="tcth" className="flex-1 rounded-lg py-2 font-medium text-sm data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm flex items-center justify-center">
               <ShieldCheck className="w-3.5 h-3.5 mr-1.5 shrink-0" /> 
               <span>Điều phối</span>
               {pendingVehicleCount > 0 && (
-                <span className="ml-1.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-orange-500 p-0 text-[10px] font-bold leading-none text-white tabular-nums">
+                <span className="ml-1.5 inline-flex min-h-6 min-w-6 shrink-0 items-center justify-center rounded-full bg-amber-600 px-2 text-xs font-bold leading-none text-white tabular-nums">
                   {pendingVehicleBadge}
                 </span>
               )}
             </TabsTrigger>
           )}
-          {(profile?.role === 'hr_officer' || profile?.role === 'admin' || profile?.role === 'director' || profile?.role === 'manager') && (
-            <TabsTrigger value="leave-approval" className="flex-1 rounded-lg py-1.5 font-medium text-[13px] md:text-[14px] data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm flex items-center justify-center">
+          {canApproveLeave(profile) && (
+            <TabsTrigger value="leave-approval" className="flex-1 rounded-lg py-2 font-medium text-sm data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm flex items-center justify-center">
               <CalendarIcon className="w-3.5 h-3.5 mr-1.5 shrink-0" /> 
               <span className="hidden sm:inline">Phê duyệt nghỉ phép</span>
               <span className="inline sm:hidden">Duyệt phép</span>
               {pendingLeavesCount > 0 && (
-                <span className="ml-1.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-500 p-0 text-[10px] font-bold leading-none text-white tabular-nums">
+                <span className="ml-1.5 inline-flex min-h-6 min-w-6 shrink-0 items-center justify-center rounded-full bg-slate-900 px-2 text-xs font-bold leading-none text-white tabular-nums">
                   {pendingLeavesBadge}
                 </span>
               )}
             </TabsTrigger>
           )}
-          {profile?.role === 'driver' && (
-            <TabsTrigger value="driver-trips" className="flex-1 rounded-lg py-1.5 font-medium text-[13px] md:text-[14px] data-[state=active]:bg-white data-[state=active]:text-emerald-600 data-[state=active]:shadow-sm flex items-center justify-center">
+          {canUseDriverWorkspace(profile) && (
+            <TabsTrigger value="driver-trips" className="flex-1 rounded-lg py-2 font-medium text-sm data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm flex items-center justify-center">
               <Car className="w-3.5 h-3.5 mr-1.5 shrink-0" /> 
               <span className="hidden sm:inline">Lịch chạy xe</span>
               <span className="inline sm:hidden">Lịch chạy</span>
@@ -816,7 +818,7 @@ export default function SchedulePage() {
             loading={loading}
             filterType={filterType} setFilterType={setFilterType}
             schedules={schedules} selectedDate={selectedDate}
-            profile={profile} allProfiles={allProfiles} isTCTH={isTCTH}
+            profile={profile} allProfiles={allProfiles} isTCTH={canCoordinateResources}
             timelineContainerRef={timelineContainerRef}
             isTodaySelected={isTodaySelected} currentTimePercent={currentTimePercent}
             startLimit={startLimit} duration={duration}
@@ -825,7 +827,7 @@ export default function SchedulePage() {
           />
         </TabsContent>
 
-        {isTCTH && (
+        {canCoordinateResources && (
           <TabsContent value="tcth">
             <TcthDashboard
               schedules={schedules} vehicles={vehicles} rooms={rooms}
@@ -833,7 +835,7 @@ export default function SchedulePage() {
             />
           </TabsContent>
         )}
-        {(profile?.role === 'hr_officer' || profile?.role === 'admin' || profile?.role === 'director' || profile?.role === 'manager') && (
+        {canApproveLeave(profile) && (
           <TabsContent value="leave-approval">
             <LeaveApprovalDashboard
               schedules={schedules}
@@ -842,7 +844,7 @@ export default function SchedulePage() {
             />
           </TabsContent>
         )}
-        {profile?.role === 'driver' && (
+        {canUseDriverWorkspace(profile) && (
           <TabsContent value="driver-trips">
             <DriverDashboard
               schedules={schedules}
@@ -858,7 +860,7 @@ export default function SchedulePage() {
       <ScheduleDetailDialog
         isOpen={isDetailOpen} setIsOpen={setIsDetailOpen}
         schedule={selectedSchedule} schedules={schedules} vehicles={vehicles} rooms={rooms}
-        isTCTH={isTCTH} allProfiles={allProfiles} departments={departments}
+        isTCTH={canCoordinateResources} allProfiles={allProfiles} departments={departments}
         currentProfile={profile}
         onAssignVehicle={async (id, vId, dId) => {
           try {

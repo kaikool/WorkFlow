@@ -47,6 +47,7 @@ import {
 } from "@/components/ui/dialog";
 import { createClient } from "@/utils/supabase/client";
 import { NotificationsDropdown } from "@/components/notifications-dropdown";
+import { canManageResourceCatalog } from "@/lib/permissions";
 
 interface DashboardLayoutProps {
  children: React.ReactNode;
@@ -113,13 +114,13 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
     // Chuyển hướng cứng (Hard reload) để dọn sạch hoàn toàn các lớp phủ Dialog Portal Radix bị kẹt và session cũ
     window.location.href = '/login';
   };
-  const canManageSystem = profile?.role === 'admin' || profile?.role === 'secretary';
+  const canManageSystem = canManageResourceCatalog(profile);
 
   const navItems = [
    { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-   { name: 'Công việc', href: '/dashboard/tasks', icon: ListTodo, hideFor: ['driver', 'secretary'] },
+   { name: 'Công việc', href: '/dashboard/tasks', icon: ListTodo, hideFor: ['driver', 'secretary', 'hr_officer'] },
    { name: 'Kế hoạch', href: '/dashboard/kpi', icon: Target, hideFor: ['driver', 'hr_officer', 'secretary'] },
-   { name: 'Lịch trình', href: '/dashboard/schedule', icon: CalendarDays, hideFor: ['driver', 'secretary'] },
+   { name: 'Lịch trình', href: '/dashboard/schedule', icon: CalendarDays },
    { name: 'Cán bộ', href: '/dashboard/team', icon: Users, hideFor: ['driver', 'secretary'] },
   ].filter(item => !(item.hideFor || []).includes(profile?.role));
 
