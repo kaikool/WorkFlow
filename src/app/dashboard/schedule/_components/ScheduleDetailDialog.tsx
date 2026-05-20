@@ -34,7 +34,7 @@ interface ScheduleDetailDialogProps {
   allProfiles: any[];
   departments: any[];
   currentProfile: any;
-  onAssignVehicle: (scheduleId: string, vehicleId: string | null) => void;
+  onAssignVehicle: (scheduleId: string, vehicleId: string | null, driverId: string | null) => void;
   onUpdateEndTime: (scheduleId: string, newEndTime: string) => void;
   onUpdateSchedule: (scheduleId: string, updates: any) => void;
 }
@@ -97,6 +97,9 @@ export default function ScheduleDetailDialog({
   const [newEndTime, setNewEndTime] = React.useState("");
   const [editData, setEditData] = React.useState<any>({});
 
+  const [tempVehicleId, setTempVehicleId] = React.useState<string | null>(null);
+  const [tempDriverId, setTempDriverId] = React.useState<string | null>(null);
+
   // New States for Date & Time Pickers in Edit Mode
   const [editStartDate, setEditStartDate] = React.useState<Date | undefined>(undefined);
   const [editEndDate, setEditEndDate] = React.useState<Date | undefined>(undefined);
@@ -118,6 +121,8 @@ export default function ScheduleDetailDialog({
       setNewEndTime(format(new Date(schedule.end_time), "yyyy-MM-dd'T'HH:mm"));
       setIsEditingTime(false);
       setIsEditingSchedule(false);
+      setTempVehicleId(schedule.vehicle_id || null);
+      setTempDriverId(schedule.driver_id || null);
       
       const existingIds = (schedule.participants || []).map((p: any) => p.profile?.id).filter(Boolean);
       const bgdProfiles = filterBGD(allProfiles);
@@ -554,14 +559,14 @@ export default function ScheduleDetailDialog({
                       <div>
                         <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Lái xe & SĐT</p>
                         <p className="text-sm font-semibold text-slate-700">
-                          {matchedVehicle.driver_name}
+                          {schedule.driver?.full_name || matchedVehicle.default_driver?.full_name || matchedVehicle.driver_name}
                         </p>
-                        {matchedVehicle.driver_phone && (
+                        {(schedule.driver?.phone || matchedVehicle.default_driver?.phone || matchedVehicle.driver_phone) && (
                           <a
-                            href={`tel:${matchedVehicle.driver_phone}`}
+                            href={`tel:${schedule.driver?.phone || matchedVehicle.default_driver?.phone || matchedVehicle.driver_phone}`}
                             className="text-xs font-bold text-primary hover:underline block mt-0.5"
                           >
-                            {matchedVehicle.driver_phone}
+                            {schedule.driver?.phone || matchedVehicle.default_driver?.phone || matchedVehicle.driver_phone}
                           </a>
                         )}
                       </div>
@@ -583,23 +588,53 @@ export default function ScheduleDetailDialog({
                     <p className="text-[9px] font-semibold text-slate-500">Chọn xe và lái xe phù hợp cho lộ trình này</p>
                   </div>
                 </div>
-                <Select onValueChange={(v) => onAssignVehicle(schedule.id, v)}>
-                  <SelectTrigger className="h-10 bg-white border border-slate-200 rounded-xl font-medium shadow-sm text-[13px]">
-                    <SelectValue placeholder={`Chọn xe ${schedule.requested_vehicle_type}...`} />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-xl border border-slate-200 shadow-lg">
-                    {vehicles
-                      .filter(v => schedule.requested_vehicle_type === 'Khác' ? !['4 chỗ', '7 chỗ'].includes(v.type) : v.type === schedule.requested_vehicle_type)
-                      .map(v => (
-                        <SelectItem key={v.id} value={v.id}>
-                          <div className="flex flex-col">
-                            <span className="font-bold text-slate-800">{v.name} - {v.plate_number}</span>
-                            <span className="text-[11px] text-slate-500 truncate">Lái xe: {v.driver_name}</span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Select value={tempVehicleId || ''} onValueChange={(v) => { 
+                    setTempVehicleId(v);
+                    const selectedV = vehicles.find(x => x.id === v);
+                    if (selectedV?.driver_id) setTempDriverId(selectedV.driver_id);
+                  }}>
+                    <SelectTrigger className="h-10 bg-white border border-slate-200 rounded-xl font-medium shadow-sm text-[13px]">
+                      <SelectValue placeholder={`Chọn xe ${schedule.requested_vehicle_type}...`} />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl border border-slate-200 shadow-lg">
+                      {vehicles
+                        .filter(v => schedule.requested_vehicle_type === 'Khác' ? !['4 chỗ', '7 chỗ'].includes(v.type) : v.type === schedule.requested_vehicle_type)
+                        .map(v => (
+                          <SelectItem key={v.id} value={v.id}>
+                            <div className="flex flex-col">
+                              <span className="font-bold text-slate-800">{v.name} - {v.plate_number}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={tempDriverId || ''} onValueChange={setTempDriverId}>
+                    <SelectTrigger className="h-10 bg-white border border-slate-200 rounded-xl font-medium shadow-sm text-[13px]">
+                      <SelectValue placeholder="Chọn Lái xe..." />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl border border-slate-200 shadow-lg">
+                      {allProfiles.filter(p => p.role === 'driver').map(p => (
+                        <SelectItem key={p.id} value={p.id}>
+                          <div className="flex items-center gap-2">
+                            <Avatar className="h-5 w-5"><AvatarImage src={p.avatar_url}/></Avatar>
+                            <span className="font-bold text-slate-800">{p.full_name}</span>
                           </div>
                         </SelectItem>
                       ))}
-                  </SelectContent>
-                </Select>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex justify-end pt-2">
+                  <Button 
+                    disabled={!tempVehicleId || !tempDriverId}
+                    onClick={() => onAssignVehicle(schedule.id, tempVehicleId, tempDriverId)}
+                    className="bg-primary text-white h-9 px-4 rounded-xl text-sm font-bold shadow-sm active:scale-95 transition-all"
+                  >
+                    Xác nhận Gán
+                  </Button>
+                </div>
               </div>
             )}
             {/* Điều chỉnh thời gian (Nếu có quyền) */}
@@ -641,7 +676,7 @@ export default function ScheduleDetailDialog({
               <Button
                 variant="outline"
                 className="h-10 px-5 rounded-xl font-bold text-[12px] border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 shadow-sm active:scale-95 transition-all"
-                onClick={() => onAssignVehicle(schedule.id, null)}
+                onClick={() => onAssignVehicle(schedule.id, null, null)}
               >
                 Hủy gán xe
               </Button>

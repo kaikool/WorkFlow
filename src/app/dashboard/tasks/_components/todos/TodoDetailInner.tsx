@@ -23,7 +23,7 @@ const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> =
   late:   { label: "Trễ hạn",     color: "text-red-700",     bg: "bg-red-50"     },
 }
 
-export function TodoDetailInner({ id }: { id: string }) {
+export function TodoDetailInner({ id, tableName = "tasks" }: { id: string, tableName?: string }) {
   const router = useRouter()
   const { toast } = useToast()
   const supabase = createClient()
@@ -52,8 +52,8 @@ export function TodoDetailInner({ id }: { id: string }) {
           const { data } = await supabase.from("profiles").select("*").eq("id", user.id).single()
           p = data; setProfile(data)
         }
-        const { data, error } = await supabase.from("tasks")
-          .select("*, creator:profiles!tasks_created_by_fkey(full_name,avatar_url,department_id,departments(name)), assignee:profiles!tasks_assignee_id_fkey(id,full_name,avatar_url,role,is_department_head), task_assignees(user_id,profile:profiles(full_name,avatar_url,role,is_department_head))")
+        const { data, error } = await supabase.from(tableName)
+          .select(`*, creator:profiles!${tableName}_created_by_fkey(full_name,avatar_url,department_id,departments(name)), assignee:profiles!${tableName}_assignee_id_fkey(id,full_name,avatar_url,role,is_department_head)${tableName === "tasks" ? ", task_assignees(user_id,profile:profiles(full_name,avatar_url,role,is_department_head))" : ""}`)
           .eq("id", id).single()
         if (error) throw error
         const isOwner = data.created_by === user?.id
@@ -74,7 +74,7 @@ export function TodoDetailInner({ id }: { id: string }) {
       finally { setLoading(false) }
     }
     fetchData()
-    const ch = supabase.channel(`task_${id}`).on("postgres_changes", { event: "UPDATE", schema: "public", table: "tasks", filter: `id=eq.${id}` }, (p: any) => setTask(p.new)).subscribe()
+    const ch = supabase.channel(`task_${id}`).on("postgres_changes", { event: "UPDATE", schema: "public", table: tableName, filter: `id=eq.${id}` }, (p: any) => setTask(p.new)).subscribe()
     return () => { supabase.removeChannel(ch) }
   }, [id])
 
@@ -91,7 +91,7 @@ export function TodoDetailInner({ id }: { id: string }) {
     try {
       if (!assignees.some(a => a.user_id === selectedDelegate)) {
         await supabase.from("task_assignees").insert({ task_id: id, user_id: selectedDelegate })
-        await supabase.from("tasks").update({ assignee_id: selectedDelegate }).eq("id", id)
+        await supabase.from(tableName).update({ assignee_id: selectedDelegate }).eq("id", id)
         await supabase.from("notifications").insert({ user_id: selectedDelegate, title: "Công việc được phân công", content: `${profile?.full_name} đã phân công: ${task.title}`, link: `/dashboard/tasks/${id}` })
         toast({ title: "Đã phân công công việc" }); setDelegationOpen(false)
         const sel = deptProfiles.find(x => x.id === selectedDelegate)
@@ -104,7 +104,7 @@ export function TodoDetailInner({ id }: { id: string }) {
   const handleUpdateTaskInfo = async () => {
     setSaving(true)
     try {
-      await supabase.from("tasks").update({ title: editData.title, description: editData.description }).eq("id", id)
+      await supabase.from(tableName).update({ title: editData.title, description: editData.description }).eq("id", id)
       setTask({ ...task, title: editData.title, description: editData.description }); setIsEditingTask(false)
       toast({ title: "Đã cập nhật thông tin" })
     } catch (err: any) { toast({ variant: "destructive", title: "Lỗi", description: err.message }) }
@@ -127,7 +127,7 @@ export function TodoDetailInner({ id }: { id: string }) {
   const updateProgress = async (val: number) => {
     try {
       const ns = val === 100 ? "done" : val > 0 ? "doing" : "todo"
-      await supabase.from("tasks").update({ progress: val, status: ns }).eq("id", id)
+      await supabase.from(tableName).update({ progress: val, status: ns }).eq("id", id)
       const t1 = `Tiến độ mới: ${task.title}`; const c1 = `${profile?.full_name} đã cập nhật tiến độ lên ${val}%`
       if (task.created_by !== profile?.id) await supabase.from("notifications").insert({ user_id: task.created_by, title: t1, content: c1, link: `/dashboard/tasks/${id}` })
       const notifyA = assignees.filter(a => a.user_id !== profile?.id).map(a => ({ user_id: a.user_id, title: t1, content: c1, link: `/dashboard/tasks/${id}` }))
@@ -139,7 +139,7 @@ export function TodoDetailInner({ id }: { id: string }) {
   const handleUpdateStatus = async (ns: string) => {
     setSaving(true)
     try {
-      await supabase.from("tasks").update({ status: ns }).eq("id", id)
+      await supabase.from(tableName).update({ status: ns }).eq("id", id)
       const labels: Record<string,string> = { done:"Hoàn thành", late:"Trễ hạn", doing:"Đang thực hiện", todo:"Đang chờ" }
       const t1 = `Trạng thái mới: ${task.title}`; const c1 = `${profile?.full_name} đã chuyển sang: ${labels[ns]||ns}`
       if (task.created_by !== profile?.id) await supabase.from("notifications").insert({ user_id: task.created_by, title: t1, content: c1, link: `/dashboard/tasks/${id}` })
@@ -156,7 +156,7 @@ export function TodoDetailInner({ id }: { id: string }) {
     const sum = Object.values(nm.contributions||{}).reduce((a:any,b:any)=>a+(parseInt(b)||0),0) as number
     const total = sum + (parseInt(nm.general_adjustment)||0); const prog = task.target_value ? Math.round((total/task.target_value)*100) : 0
     try {
-      await supabase.from("tasks").update({ current_value: total, progress: prog, metadata: nm }).eq("id", id)
+      await supabase.from(tableName).update({ current_value: total, progress: prog, metadata: nm }).eq("id", id)
       if (userId !== profile?.id) await supabase.from("notifications").insert({ user_id: userId, title: `Cập nhật đóng góp: ${task.title}`, content: `Lãnh đạo điều chỉnh số liệu: ${val} ${task.unit||""}`, link: `/dashboard/tasks/${id}` })
       setTask({ ...task, current_value: total, progress: prog, metadata: nm }); toast({ title: "Đã điều chỉnh đóng góp" })
     } catch (err: any) { toast({ variant: "destructive", title: "Lỗi", description: err.message }) }
@@ -170,7 +170,7 @@ export function TodoDetailInner({ id }: { id: string }) {
     const sum = Object.values(nm.contributions||{}).reduce((a:any,b:any)=>a+(parseInt(b)||0),0) as number
     const total = sum + newAdj; const prog = task.target_value ? Math.round((total/task.target_value)*100) : 0
     try {
-      await supabase.from("tasks").update({ current_value: total, progress: prog, metadata: nm }).eq("id", id)
+      await supabase.from(tableName).update({ current_value: total, progress: prog, metadata: nm }).eq("id", id)
       const nu = assignees.filter(a=>a.user_id!==profile?.id).map(a=>({ user_id:a.user_id, title:`Hiệu chỉnh phòng: ${task.title}`, content:`Số liệu điều chỉnh ${delta>0?"+":""}${delta} ${task.unit||""}`, link:`/dashboard/tasks/${id}` }))
       if (nu.length>0) await supabase.from("notifications").insert(nu)
       setTask({ ...task, current_value: total, progress: prog, metadata: nm }); toast({ title: "Đã điều chỉnh thực tế phòng" })
@@ -184,7 +184,7 @@ export function TodoDetailInner({ id }: { id: string }) {
     const sum = Object.values(nm.contributions||{}).reduce((a:any,b:any)=>a+(parseInt(b)||0),0) as number
     const total = sum + (parseInt(nm.general_adjustment)||0); const prog = task.target_value ? Math.round((total/task.target_value)*100) : 0
     try {
-      await supabase.from("tasks").update({ current_value: total, progress: prog, metadata: nm, status: prog>=100?"done":task.status }).eq("id", id)
+      await supabase.from(tableName).update({ current_value: total, progress: prog, metadata: nm, status: prog>=100?"done":task.status }).eq("id", id)
       if (prog>=100 && task.status!=="done" && task.created_by!==profile?.id) await supabase.from("notifications").insert({ user_id: task.created_by, title: `Đạt mục tiêu: ${task.title}`, content: `${profile?.full_name} đã hoàn thành 100% chỉ tiêu.`, link: `/dashboard/tasks/${id}` })
       setTask({ ...task, current_value: total, progress: prog, metadata: nm, status: prog>=100?"done":task.status })
       toast({ title: "Đã ghi nhận đóng góp", description: `Bạn đóng góp ${contrib} ${task.unit||""}` })
@@ -195,7 +195,7 @@ export function TodoDetailInner({ id }: { id: string }) {
   const handleToggleFocal = async () => {
     if (!canEdit) return; setSaving(true); const nf = !task.metadata?.is_focal
     try {
-      await supabase.from("tasks").update({ metadata: { ...task.metadata, is_focal: nf } }).eq("id", id)
+      await supabase.from(tableName).update({ metadata: { ...task.metadata, is_focal: nf } }).eq("id", id)
       setTask({ ...task, metadata: { ...task.metadata, is_focal: nf } })
       toast({ title: nf ? "Đã thiết lập Kế hoạch trọng tâm" : "Đã bỏ ghim Kế hoạch" })
     } catch (err: any) { toast({ variant: "destructive", title: "Lỗi", description: err.message }) }
@@ -208,7 +208,7 @@ export function TodoDetailInner({ id }: { id: string }) {
   const isInDept = task?.department_id===profile?.department_id
   const isAssigneeMe = assignees.some(a=>a.user_id===profile?.id)||task?.assignee_id===profile?.id
   const canEdit = isAdminOrDir||(profile?.role==="manager"&&isInDept)||isAssigneeMe||task?.created_by===profile?.id
-  const isKpi = task?.task_type==="kpi"
+  const isKpi = tableName === "kpis"
   const displayProgress = isKpi ? (task.target_value ? Math.round(((task.current_value||0)/task.target_value)*100) : 0) : (task?.progress||0)
   const curStatus = task ? (STATUS_MAP[task.status]||STATUS_MAP.todo) : STATUS_MAP.todo
   const isCreatorOrAdmin = task?.created_by===profile?.id||profile?.role==="admin"||profile?.role==="director"
@@ -239,7 +239,7 @@ export function TodoDetailInner({ id }: { id: string }) {
             </AlertDialogHeader>
             <AlertDialogFooter className="mt-4 gap-3">
               <AlertDialogCancel className="rounded-xl min-h-11 font-medium active:scale-95 transition-all">Quay lại</AlertDialogCancel>
-              <AlertDialogAction onClick={async () => { await supabase.from("tasks").delete().eq("id", id); router.push(isKpi ? "/dashboard/kpi" : "/dashboard/tasks") }} className="rounded-xl min-h-11 bg-red-600 font-medium hover:bg-red-700 text-white border-none active:scale-95 transition-all">Xác nhận xóa</AlertDialogAction>
+              <AlertDialogAction onClick={async () => { await supabase.from(tableName).delete().eq("id", id); router.push(isKpi ? "/dashboard/kpi" : "/dashboard/tasks") }} className="rounded-xl min-h-11 bg-red-600 font-medium hover:bg-red-700 text-white border-none active:scale-95 transition-all">Xác nhận xóa</AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>

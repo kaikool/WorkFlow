@@ -9,6 +9,7 @@ import {
   Car, Clock, User, CheckCircle2, Navigation, AlertTriangle, 
   MapPin, Loader2, Gauge 
 } from "lucide-react";
+import { hasTCTHPermission } from "@/lib/permissions";
 
 interface DriverDashboardProps {
   schedules: any[];
@@ -39,8 +40,8 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
   // Lọc chuyến đi được gán xe và tài xế là participant hoặc được gán trực tiếp
   const myTrips = schedules.filter(s => {
     if (s.type !== 'trip' || s.status !== 'approved') return false;
-    // Lọc nếu tài xế là một trong các người tham gia chuyến đi
-    return s.participants?.some((p: any) => p.profile?.id === profile?.id) || s.vehicle_id;
+    // Lọc nếu tài xế là một trong các người tham gia chuyến đi HOẶC là tài xế được gán trực tiếp cho chuyến đi
+    return s.participants?.some((p: any) => p.profile?.id === profile?.id) || s.driver_id === profile?.id;
   });
 
   const handleStartTrip = async () => {
@@ -59,6 +60,7 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
       };
 
       const { error } = await supabase.from('schedules').update({
+        status: 'in_progress',
         metadata: newMeta
       }).eq('id', schedule.id);
 
@@ -98,14 +100,15 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
       };
 
       const { error } = await supabase.from('schedules').update({
+        status: 'completed',
         metadata: newMeta
       }).eq('id', schedule.id);
 
       if (error) throw error;
 
       // Thông báo tự động cho Tổ chức Tổng hợp để quyết toán xăng xe
-      const { data: tcthStaff } = await supabase.from('profiles').select('id, role, departments(name)');
-      const tcthTargets = tcthStaff?.filter((p: any) => (p.departments as any)?.name === 'Tổ chức Tổng hợp' || p.role === 'admin') || [];
+      const { data: tcthStaff } = await supabase.from('profiles').select('id, role, departments(name, code)');
+      const tcthTargets = tcthStaff?.filter((p: any) => hasTCTHPermission(p)) || [];
 
       if (tcthTargets.length > 0) {
         await supabase.from('notifications').insert(
@@ -152,8 +155,8 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
       }
 
       // Thông báo cho TCTH
-      const { data: tcthStaff } = await supabase.from('profiles').select('id, role, departments(name)');
-      const tcthTargets = tcthStaff?.filter((p: any) => (p.departments as any)?.name === 'Tổ chức Tổng hợp' || p.role === 'admin') || [];
+      const { data: tcthStaff } = await supabase.from('profiles').select('id, role, departments(name, code)');
+      const tcthTargets = tcthStaff?.filter((p: any) => hasTCTHPermission(p)) || [];
 
       if (tcthTargets.length > 0) {
         await supabase.from('notifications').insert(

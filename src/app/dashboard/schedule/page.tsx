@@ -21,6 +21,7 @@ import TcthDashboard from "./_components/TcthDashboard";
 import LeaveApprovalDashboard from "./_components/LeaveApprovalDashboard";
 import DriverDashboard from "./_components/DriverDashboard";
 import { Car } from "lucide-react";
+import { hasTCTHPermission } from "@/lib/permissions";
 
 export default function SchedulePage() {
   const supabase = createClient();
@@ -70,7 +71,7 @@ export default function SchedulePage() {
   const defaultTab = profile?.role === 'driver' ? 'driver-trips' : 'calendar';
   const pendingVehicleCount = schedules.filter(s => s.use_vehicle && !s.vehicle_id).length;
   const pendingVehicleBadge = pendingVehicleCount > 9 ? "9+" : pendingVehicleCount;
-  const isTCTH = profile?.role === 'admin' || profile?.role === 'secretary' || profile?.role === 'hr_officer' || profile?.departments?.name === 'Tổ chức Tổng hợp';
+  const isTCTH = hasTCTHPermission(profile);
 
   // Đếm số đơn nghỉ phép chờ duyệt theo phân cấp lãnh đạo
   const getPendingLeavesCount = () => {
@@ -98,11 +99,7 @@ export default function SchedulePage() {
     return Array.isArray(dept) ? dept[0]?.name : dept?.name;
   };
 
-  const isScheduleApprover = (user: any) =>
-    user?.role === 'admin' ||
-    user?.role === 'secretary' ||
-    user?.role === 'hr_officer' ||
-    getDepartmentName(user) === 'Tổ chức Tổng hợp';
+  const isScheduleApprover = (user: any) => hasTCTHPermission(user);
 
   const sendNotifications = async (rows: any[]) => {
     const uniqueRows = rows.filter((row, index, arr) =>
@@ -227,7 +224,7 @@ export default function SchedulePage() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data: p } = await supabase.from('profiles').select('*, departments(name)').eq('id', user.id).single();
+        const { data: p } = await supabase.from('profiles').select('*, departments(name, code)').eq('id', user.id).single();
         setProfile(p);
         currentProfile = p;
         if (p?.department_id && filterDepts.length === 0) setFilterDepts([p.department_id]);
@@ -243,16 +240,16 @@ export default function SchedulePage() {
       // Lấy tất cả lịch có start_time trong tuần Hoặc end_time >= đầu tuần để bắt lịch nhiều ngày chạy qua tuần
       const schedulesQuery = supabase
         .from('schedules')
-        .select(`*, creator:profiles(full_name, avatar_url, department_id, role, is_department_head), room:rooms(name), vehicle:vehicles(name, plate_number), participants:schedule_participants(profile:profiles(id, full_name, avatar_url, role, is_department_head))`)
+        .select(`*, creator:profiles!schedules_created_by_fkey(full_name, avatar_url, department_id, role, is_department_head), room:rooms(name), vehicle:vehicles(name, plate_number), driver:profiles!schedules_driver_id_fkey(id, full_name, phone), participants:schedule_participants(profile:profiles(id, full_name, avatar_url, role, is_department_head))`)
         .gte('end_time', start.toISOString())
         .lte('start_time', end.toISOString())
         .order('start_time');
 
-      const canSeePendingQueue = currentProfile?.role === 'admin' || currentProfile?.role === 'secretary' || currentProfile?.role === 'hr_officer' || currentProfile?.departments?.name === 'Tổ chức Tổng hợp';
+      const canSeePendingQueue = hasTCTHPermission(currentProfile);
       const pendingQueueQuery = canSeePendingQueue
         ? supabase
             .from('schedules')
-            .select(`*, creator:profiles(full_name, avatar_url, department_id, role, is_department_head), room:rooms(name), vehicle:vehicles(name, plate_number), participants:schedule_participants(profile:profiles(id, full_name, avatar_url, role, is_department_head))`)
+            .select(`*, creator:profiles!schedules_created_by_fkey(full_name, avatar_url, department_id, role, is_department_head), room:rooms(name), vehicle:vehicles(name, plate_number), driver:profiles!schedules_driver_id_fkey(id, full_name, phone), participants:schedule_participants(profile:profiles(id, full_name, avatar_url, role, is_department_head))`)
             .or('status.eq.pending,and(use_vehicle.eq.true,vehicle_id.is.null)')
             .order('start_time')
         : Promise.resolve({ data: [] as any[], error: null });
@@ -267,9 +264,9 @@ export default function SchedulePage() {
       ] = await Promise.all([
         schedulesQuery,
         pendingQueueQuery,
-        supabase.from('vehicles').select('*'),
+        supabase.from('vehicles').select('*, default_driver:profiles!vehicles_driver_id_fkey(id, full_name, phone)'),
         supabase.from('rooms').select('*'),
-        supabase.from('profiles').select('id, full_name, role, department_id, is_department_head, departments(name)'),
+        supabase.from('profiles').select('id, full_name, role, department_id, is_department_head, departments(name, code)'),
         supabase.from('departments').select('*'),
       ]);
 
@@ -634,7 +631,7 @@ export default function SchedulePage() {
         department_id: profile?.department_id,
         status: isLeave
           ? 'pending'
-          : (profile?.role === 'admin' || profile?.role === 'secretary' || profile?.role === 'hr_officer' || profile?.departments?.name === 'Tổ chức Tổng hợp') ? 'approved' : 'pending'
+          : hasTCTHPermission(profile) ? 'approved' : 'pending'
       }).select().single();
       if (error) throw error;
 
@@ -666,9 +663,8 @@ export default function SchedulePage() {
               if (!isCreatorManager && p.department_id === profile?.department_id && (p.role === 'manager' || p.is_department_head === true)) {
                 return true;
               }
-              
               // Lãnh đạo phòng Tổ chức Tổng hợp
-              if (getDepartmentName(p) === 'Tổ chức Tổng hợp' && (p.role === 'manager' || p.is_department_head === true)) {
+              if (hasTCTHPermission(p) && (p.role === 'manager' || p.is_department_head === true)) {
                 return true;
               }
               
@@ -853,7 +849,15 @@ export default function SchedulePage() {
         schedule={selectedSchedule} schedules={schedules} vehicles={vehicles} rooms={rooms}
         isTCTH={isTCTH} allProfiles={allProfiles} departments={departments}
         currentProfile={profile}
-        onAssignVehicle={handleAssignVehicle}
+        onAssignVehicle={async (id, vId, dId) => {
+          try {
+            const { error } = await supabase.from('schedules').update({ vehicle_id: vId, driver_id: dId, status: vId ? 'approved' : 'pending' }).eq('id', id);
+            if (error) throw error;
+            toast({ title: "Thành công", description: vId ? "Đã gán xe và tài xế thành công" : "Đã hủy gán xe" });
+          } catch (error: any) {
+            toast({ variant: "destructive", title: "Lỗi", description: error.message });
+          }
+        }}
         onUpdateEndTime={handleUpdateEndTime}
         onUpdateSchedule={handleUpdateSchedule}
       />

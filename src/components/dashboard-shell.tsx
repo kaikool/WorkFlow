@@ -86,10 +86,10 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
  const navItems = [
    { name: "Tổng quan", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Nhiệm vụ", href: "/dashboard/tasks", icon: CheckSquare },
-  { name: "Mục tiêu & KPIs", href: "/dashboard/kpi", icon: Target },
+  { name: "Nhiệm vụ", href: "/dashboard/tasks", icon: CheckSquare, hideFor: ['driver'] },
+  { name: "Mục tiêu & KPIs", href: "/dashboard/kpi", icon: Target, hideFor: ['driver', 'hr_officer', 'secretary'] },
   { name: "Đội ngũ", href: "/dashboard/team", icon: Users },
- ];
+ ].filter(item => !(item.hideFor || []).includes(role as string));
 
  const handleLogout = async () => {
     await supabase.auth.signOut();

@@ -142,9 +142,8 @@ export default function GoalsPage() {
  const fetchGoals = async (p?: any) => {
  const userProfile = p || profile;
  let query = supabase
- .from('tasks')
- .select(`*, assignee:profiles!tasks_assignee_id_fkey(full_name, avatar_url)`)
- .eq('task_type', 'kpi');
+ .from('kpis')
+ .select(`*, assignee:profiles!kpis_assignee_id_fkey(full_name, avatar_url)`);
 
  // Phân quyền: Lọc theo phòng ban nếu không phải admin hoặc director
  if (userProfile && userProfile.role !== 'admin' && userProfile.role !== 'director' && userProfile.department_id) {
@@ -176,7 +175,6 @@ export default function GoalsPage() {
  description,
  target_value: targetValue,
  unit,
- task_type: 'kpi',
  created_by: profile?.id,
  department_id: profile?.department_id,
  due_date: new Date(Date.now() + (timeframe === 'week' ? 7 : timeframe === 'month' ? 30 : timeframe === 'quarter' ? 90 : 365) * 24 * 60 * 60 * 1000).toISOString(),
@@ -189,7 +187,7 @@ export default function GoalsPage() {
 
  try {
  if (targetType === 'department') {
- const { data: newTask, error } = await supabase.from('tasks').insert(baseTask).select().single();
+ const { data: newTask, error } = await supabase.from('kpis').insert(baseTask).select().single();
  if (error) throw error;
 
  // Thêm: Thông báo cho tất cả thành viên trong phòng
@@ -212,7 +210,7 @@ export default function GoalsPage() {
  ...baseTask,
  assignee_id: memberId,
  }));
- const { error } = await supabase.from('tasks').insert(tasks);
+ const { error } = await supabase.from('kpis').insert(tasks);
  if (error) throw error;
 
  const notifications = selectedMemberIds.map(memberId => ({
@@ -524,7 +522,7 @@ export default function GoalsPage() {
  const category = KPI_CATEGORIES.find(c => c.id === goal.metadata?.category) || KPI_CATEGORIES[4];
  const CatIcon = category.icon;
  return (
- <TableRow key={goal.id} className="group hover:bg-slate-50/50 transition-all cursor-pointer border-b border-slate-50 h-16" onClick={() => router.push(`/dashboard/tasks/${goal.id}`)}>
+ <TableRow key={goal.id} className="group hover:bg-slate-50/50 transition-all cursor-pointer border-b border-slate-50 h-16" onClick={() => router.push(`/dashboard/kpi/${goal.id}`)}>
  <TableCell className="pl-8">
  <div className="flex items-center gap-4">
  <div className={cn("p-2.5 rounded-lg shrink-0 shadow-sm border border-white/50", category.bg, category.color)}>
@@ -582,7 +580,7 @@ export default function GoalsPage() {
  const category = KPI_CATEGORIES.find(c => c.id === goal.metadata?.category) || KPI_CATEGORIES[4];
  const CatIcon = category.icon;
  return (
- <div key={goal.id} className="premium-card p-6 border-none space-y-5 active:scale-[0.98] transition-all" onClick={() => router.push(`/dashboard/tasks/${goal.id}`)}>
+ <div key={goal.id} className="premium-card p-6 border-none space-y-5 active:scale-[0.98] transition-all" onClick={() => router.push(`/dashboard/kpi/${goal.id}`)}>
  <div className="flex justify-between items-start">
  <div className="flex gap-4">
  <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center shrink-0 shadow-sm border border-white/50", category.bg, category.color)}>

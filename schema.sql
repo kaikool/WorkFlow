@@ -25,10 +25,11 @@ EXCEPTION
 END $$;
 
 DO $$ BEGIN
-    CREATE TYPE schedule_status AS ENUM ('pending', 'approved', 'rejected');
+    CREATE TYPE schedule_status AS ENUM ('pending', 'approved', 'rejected', 'in_progress', 'completed');
 EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
+
 
 -- 2. Tạo bảng Departments (Phòng ban)
 CREATE TABLE IF NOT EXISTS departments (
@@ -108,11 +109,38 @@ BEGIN
     AND created_at < NOW() - INTERVAL '60 days' 
     AND is_archived = false;
 
+    -- Đưa KPIs đã hoàn thành trên 60 ngày vào lưu trữ
+    UPDATE kpis 
+    SET is_archived = true 
+    WHERE status IN ('done', 'closed') 
+    AND created_at < NOW() - INTERVAL '60 days' 
+    AND is_archived = false;
+
     -- Xóa thông báo cũ hơn 30 ngày
     DELETE FROM notifications 
     WHERE created_at < NOW() - INTERVAL '30 days';
 END;
 $$;
+
+-- 4.5. Tạo bảng KPIs (Chỉ tiêu)
+CREATE TABLE IF NOT EXISTS kpis (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title TEXT NOT NULL,
+    description TEXT,
+    status task_status DEFAULT 'todo',
+    priority task_priority DEFAULT 'medium',
+    progress INTEGER DEFAULT 0,
+    assignee_id UUID REFERENCES profiles(id),
+    created_by UUID REFERENCES profiles(id),
+    department_id UUID REFERENCES departments(id),
+    due_date TIMESTAMPTZ,
+    target_value BIGINT,
+    current_value BIGINT DEFAULT 0,
+    unit TEXT,
+    metadata JSONB DEFAULT '{}'::jsonb,
+    is_archived BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
 
 -- 5. Tạo bảng Task Comments (Bình luận công việc)
 CREATE TABLE IF NOT EXISTS task_comments (
@@ -211,7 +239,7 @@ USING (
             SELECT 1 FROM profiles p
             LEFT JOIN departments d ON p.department_id = d.id
             WHERE p.id = auth.uid()
-            AND (p.role IN ('admin', 'secretary', 'hr_officer') OR d.name = 'Tổ chức Tổng hợp')
+            AND (p.role IN ('admin', 'secretary', 'hr_officer') OR (p.role = 'manager' AND d.code = '13602'))
         )
     )
 );
@@ -247,6 +275,7 @@ ON CONFLICT (name) DO NOTHING;
 ALTER TABLE departments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE kpis ENABLE ROW LEVEL SECURITY;
 ALTER TABLE task_comments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE vehicles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE rooms ENABLE ROW LEVEL SECURITY;
@@ -267,26 +296,66 @@ CREATE POLICY "Public read departments" ON departments FOR SELECT USING (true);
 CREATE POLICY "Users can view all profiles" ON profiles FOR SELECT USING (true);
 CREATE POLICY "Users can update own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
 
-CREATE POLICY "Staff see assigned tasks" ON tasks FOR SELECT 
+CREATE POLICY "Tasks read access" ON tasks FOR SELECT 
 USING (
-    auth.uid() = assignee_id 
-    OR auth.uid() = created_by 
-    OR department_id = (SELECT department_id FROM profiles WHERE id = auth.uid())
-    OR (SELECT role FROM profiles WHERE id = auth.uid()) IN ('admin', 'director')
+    (SELECT role FROM profiles WHERE id = auth.uid()) IN ('admin', 'director')
+    OR (
+        (SELECT role FROM profiles WHERE id = auth.uid()) = 'manager'
+        AND department_id = (SELECT department_id FROM profiles WHERE id = auth.uid())
+    )
+    OR auth.uid() = assignee_id 
+    OR auth.uid() = created_by
+    OR (metadata->>'assigned_line' IS NOT NULL AND auth.uid()::text = ANY(ARRAY(SELECT jsonb_array_elements_text(metadata->'assigned_line'))))
 );
 
 CREATE POLICY "Anyone can create tasks" ON tasks FOR INSERT 
 WITH CHECK (auth.uid() IS NOT NULL);
 
-CREATE POLICY "Managers, Directors and Admin can update tasks" ON tasks FOR UPDATE 
+CREATE POLICY "Tasks update access" ON tasks FOR UPDATE 
 USING (
-    auth.uid() = assignee_id
-    OR auth.uid() = created_by
-    OR (SELECT role FROM profiles WHERE id = auth.uid()) IN ('admin', 'director')
+    (SELECT role FROM profiles WHERE id = auth.uid()) IN ('admin', 'director')
     OR (
         (SELECT role FROM profiles WHERE id = auth.uid()) = 'manager'
         AND department_id = (SELECT department_id FROM profiles WHERE id = auth.uid())
     )
+    OR auth.uid() = assignee_id 
+    OR auth.uid() = created_by
+    OR (metadata->>'assigned_line' IS NOT NULL AND auth.uid()::text = ANY(ARRAY(SELECT jsonb_array_elements_text(metadata->'assigned_line'))))
+);
+
+-- KPI Policies
+DROP POLICY IF EXISTS "KPIs read access" ON kpis;
+CREATE POLICY "KPIs read access" ON kpis FOR SELECT 
+USING (
+    (SELECT role FROM profiles WHERE id = auth.uid()) IN ('admin', 'director')
+    OR (
+        (SELECT role FROM profiles WHERE id = auth.uid()) = 'manager'
+        AND department_id = (SELECT department_id FROM profiles WHERE id = auth.uid())
+    )
+    OR auth.uid() = assignee_id 
+    OR auth.uid() = created_by
+);
+
+DROP POLICY IF EXISTS "KPIs create access" ON kpis;
+CREATE POLICY "KPIs create access" ON kpis FOR INSERT 
+WITH CHECK (
+    (SELECT role FROM profiles WHERE id = auth.uid()) IN ('admin', 'director')
+    OR (
+        (SELECT role FROM profiles WHERE id = auth.uid()) = 'manager'
+        AND department_id = (SELECT department_id FROM profiles WHERE id = auth.uid())
+    )
+);
+
+DROP POLICY IF EXISTS "KPIs update access" ON kpis;
+CREATE POLICY "KPIs update access" ON kpis FOR UPDATE 
+USING (
+    (SELECT role FROM profiles WHERE id = auth.uid()) IN ('admin', 'director')
+    OR (
+        (SELECT role FROM profiles WHERE id = auth.uid()) = 'manager'
+        AND department_id = (SELECT department_id FROM profiles WHERE id = auth.uid())
+    )
+    OR auth.uid() = assignee_id
+    OR auth.uid() = created_by
 );
 
 ALTER TABLE task_comments ENABLE ROW LEVEL SECURITY;
@@ -375,7 +444,10 @@ CREATE POLICY "Public read schedules" ON schedules FOR SELECT USING (
         SELECT 1 FROM profiles p
         LEFT JOIN departments d ON p.department_id = d.id
         WHERE p.id = auth.uid()
-        AND (p.role IN ('admin', 'secretary', 'hr_officer') OR d.name = 'Tá»• chá»©c Tá»•ng há»£p')
+        AND (p.role IN ('admin', 'secretary', 'hr_officer') OR (p.role = 'manager' AND d.code = '13602'))
+    )
+    OR EXISTS (
+        SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role = 'driver'
     )
 );
 
@@ -390,8 +462,12 @@ USING (
     OR EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role IN ('admin', 'secretary', 'hr_officer'))
     OR EXISTS (
       SELECT 1 FROM profiles p
-      JOIN departments d ON p.department_id = d.id
-      WHERE p.id = auth.uid() AND d.name = 'Tổ chức Tổng hợp'
+      LEFT JOIN departments d ON p.department_id = d.id
+      WHERE p.id = auth.uid() 
+      AND (p.role IN ('admin', 'secretary', 'hr_officer') OR (p.role = 'manager' AND d.code = '13602'))
+    )
+    OR EXISTS (
+      SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role = 'driver'
     )
 );
 
