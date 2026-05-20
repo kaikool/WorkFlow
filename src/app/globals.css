@@ -1,103 +1,112 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    /* FinanceOS — Bright & Professional */
-
-    /* Nền: trắng tuyệt đối — nội dung nổi bật */
     --background: 0 0% 97%;
     --foreground: 222 45% 12%;
-
-    /* Card: trắng hoàn toàn */
     --card: 0 0% 100%;
     --card-foreground: 222 45% 12%;
-
     --popover: 0 0% 100%;
     --popover-foreground: 222 45% 12%;
-
-    /* Primary: Xanh lam sáng tươi — hiện đại, tài chính, dễ nhìn */
     --primary: 221 83% 53%;
     --primary-foreground: 0 0% 100%;
-
-    /* Secondary: xám trung tính nhẹ */
     --secondary: 220 14% 94%;
     --secondary-foreground: 222 35% 20%;
-
-    /* Muted: xám nhạt thuần */
     --muted: 220 12% 92%;
     --muted-foreground: 220 10% 48%;
-
-    /* Accent: xanh nhạt hover */
     --accent: 221 83% 53%;
     --accent-foreground: 0 0% 100%;
-
-    /* Destructive */
     --destructive: 4 86% 58%;
     --destructive-foreground: 0 0% 100%;
-
     --border: 220 13% 88%;
     --input: 220 13% 88%;
     --ring: 221 83% 53%;
-
     --radius: 0.75rem;
-
-    /* Semantic tokens — phân biệt ý nghĩa giá trị */
     --color-success: 158 64% 38%;
     --color-success-bg: 152 55% 95%;
     --color-success-text: 158 64% 30%;
-
     --color-warning: 38 92% 50%;
     --color-warning-bg: 48 96% 93%;
     --color-warning-text: 32 95% 35%;
-
     --color-danger: 4 86% 56%;
     --color-danger-bg: 4 86% 96%;
     --color-danger-text: 4 86% 46%;
-
     --color-info: 221 83% 53%;
     --color-info-bg: 221 83% 96%;
     --color-info-text: 221 70% 40%;
-
     --color-neutral: 220 10% 50%;
     --color-neutral-bg: 220 12% 95%;
     --color-neutral-text: 220 10% 40%;
-
     --color-kpi: 221 83% 53%;
     --color-kpi-bg: 221 83% 96%;
     --color-kpi-text: 221 70% 38%;
-
     --color-award: 43 96% 52%;
     --color-award-bg: 48 100% 94%;
     --color-award-text: 36 100% 30%;
-  }
-}
 
-@layer base {
+    /* Desktop web default */
+    --app-font-body: 16px;
+    --app-font-callout: 15px;
+    --app-font-subhead: 14px;
+    --app-font-footnote: 13px;
+    --app-font-caption: 12px;
+    --app-touch-target: 40px;
+    --app-page-x: 32px;
+    --app-card-padding: 24px;
+    --app-control-radius: 12px;
+    --app-card-radius: 24px;
+  }
+
+  @media (max-width: 640px) {
+    :root {
+      --app-font-body: 17px;
+      --app-font-callout: 16px;
+      --app-font-subhead: 15px;
+      --app-touch-target: 44px;
+      --app-page-x: 16px;
+      --app-card-padding: 20px;
+      --app-card-radius: 18px;
+    }
+  }
+
+  @media (min-width: 641px) and (max-width: 1024px) {
+    :root {
+      --app-font-body: 17px;
+      --app-font-callout: 16px;
+      --app-font-subhead: 15px;
+      --app-touch-target: 44px;
+      --app-page-x: 24px;
+      --app-card-radius: 22px;
+    }
+  }
+
   html {
-    font-size: 16px;
+    font-size: var(--app-font-body);
     -webkit-text-size-adjust: 100%;
     scroll-behavior: smooth;
     scrollbar-gutter: stable;
   }
+
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground antialiased;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11", "ss01";
-    letter-spacing: -0.011em;
+    font-size: 1rem;
+    letter-spacing: 0;
     line-height: 1.6;
   }
+
   h1, h2, h3, h4, h5, h6 {
-    @apply font-sans font-bold tracking-tight text-slate-900;
-    letter-spacing: -0.025em;
+    @apply font-sans font-bold text-slate-900;
+    letter-spacing: 0;
   }
 }
 
-/* Premium Component Classes */
 .premium-card {
   @apply bg-white border border-slate-100 shadow-premium rounded-[2rem] transition-all duration-300 hover:shadow-premium-hover;
 }
@@ -106,7 +115,6 @@
   @apply backdrop-blur-xl bg-white/80 border border-white/40 shadow-premium;
 }
 
-/* Form input chuẩn - Modern & Clean */
 .finance-input {
   @apply h-12 bg-slate-50/50 border-slate-200/60 rounded-2xl pl-5 pr-5
     focus:bg-white focus:border-primary/40 focus:ring-4 focus:ring-primary/5
@@ -117,29 +125,126 @@
   @apply !pl-14;
 }
 
-/* Custom Scrollbar for Premium Feel */
 ::-webkit-scrollbar {
   width: 6px;
 }
+
 ::-webkit-scrollbar-track {
   @apply bg-transparent;
 }
+
 ::-webkit-scrollbar-thumb {
   @apply bg-slate-200 rounded-full hover:bg-slate-300 transition-colors;
 }
 
-/* Badge semantics */
 .badge-success { background: hsl(var(--color-success-bg)); color: hsl(var(--color-success-text)); }
-.badge-warning  { background: hsl(var(--color-warning-bg)); color: hsl(var(--color-warning-text)); }
-.badge-danger   { background: hsl(var(--color-danger-bg)); color: hsl(var(--color-danger-text)); }
-.badge-info     { background: hsl(var(--color-info-bg)); color: hsl(var(--color-info-text)); }
-.badge-neutral  { background: hsl(var(--color-neutral-bg)); color: hsl(var(--color-neutral-text)); }
-.badge-kpi      { background: hsl(var(--color-kpi-bg)); color: hsl(var(--color-kpi-text)); }
-.badge-award    { background: hsl(var(--color-award-bg)); color: hsl(var(--color-award-text)); }
-
-/* Dot indicators */
+.badge-warning { background: hsl(var(--color-warning-bg)); color: hsl(var(--color-warning-text)); }
+.badge-danger { background: hsl(var(--color-danger-bg)); color: hsl(var(--color-danger-text)); }
+.badge-info { background: hsl(var(--color-info-bg)); color: hsl(var(--color-info-text)); }
+.badge-neutral { background: hsl(var(--color-neutral-bg)); color: hsl(var(--color-neutral-text)); }
+.badge-kpi { background: hsl(var(--color-kpi-bg)); color: hsl(var(--color-kpi-text)); }
+.badge-award { background: hsl(var(--color-award-bg)); color: hsl(var(--color-award-text)); }
 .dot-success { background: hsl(var(--color-success)); }
-.dot-warning  { background: hsl(var(--color-warning)); }
-.dot-danger   { background: hsl(var(--color-danger)); }
-.dot-info     { background: hsl(var(--color-info)); }
-.dot-neutral  { background: hsl(var(--color-neutral)); }
+.dot-warning { background: hsl(var(--color-warning)); }
+.dot-danger { background: hsl(var(--color-danger)); }
+.dot-info { background: hsl(var(--color-info)); }
+.dot-neutral { background: hsl(var(--color-neutral)); }
+
+.text-\[7px\],
+.text-\[8px\],
+.text-\[9px\],
+.text-\[9\.5px\],
+.text-\[10px\],
+.text-\[11px\] {
+  font-size: var(--app-font-caption) !important;
+  line-height: 1rem !important;
+}
+
+.text-\[12px\],
+.text-xs {
+  font-size: var(--app-font-footnote) !important;
+  line-height: 1.125rem !important;
+}
+
+.text-\[13px\],
+.text-\[14px\] {
+  font-size: var(--app-font-subhead) !important;
+  line-height: 1.25rem !important;
+}
+
+.text-sm {
+  font-size: var(--app-font-callout) !important;
+  line-height: 1.375rem !important;
+}
+
+.text-base {
+  font-size: var(--app-font-body) !important;
+  line-height: 1.5rem !important;
+}
+
+button,
+input,
+textarea,
+select,
+[role="button"],
+[role="menuitem"],
+[role="option"],
+[data-radix-collection-item] {
+  font-size: var(--app-font-callout);
+  line-height: 1.35rem;
+}
+
+button:not([class*="flex-1"]),
+a[role="button"],
+[role="button"],
+[role="menuitem"],
+[role="option"],
+input,
+select,
+textarea {
+  min-height: var(--app-touch-target);
+}
+
+button,
+a,
+[role="button"],
+[role="menuitem"],
+[role="option"] {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+button[class*="w-"],
+[role="button"][class*="w-"] {
+  min-width: var(--app-touch-target);
+}
+
+.premium-card:not(.p-0) {
+  padding: var(--app-card-padding) !important;
+  border-radius: var(--app-card-radius);
+}
+
+.finance-input,
+input,
+textarea,
+[role="combobox"] {
+  min-height: var(--app-touch-target);
+  border-radius: var(--app-control-radius);
+  font-size: var(--app-font-callout) !important;
+}
+
+main > div[class*="max-w-6xl"][class*="mx-auto"],
+main > div[class*="max-w-7xl"][class*="mx-auto"],
+main > div[class*="max-w-5xl"][class*="mx-auto"] {
+  padding-left: var(--app-page-x) !important;
+  padding-right: var(--app-page-x) !important;
+}
+
+.uppercase,
+.tracking-tight,
+.tracking-tighter,
+.tracking-wider,
+.tracking-widest {
+  text-transform: none !important;
+  letter-spacing: 0;
+}

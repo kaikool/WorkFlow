@@ -180,8 +180,8 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between pl-1">
-        <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-          <Car className="w-4 h-4 text-primary" /> LỊCH TRÌNH DI CHUYỂN CỦA TÔI ({myTrips.length})
+        <h3 className="text-sm font-medium text-slate-500 flex items-center gap-2">
+          <Car className="w-4 h-4 text-primary" /> Lịch trình di chuyển của tôi ({myTrips.length})
         </h3>
       </div>
 
@@ -205,7 +205,7 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
                 <div className="space-y-5">
                   {/* Trạng thái hành trình */}
                   <div className="flex items-center justify-between">
-                    <span className={`text-[10px] font-extrabold px-3 py-1.5 rounded-full uppercase tracking-wider ${
+                    <span className={`text-[10px] font-extrabold px-3 py-1.5 rounded-full ${
                       hasEnded 
                         ? "bg-slate-100 text-slate-500" 
                         : (hasStarted ? "bg-emerald-50 text-emerald-600 animate-pulse" : "bg-blue-50 text-blue-600")
@@ -215,7 +215,7 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
 
                     {hasIssue && (
                       <span className="text-[10px] font-extrabold px-3 py-1.5 rounded-full bg-rose-50 text-rose-600 flex items-center gap-1">
-                        <AlertTriangle className="w-3.5 h-3.5 shrink-0" /> SỰ CỐ XE
+                        <AlertTriangle className="w-3.5 h-3.5 shrink-0" /> Sự cố xe
                       </span>
                     )}
                   </div>
@@ -230,17 +230,17 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
 
                   {/* Thông tin Phương tiện và Địa điểm */}
                   <div className="space-y-2 bg-slate-50/50 p-4 rounded-2xl">
-                    <div className="flex items-center gap-2.5 text-xs font-bold text-slate-700">
+                    <div className="flex items-center gap-2.5 text-sm font-medium text-slate-700">
                       <Car className="w-4 h-4 text-slate-500 shrink-0" />
                       <span>{(trip.vehicle as any)?.name ? `${(trip.vehicle as any).name} (${(trip.vehicle as any).plate_number})` : "Chờ gán xe"}</span>
                     </div>
                     {trip.location && (
-                      <div className="flex items-center gap-2.5 text-xs font-semibold text-slate-500">
+                      <div className="flex items-center gap-2.5 text-sm font-medium text-slate-500">
                         <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
                         <span className="line-clamp-1">{trip.location}</span>
                       </div>
                     )}
-                    <div className="flex items-center gap-2.5 text-xs font-semibold text-slate-500">
+                    <div className="flex items-center gap-2.5 text-sm font-medium text-slate-500">
                       <Clock className="w-4 h-4 text-slate-400 shrink-0" />
                       <span>{new Date(trip.start_time).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} - {new Date(trip.end_time).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</span>
                     </div>
@@ -250,13 +250,13 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
                   {trip.metadata?.start_km && (
                     <div className="grid grid-cols-2 gap-4 bg-slate-50/30 p-3.5 rounded-xl border border-slate-100/50 text-center">
                       <div>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">KM BẮT ĐẦU</p>
+                        <p className="text-sm font-medium text-slate-400">Km bắt đầu</p>
                         <p className="text-sm font-extrabold text-slate-700 flex items-center justify-center gap-1 mt-0.5">
                           <Gauge className="w-3.5 h-3.5 text-slate-400" /> {trip.metadata.start_km} km
                         </p>
                       </div>
                       <div>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">KM KẾT THÚC</p>
+                        <p className="text-sm font-medium text-slate-400">Km kết thúc</p>
                         <p className="text-sm font-extrabold text-slate-700 flex items-center justify-center gap-1 mt-0.5">
                           {hasEnded ? (
                             <><Gauge className="w-3.5 h-3.5 text-slate-400" /> {trip.metadata.end_km} km</>
@@ -279,7 +279,7 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
                       }}
                       className="w-full sm:flex-1 bg-slate-900 hover:bg-black text-white rounded-2xl font-bold h-12 text-xs gap-1.5 shadow-md active:scale-95 transition-all"
                     >
-                      <Navigation className="w-4 h-4" /> BẮT ĐẦU CHUYẾN
+                      <Navigation className="w-4 h-4" /> Bắt đầu chuyến
                     </Button>
                   )}
 
@@ -291,7 +291,7 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
                       }}
                       className="w-full sm:flex-1 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-bold h-12 text-xs gap-1.5 shadow-md active:scale-95 transition-all"
                     >
-                      <CheckCircle2 className="w-4 h-4" /> KẾT THÚC CHUYẾN
+                      <CheckCircle2 className="w-4 h-4" /> Kết thúc chuyến
                     </Button>
                   )}
 
@@ -304,7 +304,7 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
                       variant="ghost"
                       className="w-full sm:w-auto hover:bg-rose-50 hover:text-rose-600 text-slate-500 rounded-2xl font-bold h-12 px-4 text-xs gap-1.5 transition-colors shrink-0 flex items-center justify-center"
                     >
-                      <AlertTriangle className="w-4 h-4" /> BÁO SỰ CỐ
+                      <AlertTriangle className="w-4 h-4" /> Báo sự cố
                     </Button>
                   )}
                 </div>
@@ -314,7 +314,7 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
         </div>
       )}
 
-      {/* DIALOG KM XUẤT PHÁT */}
+      {/* Dialog km xuất phát */}
       <Dialog open={isStartOpen} onOpenChange={setIsStartOpen}>
         <DialogContent className="rounded-[32px] max-w-sm border-none p-6 shadow-2xl">
           <DialogHeader>
@@ -322,7 +322,7 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <label className="text-[10px] font-bold text-slate-500 uppercase pl-1">Chỉ số KM hiện tại (Xuất phát)</label>
+              <label className="text-sm font-medium text-slate-500 pl-1">Chỉ số KM hiện tại (Xuất phát)</label>
               <Input
                 type="number"
                 placeholder="Ví dụ: 12050"
@@ -339,13 +339,13 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
               disabled={updating || !startKm}
               className="bg-slate-900 hover:bg-black rounded-xl font-bold px-6"
             >
-              {updating ? <Loader2 className="w-4 h-4 animate-spin" /> : "XÁC NHẬN"}
+              {updating ? <Loader2 className="w-4 h-4 animate-spin" /> : "Xác nhận"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* DIALOG KM KẾT THÚC */}
+      {/* Dialog km kết thúc */}
       <Dialog open={isEndOpen} onOpenChange={setIsEndOpen}>
         <DialogContent className="rounded-[32px] max-w-sm border-none p-6 shadow-2xl">
           <DialogHeader>
@@ -353,7 +353,7 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <label className="text-[10px] font-bold text-slate-500 uppercase pl-1">Chỉ số KM kết thúc</label>
+              <label className="text-sm font-medium text-slate-500 pl-1">Chỉ số KM kết thúc</label>
               <Input
                 type="number"
                 placeholder={`Phải lớn hơn ${selectedEndSchedule?.metadata?.start_km || 0}`}
@@ -370,13 +370,13 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
               disabled={updating || !endKm}
               className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold px-6 shadow-md shadow-emerald-100"
             >
-              {updating ? <Loader2 className="w-4 h-4 animate-spin" /> : "HOÀN THÀNH CHUYẾN"}
+              {updating ? <Loader2 className="w-4 h-4 animate-spin" /> : "Hoàn thành chuyến"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* DIALOG BÁO CÁO SỰ CỐ XE */}
+      {/* Dialog báo cáo sự cố xe */}
       <Dialog open={isIssueOpen} onOpenChange={setIsIssueOpen}>
         <DialogContent className="rounded-[32px] max-w-sm border-none p-6 shadow-2xl">
           <DialogHeader>
@@ -386,7 +386,7 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <label className="text-[10px] font-bold text-slate-500 uppercase pl-1">Chi tiết sự cố phát sinh</label>
+              <label className="text-sm font-medium text-slate-500 pl-1">Chi tiết sự cố phát sinh</label>
               <Textarea
                 placeholder="Mô tả sự cố gặp phải (Ví dụ: Thủng lốp, hỏng điều hòa, động cơ báo lỗi...)"
                 value={issueText}
@@ -402,7 +402,7 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
               disabled={updating || !issueText.trim()}
               className="bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold px-6 shadow-md shadow-rose-100"
             >
-              {updating ? <Loader2 className="w-4 h-4 animate-spin" /> : "GỬI BÁO CÁO BẢO TRÌ"}
+              {updating ? <Loader2 className="w-4 h-4 animate-spin" /> : "Gửi báo cáo bảo trì"}
             </Button>
           </DialogFooter>
         </DialogContent>

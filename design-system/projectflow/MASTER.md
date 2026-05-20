@@ -34,23 +34,21 @@
 
 ### Typography
 
-- **Font:** IBM Plex Sans (tất cả cấp độ tiêu đề và body)
-- **Mood:** financial, trustworthy, professional, corporate, banking, serious
-- **Google Fonts:** [IBM Plex Sans](https://fonts.google.com/share?selection.family=IBM+Plex+Sans:wght@300;400;500;600;700)
+- **Font:** System Font Stack theo Apple (`-apple-system`, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial). Không dùng Google Fonts.
+- **Mood:** financial, trustworthy, professional, corporate, banking, serious.
+- **Tracking:** Không dùng letter-spacing âm. Global CSS triệt tiêu `tracking-tight/tighter/wider/widest` để chữ rõ ở mọi breakpoint.
+- **Capitalization:** Không dùng all-caps cho heading, label, tab, button, badge hoặc section title. Dùng sentence case; chỉ giữ chữ hoa cho mã, biển số, viết tắt chính thức như KPI/TCTH.
 
-**CSS Import:**
-```css
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap');
-```
+**Apple HIG Typography Scale responsive bắt buộc:**
+| Level | CSS token | Desktop web | iPad/tablet | Mobile | Usage |
+|-------|-----------|-------------|-------------|--------|-------|
+| Body | `text-base` | `16px` | `17px` | `17px` | Nội dung chính, mô tả, thông tin đọc |
+| Callout / Control | `text-sm` | `15px` | `16px` | `16px` | Button, input, select, menu item |
+| Subhead | `text-[13px]`/`text-[14px]` | `14px` | `15px` | `15px` | Metadata quan trọng |
+| Footnote | `text-xs`/`text-[12px]` | `13px` | `13px` | `13px` | Label, badge, trạng thái |
+| Caption | `text-[7px]`–`text-[11px]` | `12px` tối thiểu | `12px` tối thiểu | `12px` tối thiểu | Chỉ dùng cho phụ chú rất ngắn |
 
-**Typography Scale:**
-| Level | Size | Weight | Usage |
-|-------|------|--------|-------|
-| Page Title | `text-2xl` | `font-semibold` | `<h1>` trên mỗi trang |
-| Section Title | `text-base` | `font-bold` | Tiêu đề card/block |
-| Label | `text-xs` | `font-bold uppercase` | Nhãn trường dữ liệu |
-| Body | `text-sm` / `text-[14px]` | `font-medium` | Nội dung |
-| Caption | `text-[11px]`–`text-xs` | `font-medium` | Phụ chú, metadata |
+> Global CSS tại `src/app/globals.css` map các class text nhỏ qua token responsive. Khi viết UI mới, vẫn phải chọn class có ý nghĩa đúng; không dựa vào global CSS để hợp thức hóa text quá nhỏ.
 
 ---
 
@@ -64,6 +62,21 @@
 | `--space-lg` | `24px` | `gap-6`, `p-6` | **Padding chuẩn card** |
 | `--space-xl` | `32px` | `gap-8`, `p-8` | Khoảng cách section |
 | `--space-2xl` | `48px` | `gap-12` | Section margin lớn |
+
+**Apple HIG Touch & Spacing Rules:**
+| Rule | Value | Usage |
+|------|-------|-------|
+| Touch target desktop web | `40px` tối thiểu | Button, icon button, menu item, input, select, textarea |
+| Touch target iPad/mobile | `44px` tối thiểu | Button, icon button, menu item, input, select, textarea |
+| Page margin mobile | `16px` | Outer wrapper của mọi trang dashboard |
+| Page margin iPad/tablet | `24px` | Outer wrapper từ `641px` đến `1024px` |
+| Page margin desktop web | `32px` | Outer wrapper từ `1025px` trở lên |
+| Card padding mobile | `20px` | `.premium-card:not(.p-0)` trên mobile |
+| Card padding iPad/desktop | `24px` | `.premium-card:not(.p-0)` trên tablet/desktop |
+| Control radius | `12px` | Button, input, select |
+| Card radius | `18px` mobile, `22px` iPad, `24px` desktop | Premium cards |
+
+> Không dùng `h-7`, `h-8`, `py-0.5`, `p-1` cho phần tử tương tác ở bất kỳ breakpoint nào. Nếu cần giao diện gọn, ưu tiên ẩn bớt secondary action hoặc đưa vào menu.
 
 ---
 
@@ -112,10 +125,10 @@ DashboardShell
 // Dòng tiêu đề + nút CTA trên cùng mỗi trang
 <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pt-4 sm:pt-0">
   <div className="space-y-1">
-    <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">Tên trang</h1>
+    <h1 className="text-2xl font-semibold text-slate-900">Tên trang</h1>
     <p className="text-[13px] text-slate-500 font-medium">Mô tả ngắn</p>
   </div>
-  <Button className="bg-primary h-10 px-5 rounded-xl font-medium">CTA</Button>
+  <Button className="bg-primary min-h-11 px-5 rounded-xl font-medium text-sm">CTA</Button>
 </div>
 ```
 
@@ -129,7 +142,7 @@ DashboardShell
   <Button variant="ghost" asChild>
     <Link href="..." className="flex items-center gap-2">
       <ChevronLeft className="w-4 h-4" />
-      <span className="text-[13px] font-medium">Quay lại danh sách</span>
+      <span className="text-sm font-medium">Quay lại danh sách</span>
     </Link>
   </Button>
   {/* Nút xóa hoặc hành động phụ */}
@@ -145,10 +158,17 @@ DashboardShell
 ```css
 .premium-card {
   background: white;
-  border-radius: 16px;    /* rounded-2xl */
-  padding: 24px;          /* p-6 — CHUẨN BẮT BUỘC */
+  border-radius: 18px;    /* mobile */
+  padding: 20px;          /* mobile */
   box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
   transition: box-shadow 300ms ease, transform 300ms ease;
+}
+
+@media (min-width: 641px) {
+  .premium-card {
+    border-radius: 24px;
+    padding: 24px;
+  }
 }
 
 .premium-card:hover {
@@ -161,7 +181,7 @@ DashboardShell
 <div className="premium-card p-6 border-none space-y-6">
 ```
 
-> ❌ Không dùng `p-4`, `p-8` trực tiếp trong `.premium-card` — luôn dùng `p-6`.
+> ❌ Không dùng `p-4`, `p-8` trực tiếp trong `.premium-card` — dùng `.premium-card`; global CSS tự chuẩn hóa mobile/desktop.
 > ❌ Không lồng `.premium-card` bên trong `.premium-card`.
 
 ### Stat Cards (KPI mini widget)
@@ -169,8 +189,8 @@ DashboardShell
 ```jsx
 <div className="p-4 md:p-5 bg-slate-50 rounded-2xl space-y-1 border border-slate-100 shadow-sm
                 transition-all hover:bg-white hover:shadow-md group">
-  <p className="text-xs font-bold text-slate-500 uppercase">Label</p>
-  <p className="text-2xl font-bold text-slate-900 tabular-nums tracking-tighter">Value</p>
+  <p className="text-sm font-medium text-slate-500">Label</p>
+  <p className="text-2xl font-bold text-slate-900 tabular-nums">Value</p>
 </div>
 ```
 
@@ -178,17 +198,18 @@ DashboardShell
 
 ```jsx
 // Primary CTA
-<Button className="bg-primary hover:bg-primary/90 h-10 px-5 rounded-xl font-medium">
+<Button className="bg-primary hover:bg-primary/90 min-h-11 px-5 rounded-xl font-medium">
 
 // Destructive
 <Button variant="ghost" className="text-red-500 hover:bg-red-50 hover:text-red-600 rounded-xl">
 
 // Icon button
-<Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl">
+<Button variant="ghost" size="icon" className="h-11 w-11 rounded-xl">
 ```
 
 > ❌ Button primary KHÔNG dùng `amber/gold` màu nền — chỉ dùng cho highlight accent.
 > ✅ `active:scale-95 transition-all` trên mọi button có action.
+> ✅ Trên mobile, mọi button/icon button phải đạt vùng chạm tối thiểu `44px`.
 
 ### Badges
 
@@ -202,20 +223,20 @@ const statusStyles = {
   closed: "bg-slate-100 text-slate-500",
 };
 
-<Badge className={cn("text-[11px] font-bold uppercase px-2.5 py-0.5 rounded-full border-none", style)}>
+<Badge className={cn("text-xs font-semibold px-2.5 py-1 rounded-full border-none", style)}>
 ```
 
 ### Inputs
 
 ```jsx
-<Input className="h-10 bg-slate-50 border-none rounded-xl font-medium text-[14px]
+<Input className="min-h-11 bg-slate-50 border-none rounded-xl font-medium text-sm
                   focus-visible:ring-1 focus-visible:ring-primary/30" />
 ```
 
 ### Modals / Dialogs
 
 ```jsx
-<DialogContent className="rounded-2xl border-none shadow-2xl max-w-lg">
+<DialogContent className="rounded-2xl border-none shadow-2xl max-w-lg p-5 sm:p-6">
   <DialogHeader>
     <DialogTitle className="text-[17px] font-semibold text-slate-900">Tiêu đề</DialogTitle>
   </DialogHeader>
@@ -228,7 +249,7 @@ const statusStyles = {
 ### Section Label (chuẩn trong card)
 
 ```jsx
-<h3 className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2">
+<h3 className="text-sm font-medium text-slate-500 flex items-center gap-2">
   <Icon className="w-4 h-4 text-primary" />
   Tên section
 </h3>
@@ -276,10 +297,10 @@ if (!isPowerUser && profile?.department_id) {
 
 **Key Principles:**
 - Contrast cao: nền trắng/slate-50 với text slate-900
-- Typography đậm: heading `font-bold` / `font-semibold`, label `font-bold uppercase`
+- Typography đậm: heading `font-bold` / `font-semibold`, label `font-bold`
 - Góc bo tròn nhất quán: card `rounded-2xl`, button `rounded-xl`, input `rounded-xl`
 - Animation tinh tế: `transition-all duration-200`, `animate-fade-in-up`, `active:scale-95`
-- Số tabular: `tabular-nums tracking-tighter` cho mọi con số quan trọng
+- Số tabular: `tabular-nums` cho mọi con số quan trọng
 
 ---
 
@@ -313,4 +334,4 @@ Trước khi commit bất kỳ UI nào, kiểm tra:
 - [ ] Text contrast ≥ 4.5:1
 - [ ] Responsive tốt tại: 375px, 768px, 1024px, 1440px
 - [ ] Không horizontal scroll trên mobile
-- [ ] Số liệu dùng `tabular-nums tracking-tighter`
+- [ ] Số liệu dùng `tabular-nums`

@@ -35,7 +35,7 @@ export default function DirectorTimeline({
       >
         <div className="min-w-[850px] space-y-4">
           {/* Tiêu đề giờ */}
-          <div className="relative h-6 text-[10px] font-bold text-slate-500 select-none w-full border-b border-slate-100 pb-2 mb-4">
+          <div className="relative h-6 text-sm font-medium text-slate-500 select-none w-full border-b border-slate-100 pb-2 mb-4">
             {['08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00'].map((label, i) => (
               <span key={label} className="absolute -translate-x-1/2" style={{ left: `${(i / 9) * 100}%` }}>{label}</span>
             ))}
@@ -76,8 +76,8 @@ export default function DirectorTimeline({
                         onClick={() => onSelectSchedule(leaveSched)}
                         className="absolute inset-x-0 h-6 mx-1 bg-slate-100 hover:bg-slate-200/80 border border-slate-200/50 rounded-lg z-10 flex items-center justify-center cursor-pointer transition-all select-none shadow-2xs"
                       >
-                        <span className="text-[9px] font-black text-slate-500 tracking-widest flex items-center gap-1.5">
-                          <CalendarDays className="w-3.5 h-3.5 text-slate-400" /> NGHỈ PHÉP
+                        <span className="text-[9px] font-black text-slate-500 flex items-center gap-1.5">
+                          <CalendarDays className="w-3.5 h-3.5 text-slate-400" /> Nghỉ phép
                         </span>
                       </div>
                     );
@@ -134,7 +134,7 @@ export default function DirectorTimeline({
             <div key={dir.id} className="flex justify-between items-center py-2 border-b border-slate-100/50 last:border-none px-1">
               <div className="flex items-center gap-2.5">
                 <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${dirColor.bullet} shadow-xs ring-2 ring-white`} />
-                <span className="text-[13px] font-bold text-slate-800 tracking-tight">{dir.full_name}</span>
+                <span className="text-[13px] font-bold text-slate-800">{dir.full_name}</span>
               </div>
               <div>
                 {onLeave ? (

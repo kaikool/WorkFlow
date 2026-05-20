@@ -92,7 +92,7 @@ export default function CalendarView(props: CalendarViewProps) {
             {filteredSchedules.length === 0 ? (
               <div className="text-center py-12 bg-white rounded-2xl border border-slate-100 shadow-sm">
                 <Clock className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-                <p className="text-xs font-bold text-slate-400 uppercase">Không có lịch trình nào trong ngày</p>
+                <p className="text-sm font-medium text-slate-400">Không có lịch trình nào trong ngày</p>
               </div>
             ) : (
               <>
@@ -113,7 +113,7 @@ export default function CalendarView(props: CalendarViewProps) {
                     <Button 
                       variant="ghost" 
                       onClick={() => setShowAllSchedules(!showAllSchedules)}
-                      className="text-xs font-bold text-primary uppercase hover:bg-primary/5 rounded-full px-6 py-2 flex items-center gap-1.5"
+                      className="text-sm font-medium text-primary hover:bg-primary/5 rounded-full px-6 py-2 flex items-center gap-1.5"
                     >
                       {showAllSchedules ? (
                         <>Thu gọn <ChevronUp className="w-4 h-4" /></>

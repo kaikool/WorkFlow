@@ -118,14 +118,14 @@ export function NewTodoForm() {
           <CheckCircle2 className="w-12 h-12" />
         </div>
         <div className="space-y-2">
-          <h2 className="text-2xl font-semibold text-slate-900 tracking-tight">Hoàn tất!</h2>
+          <h2 className="text-2xl font-semibold text-slate-900">Hoàn tất!</h2>
           <p className="text-slate-500 font-medium text-sm">Công việc đã được giao thành công.</p>
         </div>
         <div className="flex flex-col gap-2 pt-4">
-          <Button asChild className="bg-primary hover:bg-primary/90 h-10 rounded-xl font-medium">
+          <Button asChild className="bg-primary hover:bg-primary/90 min-h-11 rounded-xl font-medium">
             <Link href="/dashboard/tasks">Về danh sách <ArrowRight className="ml-2 w-4 h-4" /></Link>
           </Button>
-          <Button variant="ghost" onClick={() => setIsSuccess(false)} className="text-slate-500 font-medium h-10 rounded-xl hover:bg-slate-50">
+          <Button variant="ghost" onClick={() => setIsSuccess(false)} className="text-slate-500 font-medium min-h-11 rounded-xl hover:bg-slate-50">
             Tạo thêm
           </Button>
         </div>
@@ -140,7 +140,7 @@ export function NewTodoForm() {
         <div className="lg:col-span-8 space-y-6">
           <div className="premium-card p-6 border-none space-y-4">
             <div className="flex items-center gap-2">
-              <Badge className="px-2.5 py-0.5 text-[11px] font-bold uppercase rounded-full border-none bg-primary text-white">
+              <Badge className="px-2.5 py-1 text-sm font-medium rounded-full border-none bg-primary text-white">
                 Công việc
               </Badge>
             </div>
@@ -151,7 +151,7 @@ export function NewTodoForm() {
               required
             />
             <div className="bg-slate-50 p-4 rounded-xl space-y-2">
-              <Label htmlFor="description" className="text-xs font-bold text-slate-500 uppercase truncate whitespace-nowrap">
+              <Label htmlFor="description" className="text-sm font-medium text-slate-500 truncate whitespace-nowrap">
                 Mô tả chi tiết
               </Label>
               <Textarea
@@ -173,7 +173,7 @@ export function NewTodoForm() {
           <div className="premium-card p-6 border-none space-y-6">
             {/* Người nhận */}
             <div className="space-y-3">
-              <Label className="text-[13px] font-medium text-slate-500">Người nhận</Label>
+              <Label className="text-sm font-medium text-slate-500">Người nhận</Label>
               <Popover>
                 <PopoverTrigger asChild disabled={isStaff}>
                   <Button variant="outline" className={cn(
@@ -184,7 +184,7 @@ export function NewTodoForm() {
                       {selectedAssignees.length === 0
                         ? <span className="text-slate-400 font-normal">Chọn người nhận</span>
                         : selectedAssignees.map(id => profiles.find(p => p.id === id)).filter(Boolean).map(p => (
-                            <Badge key={p.id} variant="secondary" className="bg-primary text-white border-none px-2.5 py-0.5 rounded-full flex items-center gap-1 shrink-0 text-[12px] font-bold uppercase whitespace-nowrap truncate">
+                            <Badge key={p.id} variant="secondary" className="bg-primary text-white border-none px-2.5 py-1 rounded-full flex items-center gap-1 shrink-0 text-sm font-medium whitespace-nowrap truncate">
                               {p.full_name}
                             </Badge>
                           ))
@@ -208,9 +208,9 @@ export function NewTodoForm() {
                           <div className={cn('w-4 h-4 rounded-md border flex items-center justify-center transition-all', selectedAssignees.includes(p.id) ? 'bg-primary border-primary' : 'border-slate-300')}>
                             {selectedAssignees.includes(p.id) && <Check className="w-3 h-3 text-white" />}
                           </div>
-                          <span className="text-xs font-bold">{p.full_name}</span>
+                          <span className="text-sm font-medium">{p.full_name}</span>
                         </div>
-                        {p.role === 'manager' && <Badge className="text-[11px] bg-amber-50 text-amber-600 border-none px-1.5 font-medium whitespace-nowrap truncate">Lãnh đạo</Badge>}
+                        {p.role === 'manager' && <Badge className="text-xs bg-amber-50 text-amber-600 border-none px-1.5 font-medium whitespace-nowrap truncate">Lãnh đạo</Badge>}
                       </div>
                     ))}
                   </div>
@@ -221,14 +221,14 @@ export function NewTodoForm() {
 
             {/* Loại công việc */}
             <div className="space-y-3">
-              <Label className="text-[13px] font-medium text-slate-500">Phân loại danh mục</Label>
+              <Label className="text-sm font-medium text-slate-500">Phân loại danh mục</Label>
               <Select name="task_type" defaultValue="regular">
-                <SelectTrigger className="h-10 rounded-xl bg-slate-50 border-none font-medium text-slate-900 px-4 shadow-sm hover:bg-slate-100 transition-all">
+                <SelectTrigger className="min-h-11 rounded-xl bg-slate-50 border-none font-medium text-slate-900 px-4 shadow-sm hover:bg-slate-100 transition-all">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl border border-slate-200 shadow-lg">
-                  <SelectItem value="regular" className="font-medium text-[13px] py-2">Công việc nghiệp vụ</SelectItem>
-                  <SelectItem value="kpi"     className="font-medium text-[13px] py-2">Chỉ tiêu kinh doanh</SelectItem>
+                  <SelectItem value="regular" className="font-medium text-sm py-2">Công việc nghiệp vụ</SelectItem>
+                  <SelectItem value="kpi"     className="font-medium text-sm py-2">Chỉ tiêu kinh doanh</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -236,7 +236,7 @@ export function NewTodoForm() {
             {/* Hạn hoàn thành & Mức độ */}
             <div className="grid grid-cols-1 gap-6 pt-2 border-t border-slate-50">
               <div className="space-y-2">
-                <Label className="text-[13px] font-medium text-slate-500">Hạn hoàn thành</Label>
+                <Label className="text-sm font-medium text-slate-500">Hạn hoàn thành</Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button variant="outline" className={cn('w-full h-11 rounded-xl bg-slate-50 border-none font-bold text-slate-900 justify-start px-4 shadow-sm active:scale-95 transition-all', !dueDate && 'text-muted-foreground')}>
@@ -250,18 +250,18 @@ export function NewTodoForm() {
                 </Popover>
               </div>
               <div className="space-y-2">
-                <Label className="text-[13px] font-medium text-slate-500">Mức độ ưu tiên</Label>
+                <Label className="text-sm font-medium text-slate-500">Mức độ ưu tiên</Label>
                 <Select name="priority" defaultValue="medium">
-                  <SelectTrigger className="h-10 rounded-xl bg-slate-50 border-none font-medium text-slate-900 px-4 shadow-sm">
+                  <SelectTrigger className="min-h-11 rounded-xl bg-slate-50 border-none font-medium text-slate-900 px-4 shadow-sm">
                     <div className="flex items-center gap-2">
                       <Flag className="w-4 h-4 text-primary" />
                       <SelectValue />
                     </div>
                   </SelectTrigger>
                   <SelectContent className="rounded-xl border border-slate-200 shadow-lg">
-                    <SelectItem value="low"    className="font-medium text-[13px] py-2">Ưu tiên thấp</SelectItem>
-                    <SelectItem value="medium" className="font-medium text-[13px] py-2 text-primary">Bình thường</SelectItem>
-                    <SelectItem value="high"   className="font-medium text-[13px] py-2 text-red-600">Khẩn trương</SelectItem>
+                    <SelectItem value="low"    className="font-medium text-sm py-2">Ưu tiên thấp</SelectItem>
+                    <SelectItem value="medium" className="font-medium text-sm py-2 text-primary">Bình thường</SelectItem>
+                    <SelectItem value="high"   className="font-medium text-sm py-2 text-red-600">Khẩn trương</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -269,10 +269,10 @@ export function NewTodoForm() {
 
             {/* Nút submit */}
             <div className="pt-6 border-t border-slate-50 space-y-3">
-              <Button type="submit" disabled={loading} className="w-full bg-primary hover:bg-primary/90 h-10 rounded-xl font-medium text-[14px] active:scale-95 transition-all">
+              <Button type="submit" disabled={loading} className="w-full bg-primary hover:bg-primary/90 min-h-11 rounded-xl font-medium text-sm active:scale-95 transition-all">
                 {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : (isStaff ? 'Tạo công việc' : 'Giao việc')}
               </Button>
-              <Button type="button" variant="ghost" onClick={() => router.back()} className="text-slate-500 font-bold h-10 w-full rounded-xl hover:bg-slate-50 text-xs active:scale-95 transition-all">
+              <Button type="button" variant="ghost" onClick={() => router.back()} className="text-slate-500 font-bold min-h-11 w-full rounded-xl hover:bg-slate-50 text-xs active:scale-95 transition-all">
                 Hủy bỏ
               </Button>
             </div>

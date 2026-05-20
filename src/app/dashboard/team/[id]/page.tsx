@@ -87,7 +87,7 @@ export default function MemberDetailPage() {
  
  if (pError || !profile) throw new Error("Không tìm thấy thông tin cán bộ.");
 
- // KIỂM TRA QUYỀN TRUY CẬP
+ // Kiểm tra quyền truy cập
  const isSameDept = profile.department_id === myProfileData?.department_id;
  const isAdmin = myProfileData?.role === 'admin';
  const isSelf = profile.id === myProfileData?.id;
@@ -181,7 +181,7 @@ export default function MemberDetailPage() {
  if (targetUserIds.length > 0) {
  const notifications = targetUserIds.map(userId => ({
  user_id: userId,
- title: recognitionType === 'remind' ? (recognitionScope === 'branch' ? "NHẮC NHỞ TOÀN CHI NHÁNH" : "Nhắc nhở nội bộ phòng") : (recognitionScope === 'branch' ? "VINH DANH TOÀN CHI NHÁNH" : "Vinh danh nội bộ phòng"),
+ title: recognitionType === 'remind' ? (recognitionScope === 'branch' ? "Nhắc nhở toàn chi nhánh" : "Nhắc nhở nội bộ phòng") : (recognitionScope === 'branch' ? "Vinh danh toàn chi nhánh" : "Vinh danh nội bộ phòng"),
   content: recognitionType === 'remind' ? `Cán bộ ${member.full_name} đã được góp ý: "${recognitionText}"` : `${member.full_name} đã được vinh danh: "${recognitionText}"`,
  link: `/dashboard/team/${id}`
  }));
@@ -213,7 +213,7 @@ export default function MemberDetailPage() {
  <div className="p-2 rounded-xl group-hover:bg-primary/5 transition-colors">
  <ChevronLeft className="w-4 h-4" />
  </div>
- <span className="text-xs font-bold uppercase truncate whitespace-nowrap">Danh sách cán bộ</span>
+ <span className="text-sm font-medium truncate whitespace-nowrap">Danh sách cán bộ</span>
  </Link>
  </Button>
  </div>
@@ -233,8 +233,8 @@ export default function MemberDetailPage() {
  <div className="relative">
  <Avatar className="h-24 w-24 border-4 border-white shadow-premium ring-1 ring-slate-100">
  <AvatarImage src={member.avatar_url} className="object-cover" />
- <AvatarFallback className="bg-primary text-white text-3xl font-bold tabular-nums tracking-tighter">
- {member.full_name?.[0]?.toUpperCase()}
+ <AvatarFallback className="bg-primary text-white text-3xl font-bold tabular-nums">
+ {member.full_name?.[0]}
  </AvatarFallback>
  </Avatar>
  <div className="absolute -bottom-1 -right-1 bg-emerald-500 p-1.5 rounded-full border-4 border-white shadow-sm">
@@ -242,8 +242,8 @@ export default function MemberDetailPage() {
  </div>
  </div>
  <div className="space-y-1">
- <h1 className="text-3xl font-bold text-slate-900 tracking-tight leading-none tabular-nums">{member.full_name}</h1>
- <div className="flex items-center gap-3 text-[11px] font-bold uppercase pt-2 truncate whitespace-nowrap">
+ <h1 className="text-3xl font-bold text-slate-900 leading-none tabular-nums">{member.full_name}</h1>
+ <div className="flex items-center gap-3 text-[11px] font-bold pt-2 truncate whitespace-nowrap">
  <div className="flex items-center gap-1.5 text-primary">
  <Building2 className="w-3.5 h-3.5" />
  <span>{member.departments?.name || "Hội sở / Chi nhánh"}</span>
@@ -260,7 +260,7 @@ export default function MemberDetailPage() {
  <Dialog open={isRecognizeOpen} onOpenChange={setIsRecognizeOpen}>
  <DialogTrigger asChild>
  <Button className="bg-amber-400 hover:bg-amber-500 text-white rounded-2xl font-bold px-8 h-12 shadow-lg shadow-amber-200 active:scale-95 transition-all gap-2">
- <Award className="w-5 h-5" /> VINH DANH & CHẤN CHỈNH
+ <Award className="w-5 h-5" /> Vinh danh & chấn chỉnh
  </Button>
  </DialogTrigger>
  <DialogContent className="rounded-[2rem] border-none p-0 overflow-hidden max-w-sm shadow-2xl">
@@ -269,12 +269,12 @@ export default function MemberDetailPage() {
  <Star className="w-32 h-32 -ml-16 -mt-8 rotate-12" />
  </div>
  <Star className="w-12 h-12 fill-white mx-auto mb-4 drop-shadow-lg" />
- <DialogTitle className="text-2xl font-bold uppercase tracking-tight tabular-nums">{recognitionType === 'praise' ? "Khen tặng cán bộ" : "Góp ý & Nhắc nhở"}</DialogTitle>
- <p className="text-[10px] font-bold text-amber-100 uppercase mt-2 opacity-90 truncate whitespace-nowrap">{recognitionType === 'praise' ? "Ghi nhận cống hiến xuất sắc" : "Chấn chỉnh & tạo động lực"}</p>
+ <DialogTitle className="text-2xl font-bold tabular-nums">{recognitionType === 'praise' ? "Khen tặng cán bộ" : "Góp ý & Nhắc nhở"}</DialogTitle>
+ <p className="text-sm font-medium text-amber-100 mt-2 opacity-90 truncate whitespace-nowrap">{recognitionType === 'praise' ? "Ghi nhận cống hiến xuất sắc" : "Chấn chỉnh & tạo động lực"}</p>
  </div>
  <div className="p-8 space-y-6">
  <div className="space-y-3">
-  <label className="text-[10px] font-bold text-slate-500 uppercase pl-1 truncate whitespace-nowrap">Loại ghi nhận</label>
+  <label className="text-sm font-medium text-slate-500 pl-1 truncate whitespace-nowrap">Loại ghi nhận</label>
   <Select value={recognitionType} onValueChange={setRecognitionType}>
   <SelectTrigger className="h-12 rounded-2xl border-none bg-slate-50 font-bold text-slate-600 shadow-inner px-5">
   <SelectValue />
@@ -282,12 +282,12 @@ export default function MemberDetailPage() {
   <SelectContent className="rounded-2xl border-none shadow-2xl p-2">
   <SelectItem value="praise" className="rounded-xl py-3 font-bold cursor-pointer">
   <div className="flex items-center gap-3 text-amber-600">
-  <Award className="w-4 h-4" /> VINH DANH / KHEN THƯỞNG
+  <Award className="w-4 h-4" /> Vinh danh / khen thưởng
   </div>
   </SelectItem>
   <SelectItem value="remind" className="rounded-xl py-3 font-bold cursor-pointer">
   <div className="flex items-center gap-3 text-slate-600">
-  <Clock className="w-4 h-4" /> GÓP Ý / NHẮC NHỞ
+  <Clock className="w-4 h-4" /> GÓP Ý / Nhắc nhở
   </div>
   </SelectItem>
   </SelectContent>
@@ -295,7 +295,7 @@ export default function MemberDetailPage() {
   </div>
 
   <div className="space-y-3">
-  <label className="text-[10px] font-bold text-slate-500 uppercase pl-1 truncate whitespace-nowrap">Phạm vi công bố</label>
+  <label className="text-sm font-medium text-slate-500 pl-1 truncate whitespace-nowrap">Phạm vi công bố</label>
  <Select value={recognitionScope} onValueChange={setRecognitionScope}>
  <SelectTrigger className="h-12 rounded-2xl border-none bg-slate-50 font-bold text-slate-600 shadow-inner px-5">
  <SelectValue />
@@ -303,12 +303,12 @@ export default function MemberDetailPage() {
  <SelectContent className="rounded-2xl border-none shadow-2xl p-2">
  <SelectItem value="department" className="rounded-xl py-3 font-bold cursor-pointer">
  <div className="flex items-center gap-3 text-slate-600">
- <UsersIcon className="w-4 h-4" /> NỘI BỘ PHÒNG
+ <UsersIcon className="w-4 h-4" /> Nội bộ phòng
  </div>
  </SelectItem>
  <SelectItem value="branch" className="rounded-xl py-3 font-bold cursor-pointer">
  <div className="flex items-center gap-3 text-amber-600">
- <Globe className="w-4 h-4" /> TOÀN CHI NHÁNH
+ <Globe className="w-4 h-4" /> Toàn chi nhánh
  </div>
  </SelectItem>
  </SelectContent>
@@ -316,7 +316,7 @@ export default function MemberDetailPage() {
  </div>
 
  <div className="space-y-3">
- <label className="text-[10px] font-bold text-slate-500 uppercase pl-1 truncate whitespace-nowrap">Nội dung ghi nhận</label>
+ <label className="text-sm font-medium text-slate-500 pl-1 truncate whitespace-nowrap">Nội dung ghi nhận</label>
  <Textarea 
  placeholder={recognitionType === 'praise' ? "Nhập lời khen ngợi cho những đóng góp của cán bộ..." : "Nhập ý kiến nhắc nhở, chấn chỉnh tế nhị mang tính xây dựng..."} 
  className="rounded-[24px] bg-slate-50 border-none focus-visible:ring-amber-400 text-sm p-5 shadow-inner placeholder:text-slate-500 min-h-[120px]"
@@ -326,7 +326,7 @@ export default function MemberDetailPage() {
  </div>
 
  <Button onClick={handleRecognize} disabled={recognizing || !recognitionText.trim()} className="w-full bg-slate-900 hover:bg-black h-14 rounded-2xl font-bold text-white shadow-xl shadow-slate-900/20 active:scale-95 transition-all">
- {recognizing ? <Loader2 className="w-5 h-5 animate-spin" /> : (recognitionType === 'praise' ? "XÁC NHẬN VINH DANH" : "XÁC NHẬN NHẮC NHỞ")}
+ {recognizing ? <Loader2 className="w-5 h-5 animate-spin" /> : (recognitionType === 'praise' ? "Xác nhận vinh danh" : "Xác nhận nhắc nhở")}
  </Button>
  </div>
  </DialogContent>
@@ -337,8 +337,8 @@ export default function MemberDetailPage() {
  <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
  <div className="lg:col-span-8 space-y-8">
  <div className="flex items-center justify-between pl-1">
- <h3 className="text-[11px] font-bold text-slate-500 uppercase flex items-center gap-2 truncate whitespace-nowrap">
- <Briefcase className="w-4 h-4 text-primary" /> HÀNH TRÌNH CÔNG VIỆC ({memberTasks.length})
+ <h3 className="text-[11px] font-bold text-slate-500 flex items-center gap-2 truncate whitespace-nowrap">
+ <Briefcase className="w-4 h-4 text-primary" /> Hành trình công việc ({memberTasks.length})
  </h3>
  </div>
  <div className="flex flex-col gap-3">
@@ -348,16 +348,16 @@ export default function MemberDetailPage() {
  <div className="premium-card p-6 flex items-center justify-between group border-none active:scale-[0.99] transition-all">
  <div className="space-y-1.5 flex-1 min-w-0">
  <p className="text-[14px] font-bold text-slate-900 group-hover:text-primary transition-colors leading-tight truncate">{t.title}</p>
- <div className="flex items-center gap-3 text-[9px] text-slate-500 font-bold uppercase ">
+ <div className="flex items-center gap-3 text-[9px] text-slate-500 font-bold ">
  <span className="flex items-center gap-1.5 bg-slate-50 px-2 py-0.5 rounded-lg text-primary/70"><Calendar className="w-3 h-3" /> {new Date(t.due_date).toLocaleDateString('vi-VN')}</span>
  <span className={cn("px-2 py-0.5 rounded-lg", t.priority === 'high' ? "bg-red-50 text-red-500" : "bg-slate-50 text-slate-500")}>
- {t.priority === 'high' ? 'KHẨN CẤP' : 'THƯỜNG'}
+ {t.priority === 'high' ? 'Khẩn cấp' : 'Thường'}
  </span>
  </div>
  </div>
  <div className="flex items-center gap-4 shrink-0">
  <div className="text-right flex flex-col items-end gap-1">
- <span className="text-[10px] font-bold text-primary uppercase truncate whitespace-nowrap">{t.progress}%</span>
+ <span className="text-sm font-medium text-primary truncate whitespace-nowrap">{t.progress}%</span>
  <Progress value={t.progress} className="h-0.5 w-12 bg-slate-100 shadow-none" />
  </div>
  <div className="p-1.5 bg-slate-50 rounded-lg group-hover:bg-primary/5 transition-colors">
@@ -378,7 +378,7 @@ export default function MemberDetailPage() {
  <div className="lg:col-span-4 space-y-10">
  {(member.phone || member.birthday) && (
  <div className="premium-card p-6 border-none space-y-6">
- <p className="text-[10px] font-bold text-slate-500 uppercase pl-1 truncate whitespace-nowrap">Thông tin cá nhân</p>
+ <p className="text-sm font-medium text-slate-500 pl-1 truncate whitespace-nowrap">Thông tin cá nhân</p>
  <div className="space-y-4">
  {member.phone && (
  <div className="flex items-center gap-3">
@@ -386,7 +386,7 @@ export default function MemberDetailPage() {
  <Phone className="w-4 h-4" />
  </div>
  <div className="flex-1 min-w-0 space-y-0.5">
- <p className="text-[10px] font-bold text-slate-500 uppercase">Điện thoại</p>
+ <p className="text-sm font-medium text-slate-500">Điện thoại</p>
  <a href={`tel:${member.phone}`} className="text-[14px] font-bold text-slate-900 truncate hover:text-blue-600 hover:underline block">{member.phone}</a>
  </div>
  </div>
@@ -397,7 +397,7 @@ export default function MemberDetailPage() {
  <Calendar className="w-4 h-4" />
  </div>
  <div className="flex-1 min-w-0 space-y-0.5">
- <p className="text-[10px] font-bold text-slate-500 uppercase">Ngày sinh</p>
+ <p className="text-sm font-medium text-slate-500">Ngày sinh</p>
  <p className="text-[14px] font-bold text-slate-900 truncate">{new Date(member.birthday).toLocaleDateString('vi-VN')}</p>
  </div>
  </div>
@@ -408,17 +408,17 @@ export default function MemberDetailPage() {
 
  <div className="premium-card p-6 border-none space-y-6">
  <div className="space-y-2">
- <p className="text-[10px] font-bold text-slate-500 uppercase pl-1 truncate whitespace-nowrap">Đánh giá năng lực</p>
+ <p className="text-sm font-medium text-slate-500 pl-1 truncate whitespace-nowrap">Đánh giá năng lực</p>
  <div className="p-5 bg-slate-50 rounded-3xl border border-slate-100/50 text-center">
- <span className={cn("text-3xl font-bold tracking-tight block", perf.color)}>{perf.label.toUpperCase()}</span>
- <p className="text-[9px] font-bold text-slate-500 uppercase mt-0.5">Hiệu suất tháng này</p>
+ <span className={cn("text-3xl font-bold block", perf.color)}>{perf.label}</span>
+ <p className="text-[9px] font-bold text-slate-500 mt-0.5">Hiệu suất tháng này</p>
  </div>
  </div>
 
  <div className="pt-6 border-t border-slate-50/80 space-y-6">
  <div className="space-y-6">
  <div className="space-y-3">
- <div className="flex justify-between text-[11px] font-bold uppercase truncate whitespace-nowrap">
+ <div className="flex justify-between text-[11px] font-bold truncate whitespace-nowrap">
  <span className="text-slate-500">Tiến độ bình quân</span>
  <span className="text-primary">{stats.avgProgress}%</span>
  </div>
@@ -426,12 +426,12 @@ export default function MemberDetailPage() {
  </div>
  <div className="grid grid-cols-2 gap-4">
  <div className="space-y-2 p-5 bg-emerald-50/30 rounded-[24px] border border-emerald-50 text-center">
- <p className="text-[10px] font-bold text-emerald-600 uppercase truncate whitespace-nowrap">Hoàn thành</p>
- <p className="text-3xl font-bold text-emerald-700 tabular-nums tracking-tighter">{stats.done}</p>
+ <p className="text-sm font-medium text-emerald-600 truncate whitespace-nowrap">Hoàn thành</p>
+ <p className="text-3xl font-bold text-emerald-700 tabular-nums">{stats.done}</p>
  </div>
  <div className="space-y-2 p-5 bg-amber-50/30 rounded-[24px] border border-amber-50 text-center">
- <p className="text-[10px] font-bold text-amber-600 uppercase truncate whitespace-nowrap">Đang chờ</p>
- <p className="text-3xl font-bold text-amber-700 tabular-nums tracking-tighter">{stats.pending}</p>
+ <p className="text-sm font-medium text-amber-600 truncate whitespace-nowrap">Đang chờ</p>
+ <p className="text-3xl font-bold text-amber-700 tabular-nums">{stats.pending}</p>
  </div>
  </div>
  </div>

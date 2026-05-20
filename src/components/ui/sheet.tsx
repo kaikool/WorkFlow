@@ -21,7 +21,7 @@ const SheetOverlay = React.forwardRef<
 >(({ className, ...props }, ref) => (
  <SheetPrimitive.Overlay
  className={cn(
- "fixed inset-0 z-50 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+ "fixed inset-0 z-50 bg-slate-950/45 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
  className
  )}
  {...props}
@@ -31,7 +31,7 @@ const SheetOverlay = React.forwardRef<
 SheetOverlay.displayName = SheetPrimitive.Overlay.displayName
 
 const sheetVariants = cva(
- "fixed z-50 gap-4 bg-background p-6 shadow-lg transition ease-in-out data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:duration-300 data-[state=open]:duration-500",
+ "fixed z-50 gap-5 bg-background p-5 shadow-2xl transition ease-in-out sm:p-6 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:duration-300 data-[state=open]:duration-500",
  {
  variants: {
  side: {
@@ -65,9 +65,9 @@ const SheetContent = React.forwardRef<
  {...props}
  >
  {children}
- <SheetPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary">
- <X className="h-4 w-4" />
- <span className="sr-only">Close</span>
+ <SheetPrimitive.Close className="absolute right-3 top-3 flex h-11 w-11 items-center justify-center rounded-xl text-slate-500 opacity-80 ring-offset-background transition-opacity hover:bg-slate-100 hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring/40 focus:ring-offset-1 disabled:pointer-events-none data-[state=open]:bg-secondary">
+ <X className="h-5 w-5" />
+ <span className="sr-only">Đóng</span>
  </SheetPrimitive.Close>
  </SheetPrimitive.Content>
  </SheetPortal>
@@ -80,7 +80,7 @@ const SheetHeader = ({
 }: React.HTMLAttributes<HTMLDivElement>) => (
  <div
  className={cn(
- "flex flex-col space-y-2 text-center sm:text-left",
+ "flex flex-col space-y-2 pr-10 text-left",
  className
  )}
  {...props}
@@ -94,7 +94,7 @@ const SheetFooter = ({
 }: React.HTMLAttributes<HTMLDivElement>) => (
  <div
  className={cn(
- "flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2",
+ "flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3",
  className
  )}
  {...props}
@@ -108,7 +108,7 @@ const SheetTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
  <SheetPrimitive.Title
  ref={ref}
- className={cn("text-lg font-semibold text-foreground", className)}
+ className={cn("text-lg font-semibold leading-tight text-foreground", className)}
  {...props}
  />
 ))

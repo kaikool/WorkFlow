@@ -3,12 +3,12 @@
 export const dynamic = 'force-dynamic';
 
 import React, { useState, useEffect } from "react";
-import { 
- Users, 
- Search, 
- ChevronRight, 
- Loader2, 
- Building2, 
+import {
+ Users,
+ Search,
+ ChevronRight,
+ Loader2,
+ Building2,
  UserPlus,
  Check,
  Copy
@@ -17,20 +17,20 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { 
- Dialog, 
- DialogContent, 
- DialogTitle, 
+import {
+ Dialog,
+ DialogContent,
+ DialogTitle,
  DialogTrigger,
  DialogFooter
 } from "@/components/ui/dialog";
-import { 
- Table, 
- TableBody, 
- TableCell, 
- TableHead, 
- TableHeader, 
- TableRow 
+import {
+ Table,
+ TableBody,
+ TableCell,
+ TableHead,
+ TableHeader,
+ TableRow
 } from '@/components/ui/table'
 import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/utils/supabase/client";
@@ -46,7 +46,7 @@ export default function TeamPage() {
  const [inviteUrl, setInviteUrl] = useState("");
  const [isCopied, setIsCopied] = useState(false);
  const [profile, setProfile] = useState<any>(null);
- 
+
  const { toast } = useToast();
  const supabase = createClient();
  const router = useRouter();
@@ -67,7 +67,7 @@ export default function TeamPage() {
  }
 
  let query = supabase.from('profiles').select(`*, departments (name)`);
- 
+
  // Lọc theo phòng ban nếu không phải Admin, Director hoặc Cán bộ Nhân sự
  if (currentProfile && currentProfile.role !== 'admin' && currentProfile.role !== 'director' && currentProfile.role !== 'hr_officer' && currentProfile.department_id) {
  query = query.eq('department_id', currentProfile.department_id);
@@ -75,7 +75,7 @@ export default function TeamPage() {
 
  const { data, error } = await query;
  if (error) throw error;
- 
+
   const sortedMembers = sortProfilesByHierarchy(data || []);
 
  setMembers(sortedMembers);
@@ -99,7 +99,7 @@ export default function TeamPage() {
  toast({ title: "Đã sao chép Link mời" });
  };
 
- const filteredMembers = members.filter(m => 
+ const filteredMembers = members.filter(m =>
  m.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
  m.departments?.name?.toLowerCase().includes(searchQuery.toLowerCase())
  );
@@ -120,7 +120,7 @@ export default function TeamPage() {
  <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-10 animate-fade-in-up pb-20">
  <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 pt-4 sm:pt-0">
  <div className="space-y-1">
- <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">
+ <h1 className="text-2xl font-semibold text-slate-900">
  Nhân sự
  </h1>
  <p className="text-[13px] text-slate-500 font-medium">Danh sách đội ngũ cán bộ</p>
@@ -159,14 +159,14 @@ export default function TeamPage() {
  <div className="flex items-center gap-2 bg-slate-50/60 p-1.5 rounded-2xl border border-slate-100/80 shadow-sm w-full h-13 sm:h-14">
    <div className="flex items-center gap-2 px-2 shrink-0">
      <Users className="w-4 h-4 text-primary shrink-0" />
-     <span className="text-xs font-bold text-slate-600 uppercase tracking-wider hidden sm:inline">Danh sách cán bộ ({filteredMembers.length})</span>
-     <span className="text-xs font-bold text-slate-600 tracking-wider inline sm:hidden">({filteredMembers.length})</span>
+     <span className="text-sm font-medium text-slate-600 hidden sm:inline">Danh sách cán bộ ({filteredMembers.length})</span>
+     <span className="text-sm font-medium text-slate-600 inline sm:hidden">({filteredMembers.length})</span>
    </div>
    <div className="relative flex-1 group">
      <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500 group-focus-within:text-primary transition-colors" />
-     <Input 
-       placeholder="Tìm kiếm cán bộ hoặc phòng ban..." 
-       className="w-full pl-9 pr-3 h-10 text-xs font-semibold bg-white border-slate-200/60 rounded-xl focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary transition-all" 
+     <Input
+       placeholder="Tìm kiếm cán bộ hoặc phòng ban..."
+       className="w-full pl-9 pr-3 h-10 text-sm font-medium bg-white border-slate-200/60 rounded-xl focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary transition-all"
        value={searchQuery}
        onChange={(e) => setSearchQuery(e.target.value)}
      />
@@ -185,8 +185,8 @@ export default function TeamPage() {
  </TableHeader>
  <TableBody>
  {filteredMembers.map((member) => (
- <TableRow 
- key={member.id} 
+ <TableRow
+ key={member.id}
  className="group hover:bg-slate-50/80 transition-all cursor-pointer border-b border-slate-50 h-16"
  onClick={() => router.push(`/dashboard/team/${member.id}`)}
  >
@@ -194,7 +194,7 @@ export default function TeamPage() {
  <div className="flex items-center gap-4">
  <Avatar className="h-9 w-9 border-2 border-white shadow-sm ring-1 ring-slate-100">
  <AvatarImage src={member.avatar_url} className="object-cover" />
- <AvatarFallback className="bg-primary text-white text-[10px] font-bold">{member.full_name?.[0]}</AvatarFallback>
+ <AvatarFallback className="bg-primary text-white text-sm font-medium">{member.full_name?.[0]}</AvatarFallback>
  </Avatar>
  <span className="text-sm font-bold text-slate-900 group-hover:text-primary transition-colors">{member.full_name}</span>
  </div>

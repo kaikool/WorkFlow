@@ -223,12 +223,12 @@ export function TodoDetailInner({ id }: { id: string }) {
         <Button variant="ghost" asChild className="p-0 hover:bg-transparent text-slate-500 hover:text-primary group">
           <Link href={isKpi ? "/dashboard/kpi" : "/dashboard/tasks"} className="flex items-center gap-2">
             <div className="p-2 rounded-xl group-hover:bg-primary/5"><ChevronLeft className="w-4 h-4" /></div>
-            <span className="text-[13px] font-medium">Quay lại danh sách</span>
+            <span className="text-sm font-medium">Quay lại danh sách</span>
           </Link>
         </Button>
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <Button variant="ghost" className="text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-xl px-4 h-10 text-[13px] font-medium">
+            <Button variant="ghost" className="text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-xl px-4 min-h-11 text-sm font-medium">
               <Trash2 className="w-4 h-4 mr-2" /> Xóa {isKpi ? "Kế hoạch KPIs" : "Công việc"}
             </Button>
           </AlertDialogTrigger>
@@ -238,8 +238,8 @@ export function TodoDetailInner({ id }: { id: string }) {
               <AlertDialogDescription className="text-slate-500 font-medium">Dữ liệu sẽ được gỡ khỏi hệ thống vĩnh viễn.</AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter className="mt-4 gap-3">
-              <AlertDialogCancel className="rounded-xl h-10 font-medium active:scale-95 transition-all">Quay lại</AlertDialogCancel>
-              <AlertDialogAction onClick={async () => { await supabase.from("tasks").delete().eq("id", id); router.push(isKpi ? "/dashboard/kpi" : "/dashboard/tasks") }} className="rounded-xl h-10 bg-red-600 font-medium hover:bg-red-700 text-white border-none active:scale-95 transition-all">Xác nhận xóa</AlertDialogAction>
+              <AlertDialogCancel className="rounded-xl min-h-11 font-medium active:scale-95 transition-all">Quay lại</AlertDialogCancel>
+              <AlertDialogAction onClick={async () => { await supabase.from("tasks").delete().eq("id", id); router.push(isKpi ? "/dashboard/kpi" : "/dashboard/tasks") }} className="rounded-xl min-h-11 bg-red-600 font-medium hover:bg-red-700 text-white border-none active:scale-95 transition-all">Xác nhận xóa</AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
@@ -251,10 +251,10 @@ export function TodoDetailInner({ id }: { id: string }) {
           <div className="premium-card p-6 border-none space-y-6 relative overflow-hidden">
             <div className="absolute -top-12 -right-12 opacity-5 pointer-events-none"><Target className="w-48 h-48 rotate-12 text-primary" /></div>
             <div className="flex items-center gap-2 relative z-10 flex-wrap">
-              <Badge className={cn("px-3 py-1 text-[11px] font-medium rounded-full border-none", isKpi ? "bg-primary text-white" : "bg-slate-100 text-slate-500")}>
+              <Badge className={cn("px-3 py-1 text-xs font-medium rounded-full border-none", isKpi ? "bg-primary text-white" : "bg-slate-100 text-slate-500")}>
                 {isKpi ? "Kế hoạch KPIs" : "Công việc nghiệp vụ"}
               </Badge>
-              {task.priority === "high" && <Badge className="bg-red-50 text-red-600 border-none text-[11px] px-3 py-1 rounded-full">Khẩn cấp</Badge>}
+              {task.priority === "high" && <Badge className="bg-red-50 text-red-600 border-none text-xs px-3 py-1 rounded-full">Khẩn cấp</Badge>}
             </div>
             {isEditingTask ? (
               <div className="relative z-10 space-y-4">
@@ -268,7 +268,7 @@ export function TodoDetailInner({ id }: { id: string }) {
             ) : (
               <>
                 <div className="flex justify-between items-start relative z-10">
-                  <h1 className="text-xl md:text-2xl font-semibold text-slate-900 tracking-tight leading-tight">{task.title}</h1>
+                  <h1 className="text-xl md:text-2xl font-semibold text-slate-900 leading-tight">{task.title}</h1>
                   {(task.created_by===profile?.id||profile?.role==="admin")&&<Button variant="ghost" size="sm" onClick={()=>{setEditData(task);setIsEditingTask(true)}} className="rounded-xl active:scale-95 transition-all">Sửa</Button>}
                 </div>
                 <div className="bg-slate-50/50 p-4 rounded-xl border border-slate-100/50 relative z-10">
@@ -281,41 +281,41 @@ export function TodoDetailInner({ id }: { id: string }) {
           {/* Progress / KPI card */}
           <div className="premium-card p-6 border-none space-y-6">
             <div className="flex items-center justify-between">
-              <h3 className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2 truncate whitespace-nowrap">
-                <TrendingUp className="w-4 h-4 text-primary" />{isKpi ? "TIẾN ĐỘ KẾ HOẠCH" : "TIẾN ĐỘ THỰC HIỆN"}
+              <h3 className="text-sm font-medium text-slate-500 flex items-center gap-2 truncate whitespace-nowrap">
+                <TrendingUp className="w-4 h-4 text-primary" />{isKpi ? "Tiến độ kế hoạch" : "Tiến độ thực hiện"}
               </h3>
-              <span className="text-3xl font-bold text-primary tracking-tighter tabular-nums">{displayProgress}%</span>
+              <span className="text-3xl font-bold text-primary tabular-nums">{displayProgress}%</span>
             </div>
             {isKpi ? (
               <div className="space-y-8">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 shadow-sm">
-                    <p className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2"><Target className="w-3 h-3"/>Mục tiêu cần đạt</p>
-                    <p className="text-2xl font-bold text-slate-900 tabular-nums">{task.target_value?.toLocaleString("vi-VN")} <span className="text-[11px] text-slate-500">{task.unit}</span></p>
+                    <p className="text-sm font-medium text-slate-500 flex items-center gap-2"><Target className="w-3 h-3"/>Mục tiêu cần đạt</p>
+                    <p className="text-2xl font-bold text-slate-900 tabular-nums">{task.target_value?.toLocaleString("vi-VN")} <span className="text-xs text-slate-500">{task.unit}</span></p>
                   </div>
                   <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10 shadow-sm">
-                    <p className="text-xs font-bold text-primary uppercase flex items-center gap-2"><Zap className="w-3 h-3"/>Thực tế ghi nhận</p>
-                    <p className="text-2xl font-bold text-primary tabular-nums">{(task.current_value||0).toLocaleString("vi-VN")} <span className="text-[11px] opacity-60">{task.unit}</span></p>
+                    <p className="text-sm font-medium text-primary flex items-center gap-2"><Zap className="w-3 h-3"/>Thực tế ghi nhận</p>
+                    <p className="text-2xl font-bold text-primary tabular-nums">{(task.current_value||0).toLocaleString("vi-VN")} <span className="text-xs opacity-60">{task.unit}</span></p>
                   </div>
                 </div>
                 <Progress value={Math.min(100,displayProgress)} className="h-2 bg-slate-50 shadow-inner" />
                 {canEdit && (
                   <div className="pt-6 border-t border-slate-50 space-y-4">
-                    <p className="text-[13px] font-medium text-primary">Cá nhân tôi đóng góp</p>
+                    <p className="text-sm font-medium text-primary">Cá nhân tôi đóng góp</p>
                     <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center">
                       <div className="flex items-center gap-2 bg-primary/5 p-1.5 rounded-xl border border-primary/10 w-full md:max-w-xs">
                         <Button type="button" variant="ghost" onClick={()=>adjustValue(-1)} className="h-11 w-11 rounded-xl hover:bg-white text-primary active:scale-95 transition-all"><Minus className="w-4 h-4"/></Button>
-                        <Input type="number" value={currentValue} onChange={e=>setCurrentValue(e.target.value)} className="h-10 bg-transparent border-none shadow-none text-center font-bold text-xl px-2 focus-visible:ring-0 text-primary" />
+                        <Input type="number" value={currentValue} onChange={e=>setCurrentValue(e.target.value)} className="min-h-11 bg-transparent border-none shadow-none text-center font-bold text-xl px-2 focus-visible:ring-0 text-primary" />
                         <Button type="button" variant="ghost" onClick={()=>adjustValue(1)} className="h-11 w-11 rounded-xl hover:bg-white text-primary active:scale-95 transition-all"><PlusIcon className="w-4 h-4"/></Button>
                       </div>
-                      <Button onClick={handleUpdateAchievement} disabled={saving} className="bg-primary hover:bg-primary/90 h-10 px-5 rounded-xl font-medium w-full md:w-auto active:scale-95 transition-all">
+                      <Button onClick={handleUpdateAchievement} disabled={saving} className="bg-primary hover:bg-primary/90 min-h-11 px-5 rounded-xl font-medium w-full md:w-auto active:scale-95 transition-all">
                         {saving?<Loader2 className="w-4 h-4 animate-spin mr-2"/>:<CheckCircle2 className="w-3.5 h-3.5 mr-2"/>}Cập nhật đóng góp
                       </Button>
                     </div>
                   </div>
                 )}
                 <div className="pt-6 border-t border-slate-50 space-y-4">
-                  <h4 className="text-[13px] font-medium text-slate-500">Tổng hợp đóng góp thực tế</h4>
+                  <h4 className="text-sm font-medium text-slate-500">Tổng hợp đóng góp thực tế</h4>
                   <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm">
                     {assignees.map((a,idx)=>{
                       const contrib=task.metadata?.contributions?.[a.user_id]||0
@@ -326,20 +326,20 @@ export function TodoDetailInner({ id }: { id: string }) {
                             <div className="flex items-center gap-3 min-w-0 flex-1">
                               <Avatar className="h-8 w-8 shrink-0 border border-white shadow-sm ring-1 ring-slate-100">
                                 <AvatarImage src={a.profile?.avatar_url} className="object-cover"/>
-                                <AvatarFallback className="text-[9px] font-bold bg-slate-100 text-slate-500">{a.profile?.full_name?.[0]}</AvatarFallback>
+                                <AvatarFallback className="text-sm font-medium bg-slate-100 text-slate-500">{a.profile?.full_name?.[0]}</AvatarFallback>
                               </Avatar>
-                              <span className={cn("text-xs font-bold truncate",a.user_id===profile?.id?"text-primary":"text-slate-700")}>{a.profile?.full_name}</span>
+                              <span className={cn("text-sm font-medium truncate",a.user_id===profile?.id?"text-primary":"text-slate-700")}>{a.profile?.full_name}</span>
                             </div>
                             <div className="flex items-center gap-4 shrink-0">
                               {isLeader?(
                                 <div className="relative max-w-[110px]">
-                                  <input type="number" value={contrib} onChange={e=>handleLeaderUpdateContribution(a.user_id,parseInt(e.target.value)||0)} className="w-full h-10 md:h-8 bg-slate-50/50 border border-slate-100 rounded-lg text-right text-base md:text-[11px] font-bold px-2 pr-14 focus:outline-none focus:bg-white focus:border-primary/30 transition-all [appearance:textfield]"/>
-                                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[7px] font-bold text-slate-500 uppercase pointer-events-none truncate max-w-[45px]">{task.unit}</span>
+                                  <input type="number" value={contrib} onChange={e=>handleLeaderUpdateContribution(a.user_id,parseInt(e.target.value)||0)} className="w-full min-h-11 md:min-h-10 bg-slate-50/50 border border-slate-100 rounded-lg text-right text-base md:text-sm font-medium px-2 pr-14 focus:outline-none focus:bg-white focus:border-primary/30 transition-all [appearance:textfield]"/>
+                                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-sm font-medium text-slate-500 pointer-events-none truncate max-w-[45px]">{task.unit}</span>
                                 </div>
                               ):(
-                                <p className="font-bold text-slate-900 text-[11px]">{contrib.toLocaleString("vi-VN")} <span className="text-[8px] text-slate-500">{task.unit}</span></p>
+                                <p className="font-bold text-slate-900 text-xs">{contrib.toLocaleString("vi-VN")} <span className="text-xs text-slate-500">{task.unit}</span></p>
                               )}
-                              <span className="text-xs font-bold text-primary min-w-[30px] text-right">{weight}%</span>
+                              <span className="text-sm font-medium text-primary min-w-[30px] text-right">{weight}%</span>
                             </div>
                           </div>
                           <div className="w-full h-1.5 bg-slate-50 rounded-full overflow-hidden shadow-inner">
@@ -350,11 +350,11 @@ export function TodoDetailInner({ id }: { id: string }) {
                     })}
                     {isLeader && (
                       <div className="bg-slate-50/50 border-t border-slate-100 p-4 sm:p-5 flex items-center justify-between">
-                        <span className="text-[12px] font-medium text-primary/60 flex items-center gap-2"><TrendingUp className="w-4 h-4"/>Hiệu chỉnh phòng</span>
+                        <span className="text-xs font-medium text-primary/60 flex items-center gap-2"><TrendingUp className="w-4 h-4"/>Hiệu chỉnh phòng</span>
                         <div className="flex items-center gap-2 bg-white p-1 rounded-xl border border-slate-200/60 shadow-sm">
-                          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-primary hover:bg-primary/5" onClick={()=>handleGeneralAdjustment(-1)}><Minus className="w-4 h-4"/></Button>
+                          <Button variant="ghost" size="icon" className="h-11 w-11 rounded-xl text-primary hover:bg-primary/5" onClick={()=>handleGeneralAdjustment(-1)}><Minus className="w-4 h-4"/></Button>
                           <span className="min-w-[40px] text-center font-bold text-sm text-slate-900">{(task.metadata?.general_adjustment||0).toLocaleString("vi-VN")}</span>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-primary hover:bg-primary/5" onClick={()=>handleGeneralAdjustment(1)}><PlusIcon className="w-4 h-4"/></Button>
+                          <Button variant="ghost" size="icon" className="h-11 w-11 rounded-xl text-primary hover:bg-primary/5" onClick={()=>handleGeneralAdjustment(1)}><PlusIcon className="w-4 h-4"/></Button>
                         </div>
                       </div>
                     )}
@@ -370,7 +370,7 @@ export function TodoDetailInner({ id }: { id: string }) {
                 </div>
                 <div className="flex justify-between px-1">
                   {["Tiếp nhận","Thực hiện","Kiểm soát","Hoàn tất"].map((label,i)=>(
-                    <span key={i} className={cn("text-[11px] font-medium transition-colors",(task.progress||0)>=(i+1)*25?"text-primary":"text-slate-500")}>{label}</span>
+                    <span key={i} className={cn("text-xs font-medium transition-colors",(task.progress||0)>=(i+1)*25?"text-primary":"text-slate-500")}>{label}</span>
                   ))}
                 </div>
               </div>
@@ -379,8 +379,8 @@ export function TodoDetailInner({ id }: { id: string }) {
 
           {/* Thảo luận */}
           <div className="space-y-6 pt-4">
-            <h3 className="text-xs font-bold text-slate-500 uppercase pl-2 flex items-center gap-2 truncate whitespace-nowrap">
-              <MessageSquare className="w-4 h-4 text-primary"/>LUỒNG THẢO LUẬN
+            <h3 className="text-sm font-medium text-slate-500 pl-2 flex items-center gap-2 truncate whitespace-nowrap">
+              <MessageSquare className="w-4 h-4 text-primary"/>Luồng thảo luận
             </h3>
             <div className="space-y-4">
               {comments.map(c=>(
@@ -392,16 +392,16 @@ export function TodoDetailInner({ id }: { id: string }) {
                   <div className="space-y-2 flex-1 min-w-0">
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-bold text-slate-900">{c.user?.full_name}</span>
-                      <span className="text-[11px] text-slate-500 font-medium">{new Date(c.created_at).toLocaleDateString("vi-VN")}</span>
+                      <span className="text-xs text-slate-500 font-medium">{new Date(c.created_at).toLocaleDateString("vi-VN")}</span>
                     </div>
-                    <p className="text-[13px] text-slate-600 font-medium leading-relaxed bg-slate-50/50 p-3 rounded-2xl rounded-tl-none">{c.content}</p>
+                    <p className="text-sm text-slate-600 font-medium leading-relaxed bg-slate-50/50 p-3 rounded-2xl rounded-tl-none">{c.content}</p>
                   </div>
                 </div>
               ))}
             </div>
             <form onSubmit={handlePostComment} className="flex gap-3 pt-2">
-              <Input placeholder="Nhập nội dung trao đổi..." className="finance-input flex-1 h-10 text-[14px] font-medium" value={newComment} onChange={e=>setNewComment(e.target.value)} disabled={posting}/>
-              <Button type="submit" disabled={posting||!newComment.trim()} className="h-10 w-10 rounded-xl bg-slate-900 hover:bg-black shadow-sm shrink-0 p-0"><Send className="w-5 h-5 text-white"/></Button>
+              <Input placeholder="Nhập nội dung trao đổi..." className="finance-input flex-1 min-h-11 text-sm font-medium" value={newComment} onChange={e=>setNewComment(e.target.value)} disabled={posting}/>
+              <Button type="submit" disabled={posting||!newComment.trim()} className="min-h-11 w-10 rounded-xl bg-slate-900 hover:bg-black shadow-sm shrink-0 p-0"><Send className="w-5 h-5 text-white"/></Button>
             </form>
           </div>
         </div>
@@ -410,14 +410,14 @@ export function TodoDetailInner({ id }: { id: string }) {
         <div className="lg:col-span-4 space-y-6">
           <div className="premium-card p-6 border-none space-y-6">
             <div className="space-y-4">
-              <p className="text-[13px] font-medium text-slate-500">Trạng thái hiện tại</p>
+              <p className="text-sm font-medium text-slate-500">Trạng thái hiện tại</p>
               <Select disabled={(!canEdit&&task.created_by!==profile?.id)||saving} value={task.status} onValueChange={handleUpdateStatus}>
-                <SelectTrigger className={cn("h-11 rounded-xl border-none shadow-sm flex items-center justify-between px-4 font-medium text-[14px] transition-all",curStatus.bg,curStatus.color)}>
+                <SelectTrigger className={cn("h-11 rounded-xl border-none shadow-sm flex items-center justify-between px-4 font-medium text-sm transition-all",curStatus.bg,curStatus.color)}>
                   <SelectValue/>
                 </SelectTrigger>
                  <SelectContent className="rounded-xl border border-slate-200 shadow-lg p-1.5 min-w-[200px]">
                   {Object.entries(STATUS_MAP).map(([key,val])=>(
-                    <SelectItem key={key} value={key} className="rounded-lg py-2 font-medium text-[13px]">
+                    <SelectItem key={key} value={key} className="rounded-lg py-2 font-medium text-sm">
                       <div className="flex items-center gap-3">
                         <div className={cn("w-2 h-2 rounded-full",key==="done"?"bg-emerald-500":key==="doing"?"bg-primary":key==="late"?"bg-red-500":"bg-slate-300")}/>
                         {val.label}
@@ -430,7 +430,7 @@ export function TodoDetailInner({ id }: { id: string }) {
 
             {isKpi&&isCreatorOrAdmin&&(
               <div className="pt-2">
-                <Button onClick={handleToggleFocal} variant={task.metadata?.is_focal?"default":"outline"} className={cn("w-full h-10 rounded-xl font-medium text-[13px] gap-2",task.metadata?.is_focal?"bg-amber-400 hover:bg-amber-500 text-white border-none shadow-lg shadow-amber-200":"bg-slate-50 border-none text-slate-500 hover:bg-slate-100")}>
+                <Button onClick={handleToggleFocal} variant={task.metadata?.is_focal?"default":"outline"} className={cn("w-full min-h-11 rounded-xl font-medium text-sm gap-2",task.metadata?.is_focal?"bg-amber-400 hover:bg-amber-500 text-white border-none shadow-lg shadow-amber-200":"bg-slate-50 border-none text-slate-500 hover:bg-slate-100")}>
                   <Star className={cn("w-4 h-4",task.metadata?.is_focal&&"fill-current")}/>{task.metadata?.is_focal?"Kế hoạch KPIs trọng tâm":"Ghim làm Kế hoạch trọng tâm"}
                 </Button>
               </div>
@@ -438,18 +438,18 @@ export function TodoDetailInner({ id }: { id: string }) {
 
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <p className="text-xs font-bold text-slate-500 uppercase pl-1 truncate whitespace-nowrap">Cán bộ tiếp nhận</p>
+                <p className="text-sm font-medium text-slate-500 pl-1 truncate whitespace-nowrap">Cán bộ tiếp nhận</p>
                 {(profile?.role==="manager"||profile?.role==="admin")&&(
                   <Popover open={delegationOpen} onOpenChange={setDelegationOpen}>
-                    <PopoverTrigger asChild><Button variant="ghost" size="sm" className="h-7 text-[11px] font-bold text-primary hover:bg-primary/5">Phân công</Button></PopoverTrigger>
+                    <PopoverTrigger asChild><Button variant="ghost" size="sm" className="min-h-10 text-sm font-medium text-primary hover:bg-primary/5">Phân công</Button></PopoverTrigger>
                     <PopoverContent className="w-[260px] p-3 rounded-xl shadow-xl border-slate-200" align="end">
                       <div className="space-y-3">
-                        <h4 className="font-bold text-[13px] text-slate-900">Phân công cho cán bộ</h4>
+                        <h4 className="font-bold text-sm text-slate-900">Phân công cho cán bộ</h4>
                         <Select value={selectedDelegate} onValueChange={setSelectedDelegate}>
-                          <SelectTrigger className="w-full h-9 text-[12px] rounded-lg bg-slate-50 border-slate-200"><SelectValue placeholder="Chọn cán bộ..."/></SelectTrigger>
-                          <SelectContent className="rounded-lg">{deptProfiles.map(p=><SelectItem key={p.id} value={p.id} className="text-[12px]">{p.full_name}</SelectItem>)}</SelectContent>
+                          <SelectTrigger className="w-full min-h-11 text-xs rounded-lg bg-slate-50 border-slate-200"><SelectValue placeholder="Chọn cán bộ..."/></SelectTrigger>
+                          <SelectContent className="rounded-lg">{deptProfiles.map(p=><SelectItem key={p.id} value={p.id} className="text-xs">{p.full_name}</SelectItem>)}</SelectContent>
                         </Select>
-                        <Button onClick={handleDelegate} disabled={saving} className="w-full h-9 rounded-lg text-[12px] bg-primary">Xác nhận</Button>
+                        <Button onClick={handleDelegate} disabled={saving} className="w-full min-h-11 rounded-lg text-xs bg-primary">Xác nhận</Button>
                       </div>
                     </PopoverContent>
                   </Popover>
@@ -458,17 +458,17 @@ export function TodoDetailInner({ id }: { id: string }) {
               <div className="space-y-2">
                 {assignees.length>0 ? assignees.map(a=>(
                   <div key={a.user_id} className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
-                    <Avatar className="h-8 w-8 border border-white shadow-sm"><AvatarImage src={a.profile?.avatar_url} className="object-cover"/><AvatarFallback className="bg-primary text-white text-[9px] font-bold">{a.profile?.full_name?.[0]}</AvatarFallback></Avatar>
-                    <div className="flex flex-col"><span className="text-xs font-bold text-slate-900">{a.profile?.full_name}</span><span className="text-xs font-bold text-slate-500 uppercase truncate whitespace-nowrap">Cán bộ</span></div>
+                    <Avatar className="h-8 w-8 border border-white shadow-sm"><AvatarImage src={a.profile?.avatar_url} className="object-cover"/><AvatarFallback className="bg-primary text-white text-sm font-medium">{a.profile?.full_name?.[0]}</AvatarFallback></Avatar>
+                    <div className="flex flex-col"><span className="text-sm font-medium text-slate-900">{a.profile?.full_name}</span><span className="text-sm font-medium text-slate-500 truncate whitespace-nowrap">Cán bộ</span></div>
                   </div>
                 )) : task.assignee ? (
                   <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
-                    <Avatar className="h-8 w-8"><AvatarImage src={task.assignee?.avatar_url} className="object-cover"/><AvatarFallback className="bg-primary text-white text-[9px] font-bold">{task.assignee?.full_name?.[0]}</AvatarFallback></Avatar>
-                    <span className="text-xs font-bold text-slate-900">{task.assignee?.full_name}</span>
+                    <Avatar className="h-8 w-8"><AvatarImage src={task.assignee?.avatar_url} className="object-cover"/><AvatarFallback className="bg-primary text-white text-sm font-medium">{task.assignee?.full_name?.[0]}</AvatarFallback></Avatar>
+                    <span className="text-sm font-medium text-slate-900">{task.assignee?.full_name}</span>
                   </div>
                 ) : (
                   <div className="p-4 bg-primary/5 rounded-xl border border-primary/10 text-center">
-                    <p className="text-xs font-bold text-primary uppercase truncate whitespace-nowrap">{task.department?.name||"PHÒNG NGHIỆP VỤ"}</p>
+                    <p className="text-sm font-medium text-primary truncate whitespace-nowrap">{task.department?.name||"Phòng nghiệp vụ"}</p>
                   </div>
                 )}
               </div>
@@ -476,26 +476,26 @@ export function TodoDetailInner({ id }: { id: string }) {
 
             <div className="pt-4 border-t border-slate-50 grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <p className="text-xs font-bold text-slate-500 uppercase pl-1 truncate whitespace-nowrap">Hạn chót</p>
-                <div className="flex items-center gap-2 text-xs font-bold text-slate-900 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                <p className="text-sm font-medium text-slate-500 pl-1 truncate whitespace-nowrap">Hạn chót</p>
+                <div className="flex items-center gap-2 text-sm font-medium text-slate-900 p-3 bg-slate-50 rounded-xl border border-slate-100">
                   <Flag className="w-3.5 h-3.5 text-primary"/>{new Date(task.due_date).toLocaleDateString("vi-VN")}
                 </div>
               </div>
               <div className="space-y-2">
-                <p className="text-xs font-bold text-slate-500 uppercase pl-1 truncate whitespace-nowrap">Mức độ</p>
-                <div className="flex items-center gap-2 text-xs font-bold text-slate-900 p-3 bg-slate-50 rounded-xl border border-slate-100">
-                  <Flag className={cn("w-3.5 h-3.5",task.priority==="high"?"text-red-500":"text-primary")}/>{task.priority==="high"?"KHẨN":"THƯỜNG"}
+                <p className="text-sm font-medium text-slate-500 pl-1 truncate whitespace-nowrap">Mức độ</p>
+                <div className="flex items-center gap-2 text-sm font-medium text-slate-900 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                  <Flag className={cn("w-3.5 h-3.5",task.priority==="high"?"text-red-500":"text-primary")}/>{task.priority==="high"?"Khẩn":"Thường"}
                 </div>
               </div>
             </div>
 
             <div className="pt-6 border-t border-slate-50 space-y-3">
-              <p className="text-xs font-bold text-slate-500 uppercase pl-1 truncate whitespace-nowrap">Khởi tạo bởi</p>
+              <p className="text-sm font-medium text-slate-500 pl-1 truncate whitespace-nowrap">Khởi tạo bởi</p>
               <div className="flex items-center gap-3 px-1">
-                <Avatar className="h-7 w-7 border border-white shadow-sm"><AvatarImage src={task.creator?.avatar_url} className="object-cover"/><AvatarFallback className="text-[8px] font-bold">{task.creator?.full_name?.[0]}</AvatarFallback></Avatar>
+                <Avatar className="h-8 w-8 border border-white shadow-sm"><AvatarImage src={task.creator?.avatar_url} className="object-cover"/><AvatarFallback className="text-sm font-medium">{task.creator?.full_name?.[0]}</AvatarFallback></Avatar>
                 <div className="flex flex-col">
-                  <span className="text-xs font-bold text-slate-900 leading-none">{task.creator?.full_name}</span>
-                  <span className="text-[9px] font-medium text-slate-500">{task.creator?.departments?.name}</span>
+                  <span className="text-sm font-medium text-slate-900 leading-none">{task.creator?.full_name}</span>
+                  <span className="text-xs font-medium text-slate-500">{task.creator?.departments?.name}</span>
                 </div>
               </div>
             </div>

@@ -35,8 +35,8 @@ export default function LeaveApprovalDashboard({ schedules, profile, onStatusUpd
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between pl-1">
-        <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-          <Calendar className="w-4 h-4 text-primary" /> ĐƠN NGHỈ PHÉP CHỜ DUYỆT ({pendingLeaves.length})
+        <h3 className="text-sm font-medium text-slate-500 flex items-center gap-2">
+          <Calendar className="w-4 h-4 text-primary" /> Đơn nghỉ phép chờ duyệt ({pendingLeaves.length})
         </h3>
       </div>
 
@@ -60,13 +60,13 @@ export default function LeaveApprovalDashboard({ schedules, profile, onStatusUpd
                   <div className="flex items-center gap-3">
                     <Avatar className="h-10 w-10 border border-slate-100 shadow-sm">
                       <AvatarImage src={leave.creator?.avatar_url} />
-                      <AvatarFallback className="font-bold text-xs bg-slate-100 text-slate-700">
+                      <AvatarFallback className="font-medium text-sm bg-slate-100 text-slate-700">
                         {leave.creator?.full_name?.[0]}
                       </AvatarFallback>
                     </Avatar>
                     <div>
                       <p className="text-sm font-bold text-slate-900">{leave.creator?.full_name || "Cán bộ"}</p>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">CÁN BỘ XIN NGHỈ</p>
+                      <p className="text-sm font-medium text-slate-400">Cán bộ xin nghỉ</p>
                     </div>
                   </div>
 
@@ -79,7 +79,7 @@ export default function LeaveApprovalDashboard({ schedules, profile, onStatusUpd
                   </div>
 
                   {/* Thời gian */}
-                  <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 pl-1">
+                  <div className="flex items-center gap-2 text-sm font-medium text-slate-500 pl-1">
                     <Clock className="w-4 h-4 text-slate-400 shrink-0" />
                     <span>
                       {startDate.toLocaleDateString('vi-VN')} - {endDate.toLocaleDateString('vi-VN')}
@@ -94,13 +94,13 @@ export default function LeaveApprovalDashboard({ schedules, profile, onStatusUpd
                     variant="ghost"
                     className="flex-1 hover:bg-rose-50 hover:text-rose-600 text-slate-500 rounded-2xl font-bold h-11 text-xs gap-1.5 transition-colors"
                   >
-                    <X className="w-4 h-4" /> TỪ CHỐI
+                    <X className="w-4 h-4" /> Từ chối
                   </Button>
                   <Button
                     onClick={() => onStatusUpdate(leave.id, 'approved')}
                     className="flex-1 bg-slate-900 hover:bg-black text-white rounded-2xl font-bold h-11 text-xs gap-1.5 shadow-md active:scale-95 transition-all"
                   >
-                    <Check className="w-4 h-4" /> PHÊ DUYỆT
+                    <Check className="w-4 h-4" /> Phê duyệt
                   </Button>
                 </div>
               </div>

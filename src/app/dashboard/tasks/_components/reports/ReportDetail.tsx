@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast"
 import { cn, compareProfilesByHierarchy, sortProfilesByHierarchy } from "@/lib/utils"
 import { createClient } from "@/utils/supabase/client"
 import Link from "next/link"
+import { DeadlineProgress } from "../DeadlineProgress"
 
 export function ReportDetail({ id }: { id: string }) {
   const router = useRouter()
@@ -98,7 +99,7 @@ export function ReportDetail({ id }: { id: string }) {
     if (!assigneeId) { toast({ variant: "destructive", title: "Không thể nhắc nhở", description: `Phòng ${deptName} chưa có cán bộ tiếp nhận.` }); return }
     setRemindingId(sibId)
     try {
-      await supabase.from("notifications").insert({ user_id: assigneeId, title: "Nhắc hoàn thành báo cáo [HỎA TỐC]", content: `${profile?.full_name} nhắc hoàn thành báo cáo "${task.title}" của phòng ${deptName}`, link: `/dashboard/tasks/${sibId}` })
+      await supabase.from("notifications").insert({ user_id: assigneeId, title: "Nhắc hoàn thành báo cáo [Hỏa tốc]", content: `${profile?.full_name} nhắc hoàn thành báo cáo "${task.title}" của phòng ${deptName}`, link: `/dashboard/tasks/${sibId}` })
       toast({ title: "Đã gửi nhắc nhở", description: `Gửi thông báo thành công tới phòng ${deptName}!` })
     } catch (err: any) { toast({ variant: "destructive", title: "Lỗi", description: err.message }) }
     finally { setRemindingId(null) }
@@ -112,7 +113,7 @@ export function ReportDetail({ id }: { id: string }) {
     if (assigned.length === 0) { toast({ variant: "destructive", title: "Không thể nhắc nhở", description: "Các phòng chưa có cán bộ tiếp nhận." }); return }
     setIsRemindingAll(true)
     try {
-      await supabase.from("notifications").insert(assigned.map(r => ({ user_id: r.assignee_id, title: "Nhắc hoàn thành báo cáo [HỎA TỐC]", content: `Khẩn trương hoàn thành báo cáo "${task.title}".`, link: `/dashboard/tasks/${r.id}` })))
+      await supabase.from("notifications").insert(assigned.map(r => ({ user_id: r.assignee_id, title: "Nhắc hoàn thành báo cáo [Hỏa tốc]", content: `Khẩn trương hoàn thành báo cáo "${task.title}".`, link: `/dashboard/tasks/${r.id}` })))
       toast({ title: "Đã đôn đốc hỏa tốc!", description: `Đã gửi tới ${assigned.length} phòng.${unassigned.length>0?` Không gửi được: ${unassigned.join(", ")}` : ""}` })
     } catch (err: any) { toast({ variant: "destructive", title: "Lỗi", description: err.message }) }
     finally { setIsRemindingAll(false) }
@@ -186,13 +187,13 @@ export function ReportDetail({ id }: { id: string }) {
         <Button variant="ghost" asChild className="p-0 hover:bg-transparent text-slate-500 hover:text-primary group">
           <Link href="/dashboard/tasks" className="flex items-center gap-2">
             <div className="p-2 rounded-xl group-hover:bg-primary/5"><ChevronLeft className="w-4 h-4"/></div>
-            <span className="text-[13px] font-medium">Quay lại danh sách</span>
+            <span className="text-sm font-medium">Quay lại danh sách</span>
           </Link>
         </Button>
         {isCreatorOrAdmin && (
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="ghost" className="text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-xl px-4 h-10 text-[13px] font-medium active:scale-95 transition-all">
+              <Button variant="ghost" className="text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-xl px-4 min-h-11 text-sm font-medium active:scale-95 transition-all">
                 <Trash2 className="w-4 h-4 mr-2"/>Xóa báo cáo
               </Button>
             </AlertDialogTrigger>
@@ -202,8 +203,8 @@ export function ReportDetail({ id }: { id: string }) {
                 <AlertDialogDescription className="text-slate-500 font-medium">Dữ liệu sẽ được gỡ khỏi hệ thống vĩnh viễn.</AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter className="mt-4 gap-3">
-                <AlertDialogCancel className="rounded-xl h-10 font-medium active:scale-95 transition-all">Quay lại</AlertDialogCancel>
-                <AlertDialogAction onClick={async()=>{ await supabase.from("tasks").delete().eq("id",id); router.push("/dashboard/tasks") }} className="rounded-xl h-10 bg-red-600 font-medium hover:bg-red-700 text-white border-none active:scale-95 transition-all">Xác nhận xóa</AlertDialogAction>
+                <AlertDialogCancel className="rounded-xl min-h-11 font-medium active:scale-95 transition-all">Quay lại</AlertDialogCancel>
+                <AlertDialogAction onClick={async()=>{ await supabase.from("tasks").delete().eq("id",id); router.push("/dashboard/tasks") }} className="rounded-xl min-h-11 bg-red-600 font-medium hover:bg-red-700 text-white border-none active:scale-95 transition-all">Xác nhận xóa</AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
@@ -215,8 +216,8 @@ export function ReportDetail({ id }: { id: string }) {
           {/* Header card */}
           <div className="premium-card p-6 border-none space-y-6">
             <div className="flex items-center gap-2 flex-wrap">
-              <Badge className="px-3 py-1 text-[11px] font-medium rounded-full border-none bg-slate-900 text-white">Yêu cầu báo cáo</Badge>
-              {task.priority === "high" && <Badge className="bg-red-50 text-red-600 border-none text-[11px] px-3 py-1 rounded-full">Khẩn cấp</Badge>}
+              <Badge className="px-3 py-1 text-xs font-medium rounded-full border-none bg-slate-900 text-white">Yêu cầu báo cáo</Badge>
+              {task.priority === "high" && <Badge className="bg-red-50 text-red-600 border-none text-xs px-3 py-1 rounded-full">Khẩn cấp</Badge>}
             </div>
             {isEditingTask ? (
               <div className="space-y-4">
@@ -230,12 +231,17 @@ export function ReportDetail({ id }: { id: string }) {
             ) : (
               <>
                 <div className="flex justify-between items-start">
-                  <h1 className="text-xl md:text-2xl font-semibold text-slate-900 tracking-tight leading-tight">{task.title}</h1>
+                  <h1 className="text-xl md:text-2xl font-semibold text-slate-900 leading-tight">{task.title}</h1>
                   {isCreatorOrAdmin && <Button variant="ghost" size="sm" onClick={()=>{setEditData(task);setIsEditingTask(true)}} className="rounded-xl active:scale-95 transition-all">Sửa</Button>}
                 </div>
                 <div className="bg-slate-50/50 p-4 rounded-xl border border-slate-100/50">
                   <p className="text-sm text-slate-500 font-medium leading-relaxed italic">"{task.description||"Chưa có mô tả chi tiết."}"</p>
                 </div>
+                <DeadlineProgress
+                  createdAt={task.created_at}
+                  dueDate={task.due_date}
+                  done={task.status === "done"}
+                />
               </>
             )}
           </div>
@@ -245,18 +251,18 @@ export function ReportDetail({ id }: { id: string }) {
             <div className="premium-card p-6 border-none space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
                 <div>
-                  <h3 className="text-xs font-bold text-slate-900 uppercase flex items-center gap-2"><Target className="w-4 h-4"/>Theo dõi tiến độ các phòng ban</h3>
-                  <p className="text-[11px] text-slate-500 font-medium mt-1">Tổng số: {siblingReports.length} đơn vị nhận yêu cầu</p>
+                  <h3 className="text-sm font-medium text-slate-900 flex items-center gap-2"><Target className="w-4 h-4"/>Theo dõi tiến độ các phòng ban</h3>
+                  <p className="text-xs text-slate-500 font-medium mt-1">Tổng số: {siblingReports.length} đơn vị nhận yêu cầu</p>
                 </div>
                 <div className="flex gap-2">
-                  <Badge className="bg-emerald-50 text-emerald-600 border-none font-bold text-[10px]">ĐÃ NỘP: {siblingReports.filter(r=>r.status==="done").length}</Badge>
-                  <Badge className="bg-amber-50 text-amber-600 border-none font-bold text-[10px]">CHƯA NỘP: {siblingReports.filter(r=>r.status!=="done").length}</Badge>
+                  <Badge className="bg-emerald-50 text-emerald-600 border-none font-medium text-sm">Đã nộp: {siblingReports.filter(r=>r.status==="done").length}</Badge>
+                  <Badge className="bg-amber-50 text-amber-600 border-none font-medium text-sm">Chưa nộp: {siblingReports.filter(r=>r.status!=="done").length}</Badge>
                 </div>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse text-left">
                   <thead>
-                    <tr className="border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                    <tr className="border-b border-slate-100 text-sm font-medium text-slate-400">
                       <th className="pb-3 pl-2 w-1/2">Đơn vị tiếp nhận</th>
                       <th className="pb-3 w-1/2 text-right pr-2">Ghi nhận nộp</th>
                     </tr>
@@ -277,7 +283,7 @@ export function ReportDetail({ id }: { id: string }) {
                           <td className="py-4 text-right pr-2">
                             <div className="flex items-center justify-end gap-2" onClick={e=>e.stopPropagation()}>
                               <Checkbox checked={isDone} disabled={!isCreatorOrAdmin} onCheckedChange={()=>handleToggleSiblingStatus(sib.id,sib.status)} className="h-4.5 w-4.5 rounded border-slate-300 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500"/>
-                              <span className={cn("text-[11px] font-bold cursor-pointer select-none",isDone?"text-emerald-600":"text-slate-400")} onClick={()=>isCreatorOrAdmin&&handleToggleSiblingStatus(sib.id,sib.status)}>
+                              <span className={cn("text-sm font-medium cursor-pointer select-none",isDone?"text-emerald-600":"text-slate-400")} onClick={()=>isCreatorOrAdmin&&handleToggleSiblingStatus(sib.id,sib.status)}>
                                 {isDone?"Đã nộp":"Chưa nộp"}
                               </span>
                             </div>
@@ -290,7 +296,7 @@ export function ReportDetail({ id }: { id: string }) {
               </div>
               {siblingReports.some(r=>r.status!=="done")&&(
                 <div className="pt-4 border-t border-slate-100 flex justify-center">
-                  <Button disabled={isRemindingAll} onClick={handleSendReminderAll} className="bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border-none rounded-xl text-[11px] font-bold h-9 px-5 shadow-sm active:scale-95 flex items-center gap-2">
+                  <Button disabled={isRemindingAll} onClick={handleSendReminderAll} className="bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border-none rounded-xl text-sm font-medium min-h-11 px-5 shadow-sm active:scale-95 flex items-center gap-2">
                     {isRemindingAll?<Loader2 className="w-3.5 h-3.5 animate-spin"/>:<Zap className="w-3.5 h-3.5 fill-current"/>}Nhắc báo cáo
                   </Button>
                 </div>
@@ -299,7 +305,7 @@ export function ReportDetail({ id }: { id: string }) {
           ) : (
             <div className="flex items-center justify-center p-2">
               <Button disabled={!canEdit||saving} onClick={async()=>{ try { const val=(task.progress||0)>=100?0:100; const ns=val>=100?"done":"todo"; await supabase.from("tasks").update({progress:val,status:ns}).eq("id",id); if(task.created_by&&task.created_by!==profile?.id) await supabase.from("notifications").insert({user_id:task.created_by,title:`Tiến độ mới: ${task.title}`,content:`${profile?.full_name} đã ${val>=100?"xác nhận nộp":"hủy nộp"} báo cáo.`,link:`/dashboard/tasks/${id}`}); setTask({...task,progress:val,status:ns}) } catch(err:any){toast({variant:"destructive",title:"Lỗi",description:err.message})} }}
-                className={cn("w-full sm:max-w-[300px] h-12 rounded-xl font-bold transition-all shadow-sm flex items-center justify-center gap-2 text-[14px] active:scale-95",(task.progress||0)>=100?"bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/50":"bg-primary text-white hover:bg-primary/90")}>
+                className={cn("w-full sm:max-w-[300px] min-h-12 rounded-xl font-bold transition-all shadow-sm flex items-center justify-center gap-2 text-sm active:scale-95",(task.progress||0)>=100?"bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/50":"bg-primary text-white hover:bg-primary/90")}>
                 <CheckCircle2 className="w-5 h-5"/>{(task.progress||0)>=100?"Đã nộp báo cáo (Hủy)":"Xác nhận nộp báo cáo"}
               </Button>
             </div>
@@ -307,8 +313,8 @@ export function ReportDetail({ id }: { id: string }) {
 
           {/* Thảo luận */}
           <div className="space-y-6 pt-4">
-            <h3 className="text-xs font-bold text-slate-500 uppercase pl-2 flex items-center gap-2 truncate whitespace-nowrap">
-              <MessageSquare className="w-4 h-4 text-primary"/>LUỒNG THẢO LUẬN
+            <h3 className="text-sm font-medium text-slate-500 pl-2 flex items-center gap-2 truncate whitespace-nowrap">
+              <MessageSquare className="w-4 h-4 text-primary"/>Luồng thảo luận
             </h3>
             <div className="space-y-4">
               {comments.map(c=>(
@@ -319,16 +325,16 @@ export function ReportDetail({ id }: { id: string }) {
                   <div className="space-y-2 flex-1 min-w-0">
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-bold text-slate-900">{c.user?.full_name}</span>
-                      <span className="text-[11px] text-slate-500 font-medium">{new Date(c.created_at).toLocaleDateString("vi-VN")}</span>
+                      <span className="text-xs text-slate-500 font-medium">{new Date(c.created_at).toLocaleDateString("vi-VN")}</span>
                     </div>
-                    <p className="text-[13px] text-slate-600 font-medium leading-relaxed bg-slate-50/50 p-3 rounded-2xl rounded-tl-none">{c.content}</p>
+                    <p className="text-sm text-slate-600 font-medium leading-relaxed bg-slate-50/50 p-3 rounded-2xl rounded-tl-none">{c.content}</p>
                   </div>
                 </div>
               ))}
             </div>
             <form onSubmit={handlePostComment} className="flex gap-3 pt-2">
-              <Input placeholder="Nhập nội dung trao đổi..." className="finance-input flex-1 h-10 text-[14px] font-medium" value={newComment} onChange={e=>setNewComment(e.target.value)} disabled={posting}/>
-              <Button type="submit" disabled={posting||!newComment.trim()} className="h-10 w-10 rounded-xl bg-slate-900 hover:bg-black shadow-sm shrink-0 p-0 active:scale-95 transition-all"><Send className="w-5 h-5 text-white"/></Button>
+              <Input placeholder="Nhập nội dung trao đổi..." className="finance-input flex-1 min-h-11 text-sm font-medium" value={newComment} onChange={e=>setNewComment(e.target.value)} disabled={posting}/>
+              <Button type="submit" disabled={posting||!newComment.trim()} className="min-h-11 w-10 rounded-xl bg-slate-900 hover:bg-black shadow-sm shrink-0 p-0 active:scale-95 transition-all"><Send className="w-5 h-5 text-white"/></Button>
             </form>
           </div>
         </div>
@@ -339,18 +345,18 @@ export function ReportDetail({ id }: { id: string }) {
             {!isCreatorOrAdmin && (
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <p className="text-xs font-bold text-slate-500 uppercase pl-1 truncate whitespace-nowrap">Cán bộ tiếp nhận</p>
+                  <p className="text-sm font-medium text-slate-500 pl-1 truncate whitespace-nowrap">Cán bộ tiếp nhận</p>
                   {(profile?.role==="manager"||profile?.role==="admin")&&(
                     <Popover open={delegationOpen} onOpenChange={setDelegationOpen}>
-                      <PopoverTrigger asChild><Button variant="ghost" size="sm" className="h-7 text-[11px] font-bold text-primary hover:bg-primary/5">Phân công</Button></PopoverTrigger>
+                      <PopoverTrigger asChild><Button variant="ghost" size="sm" className="min-h-10 text-sm font-medium text-primary hover:bg-primary/5">Phân công</Button></PopoverTrigger>
                       <PopoverContent className="w-[260px] p-3 rounded-xl shadow-xl border-slate-200" align="end">
                         <div className="space-y-3">
-                          <h4 className="font-bold text-[13px] text-slate-900">Phân công cho cán bộ</h4>
+                          <h4 className="font-bold text-sm text-slate-900">Phân công cho cán bộ</h4>
                           <Select value={selectedDelegate} onValueChange={setSelectedDelegate}>
-                            <SelectTrigger className="w-full h-9 text-[12px] rounded-lg bg-slate-50 border-slate-200"><SelectValue placeholder="Chọn cán bộ..."/></SelectTrigger>
-                            <SelectContent className="rounded-lg">{deptProfiles.map(p=><SelectItem key={p.id} value={p.id} className="text-[12px]">{p.full_name}</SelectItem>)}</SelectContent>
+                            <SelectTrigger className="w-full min-h-11 text-xs rounded-lg bg-slate-50 border-slate-200"><SelectValue placeholder="Chọn cán bộ..."/></SelectTrigger>
+                            <SelectContent className="rounded-lg">{deptProfiles.map(p=><SelectItem key={p.id} value={p.id} className="text-xs">{p.full_name}</SelectItem>)}</SelectContent>
                           </Select>
-                          <Button onClick={handleDelegate} disabled={saving} className="w-full h-9 rounded-xl text-[12px] bg-primary active:scale-95 transition-all">Xác nhận</Button>
+                          <Button onClick={handleDelegate} disabled={saving} className="w-full min-h-11 rounded-xl text-xs bg-primary active:scale-95 transition-all">Xác nhận</Button>
                         </div>
                       </PopoverContent>
                     </Popover>
@@ -359,12 +365,12 @@ export function ReportDetail({ id }: { id: string }) {
                 <div className="space-y-2">
                   {assignees.length>0?assignees.map(a=>(
                     <div key={a.user_id} className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
-                      <Avatar className="h-8 w-8"><AvatarImage src={a.profile?.avatar_url} className="object-cover"/><AvatarFallback className="bg-primary text-white text-[9px] font-bold">{a.profile?.full_name?.[0]}</AvatarFallback></Avatar>
-                      <span className="text-xs font-bold text-slate-900">{a.profile?.full_name}</span>
+                      <Avatar className="h-8 w-8"><AvatarImage src={a.profile?.avatar_url} className="object-cover"/><AvatarFallback className="bg-primary text-white text-sm font-medium">{a.profile?.full_name?.[0]}</AvatarFallback></Avatar>
+                      <span className="text-sm font-medium text-slate-900">{a.profile?.full_name}</span>
                     </div>
                   )):(
                     <div className="p-4 bg-primary/5 rounded-xl border border-primary/10 text-center">
-                      <p className="text-xs font-bold text-primary uppercase truncate">{task.department?.name||"PHÒNG NGHIỆP VỤ"}</p>
+                      <p className="text-sm font-medium text-primary truncate">{task.department?.name||"Phòng nghiệp vụ"}</p>
                     </div>
                   )}
                 </div>
@@ -372,25 +378,25 @@ export function ReportDetail({ id }: { id: string }) {
             )}
             <div className="pt-4 border-t border-slate-50 grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <p className="text-xs font-bold text-slate-500 uppercase pl-1 truncate whitespace-nowrap">Hạn chót</p>
-                <div className="flex items-center gap-2 text-xs font-bold text-slate-900 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                <p className="text-sm font-medium text-slate-500 pl-1 truncate whitespace-nowrap">Hạn chót</p>
+                <div className="flex items-center gap-2 text-sm font-medium text-slate-900 p-3 bg-slate-50 rounded-xl border border-slate-100">
                   <AlertCircle className="w-3.5 h-3.5 text-primary"/>{new Date(task.due_date).toLocaleDateString("vi-VN")}
                 </div>
               </div>
               <div className="space-y-2">
-                <p className="text-xs font-bold text-slate-500 uppercase pl-1 truncate whitespace-nowrap">Mức độ</p>
-                <div className="flex items-center gap-2 text-xs font-bold text-slate-900 p-3 bg-slate-50 rounded-xl border border-slate-100">
-                  <Flag className={cn("w-3.5 h-3.5",task.priority==="high"?"text-red-500":"text-primary")}/>{task.priority==="high"?"KHẨN":"THƯỜNG"}
+                <p className="text-sm font-medium text-slate-500 pl-1 truncate whitespace-nowrap">Mức độ</p>
+                <div className="flex items-center gap-2 text-sm font-medium text-slate-900 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                  <Flag className={cn("w-3.5 h-3.5",task.priority==="high"?"text-red-500":"text-primary")}/>{task.priority==="high"?"Khẩn":"Thường"}
                 </div>
               </div>
             </div>
             <div className="pt-6 border-t border-slate-50 space-y-3">
-              <p className="text-xs font-bold text-slate-500 uppercase pl-1 truncate whitespace-nowrap">Khởi tạo bởi</p>
+              <p className="text-sm font-medium text-slate-500 pl-1 truncate whitespace-nowrap">Khởi tạo bởi</p>
               <div className="flex items-center gap-3 px-1">
-                <Avatar className="h-7 w-7 border border-white shadow-sm"><AvatarImage src={task.creator?.avatar_url} className="object-cover"/><AvatarFallback className="text-[8px] font-bold">{task.creator?.full_name?.[0]}</AvatarFallback></Avatar>
+                <Avatar className="h-8 w-8 border border-white shadow-sm"><AvatarImage src={task.creator?.avatar_url} className="object-cover"/><AvatarFallback className="text-sm font-medium">{task.creator?.full_name?.[0]}</AvatarFallback></Avatar>
                 <div className="flex flex-col">
-                  <span className="text-xs font-bold text-slate-900 leading-none">{task.creator?.full_name}</span>
-                  <span className="text-[9px] font-medium text-slate-500">{task.creator?.departments?.name}</span>
+                  <span className="text-sm font-medium text-slate-900 leading-none">{task.creator?.full_name}</span>
+                  <span className="text-xs font-medium text-slate-500">{task.creator?.departments?.name}</span>
                 </div>
               </div>
             </div>

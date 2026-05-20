@@ -52,7 +52,7 @@ export default function DateNavigator({ selectedDate, setSelectedDate, weekDays 
                     : "hover:bg-slate-100 text-slate-500"
                 )}
               >
-                <span className={cn("text-[9px] font-bold uppercase mb-1", isSelected ? "text-white/70" : "text-slate-400")}>
+                <span className={cn("text-[9px] font-bold mb-1", isSelected ? "text-white/70" : "text-slate-400")}>
                   {format(day, 'EEEEEE', { locale: vi })}
                 </span>
                 <span className={cn("text-[15px] font-bold")}>

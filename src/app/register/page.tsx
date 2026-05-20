@@ -63,7 +63,7 @@ function RegisterContent() {
  <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
  <Card className="w-full max-w-md shadow-xl border-t-4 border-t-red-500">
  <CardHeader className="text-center">
- <CardTitle className="text-xl font-bold text-red-600 tabular-nums tracking-tighter">Link không hợp lệ</CardTitle>
+ <CardTitle className="text-xl font-bold text-red-600 tabular-nums">Link không hợp lệ</CardTitle>
  <CardDescription>Bạn cần có mã mời từ Lãnh đạo để đăng ký tài khoản.</CardDescription>
  </CardHeader>
  <CardFooter>
@@ -90,7 +90,7 @@ function RegisterContent() {
  <div className="mb-4 transition-transform hover:scale-105 flex items-center justify-center">
  <img src="/logo.png" alt="Logo" className="h-14 w-14 object-contain" />
  </div>
- <CardTitle className="text-2xl font-bold tracking-tight tabular-nums">Gia nhập WorkFlow</CardTitle>
+ <CardTitle className="text-2xl font-bold tabular-nums">Gia nhập WorkFlow</CardTitle>
  <CardDescription className="text-primary-foreground/70 mt-2 font-medium">Hệ thống điều hành và quản trị mục tiêu</CardDescription>
  </div>
  </div>
@@ -98,7 +98,7 @@ function RegisterContent() {
  <form onSubmit={handleSignUp}>
  <CardContent className="p-8 space-y-5">
  <div className="space-y-2">
- <Label htmlFor="fullName" className="text-xs md:text-[11px] font-bold uppercase text-slate-500 ml-1 truncate whitespace-nowrap">Họ và tên</Label>
+ <Label htmlFor="fullName" className="text-sm font-medium text-slate-500 ml-1 truncate whitespace-nowrap">Họ và tên</Label>
  <div className="relative">
  <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
  <Input
@@ -113,7 +113,7 @@ function RegisterContent() {
  </div>
 
  <div className="space-y-2">
- <Label htmlFor="email" className="text-xs md:text-[11px] font-bold uppercase text-slate-500 ml-1 truncate whitespace-nowrap">Email</Label>
+ <Label htmlFor="email" className="text-sm font-medium text-slate-500 ml-1 truncate whitespace-nowrap">Email</Label>
  <div className="relative">
  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
  <Input
@@ -129,7 +129,7 @@ function RegisterContent() {
  </div>
 
  <div className="space-y-2">
- <Label htmlFor="password" className="text-xs md:text-[11px] font-bold uppercase text-slate-500 ml-1 truncate whitespace-nowrap">Mật khẩu</Label>
+ <Label htmlFor="password" className="text-sm font-medium text-slate-500 ml-1 truncate whitespace-nowrap">Mật khẩu</Label>
  <div className="relative">
  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
  <Input

@@ -38,7 +38,7 @@ function AppLogo({ className }: { className?: string }) {
  <div className="w-3.5 h-3.5 bg-white rounded-[0.2rem] rotate-45" />
  </div>
  <div className="flex flex-col leading-none">
- <span className="text-lg font-bold text-slate-900 tracking-tight">Portal</span>
+ <span className="text-lg font-bold text-slate-900">Portal</span>
  </div>
  </div>
  );
@@ -213,7 +213,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
  <div className="flex items-center gap-4">
  <div className="hidden sm:block text-right">
  <p className="text-[13px] font-bold text-slate-900">{currentUser.name}</p>
- <p className="text-[10px] text-slate-500 font-bold uppercase truncate whitespace-nowrap">{roleLabel}</p>
+ <p className="text-[10px] text-slate-500 font-bold truncate whitespace-nowrap">{roleLabel}</p>
  </div>
  <DropdownMenu>
  <DropdownMenuTrigger asChild>

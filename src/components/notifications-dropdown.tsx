@@ -33,10 +33,10 @@ export function NotificationsDropdown() {
     const setupNotifications = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user || !active) return;
-      
+
       fetchNotifications(user.id);
 
-      // Khởi tạo channel và đăng ký sự kiện TRƯỚC khi subscribe
+      // Khởi tạo channel và đăng ký sự kiện Trước khi subscribe
       channel = supabase
         .channel(`notifications_realtime_${user.id}`)
         .on('postgres_changes', {
@@ -75,7 +75,7 @@ export function NotificationsDropdown() {
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .limit(10);
-      
+
       setNotifications(data || []);
       setUnreadCount(data?.filter(n => !n.is_read).length || 0);
     } catch (error) {
@@ -91,7 +91,7 @@ export function NotificationsDropdown() {
         .from('notifications')
         .update({ is_read: true })
         .eq('id', id);
-      
+
       setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
       setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (error) {
@@ -150,14 +150,14 @@ export function NotificationsDropdown() {
         <Button variant="ghost" size="icon" className="relative h-11 w-11 rounded-full bg-slate-50 hover:bg-slate-100 transition-all">
           <Bell className="h-5 w-5 text-slate-600" />
           {unreadCount > 0 && (
-            <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-red-600 border-2 border-white text-[10px] font-bold">
+            <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-red-600 border-2 border-white text-sm font-medium">
               {unreadCount}
             </Badge>
           )}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent 
-        align="end" 
+      <DropdownMenuContent
+        align="end"
         alignOffset={-8}
         collisionPadding={16}
         className="w-[calc(100vw-32px)] sm:w-[380px] p-2 rounded-2xl shadow-xl border-slate-100 mt-2 bg-white"
@@ -165,57 +165,57 @@ export function NotificationsDropdown() {
         <div className="flex items-center justify-between px-3.5 py-3 border-b border-slate-100 mb-2">
           <div className="flex items-center gap-2">
             <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-            <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">Thông báo hệ thống</span>
+            <span className="text-sm font-medium text-slate-800">Thông báo hệ thống</span>
           </div>
           {unreadCount > 0 && (
-            <Button 
-              variant="ghost" 
-              className="h-auto p-0 text-[10px] font-bold text-primary hover:bg-transparent uppercase tracking-tight truncate whitespace-nowrap" 
+            <Button
+              variant="ghost"
+              className="h-auto p-0 text-sm font-medium text-primary hover:bg-transparent truncate whitespace-nowrap"
               onClick={() => notifications.forEach(n => !n.is_read && markAsRead(n.id))}
             >
               Đọc tất cả
             </Button>
           )}
         </div>
-        
+
         <div className="max-h-[360px] overflow-y-auto space-y-1.5 pr-0.5">
           {loading ? (
             <div className="py-12 text-center"><Loader2 className="h-5 w-5 animate-spin mx-auto text-primary" /></div>
           ) : notifications.length > 0 ? (
             notifications.map((n) => (
-              <DropdownMenuItem 
-                key={n.id} 
+              <DropdownMenuItem
+                key={n.id}
                 onClick={() => handleNotificationClick(n)}
                 className={cn(
                   "cursor-pointer rounded-xl p-3 !pl-4 border-y border-r border-slate-100/60 shadow-sm flex gap-3 relative overflow-hidden transition-all mb-1.5 focus:bg-slate-50/80 focus:text-inherit select-none",
-                  !n.is_read 
-                    ? "bg-gradient-to-r from-blue-50/20 to-white border-l-4 border-l-blue-600" 
+                  !n.is_read
+                    ? "bg-gradient-to-r from-blue-50/20 to-white border-l-4 border-l-blue-600"
                     : "bg-white border-l-4 border-l-slate-200"
                 )}
               >
                 {getNotificationIcon(n.title)}
-                
+
                 <div className="flex-1 min-w-0 space-y-1">
                   <div className="flex justify-between items-start gap-2">
                     <span className={cn(
-                      "text-xs font-bold leading-tight tracking-tight truncate flex-1",
+                      "text-sm font-medium leading-tight truncate flex-1",
                       !n.is_read ? "text-blue-900" : "text-slate-800"
                     )}>
                       {n.title}
                     </span>
                     {!n.is_read && <div className="h-1.5 w-1.5 rounded-full bg-blue-500 shrink-0 mt-0.5 shadow-[0_0_6px_rgba(59,130,246,0.8)]" />}
                   </div>
-                  
+
                   <p className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed font-semibold">
                     {n.content}
                   </p>
-                  
+
                   <div className="flex items-center gap-1.5 pt-0.5">
-                    <span className="text-[11px] text-slate-400 font-bold uppercase">
+                    <span className="text-[11px] text-slate-400 font-bold">
                       {new Date(n.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
                     </span>
                     <span className="text-[11px] text-slate-300">•</span>
-                    <span className="text-[11px] text-primary/60 font-bold uppercase">Hệ thống</span>
+                    <span className="text-[11px] text-primary/60 font-bold">Hệ thống</span>
                   </div>
                 </div>
               </DropdownMenuItem>
@@ -225,7 +225,7 @@ export function NotificationsDropdown() {
               <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mx-auto">
                 <Inbox className="h-6 w-6 text-slate-500" />
               </div>
-              <p className="text-[10px] font-bold text-slate-500 uppercase truncate whitespace-nowrap">Hộp thư trống</p>
+              <p className="text-sm font-medium text-slate-500 truncate whitespace-nowrap">Hộp thư trống</p>
             </div>
           )}
         </div>

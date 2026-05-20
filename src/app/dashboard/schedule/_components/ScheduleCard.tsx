@@ -36,15 +36,15 @@ export default function ScheduleCard({ item, isTCTH, onSelect, onStatusUpdate }:
             <div className="flex items-start justify-between">
               <div className="space-y-1.5 flex-1 min-w-0 pr-2">
                 <div className="flex flex-wrap items-center gap-1.5 md:gap-2">
-                  <Badge variant="outline" className={cn("text-[10px] md:text-[11px] font-bold uppercase px-2 py-0.5 rounded-md whitespace-nowrap", type.color)}>
+                  <Badge variant="outline" className={cn("text-[10px] md:text-[11px] font-bold px-2 py-0.5 rounded-md whitespace-nowrap", type.color)}>
                     <type.icon className="w-3 h-3 mr-1 shrink-0" /> {type.label}
                   </Badge>
                   {item.use_vehicle && !item.vehicle_id && (
                     <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 border-none font-bold text-[10px] md:text-[11px] px-2 py-0.5 rounded-md flex items-center gap-1 whitespace-nowrap">
-                      <Car className="w-2.5 h-2.5 shrink-0" /> CHỜ ĐIỀU XE
+                      <Car className="w-2.5 h-2.5 shrink-0" /> Chờ điều xe
                     </Badge>
                   )}
-                  <Badge className={cn("text-[10px] md:text-[11px] font-bold uppercase px-2 py-0.5 rounded-md whitespace-nowrap", status.color)}>
+                  <Badge className={cn("text-[10px] md:text-[11px] font-bold px-2 py-0.5 rounded-md whitespace-nowrap", status.color)}>
                     {status.label}
                   </Badge>
                 </div>
@@ -96,19 +96,19 @@ export default function ScheduleCard({ item, isTCTH, onSelect, onStatusUpdate }:
               {item.room && (
                 <div className="flex items-center gap-1.5 max-w-[140px]">
                   <DoorOpen className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-                  <span className="text-[11px] md:text-xs font-bold text-blue-600 truncate">{item.room.name}</span>
+                  <span className="text-[11px] md:text-sm font-medium text-blue-600 truncate">{item.room.name}</span>
                 </div>
               )}
               {item.vehicle && (
                 <div className="flex items-center gap-1.5 max-w-[120px]">
                   <Car className="w-3.5 h-3.5 text-orange-500 shrink-0" />
-                  <span className="text-[11px] md:text-xs font-bold text-orange-600 truncate">{item.vehicle.plate_number}</span>
+                  <span className="text-[11px] md:text-sm font-medium text-orange-600 truncate">{item.vehicle.plate_number}</span>
                 </div>
               )}
               {!item.room && !item.vehicle && item.location && (
                 <div className="flex items-center gap-2">
                   <MapPin className="w-3.5 h-3.5 text-slate-500" />
-                  <span className="text-xs font-bold text-slate-600 truncate max-w-[150px]">{item.location}</span>
+                  <span className="text-sm font-medium text-slate-600 truncate max-w-[150px]">{item.location}</span>
                 </div>
               )}
             </div>
@@ -117,11 +117,11 @@ export default function ScheduleCard({ item, isTCTH, onSelect, onStatusUpdate }:
               <div className="flex gap-2 pt-4 border-t border-slate-50">
                 <Button size="sm"
                   onClick={(e) => { e.stopPropagation(); onStatusUpdate(item.id, 'approved'); }}
-                  className="bg-emerald-500 hover:bg-emerald-600 h-10 md:h-9 rounded-xl font-bold text-xs md:text-[11px] shadow-lg shadow-emerald-500/20 px-4"
+                  className="bg-emerald-500 hover:bg-emerald-600 h-10 md:h-9 rounded-xl font-medium text-sm md:text-[11px] shadow-lg shadow-emerald-500/20 px-4"
                 >Duyệt lịch</Button>
                 <Button size="sm" variant="outline"
                   onClick={(e) => { e.stopPropagation(); onStatusUpdate(item.id, 'rejected'); }}
-                  className="h-10 md:h-9 rounded-xl font-bold text-xs md:text-[11px] border-red-100 text-red-500 hover:bg-red-50 hover:text-red-600 px-4"
+                  className="h-10 md:h-9 rounded-xl font-medium text-sm md:text-[11px] border-red-100 text-red-500 hover:bg-red-50 hover:text-red-600 px-4"
                 >Từ chối</Button>
               </div>
             )}

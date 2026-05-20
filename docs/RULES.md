@@ -78,10 +78,22 @@ src/app/dashboard/[module]/
 
 ### Tóm tắt nhanh
 - **Font**: System Font Stack (không dùng Google Fonts)
-- **Bo góc**: `rounded-xl` (12px) cho button, `rounded-2xl` (16px) cho card
-- **Spacing**: Card luôn dùng `p-6`
-- **Màu chính**: Slate-900 (primary), Amber-600 (CTA)
-- **Phong cách**: Apple HIG — tối giản, chuyên nghiệp, không rườm rà
+- **Typography Apple HIG responsive**: Desktop web body `16px`; iPad/mobile body `17px`; control desktop `15px`, iPad/mobile `16px`; caption tối thiểu `12px`
+- **Touch target responsive**: Desktop web tối thiểu `40px`; iPad/mobile tối thiểu `44px`
+- **Bo góc**: Button/input `12px`; card mobile `18px`, iPad `22px`, desktop `24px` theo token hệ thống
+- **Spacing**: Dùng lưới `4px/8px`; page mobile `16px`, iPad `24px`, desktop `32px`; card mobile `20px`, iPad/desktop `24px`
+- **Màu chính**: Primary theo token CSS hiện hành, accent chỉ dùng cho highlight quan trọng
+- **Phong cách**: Apple HIG — rõ chữ, dễ chạm, tối giản, chuyên nghiệp, không rườm rà
+
+### Chuẩn Apple HIG responsive bắt buộc cho toàn bộ app
+- Không dùng font nhỏ hơn `12px` ở bất kỳ breakpoint nào. Metadata/badge dùng `12px–13px`; nội dung chính dùng `16px` trên desktop web và `17px` trên iPad/mobile.
+- Không dùng `tracking-tight`, `tracking-tighter`, `tracking-wider` cho nội dung đọc. Global CSS triệt tiêu tracking để chữ rõ hơn.
+- Không dùng chữ hoa toàn bộ cho heading, label, tab, button, badge hoặc section title. Chỉ dùng chữ hoa cho mã, biển số, viết tắt chính thức như KPI/TCTH, hoặc dữ liệu bắt buộc giữ nguyên.
+- Không tạo button/input/menu item thấp hơn `40px` trên desktop web hoặc `44px` trên iPad/mobile. Nếu cần giao diện dày đặc, giảm số control hiển thị thay vì giảm vùng chạm.
+- Không tự đặt padding nhỏ kiểu `p-1`, `py-0.5`, `h-7`, `h-8` cho control tương tác trừ khi phần tử không phải vùng bấm/chạm.
+- Card dùng `.premium-card`; không lồng card trong card; không tự phá padding chuẩn nếu không có lý do layout bắt buộc.
+- Toolbar, dialog, popover, dropdown, select, input, textarea, tab, toast va button phai dung primitive trong `src/components/ui/*` hoac class tuong duong: `text-sm`, `min-h-10` desktop, `min-h-11` cho mobile/iPad, `rounded-xl`, padding ngang toi thieu `px-3`/`px-4`.
+- Các token chuẩn nằm trong `src/app/globals.css`: `--app-font-*`, `--app-touch-target`, `--app-page-x`, `--app-card-padding`, `--app-control-radius`, `--app-card-radius`.
 
 ---
 

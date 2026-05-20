@@ -15,6 +15,7 @@ import {
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useToast } from '@/hooks/use-toast'
 import { cn, compareProfilesByHierarchy } from '@/lib/utils'
+import { DeadlineProgress } from '../DeadlineProgress'
 
 const STATUS_MAP: Record<string, { label: string; color: string; dot: string; light: string }> = {
   todo:   { label: 'Đang chờ',   color: 'text-muted-foreground', dot: 'bg-slate-400',  light: 'bg-muted'       },
@@ -151,7 +152,7 @@ export function ReportList({ searchQuery, filterStatus }: ReportListProps) {
                   </h3>
                   {(isCreator || isAdminOrDir) && totalDepts > 0 && (
                     <Badge className={cn(
-                      'border-none text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm select-none',
+                      'border-none text-sm font-medium px-2 py-1 rounded-full shadow-sm select-none',
                       doneDepts === totalDepts
                         ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-50'
                         : 'bg-red-50 text-red-600 hover:bg-red-50'
@@ -172,10 +173,17 @@ export function ReportList({ searchQuery, filterStatus }: ReportListProps) {
                     {firstAssignee?.full_name || deptName || 'Chưa giao'}
                   </span>
                 </div>
+                <DeadlineProgress
+                  compact
+                  createdAt={task.created_at}
+                  dueDate={task.due_date}
+                  done={task.status === 'done'}
+                  className="max-w-md pt-1"
+                />
               </div>
 
               <div className="hidden sm:block shrink-0">
-                <div className={cn('inline-flex items-center px-3 py-1 rounded-full text-[11px] font-medium', status.light, status.color)}>
+                <div className={cn('inline-flex items-center px-3 py-1 rounded-full text-xs font-medium', status.light, status.color)}>
                   <div className={cn('w-1 h-1 rounded-full mr-2 opacity-60', status.dot)} />
                   {status.label}
                 </div>
@@ -190,7 +198,7 @@ export function ReportList({ searchQuery, filterStatus }: ReportListProps) {
           <Button 
             variant="ghost" 
             onClick={() => setShowAllReports(!showAllReports)}
-            className="text-xs font-bold text-primary uppercase hover:bg-primary/5 rounded-full px-6 py-2 flex items-center gap-1.5"
+            className="text-sm font-medium text-primary hover:bg-primary/5 rounded-full px-6 py-2 flex items-center gap-1.5"
           >
             {showAllReports ? (
               <>Thu gọn <ChevronUp className="w-4 h-4" /></>

@@ -3,24 +3,24 @@
 export const dynamic = 'force-dynamic';
 
 import React, { useState, useEffect } from "react";
-import { 
- TrendingUp, 
- TrendingDown, 
- CheckCircle2, 
- Clock, 
- Target, 
- ArrowRight, 
- Briefcase, 
- Zap, 
- Loader2, 
- Plus, 
- ChevronRight, 
- ChevronDown, 
- ChevronUp, 
- Sparkles, 
- MessageSquare, 
- AlertCircle, 
- Trophy, 
+import {
+ TrendingUp,
+ TrendingDown,
+ CheckCircle2,
+ Clock,
+ Target,
+ ArrowRight,
+ Briefcase,
+ Zap,
+ Loader2,
+ Plus,
+ ChevronRight,
+ ChevronDown,
+ ChevronUp,
+ Sparkles,
+ MessageSquare,
+ AlertCircle,
+ Trophy,
  ArrowUpRight
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -60,7 +60,7 @@ export default function DashboardPage() {
  totalCompleted: 0,
  totalLate: 0
  });
- 
+
  const supabase = createClient();
 
  useEffect(() => {
@@ -97,7 +97,7 @@ export default function DashboardPage() {
 
   const isPowerUser = currentProfile?.role === 'admin' || currentProfile?.role === 'director';
 
-  // 1. CHUẨN BỊ TẤT CẢ CÁC QUERIES (KHÔNG AWAIT)
+  // 1. Chuẩn bị tất cả các queries (không await)
   let activeQuery = supabase.from('tasks').select('*', { count: 'exact', head: true }).neq('status', 'done').neq('task_type', 'kpi');
   let urgentQuery = supabase.from('tasks').select('*', { count: 'exact', head: true }).neq('status', 'done').eq('priority', 'high');
   let completedQuery = supabase.from('tasks').select('*', { count: 'exact', head: true }).eq('status', 'done');
@@ -127,7 +127,7 @@ export default function DashboardPage() {
     allTasksQuery = allTasksQuery.or(filterStr);
   }
 
-  // 2. THỰC THI TẤT CẢ CÙNG LÚC VỚI PROMISE.ALL
+  // 2. Thực thi tất cả cùng lúc với promise.all
   const [
     { count: activeCount },
     { count: urgentCount },
@@ -165,14 +165,14 @@ export default function DashboardPage() {
     finalComments = cmts || [];
   }
 
-  // 3. XỬ LÝ DỮ LIỆU HIỂN THỊ
+  // 3. Xử lý dữ liệu hiển thị
   const filteredKpis = (kpis || []).filter((k: any) => {
     const isFromAdminOrDirector = k.creator?.role === 'admin' || k.creator?.role === 'director' || k.assignee?.role === 'admin' || k.assignee?.role === 'director';
     if (isFromAdminOrDirector) return true;
     return k.assignee_id === user.id || k.created_by === user.id || (currentProfile?.department_id && k.department_id === currentProfile.department_id);
   });
 
-  const kpiProg = filteredKpis.length > 0 
+  const kpiProg = filteredKpis.length > 0
   ? Math.round(filteredKpis.reduce((acc, k) => {
       const prog = k.target_value ? Math.round(((k.current_value || 0) / k.target_value) * 100) : (k.progress || 0);
       return acc + prog;
@@ -200,7 +200,7 @@ export default function DashboardPage() {
   if (pMap[a.priority] !== pMap[b.priority]) return pMap[a.priority] - pMap[b.priority];
   return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
   })[0] || null;
-  
+
   const list = allTasksList || [];
   const assigned = list.length;
   const completed = list.filter((t: any) => t.status === 'done').length;
@@ -234,7 +234,7 @@ export default function DashboardPage() {
  <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-6 md:space-y-10 animate-fade-in-up pb-20">
   <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pt-4 sm:pt-0">
   <div className="space-y-1">
-  <h1 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight tabular-nums">Xin chào, {profile?.full_name?.split(' ').pop()}!</h1>
+  <h1 className="text-2xl md:text-3xl font-bold text-slate-900 tabular-nums">Xin chào, {profile?.full_name?.split(' ').pop()}!</h1>
   <div className="flex items-center gap-2 text-slate-500">
   <Sparkles className="w-4 h-4 text-amber-400 animate-float" />
   <p className="text-[13px] font-semibold italic">{quote}</p>
@@ -255,11 +255,11 @@ export default function DashboardPage() {
          <Trophy className="w-5.5 h-5.5" />
        </div>
        <div className="space-y-1.5 min-w-0 flex-1">
-         <p className="text-[11px] font-bold text-indigo-500/80 uppercase tracking-wider">Năng suất tuần</p>
+         <p className="text-[11px] font-bold text-indigo-500/80">Năng suất tuần</p>
          <div className="flex items-center justify-between gap-3">
-           <p className="text-2xl font-extrabold text-slate-800 tracking-tight tabular-nums">{stats.productivity}</p>
+           <p className="text-2xl font-extrabold text-slate-800 tabular-nums">{stats.productivity}</p>
            <span className={cn(
-             "flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase shrink-0 select-none",
+             "flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[9px] font-extrabold shrink-0 select-none",
              stats.productivityChange >= 0 ? "bg-emerald-50 text-emerald-600 border border-emerald-200/40" : "bg-red-50 text-red-600 border border-red-200/40"
            )}>
              {stats.productivityChange >= 0 ? <TrendingUp className="w-2.5 h-2.5" /> : <TrendingDown className="w-2.5 h-2.5" />}
@@ -278,12 +278,12 @@ export default function DashboardPage() {
          <Clock className="w-5.5 h-5.5" />
        </div>
        <div className="space-y-1.5 min-w-0 flex-1">
-         <p className="text-[11px] font-bold text-sky-500/80 uppercase tracking-wider">Đang xử lý</p>
+         <p className="text-[11px] font-bold text-sky-500/80">Đang xử lý</p>
          <div className="flex items-center gap-2 flex-wrap">
-           <p className="text-2xl font-extrabold text-slate-800 tracking-tight tabular-nums">{stats.activeTasks}</p>
+           <p className="text-2xl font-extrabold text-slate-800 tabular-nums">{stats.activeTasks}</p>
            {stats.urgentTasks > 0 && (
              <Badge className="bg-rose-500/10 hover:bg-rose-500/10 text-rose-600 border border-rose-200/30 text-[9px] font-bold px-2 py-0.5 rounded-full animate-pulse shadow-sm">
-               {stats.urgentTasks} KHẨN
+               {stats.urgentTasks} khẩn
              </Badge>
            )}
          </div>
@@ -300,22 +300,22 @@ export default function DashboardPage() {
        </div>
        <div className="space-y-2 min-w-0 flex-1">
          <div className="flex items-center justify-between gap-1">
-           <p className="text-[11px] font-bold text-emerald-600/80 uppercase tracking-wider">Thống kê Nhiệm vụ</p>
+           <p className="text-[11px] font-bold text-emerald-600/80">Thống kê Nhiệm vụ</p>
            <span className="text-[9px] font-extrabold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100/40 shrink-0 select-none">
              Xong {stats.totalAssigned > 0 ? Math.round((stats.totalCompleted / stats.totalAssigned) * 100) : 0}%
            </span>
          </div>
          <div className="grid grid-cols-3 gap-1.5 text-center pt-0.5">
            <div className="bg-slate-50 p-1.5 rounded-xl border border-slate-100/50 shadow-sm">
-             <p className="text-[8px] font-bold text-slate-400 uppercase tracking-tight">Giao</p>
+             <p className="text-[8px] font-bold text-slate-400">Giao</p>
              <p className="text-sm font-extrabold text-slate-700 tabular-nums">{stats.totalAssigned}</p>
            </div>
            <div className="bg-emerald-50/60 p-1.5 rounded-xl border border-emerald-100/40 shadow-sm">
-             <p className="text-[8px] font-bold text-emerald-600 uppercase tracking-tight">Xong</p>
+             <p className="text-[8px] font-bold text-emerald-600">Xong</p>
              <p className="text-sm font-extrabold text-emerald-700 tabular-nums">{stats.totalCompleted}</p>
            </div>
            <div className="bg-red-50/60 p-1.5 rounded-xl border border-red-100/40 shadow-sm">
-             <p className="text-[8px] font-bold text-red-600 uppercase tracking-tight">Trễ</p>
+             <p className="text-[8px] font-bold text-red-600">Trễ</p>
              <p className="text-sm font-extrabold text-red-600 tabular-nums">{stats.totalLate}</p>
            </div>
          </div>
@@ -328,21 +328,21 @@ export default function DashboardPage() {
          <Target className="w-5.5 h-5.5" />
        </div>
        <div className="space-y-2 min-w-0 flex-1">
-         <p className="text-[11px] font-bold text-amber-400/80 uppercase tracking-wider">Tiến độ kế hoạch</p>
+         <p className="text-[11px] font-bold text-amber-400/80">Tiến độ kế hoạch</p>
          <div className="flex items-center justify-between gap-3">
-           <p className="text-2xl font-extrabold bg-gradient-to-r from-amber-200 to-orange-300 bg-clip-text text-transparent tracking-tight tabular-nums">{stats.kpiProgress}%</p>
-           <span className="text-[9px] font-extrabold text-amber-400 uppercase bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full whitespace-nowrap truncate shrink-0 select-none">
-             {stats.kpiCount} CHỈ TIÊU
+           <p className="text-2xl font-extrabold bg-gradient-to-r from-amber-200 to-orange-300 bg-clip-text text-transparent tabular-nums">{stats.kpiProgress}%</p>
+           <span className="text-[9px] font-extrabold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full whitespace-nowrap truncate shrink-0 select-none">
+             {stats.kpiCount} chỉ tiêu
            </span>
          </div>
          <div className="flex gap-1.5 pt-0.5">
            {[1, 2, 3, 4, 5, 6].map((i) => (
-             <div 
-               key={i} 
+             <div
+               key={i}
                className={cn(
-                 "h-1 flex-1 rounded-full transition-all duration-700", 
+                 "h-1 flex-1 rounded-full transition-all duration-700",
                  stats.kpiProgress >= (i * 16.6) ? "bg-gradient-to-r from-amber-400 to-orange-400 shadow-[0_0_8px_rgba(245,158,11,0.6)]" : "bg-slate-800"
-               )} 
+               )}
              />
            ))}
          </div>
@@ -359,25 +359,25 @@ export default function DashboardPage() {
  {/* Feed Section */}
  <div className="lg:col-span-8 space-y-6">
  <div className="flex items-center justify-between px-2 mb-4">
- <h3 className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2 truncate whitespace-nowrap">
- <Zap className="w-4 h-4 text-primary fill-primary/10" /> LUỒNG HOẠT ĐỘNG
+ <h3 className="text-sm font-medium text-slate-500 flex items-center gap-2 truncate whitespace-nowrap">
+ <Zap className="w-4 h-4 text-primary fill-primary/10" /> Luồng hoạt động
  </h3>
- <Button variant="ghost" asChild className="text-xs font-bold text-primary uppercase h-10 md:h-8 hover:bg-primary/5 rounded-full px-4 truncate whitespace-nowrap">
+ <Button variant="ghost" asChild className="text-sm font-medium text-primary h-10 md:h-8 hover:bg-primary/5 rounded-full px-4 truncate whitespace-nowrap">
  <Link href="/dashboard/tasks">Tất cả <ChevronRight className="ml-1 w-3 h-3" /></Link>
  </Button>
  </div>
 
   <div className="space-y-3">
     {(showAllActivities ? stats.recentTasks : stats.recentTasks.slice(0, 4)).map((t) => (
-      <Link 
-        key={`${t.type}-${t.id}`} 
-        href={t.type === 'recognition' ? `/dashboard/team` : `/dashboard/tasks/${t.type === 'comment' ? t.task_id : t.id}`} 
+      <Link
+        key={`${t.type}-${t.id}`}
+        href={t.type === 'recognition' ? `/dashboard/team` : `/dashboard/tasks/${t.type === 'comment' ? t.task_id : t.id}`}
         className="block group"
       >
         <div className={cn(
           "flex items-center justify-between p-4 transition-all duration-300 rounded-[24px] group border border-transparent",
-          t.type === 'recognition' 
-            ? (t.rec_type === 'remind' ? "bg-slate-50 border-slate-100 hover:bg-slate-100 hover:shadow-sm" : "bg-amber-50/50 border-amber-100/50") 
+          t.type === 'recognition'
+            ? (t.rec_type === 'remind' ? "bg-slate-50 border-slate-100 hover:bg-slate-100 hover:shadow-sm" : "bg-amber-50/50 border-amber-100/50")
             : "bg-white hover:bg-slate-50 hover:border-slate-100 hover:shadow-sm"
         )}>
           <div className="shrink-0 relative">
@@ -392,15 +392,15 @@ export default function DashboardPage() {
               <div className="relative">
                 <Avatar className={cn(
                   "h-11 w-11 border-2 shadow-sm",
-                  t.type === 'recognition' 
-                    ? (t.rec_type === 'remind' ? "border-slate-200" : "border-amber-200") 
+                  t.type === 'recognition'
+                    ? (t.rec_type === 'remind' ? "border-slate-200" : "border-amber-200")
                     : "border-transparent"
                 )}>
                   <AvatarImage src={t.type === 'recognition' ? t.receiver?.avatar_url : t.user?.avatar_url} />
                   <AvatarFallback className={cn(
-                    "font-bold text-xs",
-                    t.type === 'recognition' 
-                      ? (t.rec_type === 'remind' ? "bg-slate-100 text-slate-700" : "bg-amber-100 text-amber-700") 
+                    "font-medium text-sm",
+                    t.type === 'recognition'
+                      ? (t.rec_type === 'remind' ? "bg-slate-100 text-slate-700" : "bg-amber-100 text-amber-700")
                       : "bg-slate-100 text-slate-700"
                   )}>
                     {(t.type === 'recognition' ? t.receiver?.full_name : t.user?.full_name)?.[0]}
@@ -414,33 +414,33 @@ export default function DashboardPage() {
               <p className="text-sm font-bold text-slate-900 line-clamp-1 group-hover:text-primary transition-colors">
                 {t.type === 'task' ? t.title : (t.type === 'comment' ? `"${t.content}"` : (t.rec_type === 'remind' ? `Nhắc nhở: ${t.content}` : `Vinh danh: ${t.content}`))}
               </p>
-              <span className="hidden sm:inline-block text-[10px] md:text-xs font-bold text-slate-500 uppercase shrink-0 truncate whitespace-nowrap">
+              <span className="hidden sm:inline-block text-[10px] md:text-sm font-medium text-slate-500 shrink-0 truncate whitespace-nowrap">
                 {new Date(t.created_at).toLocaleDateString('vi-VN')}
               </span>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               <p className={cn(
-                "text-xs font-bold uppercase tracking-tight flex items-center gap-1.5 line-clamp-1",
-                t.type === 'recognition' 
-                  ? (t.rec_type === 'remind' ? "text-slate-500" : "text-amber-600") 
+                "text-sm font-medium flex items-center gap-1.5 line-clamp-1",
+                t.type === 'recognition'
+                  ? (t.rec_type === 'remind' ? "text-slate-500" : "text-amber-600")
                   : "text-slate-500"
               )}>
                 {t.type === 'recognition' && (
-                  t.rec_type === 'remind' 
-                    ? <Clock className="w-3 h-3 text-slate-400 shrink-0" /> 
+                  t.rec_type === 'remind'
+                    ? <Clock className="w-3 h-3 text-slate-400 shrink-0" />
                     : <Trophy className="w-3 h-3 fill-amber-500 shrink-0" />
                 )}
-                {t.type === 'task' 
-                  ? (t.task_type === 'kpi' ? 'CHỈ TIÊU MỚI' : 'CÔNG VIỆC MỚI') 
-                  : (t.type === 'comment' 
-                      ? `PHẢN HỒI: ${t.task?.title}` 
-                      : (t.rec_type === 'remind' 
-                          ? `CHẤN CHỈNH: ${t.receiver?.full_name}` 
-                          : `VINH DANH: ${t.receiver?.full_name}`
+                {t.type === 'task'
+                  ? (t.task_type === 'kpi' ? 'Chỉ tiêu mới' : 'Công việc mới')
+                  : (t.type === 'comment'
+                      ? `Phản hồi: ${t.task?.title}`
+                      : (t.rec_type === 'remind'
+                          ? `Chấn chỉnh: ${t.receiver?.full_name}`
+                          : `Vinh danh: ${t.receiver?.full_name}`
                         )
                     )}
               </p>
-              <span className="inline-block sm:hidden text-[10px] font-bold text-slate-400">
+              <span className="inline-block sm:hidden text-sm font-medium text-slate-400">
                 • {new Date(t.created_at).toLocaleDateString('vi-VN')}
               </span>
             </div>
@@ -452,10 +452,10 @@ export default function DashboardPage() {
 
     {stats.recentTasks.length > 4 && (
       <div className="flex justify-center pt-2">
-        <Button 
-          variant="ghost" 
+        <Button
+          variant="ghost"
           onClick={() => setShowAllActivities(!showAllActivities)}
-          className="text-xs font-bold text-primary uppercase hover:bg-primary/5 rounded-full px-6 py-2 flex items-center gap-1.5"
+          className="text-sm font-medium text-primary hover:bg-primary/5 rounded-full px-6 py-2 flex items-center gap-1.5"
         >
           {showAllActivities ? (
             <>Thu gọn <ChevronUp className="w-4 h-4" /></>
@@ -470,8 +470,8 @@ export default function DashboardPage() {
 
  {/* Focus Section */}
  <div className="lg:col-span-4 space-y-6">
- <h3 className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2 px-2 truncate whitespace-nowrap">
- <AlertCircle className="w-4 h-4 text-primary" /> ƯU TIÊN HÀNG ĐẦU
+ <h3 className="text-sm font-medium text-slate-500 flex items-center gap-2 px-2 truncate whitespace-nowrap">
+ <AlertCircle className="w-4 h-4 text-primary" /> Ưu tiên hàng đầu
  </h3>
  <div className="premium-card p-6 border-none relative overflow-hidden group">
  {stats.topKpi ? (
@@ -486,22 +486,22 @@ export default function DashboardPage() {
  </p>
  </div>
  <div className="space-y-4 pt-2">
- <div className="flex items-center justify-between text-[10px] md:text-xs font-bold uppercase truncate whitespace-nowrap">
+ <div className="flex items-center justify-between text-[10px] md:text-sm font-medium truncate whitespace-nowrap">
  <span className="text-slate-500">Tiến độ nhiệm vụ</span>
  <span className="text-primary">
- {stats.topKpi.target_value 
- ? Math.round(((stats.topKpi.current_value || 0) / stats.topKpi.target_value) * 100) 
+ {stats.topKpi.target_value
+ ? Math.round(((stats.topKpi.current_value || 0) / stats.topKpi.target_value) * 100)
  : (stats.topKpi.progress || 0)}%
  </span>
  </div>
- <Progress 
- value={Math.min(100, stats.topKpi.target_value 
- ? Math.round(((stats.topKpi.current_value || 0) / stats.topKpi.target_value) * 100) 
- : (stats.topKpi.progress || 0))} 
- className="h-1.5 bg-white" 
+ <Progress
+ value={Math.min(100, stats.topKpi.target_value
+ ? Math.round(((stats.topKpi.current_value || 0) / stats.topKpi.target_value) * 100)
+ : (stats.topKpi.progress || 0))}
+ className="h-1.5 bg-white"
  />
  </div>
- <Button asChild className="w-full bg-slate-900 hover:bg-black text-white h-11 md:h-12 rounded-xl font-bold text-xs uppercase mt-2 truncate whitespace-nowrap">
+ <Button asChild className="w-full bg-slate-900 hover:bg-black text-white h-11 md:h-12 rounded-xl font-medium text-sm mt-2 truncate whitespace-nowrap">
  <Link href={`/dashboard/tasks/${stats.topKpi.id}`}>Chi tiết lộ trình</Link>
  </Button>
  </div>
@@ -510,7 +510,7 @@ export default function DashboardPage() {
  <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto text-slate-500">
  <Target className="w-6 h-6" />
  </div>
- <p className="text-xs font-bold text-slate-500 uppercase truncate whitespace-nowrap">Chưa có chỉ tiêu trọng tâm</p>
+ <p className="text-sm font-medium text-slate-500 truncate whitespace-nowrap">Chưa có chỉ tiêu trọng tâm</p>
  </div>
  )}
  </div>

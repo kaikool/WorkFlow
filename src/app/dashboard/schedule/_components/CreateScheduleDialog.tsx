@@ -265,7 +265,7 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
                   <div className={cn("absolute top-1 w-4 h-4 bg-white rounded-full transition-all", newSchedule.use_vehicle ? "left-5" : "left-1")} />
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-[14px] font-medium text-slate-900">SỬ DỤNG XE CƠ QUAN</span>
+                  <span className="text-[14px] font-medium text-slate-900">Sử dụng xe cơ quan</span>
                   <span className="text-[12px] text-slate-400 truncate">Tích chọn nếu cần điều xe</span>
                 </div>
               </div>
@@ -285,7 +285,7 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
                     <div className="p-2 bg-white rounded-xl shadow-sm">
                       <Car className="w-4 h-4 text-blue-600" />
                     </div>
-                    <p className="text-xs font-bold text-blue-700 leading-tight">Yêu cầu của bạn sẽ được bộ phận TCTH phê duyệt và gán xe/lái xe cụ thể sau khi đăng ký.</p>
+                    <p className="text-sm font-medium text-blue-700 leading-tight">Yêu cầu của bạn sẽ được bộ phận TCTH phê duyệt và gán xe/lái xe cụ thể sau khi đăng ký.</p>
                   </div>
                 </div>
               )}

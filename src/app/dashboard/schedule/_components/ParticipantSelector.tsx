@@ -43,7 +43,7 @@ export default function ParticipantSelector({
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <div className="text-[13px] font-semibold text-slate-500 flex items-center gap-2">
-              <div className="w-1 h-3 bg-red-500 rounded-full" /> 1. BAN GIÁM ĐỐC
+              <div className="w-1 h-3 bg-red-500 rounded-full" /> 1. Ban giám đốc
             </div>
             <div className="flex bg-slate-100 p-0.5 rounded-lg shrink-0">
               <button type="button" onClick={() => setBgdMode('all')}
@@ -74,7 +74,7 @@ export default function ParticipantSelector({
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <div className="text-[13px] font-semibold text-slate-500 flex items-center gap-2">
-              <div className="w-1 h-3 bg-blue-500 rounded-full" /> 2. ĐƠN VỊ / PHÒNG
+              <div className="w-1 h-3 bg-blue-500 rounded-full" /> 2. Đơn vị / phòng
             </div>
             <div className="flex bg-slate-100 p-0.5 rounded-lg shrink-0">
               <button type="button" onClick={() => setDeptMode('all')}
@@ -106,7 +106,7 @@ export default function ParticipantSelector({
           <div className="space-y-3 pt-2 border-t border-slate-50 animate-in fade-in">
             <div className="flex items-center justify-between">
               <div className="text-[13px] font-semibold text-slate-500 flex items-center gap-2">
-                <div className="w-1 h-3 bg-emerald-500 rounded-full" /> 3. CHI TIẾT CÁN BỘ
+                <div className="w-1 h-3 bg-emerald-500 rounded-full" /> 3. Chi tiết cán bộ
               </div>
               <div className="flex bg-slate-100 p-0.5 rounded-lg shrink-0">
                 <button type="button" onClick={() => setParticipantMode('all')}
@@ -131,16 +131,16 @@ export default function ParticipantSelector({
                     if (deptMembers.length === 0) return null;
                     return (
                       <div key={dept.id} className="space-y-2">
-                        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">{dept.name}</p>
+                        <p className="text-[11px] font-bold text-slate-400">{dept.name}</p>
                         <div className="flex flex-wrap gap-2">
                           {deptMembers.map(p => {
                             const isSelected = selectedParticipants.includes(p.id);
-                            const initials = p.full_name ? p.full_name.trim().split(' ').pop()?.substring(0, 2).toUpperCase() || 'CB' : 'CB';
+                            const initials = p.full_name ? p.full_name.trim().split(' ').pop()?.substring(0, 2) || '?'  : '?' ;
                             return (
                               <button key={p.id} type="button"
                                 onClick={() => selectedParticipants.includes(p.id) ? setSelectedParticipants(selectedParticipants.filter(id => id !== p.id)) : setSelectedParticipants([...selectedParticipants, p.id])}
                                 className={cn(
-                                  "flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl border text-xs font-semibold transition-all duration-200 shrink-0",
+                                  "flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl border text-sm font-medium transition-all duration-200 shrink-0",
                                   isSelected
                                     ? "bg-emerald-50 text-emerald-700 border-emerald-200/80 ring-2 ring-emerald-500/10 shadow-sm"
                                     : "bg-white text-slate-600 border-slate-200/80 hover:bg-slate-50 hover:border-slate-300"
@@ -167,10 +167,10 @@ export default function ParticipantSelector({
               ) : (
                 <div className="py-2">
                   {participantMode === 'all' && (
-                    <p className="text-xs font-bold text-slate-500 italic">✓ Tự động mời tất cả cán bộ thuộc các phòng đã chọn.</p>
+                    <p className="text-sm font-medium text-slate-500 italic">✓ Tự động mời tất cả cán bộ thuộc các phòng đã chọn.</p>
                   )}
                   {participantMode === 'manager' && (
-                    <p className="text-xs font-bold text-slate-500 italic">✓ Tự động mời Lãnh đạo các phòng đã chọn.</p>
+                    <p className="text-sm font-medium text-slate-500 italic">✓ Tự động mời Lãnh đạo các phòng đã chọn.</p>
                   )}
                 </div>
               )}

@@ -47,7 +47,7 @@ export default function SettingsPage() {
       {/* Header chuẩn theo MASTER.md */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pt-4 sm:pt-0">
         <div className="space-y-1">
-          <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">Cài đặt hệ thống</h1>
+          <h1 className="text-2xl font-semibold text-slate-900">Cài đặt hệ thống</h1>
           <p className="text-[13px] text-slate-500 font-medium">Cấu hình trải nghiệm cá nhân và bảo mật tài khoản</p>
         </div>
         <Button 
@@ -63,7 +63,7 @@ export default function SettingsPage() {
       <div className="grid grid-cols-1 gap-6 md:gap-10">
         {/* Notifications Section */}
         <div className="space-y-6">
-          <h3 className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2 truncate">
+          <h3 className="text-sm font-medium text-slate-500 flex items-center gap-2 truncate">
             <Bell className="w-4 h-4 text-slate-400 shrink-0" /> Nhận thông báo
           </h3>
           <div className="premium-card p-0 border-none overflow-hidden divide-y divide-slate-100">
@@ -114,7 +114,7 @@ export default function SettingsPage() {
 
         {/* Security Section */}
         <div className="space-y-6">
-          <h3 className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2 truncate">
+          <h3 className="text-sm font-medium text-slate-500 flex items-center gap-2 truncate">
             <Shield className="w-4 h-4 text-slate-400 shrink-0" /> Bảo mật & Đăng nhập
           </h3>
           <div className="premium-card p-0 border-none overflow-hidden divide-y divide-slate-100">

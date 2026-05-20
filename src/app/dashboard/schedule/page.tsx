@@ -177,7 +177,7 @@ export default function SchedulePage() {
     try {
       const start = startOfWeek(selectedDate, { weekStartsOn: 1 });
       const end = endOfWeek(selectedDate, { weekStartsOn: 1 });
-      // Lấy tất cả lịch có start_time trong tuần HOẶC end_time >= đầu tuần để bắt lịch nhiều ngày chạy qua tuần
+      // Lấy tất cả lịch có start_time trong tuần Hoặc end_time >= đầu tuần để bắt lịch nhiều ngày chạy qua tuần
       const { data: scheds, error: sError } = await supabase
         .from('schedules')
         .select(`*, creator:profiles(full_name, avatar_url, department_id, is_department_head), room:rooms(name), vehicle:vehicles(name, plate_number), participants:schedule_participants(profile:profiles(id, full_name, avatar_url, role, is_department_head))`)
@@ -401,7 +401,7 @@ export default function SchedulePage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 pt-4 sm:pt-0">
         <div className="space-y-1">
-          <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">Lịch trình</h1>
+          <h1 className="text-2xl font-semibold text-slate-900">Lịch trình</h1>
           <p className="text-[13px] text-slate-500 font-medium">Điều phối lịch họp & công tác</p>
         </div>
         <div className="flex items-center gap-3">

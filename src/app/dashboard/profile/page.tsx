@@ -192,7 +192,7 @@ export default function ProfilePage() {
       {/* Header chuẩn theo MASTER.md */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pt-4 sm:pt-0">
         <div className="space-y-1">
-          <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">Hồ sơ cá nhân</h1>
+          <h1 className="text-2xl font-semibold text-slate-900">Hồ sơ cá nhân</h1>
           <p className="text-[13px] text-slate-500 font-medium">Thông tin tài khoản và quá trình công tác</p>
         </div>
         <Button 
@@ -213,8 +213,8 @@ export default function ProfilePage() {
             <div className="relative group cursor-pointer shrink-0" onClick={() => fileInputRef.current?.click()}>
               <Avatar className="h-28 w-28 sm:h-32 sm:w-32 shadow-sm transition-all group-hover:opacity-80">
                 <AvatarImage src={profile.avatar_url} className="object-cover" />
-                <AvatarFallback className="bg-slate-100 text-slate-600 text-3xl font-semibold tabular-nums tracking-tighter">
-                  {profile.full_name?.[0]?.toUpperCase()}
+                <AvatarFallback className="bg-slate-100 text-slate-600 text-3xl font-semibold tabular-nums">
+                  {profile.full_name?.[0]}
                 </AvatarFallback>
               </Avatar>
               <div className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
@@ -229,11 +229,11 @@ export default function ProfilePage() {
                   <h2 className="text-[20px] font-bold text-slate-900 truncate w-full sm:w-auto">
                     {profile.full_name}
                   </h2>
-                  <Badge className="bg-slate-100 text-slate-600 border-none text-[11px] font-bold uppercase px-2.5 py-0.5 rounded-full shrink-0">
+                  <Badge className="bg-slate-100 text-slate-600 border-none text-[11px] font-bold px-2.5 py-0.5 rounded-full shrink-0">
                     {roleLabels[profile.role] || "Cán bộ"}
                   </Badge>
                 </div>
-                <p className="text-slate-500 font-bold text-xs uppercase truncate">
+                <p className="text-slate-500 font-medium text-sm truncate">
                   {(profile.role === 'director' || profile.role === 'admin') ? "Quản trị & Điều hành" : (profile.departments?.name || "Chưa xác định phòng ban")}
                 </p>
               </div>
@@ -252,22 +252,22 @@ export default function ProfilePage() {
                     </div>
                     <div className="p-6 space-y-5">
                       <div className="space-y-2">
-                        <Label className="text-xs font-bold text-slate-500 uppercase truncate">Họ và tên</Label>
+                        <Label className="text-sm font-medium text-slate-500 truncate">Họ và tên</Label>
                         <Input value={newName} onChange={(e) => setNewName(e.target.value)} className="h-10 bg-slate-50 border-none rounded-xl font-medium text-[14px]" />
                       </div>
 
                       <div className="space-y-2">
-                        <Label className="text-xs font-bold text-slate-500 uppercase truncate">Số điện thoại</Label>
+                        <Label className="text-sm font-medium text-slate-500 truncate">Số điện thoại</Label>
                         <Input type="tel" value={newPhone} onChange={(e) => setNewPhone(e.target.value)} className="h-10 bg-slate-50 border-none rounded-xl font-medium text-[14px]" placeholder="VD: 0912345678" />
                       </div>
 
                       <div className="space-y-2">
-                        <Label className="text-xs font-bold text-slate-500 uppercase truncate">Ngày sinh</Label>
+                        <Label className="text-sm font-medium text-slate-500 truncate">Ngày sinh</Label>
                         <Input type="date" value={newBirthday} onChange={(e) => setNewBirthday(e.target.value)} className="h-10 bg-slate-50 border-none rounded-xl font-medium text-[14px]" />
                       </div>
 
                       <div className="space-y-2">
-                        <Label className="text-xs font-bold text-slate-500 uppercase truncate">Phòng ban công tác</Label>
+                        <Label className="text-sm font-medium text-slate-500 truncate">Phòng ban công tác</Label>
                         <Select value={newDept} onValueChange={setNewDept}>
                           <SelectTrigger className="h-10 bg-slate-50 border-none rounded-xl font-medium text-[14px]">
                             <SelectValue placeholder="Chọn phòng ban..." />
@@ -282,7 +282,7 @@ export default function ProfilePage() {
 
                       {isAdmin && (
                         <div className="space-y-2 pt-4 border-t border-slate-100">
-                          <Label className="text-xs font-bold text-slate-700 uppercase truncate">Chức danh hệ thống (Admin)</Label>
+                          <Label className="text-sm font-medium text-slate-700 truncate">Chức danh hệ thống (Admin)</Label>
                           <Select value={newRole} onValueChange={setNewRole}>
                             <SelectTrigger className="h-10 bg-slate-50 border-none rounded-xl font-medium text-slate-900 text-[14px]">
                               <SelectValue />
@@ -309,7 +309,7 @@ export default function ProfilePage() {
 
           {/* Lịch sử hoạt động */}
           <div className="premium-card p-6 border-none space-y-6">
-            <h3 className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2 truncate">
+            <h3 className="text-sm font-medium text-slate-500 flex items-center gap-2 truncate">
               <History className="w-4 h-4 text-slate-400 shrink-0" /> Hoạt động gần đây
             </h3>
             <div className="space-y-3">
@@ -339,19 +339,19 @@ export default function ProfilePage() {
         {/* Thông tin công tác */}
         <div className="lg:col-span-4 space-y-6">
           <div className="premium-card p-6 border-none space-y-6">
-            <h3 className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2 truncate">
+            <h3 className="text-sm font-medium text-slate-500 flex items-center gap-2 truncate">
               <Briefcase className="w-4 h-4 text-slate-400 shrink-0" /> Thông tin công tác
             </h3>
             <div className="space-y-4">
               <div className="space-y-1.5">
-                <p className="text-[11px] font-bold text-slate-500 uppercase truncate">Email</p>
+                <p className="text-[11px] font-bold text-slate-500 truncate">Email</p>
                 <div className="px-4 py-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center gap-3 min-w-0">
                   <Mail className="w-4 h-4 text-slate-400 shrink-0" />
                   <span className="text-[14px] font-medium text-slate-900 truncate">{profile.email}</span>
                 </div>
               </div>
               <div className="space-y-1.5">
-                <p className="text-[11px] font-bold text-slate-500 uppercase truncate">Chức danh</p>
+                <p className="text-[11px] font-bold text-slate-500 truncate">Chức danh</p>
                 <div className="px-4 py-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center gap-3 min-w-0">
                   <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
                   <span className="text-[14px] font-medium text-slate-900 truncate">{roleLabels[profile.role] || "Cán bộ"}</span>
@@ -360,7 +360,7 @@ export default function ProfilePage() {
               
               {profile.phone && (
                 <div className="space-y-1.5">
-                  <p className="text-[11px] font-bold text-slate-500 uppercase truncate">Số điện thoại</p>
+                  <p className="text-[11px] font-bold text-slate-500 truncate">Số điện thoại</p>
                   <div className="px-4 py-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center gap-3 min-w-0 group">
                     <Phone className="w-4 h-4 text-blue-500 shrink-0" />
                     <a href={`tel:${profile.phone}`} className="text-[14px] font-medium text-slate-900 truncate hover:text-blue-600 hover:underline">
@@ -372,7 +372,7 @@ export default function ProfilePage() {
 
               {profile.birthday && (
                 <div className="space-y-1.5">
-                  <p className="text-[11px] font-bold text-slate-500 uppercase truncate">Ngày sinh</p>
+                  <p className="text-[11px] font-bold text-slate-500 truncate">Ngày sinh</p>
                   <div className="px-4 py-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center gap-3 min-w-0">
                     <Calendar className="w-4 h-4 text-amber-500 shrink-0" />
                     <span className="text-[14px] font-medium text-slate-900 truncate">

@@ -87,7 +87,7 @@ export function NewReportForm() {
         }
 
         for (const deptId of selectedDepartments) {
-          // Lấy TẤT CẢ các LĐP của phòng này
+          // Lấy Tất cả các LĐP của phòng này
           const deptManagers = managers!.filter((m: any) => m.department_id === deptId)
 
           const { data: newTask, error: taskError } = await supabase.from('tasks').insert({
@@ -105,7 +105,7 @@ export function NewReportForm() {
           }).select().single()
           if (taskError) throw taskError
 
-          // Gửi chuông thông báo cho TẤT CẢ Lãnh đạo phòng
+          // Gửi chuông thông báo cho Tất cả Lãnh đạo phòng
           const notifications = deptManagers.map((m: any) => ({
             user_id: m.id,
             title:   'Phòng có yêu cầu báo cáo mới',
@@ -169,14 +169,14 @@ export function NewReportForm() {
           <CheckCircle2 className="w-12 h-12" />
         </div>
         <div className="space-y-2">
-          <h2 className="text-2xl font-semibold text-slate-900 tracking-tight">Hoàn tất!</h2>
+          <h2 className="text-2xl font-semibold text-slate-900">Hoàn tất!</h2>
           <p className="text-slate-500 font-medium text-sm">Yêu cầu báo cáo đã được gửi thành công.</p>
         </div>
         <div className="flex flex-col gap-2 pt-4">
-          <Button asChild className="bg-primary hover:bg-primary/90 h-10 rounded-xl font-medium">
+          <Button asChild className="bg-primary hover:bg-primary/90 min-h-11 rounded-xl font-medium">
             <Link href="/dashboard/tasks">Về danh sách <ArrowRight className="ml-2 w-4 h-4" /></Link>
           </Button>
-          <Button variant="ghost" onClick={() => setIsSuccess(false)} className="text-slate-500 font-medium h-10 rounded-xl hover:bg-slate-50">
+          <Button variant="ghost" onClick={() => setIsSuccess(false)} className="text-slate-500 font-medium min-h-11 rounded-xl hover:bg-slate-50">
             Tạo thêm
           </Button>
         </div>
@@ -191,7 +191,7 @@ export function NewReportForm() {
         <div className="lg:col-span-8 space-y-6">
           <div className="premium-card p-6 border-none space-y-4">
             <div className="flex items-center gap-2">
-              <Badge className="px-2 py-0.5 text-[11px] font-medium rounded-md border-none bg-slate-900 text-white">
+              <Badge className="px-3 py-1 text-xs font-medium rounded-full border-none bg-slate-900 text-white">
                 Yêu cầu báo cáo
               </Badge>
             </div>
@@ -202,7 +202,7 @@ export function NewReportForm() {
               required
             />
             <div className="bg-slate-50 p-4 rounded-xl space-y-2">
-              <Label htmlFor="description" className="text-xs font-bold text-slate-500 uppercase truncate whitespace-nowrap">
+              <Label htmlFor="description" className="text-sm font-medium text-slate-500 truncate whitespace-nowrap">
                 Nội dung báo cáo chi tiết
               </Label>
               <Textarea
@@ -226,9 +226,9 @@ export function NewReportForm() {
             <div className="space-y-3">
               <Label className="text-[13px] font-medium text-slate-500">Người / Phòng nhận</Label>
               <Tabs value={assignType} onValueChange={(v: any) => setAssignType(v)} className="w-full mb-3">
-                <TabsList className="grid w-full grid-cols-2 h-9 p-1 bg-slate-100 rounded-lg">
-                  <TabsTrigger value="profile"    className="rounded-md text-[11px] font-semibold data-[state=active]:bg-white data-[state=active]:shadow-sm">Cán bộ</TabsTrigger>
-                  <TabsTrigger value="department" className="rounded-md text-[11px] font-semibold data-[state=active]:bg-white data-[state=active]:shadow-sm">Phòng ban</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-2 min-h-11 p-1 bg-slate-100 rounded-xl">
+                  <TabsTrigger value="profile"    className="rounded-lg text-sm font-medium data-[state=active]:bg-white data-[state=active]:shadow-sm">Cán bộ</TabsTrigger>
+                  <TabsTrigger value="department" className="rounded-lg text-sm font-medium data-[state=active]:bg-white data-[state=active]:shadow-sm">Phòng ban</TabsTrigger>
                 </TabsList>
               </Tabs>
 
@@ -240,7 +240,7 @@ export function NewReportForm() {
                         {selectedAssignees.length === 0
                           ? <span className="text-slate-400 font-normal">Chọn người nhận</span>
                           : selectedAssignees.map(id => profiles.find(p => p.id === id)).filter(Boolean).map(p => (
-                              <Badge key={p.id} variant="secondary" className="bg-primary text-white border-none px-2 py-0.5 rounded-md text-[12px] font-medium whitespace-nowrap truncate">
+                              <Badge key={p.id} variant="secondary" className="bg-primary text-white border-none px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap truncate">
                                 {p.full_name}
                               </Badge>
                             ))
@@ -258,12 +258,12 @@ export function NewReportForm() {
                           className={cn('flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all', selectedAssignees.includes(p.id) ? 'bg-primary/5 text-primary' : 'hover:bg-slate-50')}
                         >
                           <div className="flex items-center gap-3">
-                            <div className={cn('w-4 h-4 rounded-md border flex items-center justify-center transition-all', selectedAssignees.includes(p.id) ? 'bg-primary border-primary' : 'border-slate-300')}>
+                            <div className={cn('w-5 h-5 rounded-md border flex items-center justify-center transition-all', selectedAssignees.includes(p.id) ? 'bg-primary border-primary' : 'border-slate-300')}>
                               {selectedAssignees.includes(p.id) && <Check className="w-3 h-3 text-white" />}
                             </div>
-                            <span className="text-xs font-bold">{p.full_name}</span>
+                            <span className="text-sm font-medium">{p.full_name}</span>
                           </div>
-                          {p.role === 'manager' && <Badge className="text-[11px] bg-amber-50 text-amber-600 border-none px-1.5 font-medium">Lãnh đạo</Badge>}
+                          {p.role === 'manager' && <Badge className="text-xs bg-amber-50 text-amber-600 border-none px-2.5 font-medium">Lãnh đạo</Badge>}
                         </div>
                       ))}
                     </div>
@@ -277,7 +277,7 @@ export function NewReportForm() {
                         {selectedDepartments.length === 0
                           ? <span className="text-slate-400 font-normal">Chọn các phòng ban...</span>
                           : selectedDepartments.map(id => departments.find(d => d.id === id)).filter(Boolean).map(d => (
-                              <Badge key={d.id} variant="secondary" className="bg-primary text-white border-none px-2.5 py-0.5 rounded-full text-[12px] font-bold uppercase whitespace-nowrap truncate">
+                              <Badge key={d.id} variant="secondary" className="bg-primary text-white border-none px-2.5 py-1 rounded-full text-sm font-medium whitespace-nowrap truncate">
                                 {d.name}
                               </Badge>
                             ))
@@ -294,10 +294,10 @@ export function NewReportForm() {
                           onClick={() => setSelDepts(prev => prev.includes(d.id) ? prev.filter(x => x !== d.id) : [...prev, d.id])}
                           className={cn('flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all', selectedDepartments.includes(d.id) ? 'bg-primary/5 text-primary' : 'hover:bg-slate-50')}
                         >
-                          <div className={cn('w-4 h-4 rounded-md border flex items-center justify-center transition-all', selectedDepartments.includes(d.id) ? 'bg-primary border-primary' : 'border-slate-300')}>
+                          <div className={cn('w-5 h-5 rounded-md border flex items-center justify-center transition-all', selectedDepartments.includes(d.id) ? 'bg-primary border-primary' : 'border-slate-300')}>
                             {selectedDepartments.includes(d.id) && <Check className="w-3 h-3 text-white" />}
                           </div>
-                          <span className="text-xs font-bold">{d.name}</span>
+                          <span className="text-sm font-medium">{d.name}</span>
                         </div>
                       ))}
                     </div>
@@ -325,7 +325,7 @@ export function NewReportForm() {
               <div className="space-y-2">
                 <Label className="text-[13px] font-medium text-slate-500">Mức độ ưu tiên</Label>
                 <Select name="priority" defaultValue="medium">
-                  <SelectTrigger className="h-10 rounded-xl bg-slate-50 border-none font-medium text-slate-900 px-4 shadow-sm">
+                  <SelectTrigger className="min-h-11 rounded-xl bg-slate-50 border-none font-medium text-slate-900 px-4 shadow-sm">
                     <div className="flex items-center gap-2">
                       <Flag className="w-4 h-4 text-primary" />
                       <SelectValue />
@@ -362,10 +362,10 @@ export function NewReportForm() {
 
             {/* Nút submit */}
             <div className="pt-6 border-t border-slate-50 space-y-3">
-              <Button type="submit" disabled={loading} className="w-full bg-primary hover:bg-primary/90 h-10 rounded-xl font-medium text-[14px] active:scale-95 transition-all">
+              <Button type="submit" disabled={loading} className="w-full bg-primary hover:bg-primary/90 min-h-11 rounded-xl font-medium text-[14px] active:scale-95 transition-all">
                 {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Gửi yêu cầu báo cáo'}
               </Button>
-              <Button type="button" variant="ghost" onClick={() => router.back()} className="text-slate-500 font-bold h-10 w-full rounded-xl hover:bg-slate-50 text-xs active:scale-95 transition-all">
+              <Button type="button" variant="ghost" onClick={() => router.back()} className="text-slate-500 font-medium min-h-11 w-full rounded-xl hover:bg-slate-50 text-sm active:scale-95 transition-all">
                 Hủy bỏ
               </Button>
             </div>

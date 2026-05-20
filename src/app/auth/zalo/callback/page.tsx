@@ -72,7 +72,7 @@ function ZaloCallbackContent() {
  {status === "processing" && (
  <div className="space-y-4 animate-in fade-in">
  <Loader2 className="w-12 h-12 text-primary animate-spin mx-auto" />
- <h2 className="text-xl font-bold text-slate-800 tabular-nums tracking-tighter">Đang hoàn tất xác thực...</h2>
+ <h2 className="text-xl font-bold text-slate-800 tabular-nums">Đang hoàn tất xác thực...</h2>
  <p className="text-slate-500">Đang đồng bộ hồ sơ cán bộ.</p>
  </div>
  )}
@@ -82,7 +82,7 @@ function ZaloCallbackContent() {
  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
  <ShieldCheck className="w-8 h-8 text-green-600" />
  </div>
- <h2 className="text-xl font-bold text-green-600 tabular-nums tracking-tighter">Xác thực thành công!</h2>
+ <h2 className="text-xl font-bold text-green-600 tabular-nums">Xác thực thành công!</h2>
  <p className="text-slate-500">Hệ thống đang chuyển hướng bạn về Portal...</p>
  </div>
  )}
@@ -92,7 +92,7 @@ function ZaloCallbackContent() {
  <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto">
  <AlertCircle className="w-8 h-8 text-red-600" />
  </div>
- <h2 className="text-xl font-bold text-red-600 tabular-nums tracking-tighter">Xác thực thất bại</h2>
+ <h2 className="text-xl font-bold text-red-600 tabular-nums">Xác thực thất bại</h2>
  <p className="text-slate-500 max-w-sm">{errorMsg}</p>
  <button 
  onClick={() => router.push("/")}
@@ -111,7 +111,7 @@ export default function ZaloCallbackPage() {
  <Suspense fallback={
  <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 text-center">
  <Loader2 className="w-12 h-12 text-primary animate-spin mx-auto mb-4" />
- <h2 className="text-xl font-bold text-slate-800 tabular-nums tracking-tighter">Đang tải...</h2>
+ <h2 className="text-xl font-bold text-slate-800 tabular-nums">Đang tải...</h2>
  </div>
  }>
  <ZaloCallbackContent />

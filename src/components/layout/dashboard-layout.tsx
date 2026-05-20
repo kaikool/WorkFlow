@@ -141,7 +141,7 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
  <AlertDialog open={isLogoutDialogOpen} onOpenChange={setIsLogoutDialogOpen}>
  <AlertDialogContent className="rounded-3xl border-none shadow-2xl">
  <AlertDialogHeader>
- <AlertDialogTitle className="text-xl font-bold tabular-nums tracking-tighter">Xác nhận Đăng xuất?</AlertDialogTitle>
+ <AlertDialogTitle className="text-xl font-bold tabular-nums">Xác nhận Đăng xuất?</AlertDialogTitle>
  <AlertDialogDescription className="text-slate-500">
  Bạn có chắc chắn muốn kết thúc phiên làm việc hiện tại không?
  </AlertDialogDescription>
@@ -251,7 +251,7 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
  <span className="text-sm font-bold text-slate-900 leading-none">
  {profile?.full_name || 'Cán bộ'}
  </span>
-  <span className="text-[10px] font-bold text-primary uppercase mt-1.5 truncate whitespace-nowrap">
+  <span className="text-sm font-medium text-primary mt-1.5 truncate whitespace-nowrap">
   {profile?.role === 'admin' ? 'Hệ thống' : profile?.role === 'director' ? 'Giám đốc' : profile?.role === 'manager' ? 'Lãnh đạo' : profile?.role === 'hr_officer' ? 'Nhân sự' : profile?.role === 'driver' ? 'Tài xế' : profile?.role === 'secretary' ? 'Thư ký' : 'Cán bộ'}
   </span>
  </div>
@@ -261,7 +261,7 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
  <DropdownMenuTrigger asChild>
  <Avatar className="h-11 w-11 border-2 border-white shadow-sm cursor-pointer hover:scale-[1.02] transition-transform">
  <AvatarImage src={profile?.avatar_url} className="object-cover" />
- <AvatarFallback className="bg-primary text-primary-foreground font-bold">{profile?.full_name?.[0]?.toUpperCase()}</AvatarFallback>
+ <AvatarFallback className="bg-primary text-primary-foreground font-bold">{profile?.full_name?.[0]}</AvatarFallback>
  </Avatar>
  </DropdownMenuTrigger>
  <DropdownMenuContent className="w-56 mt-2 rounded-xl" align="end">
@@ -278,7 +278,7 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
  ) : (
  <Avatar className="h-11 w-11 border-2 border-white shadow-sm">
  <AvatarImage src={profile?.avatar_url} className="object-cover" />
- <AvatarFallback className="bg-primary text-primary-foreground font-bold">{profile?.full_name?.[0]?.toUpperCase()}</AvatarFallback>
+ <AvatarFallback className="bg-primary text-primary-foreground font-bold">{profile?.full_name?.[0]}</AvatarFallback>
  </Avatar>
  )}
  </div>
@@ -359,7 +359,7 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
  <div className="fixed inset-0 bg-white/80 backdrop-blur-[2px] z-[999] flex flex-col items-center justify-center animate-in fade-in duration-300">
  <div className="bg-white p-6 rounded-[2rem] shadow-2xl flex flex-col items-center gap-4 border border-slate-50">
  <Loader2 className="w-8 h-8 text-primary animate-spin" />
- <span className="text-xs font-bold text-slate-900 uppercase truncate whitespace-nowrap">Đang cập nhật dữ liệu...</span>
+ <span className="text-sm font-medium text-slate-900 truncate whitespace-nowrap">Đang cập nhật dữ liệu...</span>
  </div>
  </div>
  )}

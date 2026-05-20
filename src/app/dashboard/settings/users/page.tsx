@@ -1,10 +1,10 @@
 'use client'
 
 import React, { useState, useEffect } from "react";
-import { 
- Users, 
- Search, 
- Loader2, 
+import {
+ Users,
+ Search,
+ Loader2,
  Shield,
  Building2,
  Save,
@@ -14,20 +14,20 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { 
- Select, 
- SelectContent, 
- SelectItem, 
- SelectTrigger, 
- SelectValue 
+import {
+ Select,
+ SelectContent,
+ SelectItem,
+ SelectTrigger,
+ SelectValue
 } from "@/components/ui/select";
-import { 
- Table, 
- TableBody, 
- TableCell, 
- TableHead, 
- TableHeader, 
- TableRow 
+import {
+ Table,
+ TableBody,
+ TableCell,
+ TableHead,
+ TableHeader,
+ TableRow
 } from '@/components/ui/table'
 import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/utils/supabase/client";
@@ -40,7 +40,7 @@ export default function UserManagementPage() {
  const [loading, setLoading] = useState(true);
  const [searchQuery, setSearchQuery] = useState("");
  const [updatingId, setUpdatingId] = useState<string | null>(null);
- 
+
  const { toast } = useToast();
  const supabase = createClient();
 
@@ -55,7 +55,7 @@ export default function UserManagementPage() {
  .from('profiles')
  .select(`*, departments (id, name)`)
  .order('full_name');
- 
+
  if (pError) throw pError;
   const sortedProfiles = sortProfilesByHierarchy(profiles || []);
  setUsers(sortedProfiles);
@@ -64,7 +64,7 @@ export default function UserManagementPage() {
  .from('departments')
  .select('*')
  .order('name');
- 
+
  if (dError) throw dError;
  setDepartments(depts || []);
 
@@ -84,7 +84,7 @@ export default function UserManagementPage() {
  .eq('id', userId);
 
  if (error) throw error;
- 
+
  setUsers(prev => prev.map(u => u.id === userId ? { ...u, ...updates } : u));
  toast({ title: "Thành công", description: "Đã cập nhật thông tin người dùng." });
  } catch (error: any) {
@@ -94,7 +94,7 @@ export default function UserManagementPage() {
  }
  };
 
- const filteredUsers = users.filter(u => 
+ const filteredUsers = users.filter(u =>
  u.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
  u.role?.toLowerCase().includes(searchQuery.toLowerCase())
  );
@@ -113,10 +113,10 @@ export default function UserManagementPage() {
  {/* Header */}
  <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 pt-4 sm:pt-0">
  <div className="space-y-1">
- <h1 className="text-3xl font-bold text-slate-900 tracking-tight tabular-nums">
+ <h1 className="text-3xl font-bold text-slate-900 tabular-nums">
  Quản lý nhân sự
  </h1>
- <p className="text-[12px] text-slate-500 font-bold uppercase truncate whitespace-nowrap">CẤU HÌNH QUYỀN HẠN & PHÒNG BAN</p>
+ <p className="text-[12px] text-slate-500 font-bold truncate whitespace-nowrap">Cấu hình quyền hạn & phòng ban</p>
  </div>
  </div>
 
@@ -125,14 +125,14 @@ export default function UserManagementPage() {
  <div className="flex items-center gap-2 bg-slate-50/60 p-1.5 rounded-2xl border border-slate-100/80 shadow-sm w-full h-13 sm:h-14">
    <div className="flex items-center gap-2 px-2 shrink-0">
      <Shield className="w-4 h-4 text-primary shrink-0" />
-     <span className="text-xs font-bold text-slate-600 uppercase tracking-wider hidden sm:inline">Cấu hình phân quyền ({filteredUsers.length})</span>
-     <span className="text-xs font-bold text-slate-600 tracking-wider inline sm:hidden">({filteredUsers.length})</span>
+     <span className="text-sm font-medium text-slate-600 hidden sm:inline">Cấu hình phân quyền ({filteredUsers.length})</span>
+     <span className="text-sm font-medium text-slate-600 inline sm:hidden">({filteredUsers.length})</span>
    </div>
    <div className="relative flex-1 group">
      <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500 group-focus-within:text-primary transition-colors" />
-     <Input 
-       placeholder="Tìm kiếm cán bộ hoặc chức danh..." 
-       className="w-full pl-9 pr-3 h-10 text-xs font-semibold bg-white border-slate-200/60 rounded-xl focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary transition-all" 
+     <Input
+       placeholder="Tìm kiếm cán bộ hoặc chức danh..."
+       className="w-full pl-9 pr-3 h-10 text-sm font-medium bg-white border-slate-200/60 rounded-xl focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary transition-all"
        value={searchQuery}
        onChange={(e) => setSearchQuery(e.target.value)}
      />
@@ -145,9 +145,9 @@ export default function UserManagementPage() {
  <Table>
  <TableHeader className="bg-slate-50/50">
  <TableRow className="hover:bg-transparent border-slate-50">
- <TableHead className="w-[300px] text-[10px] font-bold uppercase text-slate-500 py-5 pl-8 truncate whitespace-nowrap">Cán bộ</TableHead>
- <TableHead className="text-[10px] font-bold uppercase text-slate-500 truncate whitespace-nowrap">Phòng ban</TableHead>
- <TableHead className="text-[10px] font-bold uppercase text-slate-500 truncate whitespace-nowrap">Quyền hạn</TableHead>
+ <TableHead className="w-[300px] text-sm font-medium text-slate-500 py-5 pl-8 truncate whitespace-nowrap">Cán bộ</TableHead>
+ <TableHead className="text-sm font-medium text-slate-500 truncate whitespace-nowrap">Phòng ban</TableHead>
+ <TableHead className="text-sm font-medium text-slate-500 truncate whitespace-nowrap">Quyền hạn</TableHead>
  <TableHead className="text-right pr-8"></TableHead>
  </TableRow>
  </TableHeader>
@@ -158,23 +158,23 @@ export default function UserManagementPage() {
  <div className="flex items-center gap-4">
  <Avatar className="h-10 w-10 border-2 border-white shadow-sm">
  <AvatarImage src={user.avatar_url} />
- <AvatarFallback className="bg-primary/5 text-primary text-xs font-bold">
- {user.full_name?.[0]?.toUpperCase()}
+ <AvatarFallback className="bg-primary/5 text-primary text-sm font-medium">
+ {user.full_name?.[0]}
  </AvatarFallback>
  </Avatar>
  <div className="flex flex-col">
  <span className="text-sm font-bold text-slate-900 group-hover:text-primary transition-colors">{user.full_name}</span>
- <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight truncate whitespace-nowrap">{user.role}</span>
+ <span className="text-sm font-medium text-slate-500 truncate whitespace-nowrap">{user.role}</span>
  </div>
  </div>
  </TableCell>
  <TableCell>
- <Select 
- value={user.department_id || "none"} 
+ <Select
+ value={user.department_id || "none"}
  onValueChange={(val) => handleUpdateUser(user.id, { department_id: val === "none" ? null : val })}
  disabled={updatingId === user.id}
  >
- <SelectTrigger className="w-[200px] bg-slate-50 border-none rounded-xl h-9 text-xs font-bold text-slate-600">
+ <SelectTrigger className="w-[200px] bg-slate-50 border-none rounded-xl h-9 text-sm font-medium text-slate-600">
  <SelectValue />
  </SelectTrigger>
  <SelectContent className="rounded-xl border-none shadow-2xl">
@@ -186,12 +186,12 @@ export default function UserManagementPage() {
  </Select>
  </TableCell>
  <TableCell>
- <Select 
- value={user.role} 
+ <Select
+ value={user.role}
  onValueChange={(val) => handleUpdateUser(user.id, { role: val })}
  disabled={updatingId === user.id}
  >
- <SelectTrigger className="w-[180px] bg-slate-50 border-none rounded-xl h-9 text-xs font-bold text-slate-600">
+ <SelectTrigger className="w-[180px] bg-slate-50 border-none rounded-xl h-9 text-sm font-medium text-slate-600">
  <SelectValue />
  </SelectTrigger>
  <SelectContent className="rounded-xl border-none shadow-2xl">

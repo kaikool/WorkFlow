@@ -121,7 +121,7 @@ export default function LoginPage() {
     }
   }
 
-  // MÀN HÌNH TRẠNG THÁI CHỜ DUYỆT LỘNG LẪY (PREMIUM CARD)
+  // Màn hình trạng thái chờ duyệt lộng lẫy (premium card)
   if (isPendingApproval) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-4 relative overflow-hidden">
@@ -137,14 +137,14 @@ export default function LoginPage() {
             </div>
 
             <div className="space-y-2">
-              <h2 className="text-xl font-bold text-slate-900 tracking-tight">Yêu cầu đã được gửi!</h2>
-              <p className="text-slate-500 text-xs font-semibold leading-relaxed px-2">
+              <h2 className="text-xl font-bold text-slate-900">Yêu cầu đã được gửi!</h2>
+              <p className="text-slate-500 text-sm font-medium leading-relaxed px-2">
                 Yêu cầu của bạn đã được gửi tới Quản trị viên. Tài khoản sẽ được kích hoạt sau khi có phê duyệt. Chúng tôi sẽ gửi thông báo qua email của bạn.
               </p>
             </div>
 
             {/* Thông tin tóm tắt yêu cầu */}
-            <div className="bg-slate-50 p-4 rounded-2xl text-left text-[11px] font-bold text-slate-500 space-y-2.5 border border-slate-100 uppercase tracking-wider">
+            <div className="bg-slate-50 p-4 rounded-2xl text-left text-[11px] font-bold text-slate-500 space-y-2.5 border border-slate-100">
               <div className="flex justify-between items-center">
                 <span>Họ và tên</span>
                 <span className="text-slate-900 font-extrabold">{fullName}</span>
@@ -171,7 +171,7 @@ export default function LoginPage() {
                 setPassword('')
                 setFullName('')
               }}
-              className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl font-bold shadow-lg shadow-primary/20 active:scale-95 transition-all text-xs uppercase"
+              className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl font-bold shadow-lg shadow-primary/20 active:scale-95 transition-all text-xs"
             >
               Quay lại Đăng nhập
             </Button>
@@ -194,11 +194,11 @@ export default function LoginPage() {
             <div className="mb-3 transition-transform hover:scale-105 flex items-center justify-center">
               <img src="/logo.png" alt="Logo" className="h-16 w-16 object-contain" />
             </div>
-            <CardTitle className="text-2xl font-bold text-slate-900 tracking-tight">
+            <CardTitle className="text-2xl font-bold text-slate-900">
               WorkFlow Portal
             </CardTitle>
             <CardDescription className="text-center font-semibold text-xs text-slate-500">
-              {isSignUp ? 'YÊU CẦU CẤP TÀI KHOẢN MỚI' : 'QUẢN LÝ CÔNG VIỆC NỘI BỘ CHI NHÁNH NGÂN HÀNG'}
+              {isSignUp ? 'Yêu cầu cấp tài khoản mới' : 'Quản lý công việc nội bộ chi nhánh ngân hàng'}
             </CardDescription>
           </CardHeader>
 
@@ -209,7 +209,7 @@ export default function LoginPage() {
                 <div className="space-y-4 animate-fade-in-up">
                   {/* Họ và tên */}
                   <div className="space-y-2">
-                    <Label htmlFor="fullName" className="text-[10px] font-bold uppercase text-slate-500 ml-1 tracking-wider">Họ và tên</Label>
+                    <Label htmlFor="fullName" className="text-sm font-medium text-slate-500 ml-1">Họ và tên</Label>
                     <div className="relative">
                       <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
                       <Input
@@ -226,7 +226,7 @@ export default function LoginPage() {
 
                   {/* Chức danh (Role) */}
                   <div className="space-y-2">
-                    <Label htmlFor="role" className="text-[10px] font-bold uppercase text-slate-500 ml-1 tracking-wider">Chức danh</Label>
+                    <Label htmlFor="role" className="text-sm font-medium text-slate-500 ml-1">Chức danh</Label>
                     <div className="relative">
                       <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 z-10" />
                       <Select value={role} onValueChange={setRole}>
@@ -243,7 +243,7 @@ export default function LoginPage() {
 
                   {/* Phòng ban công tác */}
                   <div className="space-y-2">
-                    <Label htmlFor="department" className="text-[10px] font-bold uppercase text-slate-500 ml-1 tracking-wider">Phòng ban công tác</Label>
+                    <Label htmlFor="department" className="text-sm font-medium text-slate-500 ml-1">Phòng ban công tác</Label>
                     <div className="relative">
                       <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 z-10" />
                       <Select value={departmentId} onValueChange={setDepartmentId}>
@@ -265,7 +265,7 @@ export default function LoginPage() {
 
               {/* Email */}
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-[10px] font-bold uppercase text-slate-500 ml-1 tracking-wider">Tên đăng nhập</Label>
+                <Label htmlFor="email" className="text-sm font-medium text-slate-500 ml-1">Tên đăng nhập</Label>
                 <div className="relative">
                   <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
                   <Input
@@ -282,7 +282,7 @@ export default function LoginPage() {
 
               {/* Mật khẩu */}
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-[10px] font-bold uppercase text-slate-500 ml-1 tracking-wider">Mật khẩu</Label>
+                <Label htmlFor="password" className="text-sm font-medium text-slate-500 ml-1">Mật khẩu</Label>
                 <div className="relative">
                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
                   <Input
@@ -301,22 +301,22 @@ export default function LoginPage() {
             <CardFooter className="p-8 pt-0 flex flex-col space-y-4">
               <Button
                 type="submit"
-                className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl font-bold shadow-lg shadow-primary/20 active:scale-95 transition-all text-xs uppercase"
+                className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl font-bold shadow-lg shadow-primary/20 active:scale-95 transition-all text-xs"
                 disabled={loading}
               >
                 {loading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ĐANG XỬ LÝ...
+                    Đang xử lý...
                   </>
                 ) : (
-                  isSignUp ? 'GỬI YÊU CẦU CẤP TÀI KHOẢN' : 'ĐĂNG NHẬP'
+                  isSignUp ? 'Gửi yêu cầu cấp tài khoản' : 'Đăng nhập'
                 )}
               </Button>
 
               <button
                 type="button"
-                className="text-xs font-bold text-slate-500 hover:text-primary transition-colors duration-300 cursor-pointer flex items-center gap-1.5 uppercase tracking-wider"
+                className="text-sm font-medium text-slate-500 hover:text-primary transition-colors duration-300 cursor-pointer flex items-center gap-1.5"
                 onClick={() => {
                   setIsSignUp(!isSignUp)
                   setEmail('')

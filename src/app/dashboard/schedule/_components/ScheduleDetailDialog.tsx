@@ -141,10 +141,10 @@ export default function ScheduleDetailDialog({
           {/* Header */}
           <div className={cn("p-6 relative overflow-hidden backdrop-blur-xl border-b border-slate-100", headerBg)}>
             <div className="relative z-10 space-y-3">
-              <Badge className={cn("bg-white/60 backdrop-blur-md shadow-sm font-bold text-[10px] px-3 py-1 uppercase tracking-wider", badgeColor)}>
+              <Badge className={cn("bg-white/60 backdrop-blur-md shadow-sm font-bold text-[10px] px-3 py-1", badgeColor)}>
                 {typeLabels[schedule.type]?.label}
               </Badge>
-              <DialogTitle className="text-xl md:text-2xl font-bold leading-tight tabular-nums tracking-tighter text-slate-900">
+              <DialogTitle className="text-xl md:text-2xl font-bold leading-tight tabular-nums text-slate-900">
                 {schedule.title}
               </DialogTitle>
               <div className="flex items-center gap-4 text-slate-600 text-[13px] font-semibold pt-1">
@@ -173,7 +173,7 @@ export default function ScheduleDetailDialog({
                   <div className="p-2 bg-white rounded-xl shadow-sm">
                     <MapPin className="w-4 h-4 text-blue-600" />
                   </div>
-                  <p className="text-xs font-bold text-slate-700">{schedule.room?.name || schedule.location || "Chưa xác định"}</p>
+                  <p className="text-sm font-medium text-slate-700">{schedule.room?.name || schedule.location || "Chưa xác định"}</p>
                 </div>
               </div>
 
@@ -184,7 +184,7 @@ export default function ScheduleDetailDialog({
                     <div className="p-2 bg-white rounded-xl shadow-sm">
                       <Car className="w-4 h-4 text-orange-600" />
                     </div>
-                    <p className="text-xs font-bold text-slate-700">
+                    <p className="text-sm font-medium text-slate-700">
                       {schedule.vehicle ? `${schedule.vehicle.name} (${schedule.vehicle.plate_number})` : `Yêu cầu: ${schedule.requested_vehicle_type}`}
                     </p>
                   </div>
@@ -201,12 +201,12 @@ export default function ScheduleDetailDialog({
                       <UserCheck className="w-4 h-4 text-emerald-600" />
                     </div>
                     <div>
-                      <p className="text-[10px] font-bold text-slate-500 uppercase leading-none mb-1 truncate whitespace-nowrap">Thông tin Lái xe</p>
+                      <p className="text-sm font-medium text-slate-500 leading-none mb-1 truncate whitespace-nowrap">Thông tin Lái xe</p>
                       <p className="text-sm font-bold text-emerald-800">{matchedVehicle.driver_name}</p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-[10px] font-bold text-slate-500 uppercase leading-none mb-1 truncate whitespace-nowrap">Số điện thoại</p>
+                    <p className="text-sm font-medium text-slate-500 leading-none mb-1 truncate whitespace-nowrap">Số điện thoại</p>
                     <p className="text-sm font-bold text-emerald-600">{matchedVehicle.driver_phone}</p>
                   </div>
                 </div>
@@ -221,7 +221,7 @@ export default function ScheduleDetailDialog({
                     <Car className="w-4 h-4 text-amber-600" />
                   </div>
                   <div>
-                    <p className="text-[11px] font-bold text-amber-800 uppercase truncate whitespace-nowrap">ĐIỀU PHỐI PHƯƠNG TIỆN</p>
+                    <p className="text-[11px] font-bold text-amber-800 truncate whitespace-nowrap">Điều phối phương tiện</p>
                     <p className="text-[9px] font-bold text-amber-600">Chọn xe và lái xe phù hợp cho lộ trình này</p>
                   </div>
                 </div>
@@ -257,15 +257,15 @@ export default function ScheduleDetailDialog({
                   <p className="text-[13px] font-semibold text-slate-700">Điều chỉnh lịch trình</p>
                   {!isEditingTime && new Date(schedule.end_time) > new Date() && (
                     <div className="flex gap-2">
-                       <Button variant="outline" size="sm" className="h-8 px-3 rounded-xl text-xs font-semibold text-slate-600 border-slate-200 active:scale-95 transition-all" onClick={() => setIsEditingTime(true)}>Sửa giờ kết thúc</Button>
-                       <Button variant="outline" size="sm" className="h-8 px-3 rounded-xl text-xs font-semibold border-orange-200 text-orange-600 hover:bg-orange-50 active:scale-95 transition-all" onClick={handleEndNow}>Kết thúc sớm</Button>
+                       <Button variant="outline" size="sm" className="h-8 px-3 rounded-xl text-sm font-medium text-slate-600 border-slate-200 active:scale-95 transition-all" onClick={() => setIsEditingTime(true)}>Sửa giờ kết thúc</Button>
+                       <Button variant="outline" size="sm" className="h-8 px-3 rounded-xl text-sm font-medium border-orange-200 text-orange-600 hover:bg-orange-50 active:scale-95 transition-all" onClick={handleEndNow}>Kết thúc sớm</Button>
                     </div>
                   )}
                 </div>
                 {isEditingTime && (
                   <div className="flex flex-col gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-200 animate-in zoom-in-95 duration-200">
                     <div>
-                      <p className="text-[11px] font-bold text-slate-500 uppercase mb-1.5">Giờ kết thúc mới</p>
+                      <p className="text-[11px] font-bold text-slate-500 mb-1.5">Giờ kết thúc mới</p>
                       <input 
                         type="datetime-local" 
                         value={newEndTime}
@@ -274,8 +274,8 @@ export default function ScheduleDetailDialog({
                       />
                     </div>
                     <div className="flex gap-2 justify-end mt-1">
-                      <Button variant="ghost" size="sm" className="h-9 px-4 rounded-xl text-xs font-semibold text-slate-500 active:scale-95 transition-all" onClick={() => setIsEditingTime(false)}>Hủy</Button>
-                      <Button size="sm" className="h-9 px-4 rounded-xl text-xs font-semibold bg-primary text-white shadow-sm active:scale-95 transition-all" onClick={handleSaveTime}>Lưu thay đổi</Button>
+                      <Button variant="ghost" size="sm" className="h-9 px-4 rounded-xl text-sm font-medium text-slate-500 active:scale-95 transition-all" onClick={() => setIsEditingTime(false)}>Hủy</Button>
+                      <Button size="sm" className="h-9 px-4 rounded-xl text-sm font-medium bg-primary text-white shadow-sm active:scale-95 transition-all" onClick={handleSaveTime}>Lưu thay đổi</Button>
                     </div>
                   </div>
                 )}
@@ -288,7 +288,7 @@ export default function ScheduleDetailDialog({
             {isTCTH && schedule.vehicle_id && (
               <Button
                 variant="outline"
-                className="h-10 px-5 rounded-xl font-bold text-[12px] uppercase border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 shadow-sm active:scale-95 transition-all"
+                className="h-10 px-5 rounded-xl font-bold text-[12px] border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 shadow-sm active:scale-95 transition-all"
                 onClick={() => onAssignVehicle(schedule.id, null)}
               >
                 Hủy gán xe

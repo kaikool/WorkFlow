@@ -192,7 +192,7 @@ export default function GoalsPage() {
  const { data: newTask, error } = await supabase.from('tasks').insert(baseTask).select().single();
  if (error) throw error;
 
- // THÊM: Thông báo cho tất cả thành viên trong phòng
+ // Thêm: Thông báo cho tất cả thành viên trong phòng
  if (team.length > 0) {
  const deptNotifications = team.map(member => ({
  user_id: member.id,
@@ -256,7 +256,7 @@ export default function GoalsPage() {
  {/* Header Section */}
  <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 pt-4 sm:pt-0">
  <div className="space-y-1">
- <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">
+ <h1 className="text-2xl font-semibold text-slate-900">
  Mục tiêu
  </h1>
  <p className="text-[13px] text-slate-500 font-medium">Quản trị KPIs & chỉ tiêu kinh doanh</p>
@@ -344,12 +344,12 @@ export default function GoalsPage() {
  <button
  type="button"
  onClick={() => setTargetType('department')}
- className={cn("flex-1 py-2 md:py-1.5 text-xs md:text-[10px] font-bold rounded-lg transition-all", targetType === 'department' ? "bg-white shadow-sm text-primary" : "text-primary/40")}
+ className={cn("flex-1 py-2 md:py-1.5 text-xs md:text-sm font-medium rounded-lg transition-all", targetType === 'department' ? "bg-white shadow-sm text-primary" : "text-primary/40")}
  >Cả phòng</button>
  <button
  type="button"
  onClick={() => setTargetType('individual')}
- className={cn("flex-1 py-2 md:py-1.5 text-xs md:text-[10px] font-bold rounded-lg transition-all", targetType === 'individual' ? "bg-white shadow-sm text-primary" : "text-primary/40")}
+ className={cn("flex-1 py-2 md:py-1.5 text-xs md:text-sm font-medium rounded-lg transition-all", targetType === 'individual' ? "bg-white shadow-sm text-primary" : "text-primary/40")}
  >Nhóm cán bộ</button>
  </div>
  {targetType === 'individual' && (
@@ -371,7 +371,7 @@ export default function GoalsPage() {
  <AvatarImage src={m.avatar_url} />
  <AvatarFallback className="text-[8px] font-bold">{m.full_name[0]}</AvatarFallback>
  </Avatar>
- <span className="text-[10px] font-bold truncate">{m.full_name}</span>
+ <span className="text-sm font-medium truncate">{m.full_name}</span>
  </button>
  );
  })}
@@ -388,7 +388,7 @@ export default function GoalsPage() {
  type="button"
  onClick={() => setTimeframe(t as any)}
  className={cn(
- "py-2 md:py-1.5 text-xs md:text-[10px] font-bold rounded-lg border-2 transition-all uppercase",
+ "py-2 md:py-1.5 text-xs md:text-sm font-medium rounded-lg border-2 transition-all",
  timeframe === t ? "border-primary bg-primary/5 text-primary shadow-sm" : "border-slate-50 text-slate-500"
  )}
  >
@@ -418,7 +418,7 @@ export default function GoalsPage() {
 
  <div className="pt-2">
  <Button type="submit" className="w-full bg-primary hover:bg-primary/90 h-12 rounded-xl font-bold text-sm shadow-lg shadow-primary/20 active:scale-[0.98] transition-all">
- PHÁT HÀNH CHỈ TIÊU
+ Phát hành chỉ tiêu
  </Button>
  </div>
  </div>
@@ -451,9 +451,9 @@ export default function GoalsPage() {
           <TrendingUp className="w-6 h-6" />
         </div>
         <div className="space-y-1.5 flex-1 min-w-0">
-          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Tiến độ chung hệ thống chỉ tiêu</p>
+          <p className="text-sm font-medium text-slate-500">Tiến độ chung hệ thống chỉ tiêu</p>
           <div className="flex items-center gap-4">
-            <p className="text-3xl font-extrabold text-slate-900 tracking-tight tabular-nums">{avgProgress}%</p>
+            <p className="text-3xl font-extrabold text-slate-900 tabular-nums">{avgProgress}%</p>
             <div className="flex-1 h-2 max-w-[200px] bg-slate-100 rounded-full overflow-hidden">
               <div className="h-full bg-primary transition-all duration-500" style={{ width: `${avgProgress}%` }} />
             </div>
@@ -464,23 +464,23 @@ export default function GoalsPage() {
       {/* Right side: Detailed counters divided by vertical border on desktop */}
       <div className="flex items-center gap-8 md:border-l md:border-slate-100 md:pl-8 shrink-0">
         <div className="space-y-1">
-          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+          <p className="text-sm font-medium text-slate-500 flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-primary" />
             Đang chạy
           </p>
-          <p className="text-2xl font-bold text-slate-900 tracking-tight tabular-nums">{goals.length}</p>
+          <p className="text-2xl font-bold text-slate-900 tabular-nums">{goals.length}</p>
         </div>
 
         <div className="space-y-1">
-          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+          <p className="text-sm font-medium text-slate-500 flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
             Hoàn thành
           </p>
           <div className="flex items-center gap-2">
-            <p className="text-2xl font-bold text-slate-900 tracking-tight tabular-nums">
+            <p className="text-2xl font-bold text-slate-900 tabular-nums">
               {goals.filter(g => g.progress >= 100).length}
             </p>
-            <span className="text-emerald-500 text-xs font-bold bg-emerald-50 px-2 py-0.5 rounded-full">
+            <span className="text-emerald-500 text-sm font-medium bg-emerald-50 px-2 py-0.5 rounded-full">
               100%
             </span>
           </div>
@@ -495,14 +495,14 @@ export default function GoalsPage() {
   <div className="flex items-center gap-2 bg-slate-50/60 p-1.5 rounded-2xl border border-slate-100/80 shadow-sm w-full h-13 sm:h-14">
     <div className="flex items-center gap-2 px-2 shrink-0">
       <Target className="w-4 h-4 text-primary shrink-0" />
-      <span className="text-xs font-bold text-slate-600 uppercase tracking-wider hidden sm:inline">Danh sách chỉ tiêu ({filteredGoals.length})</span>
-      <span className="text-xs font-bold text-slate-600 tracking-wider inline sm:hidden">({filteredGoals.length})</span>
+      <span className="text-sm font-medium text-slate-600 hidden sm:inline">Danh sách chỉ tiêu ({filteredGoals.length})</span>
+      <span className="text-sm font-medium text-slate-600 inline sm:hidden">({filteredGoals.length})</span>
     </div>
     <div className="relative flex-1 group">
       <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500 group-focus-within:text-primary transition-colors" />
-      <Input 
-        placeholder="Tìm kiếm chỉ tiêu..." 
-        className="w-full pl-9 pr-3 h-10 text-xs font-semibold bg-white border-slate-200/60 rounded-xl focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary transition-all" 
+      <Input
+        placeholder="Tìm kiếm chỉ tiêu..."
+        className="w-full pl-9 pr-3 h-10 text-sm font-medium bg-white border-slate-200/60 rounded-xl focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary transition-all"
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
       />
@@ -533,7 +533,7 @@ export default function GoalsPage() {
  <div className="space-y-1">
  <p className="text-[14px] font-bold text-slate-900 group-hover:text-primary transition-colors leading-tight">{goal.title}</p>
  <div className="flex items-center gap-2">
- <span className={cn("text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase ", category.bg, category.color)}>
+ <span className={cn("text-[9px] font-bold px-1.5 py-0.5 rounded-full ", category.bg, category.color)}>
  {category.label}
  </span>
  </div>
@@ -545,23 +545,23 @@ export default function GoalsPage() {
  <div className="flex items-center gap-3">
  <Avatar className="h-8 w-8 border-2 border-white shadow-sm ring-1 ring-slate-100">
  <AvatarImage src={goal.assignee.avatar_url} />
- <AvatarFallback className="bg-slate-100 text-[10px] font-bold">{goal.assignee.full_name[0]}</AvatarFallback>
+ <AvatarFallback className="bg-slate-100 text-sm font-medium">{goal.assignee.full_name[0]}</AvatarFallback>
  </Avatar>
- <span className="text-xs font-bold text-slate-700">{goal.assignee.full_name}</span>
+ <span className="text-sm font-medium text-slate-700">{goal.assignee.full_name}</span>
  </div>
  ) : (
  <div className="flex items-center gap-2">
  <div className="p-1.5 bg-slate-100 rounded-lg">
  <Building2 className="w-3.5 h-3.5 text-slate-500" />
  </div>
- <span className="text-[10px] font-bold text-slate-500 uppercase truncate whitespace-nowrap">PHÒNG</span>
+ <span className="text-sm font-medium text-slate-500 truncate whitespace-nowrap">Phòng</span>
  </div>
  )}
  </TableCell>
  <TableCell>
  <div className="flex flex-col gap-2 items-center px-4">
- <div className="flex justify-between w-full text-[10px] font-bold">
- <span className="text-slate-500 tracking-tight">{goal.current_value || 0} / {goal.target_value} <span className="text-[9px] opacity-60">{goal.unit}</span></span>
+ <div className="flex justify-between w-full text-sm font-medium">
+ <span className="text-slate-500">{goal.current_value || 0} / {goal.target_value} <span className="text-[9px] opacity-60">{goal.unit}</span></span>
  <span className="text-primary font-bold">{goal.progress || 0}%</span>
  </div>
  <Progress value={goal.progress} className="h-1.5 w-full bg-slate-50 shadow-inner" />
@@ -590,13 +590,13 @@ export default function GoalsPage() {
  </div>
  <div className="space-y-1">
  <h4 className="text-[15px] md:text-base font-bold text-slate-900 leading-tight line-clamp-2">{goal.title}</h4>
- <p className="text-xs font-bold text-slate-500 uppercase truncate whitespace-nowrap">{category.label}</p>
+ <p className="text-sm font-medium text-slate-500 truncate whitespace-nowrap">{category.label}</p>
  </div>
  </div>
  {goal.assignee ? (
  <Avatar className="h-9 w-9 border-2 border-white shadow-sm ring-1 ring-slate-100">
  <AvatarImage src={goal.assignee.avatar_url} />
- <AvatarFallback className="text-xs font-bold">{goal.assignee.full_name[0]}</AvatarFallback>
+ <AvatarFallback className="text-sm font-medium">{goal.assignee.full_name[0]}</AvatarFallback>
  </Avatar>
  ) : (
  <div className="p-2 bg-slate-50 rounded-xl">
@@ -606,13 +606,13 @@ export default function GoalsPage() {
  </div>
  <div className="space-y-3">
  <div className="flex justify-between items-end text-xs md:text-sm font-bold">
- <p className="text-slate-900 tracking-tight">{goal.current_value || 0} / {goal.target_value} <span className="text-[10px] md:text-[11px] opacity-50 uppercase truncate whitespace-nowrap">{goal.unit}</span></p>
+ <p className="text-slate-900">{goal.current_value || 0} / {goal.target_value} <span className="text-[10px] md:text-[11px] opacity-50 truncate whitespace-nowrap">{goal.unit}</span></p>
  <span className="text-primary font-bold">{goal.progress || 0}%</span>
  </div>
  <Progress value={goal.progress} className="h-2 bg-slate-50 shadow-inner" />
  </div>
  <div className="flex justify-between items-center pt-4 border-t border-slate-50">
- <div className="flex items-center gap-1.5 text-xs font-bold text-slate-500 uppercase truncate whitespace-nowrap">
+ <div className="flex items-center gap-1.5 text-sm font-medium text-slate-500 truncate whitespace-nowrap">
  <Clock className="w-3.5 h-3.5" />
  {new Date(goal.due_date).toLocaleDateString('vi-VN')}
  </div>

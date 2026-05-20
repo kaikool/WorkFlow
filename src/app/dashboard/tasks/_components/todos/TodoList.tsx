@@ -116,15 +116,15 @@ export function TodoList({ searchQuery, filterStatus }: TodoListProps) {
                       {sortedAssignees.slice(0, 3).map((a: any, i: number) => (
                         <Avatar key={i} className="h-6 w-6 border-2 border-white shadow-sm">
                           <AvatarImage src={a.profile?.avatar_url} className="object-cover" />
-                          <AvatarFallback className="bg-primary text-white text-[10px] font-bold">{a.profile?.full_name?.[0]}</AvatarFallback>
+                          <AvatarFallback className="bg-primary text-white text-sm font-medium">{a.profile?.full_name?.[0]}</AvatarFallback>
                         </Avatar>
                       ))}
                     </div>
-                    <span className="text-xs font-semibold text-slate-600">
+                    <span className="text-sm font-medium text-slate-600">
                       {firstAssignee?.full_name} {otherCount > 0 && `+${otherCount}`}
                     </span>
                   </div>
-                  <span className="text-xs font-bold text-primary">{task.progress}%</span>
+                  <span className="text-sm font-medium text-primary">{task.progress}%</span>
                 </div>
                 <Progress value={task.progress} className="h-1.5 bg-slate-100" />
               </div>
@@ -138,11 +138,11 @@ export function TodoList({ searchQuery, filterStatus }: TodoListProps) {
         <Table>
           <TableHeader>
             <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 border-b border-slate-100 h-14">
-              <TableHead className="w-[350px] font-medium text-[11px] text-slate-500 pl-8">Hồ sơ công việc</TableHead>
-              <TableHead className="w-[140px] font-medium text-[11px] text-slate-500">Trạng thái</TableHead>
-              <TableHead className="w-[120px] font-medium text-[11px] text-slate-500 text-center">Tiến độ</TableHead>
-              <TableHead className="font-medium text-[11px] text-slate-500">Người xử lý</TableHead>
-              <TableHead className="w-[140px] font-medium text-[11px] text-slate-500 text-right pr-8">Hạn cuối</TableHead>
+              <TableHead className="w-[350px] font-medium text-xs text-slate-500 pl-8">Hồ sơ công việc</TableHead>
+              <TableHead className="w-[140px] font-medium text-xs text-slate-500">Trạng thái</TableHead>
+              <TableHead className="w-[120px] font-medium text-xs text-slate-500 text-center">Tiến độ</TableHead>
+              <TableHead className="font-medium text-xs text-slate-500">Người xử lý</TableHead>
+              <TableHead className="w-[140px] font-medium text-xs text-slate-500 text-right pr-8">Hạn cuối</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -169,14 +169,14 @@ export function TodoList({ searchQuery, filterStatus }: TodoListProps) {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className={cn('inline-flex items-center px-3 py-1 rounded-full text-[11px] font-medium', status.light, status.color)}>
+                    <div className={cn('inline-flex items-center px-3 py-1 rounded-full text-xs font-medium', status.light, status.color)}>
                       <div className={cn('w-1 h-1 rounded-full mr-2 opacity-60', status.dot)} />
                       {status.label}
                     </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-col gap-2 items-center">
-                      <span className="text-[11px] font-bold text-primary">
+                      <span className="text-sm font-medium text-primary">
                         {task.task_type === 'kpi' ? `${task.current_value || 0}/${task.target_value || '∞'}` : `${task.progress || 0}%`}
                       </span>
                       <Progress value={task.progress} className="h-1 w-16 bg-slate-100 shadow-inner" />
@@ -188,19 +188,19 @@ export function TodoList({ searchQuery, filterStatus }: TodoListProps) {
                         {sortedAssignees.slice(0, 3).map((a: any, i: number) => (
                           <Avatar key={i} className="h-8 w-8 border-2 border-white shadow-sm ring-1 ring-slate-100/50">
                             <AvatarImage src={a.profile?.avatar_url} className="object-cover" />
-                            <AvatarFallback className="bg-primary text-white text-[10px] font-bold">{a.profile?.full_name?.[0]}</AvatarFallback>
+                            <AvatarFallback className="bg-primary text-white text-sm font-medium">{a.profile?.full_name?.[0]}</AvatarFallback>
                           </Avatar>
                         ))}
                         {otherCount > 2 && (
-                          <div className="h-8 w-8 rounded-full bg-slate-50 border-2 border-white flex items-center justify-center text-[10px] font-bold text-slate-500 ring-1 ring-slate-100/50">
+                          <div className="h-8 w-8 rounded-full bg-slate-50 border-2 border-white flex items-center justify-center text-sm font-medium text-slate-500 ring-1 ring-slate-100/50">
                             +{otherCount - 2}
                           </div>
                         )}
                       </div>
                       <div className="flex flex-col">
-                        <span className="text-xs font-semibold text-slate-600 line-clamp-1">{firstAssignee?.full_name}</span>
+                        <span className="text-sm font-medium text-slate-600 line-clamp-1">{firstAssignee?.full_name}</span>
                         {otherCount > 0 && (
-                          <span className="text-[11px] font-medium text-slate-500 flex items-center gap-1 truncate whitespace-nowrap">
+                          <span className="text-xs font-medium text-slate-500 flex items-center gap-1 truncate whitespace-nowrap">
                             <Users className="w-2.5 h-2.5" /> + {otherCount} hỗ trợ
                           </span>
                         )}
@@ -208,7 +208,7 @@ export function TodoList({ searchQuery, filterStatus }: TodoListProps) {
                     </div>
                   </TableCell>
                   <TableCell className="text-right pr-8">
-                    <span className={cn('text-xs font-bold px-3 py-1 rounded-lg', isLate ? 'bg-red-50 text-red-600' : 'bg-slate-50 text-slate-500')}>
+                    <span className={cn('text-sm font-medium px-3 py-1 rounded-lg', isLate ? 'bg-red-50 text-red-600' : 'bg-slate-50 text-slate-500')}>
                       {new Date(task.due_date).toLocaleDateString('vi-VN')}
                     </span>
                   </TableCell>
@@ -224,7 +224,7 @@ export function TodoList({ searchQuery, filterStatus }: TodoListProps) {
           <Button 
             variant="ghost" 
             onClick={() => setShowAllTasks(!showAllTasks)}
-            className="text-xs font-bold text-primary uppercase hover:bg-primary/5 rounded-full px-6 py-2 flex items-center gap-1.5"
+            className="text-sm font-medium text-primary hover:bg-primary/5 rounded-full px-6 py-2 flex items-center gap-1.5"
           >
             {showAllTasks ? (
               <>Thu gọn <ChevronUp className="w-4 h-4" /></>
