@@ -5,6 +5,8 @@ import { Clock, MapPin, Car, UserCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter
 } from "@/components/ui/dialog";
@@ -21,11 +23,13 @@ interface ScheduleDetailDialogProps {
   setIsOpen: (v: boolean) => void;
   schedule: any;
   vehicles: any[];
+  rooms: any[];
   isTCTH: boolean;
   allProfiles: any[];
   currentProfile: any;
   onAssignVehicle: (scheduleId: string, vehicleId: string | null) => void;
   onUpdateEndTime: (scheduleId: string, newEndTime: string) => void;
+  onUpdateSchedule: (scheduleId: string, updates: any) => void;
 }
 
 function RenderParticipants({ schedule, allProfiles }: { schedule: any; allProfiles: any[] }) {
@@ -79,15 +83,30 @@ function RenderParticipants({ schedule, allProfiles }: { schedule: any; allProfi
 }
 
 export default function ScheduleDetailDialog({
-  isOpen, setIsOpen, schedule, vehicles, isTCTH, allProfiles, currentProfile, onAssignVehicle, onUpdateEndTime
+  isOpen, setIsOpen, schedule, vehicles, rooms, isTCTH, allProfiles, currentProfile, onAssignVehicle, onUpdateEndTime, onUpdateSchedule
 }: ScheduleDetailDialogProps) {
   const [isEditingTime, setIsEditingTime] = React.useState(false);
+  const [isEditingSchedule, setIsEditingSchedule] = React.useState(false);
   const [newEndTime, setNewEndTime] = React.useState("");
+  const [editData, setEditData] = React.useState<any>({});
 
   React.useEffect(() => {
     if (schedule?.end_time && isOpen) {
       setNewEndTime(format(new Date(schedule.end_time), "yyyy-MM-dd'T'HH:mm"));
       setIsEditingTime(false);
+      setIsEditingSchedule(false);
+      setEditData({
+        title: schedule.title || "",
+        description: schedule.description || "",
+        type: schedule.type || "trip",
+        start_time: format(new Date(schedule.start_time), "yyyy-MM-dd'T'HH:mm"),
+        end_time: format(new Date(schedule.end_time), "yyyy-MM-dd'T'HH:mm"),
+        location: schedule.location || "",
+        room_id: schedule.room_id || "none",
+        use_vehicle: !!schedule.use_vehicle,
+        vehicle_id: schedule.vehicle_id || "none",
+        requested_vehicle_type: schedule.requested_vehicle_type || "4 chỗ"
+      });
     }
   }, [schedule, isOpen]);
 
@@ -131,6 +150,28 @@ export default function ScheduleDetailDialog({
     }
   };
 
+  const handleSaveSchedule = () => {
+    const isLeave = editData.type === 'leave';
+    const isBranchLocation = editData.location === 'Chi nhánh';
+
+    if (!editData.title?.trim()) return;
+    if (!isLeave && isBranchLocation && (!editData.room_id || editData.room_id === 'none')) return;
+    if (!isLeave && !isBranchLocation && !editData.location?.trim()) return;
+
+    onUpdateSchedule(schedule.id, {
+      title: editData.title,
+      description: editData.description || null,
+      type: editData.type,
+      start_time: new Date(editData.start_time).toISOString(),
+      end_time: new Date(editData.end_time).toISOString(),
+      location: isLeave ? null : editData.location,
+      room_id: !isLeave && isBranchLocation && editData.room_id !== 'none' ? editData.room_id : null,
+      use_vehicle: !isLeave && !!editData.use_vehicle,
+      vehicle_id: !isLeave && editData.vehicle_id !== 'none' ? editData.vehicle_id : null,
+      requested_vehicle_type: !isLeave && editData.use_vehicle ? editData.requested_vehicle_type : null
+    });
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="rounded-2xl border-none shadow-2xl max-w-xl p-0 overflow-hidden bg-white">
@@ -163,6 +204,94 @@ export default function ScheduleDetailDialog({
               <div className="space-y-2">
                 <p className="text-[11px] text-slate-500 truncate">Nội dung chi tiết</p>
                 <p className="text-sm font-bold text-slate-600 leading-relaxed bg-slate-50 p-4 rounded-2xl">{schedule.description}</p>
+              </div>
+            )}
+
+            {canEdit && (
+              <div className="space-y-3 pt-4 border-t border-slate-100">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-[13px] font-semibold text-slate-700">Thông tin lịch trình</p>
+                  {!isEditingSchedule && (
+                    <Button variant="outline" size="sm" className="h-8 px-3 rounded-xl text-sm font-medium text-slate-600 border-slate-200 active:scale-95 transition-all" onClick={() => setIsEditingSchedule(true)}>Sửa lịch trình</Button>
+                  )}
+                </div>
+
+                {isEditingSchedule && (
+                  <div className="space-y-4 p-4 bg-slate-50 rounded-2xl border border-slate-200 animate-in zoom-in-95 duration-200">
+                    <Input value={editData.title || ""} onChange={(e) => setEditData({ ...editData, title: e.target.value })} className="h-10 bg-white rounded-xl border-slate-200 font-medium" placeholder="Tiêu đề lịch trình" />
+                    <Textarea value={editData.description || ""} onChange={(e) => setEditData({ ...editData, description: e.target.value })} className="min-h-20 bg-white rounded-xl border-slate-200 font-medium resize-none" placeholder="Nội dung chi tiết" />
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <Select value={editData.type} onValueChange={(v) => setEditData({ ...editData, type: v })}>
+                        <SelectTrigger className="h-10 bg-white rounded-xl border-slate-200 font-medium"><SelectValue /></SelectTrigger>
+                        <SelectContent className="rounded-xl">
+                          <SelectItem value="meeting">Họp nội bộ</SelectItem>
+                          <SelectItem value="trip">Đi công tác</SelectItem>
+                          <SelectItem value="event">Sự kiện</SelectItem>
+                          <SelectItem value="leave">Nghỉ phép</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Select value={editData.location === 'Chi nhánh' ? 'branch' : 'outside'} onValueChange={(v) => setEditData({ ...editData, location: v === 'branch' ? 'Chi nhánh' : '', room_id: v === 'branch' ? (rooms[0]?.id || 'none') : 'none' })}>
+                        <SelectTrigger className="h-10 bg-white rounded-xl border-slate-200 font-medium"><SelectValue /></SelectTrigger>
+                        <SelectContent className="rounded-xl">
+                          <SelectItem value="outside">Địa điểm ngoài</SelectItem>
+                          <SelectItem value="branch">Chi nhánh</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <Input type="datetime-local" value={editData.start_time || ""} onChange={(e) => setEditData({ ...editData, start_time: e.target.value })} className="h-10 bg-white rounded-xl border-slate-200 font-medium" />
+                      <Input type="datetime-local" value={editData.end_time || ""} onChange={(e) => setEditData({ ...editData, end_time: e.target.value })} className="h-10 bg-white rounded-xl border-slate-200 font-medium" />
+                    </div>
+
+                    {editData.type !== 'leave' && editData.location === 'Chi nhánh' ? (
+                      <Select value={editData.room_id || 'none'} onValueChange={(v) => setEditData({ ...editData, room_id: v })}>
+                        <SelectTrigger className="h-10 bg-white rounded-xl border-slate-200 font-medium"><SelectValue placeholder="Chọn phòng họp" /></SelectTrigger>
+                        <SelectContent className="rounded-xl">
+                          {rooms.map(r => <SelectItem key={r.id} value={r.id}>{r.name} ({r.capacity} chỗ)</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    ) : editData.type !== 'leave' ? (
+                      <Input value={editData.location || ""} onChange={(e) => setEditData({ ...editData, location: e.target.value })} className="h-10 bg-white rounded-xl border-slate-200 font-medium" placeholder="Địa điểm / lộ trình cụ thể" />
+                    ) : null}
+
+                    {editData.type !== 'leave' && (
+                      <div className="space-y-3">
+                        <label className="flex items-center gap-3 text-sm font-medium text-slate-700">
+                          <input type="checkbox" checked={!!editData.use_vehicle} onChange={(e) => setEditData({ ...editData, use_vehicle: e.target.checked, vehicle_id: e.target.checked ? editData.vehicle_id : 'none' })} />
+                          Sử dụng xe cơ quan
+                        </label>
+                        {editData.use_vehicle && (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <Select value={editData.requested_vehicle_type || '4 chỗ'} onValueChange={(v) => setEditData({ ...editData, requested_vehicle_type: v })}>
+                              <SelectTrigger className="h-10 bg-white rounded-xl border-slate-200 font-medium"><SelectValue /></SelectTrigger>
+                              <SelectContent className="rounded-xl">
+                                <SelectItem value="4 chỗ">Xe 4 chỗ</SelectItem>
+                                <SelectItem value="7 chỗ">Xe 7 chỗ</SelectItem>
+                                <SelectItem value="Khác">Loại khác</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            {isTCTH && (
+                              <Select value={editData.vehicle_id || 'none'} onValueChange={(v) => setEditData({ ...editData, vehicle_id: v })}>
+                                <SelectTrigger className="h-10 bg-white rounded-xl border-slate-200 font-medium"><SelectValue placeholder="Xe cụ thể" /></SelectTrigger>
+                                <SelectContent className="rounded-xl">
+                                  <SelectItem value="none">Chưa gán xe</SelectItem>
+                                  {vehicles.map(v => <SelectItem key={v.id} value={v.id}>{v.name} - {v.plate_number}</SelectItem>)}
+                                </SelectContent>
+                              </Select>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="flex gap-2 justify-end">
+                      <Button variant="ghost" size="sm" className="h-9 px-4 rounded-xl text-sm font-medium text-slate-500 active:scale-95 transition-all" onClick={() => setIsEditingSchedule(false)}>Hủy</Button>
+                      <Button size="sm" className="h-9 px-4 rounded-xl text-sm font-medium bg-primary text-white shadow-sm active:scale-95 transition-all" onClick={handleSaveSchedule}>Lưu lịch trình</Button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

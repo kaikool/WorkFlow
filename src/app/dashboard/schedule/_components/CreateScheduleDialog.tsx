@@ -219,16 +219,16 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
           {/* 3. Địa điểm & Phương tiện — ẩn khi là nghỉ phép */}
           {!isLeave && (
             <div className="space-y-4 bg-slate-50/50 p-5 rounded-2xl border border-slate-100">
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2">
                 <Label className="text-[13px] font-medium text-slate-500">Địa điểm & Phương tiện</Label>
-                <div className="flex bg-white p-1 rounded-xl shadow-sm border border-slate-100">
+                <div className="grid grid-cols-2 bg-white p-1 rounded-xl shadow-sm border border-slate-100 w-full sm:w-auto min-w-[180px]">
                   <button type="button"
                     onClick={() => setNewSchedule({ ...newSchedule, room_id: 'none', location: '' })}
-                    className={cn("px-3 py-1.5 text-[13px] font-medium rounded-md transition-all", newSchedule.location !== 'Chi nhánh' ? "bg-primary text-white shadow-md shadow-primary/20" : "text-slate-500")}
+                    className={cn("px-3 py-1.5 text-[13px] font-medium rounded-md transition-all whitespace-nowrap", newSchedule.location !== 'Chi nhánh' ? "bg-primary text-white shadow-md shadow-primary/20" : "text-slate-500")}
                   >Ngoài</button>
                   <button type="button"
                     onClick={() => setNewSchedule({ ...newSchedule, location: 'Chi nhánh', room_id: rooms[0]?.id || 'none' })}
-                    className={cn("px-3 py-1.5 text-[13px] font-medium rounded-md transition-all", newSchedule.location === 'Chi nhánh' ? "bg-primary text-white shadow-md shadow-primary/20" : "text-slate-500")}
+                    className={cn("px-3 py-1.5 text-[13px] font-medium rounded-md transition-all whitespace-nowrap", newSchedule.location === 'Chi nhánh' ? "bg-primary text-white shadow-md shadow-primary/20" : "text-slate-500")}
                   >Chi nhánh</button>
                 </div>
               </div>

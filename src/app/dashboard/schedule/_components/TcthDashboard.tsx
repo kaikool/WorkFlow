@@ -17,7 +17,9 @@ interface TcthDashboardProps {
 }
 
 export default function TcthDashboard({ schedules, vehicles, rooms, selectedDate, onSelectSchedule }: TcthDashboardProps) {
-  const pendingVehicles = schedules.filter(s => s.use_vehicle && !s.vehicle_id);
+  const pendingVehicles = schedules
+    .filter(s => s.use_vehicle && !s.vehicle_id && s.status !== 'rejected')
+    .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
 
   return (
     <div className="space-y-6 md:space-y-10 animate-fade-in-up">
@@ -60,7 +62,7 @@ export default function TcthDashboard({ schedules, vehicles, rooms, selectedDate
                     <h4 className="font-bold text-slate-800 text-[15px] truncate">{s.title}</h4>
                     <div className="flex flex-wrap items-center gap-4 text-[12px] font-medium text-slate-500">
                       <div className="flex items-center gap-1.5 whitespace-nowrap">
-                        <Clock className="w-3.5 h-3.5 shrink-0 text-slate-400" /> {format(new Date(s.start_time), 'dd/Mm hh:mm')}
+                        <Clock className="w-3.5 h-3.5 shrink-0 text-slate-400" /> {format(new Date(s.start_time), 'dd/MM HH:mm')}
                       </div>
                       <div className="flex items-center gap-1.5 min-w-0">
                         <MapPin className="w-3.5 h-3.5 shrink-0 text-slate-400" /> <span className="truncate">{s.location}</span>

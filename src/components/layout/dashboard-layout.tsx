@@ -15,7 +15,9 @@ import {
  RefreshCw,
  Loader2,
  CalendarDays,
- ShieldCheck
+ ShieldCheck,
+ Gift,
+ HeartHandshake
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -38,6 +40,13 @@ import {
  AlertDialogHeader,
  AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+ Dialog,
+ DialogContent,
+ DialogDescription,
+ DialogHeader,
+ DialogTitle,
+} from "@/components/ui/dialog";
 import { createClient } from "@/utils/supabase/client";
 import { NotificationsDropdown } from "@/components/notifications-dropdown";
 
@@ -53,9 +62,19 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
  const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
  const [mounted, setMounted] = useState(false);
  const [isRefreshing, setIsRefreshing] = useState(false);
+ const [isAnniversaryDialogOpen, setIsAnniversaryDialogOpen] = useState(false);
  const [pullDistance, setPullDistance] = useState(0);
  const [startY, setStartY] = useState(0);
  const supabase = createClient();
+ const branchJoinDate = profile?.branch_join_date ? new Date(`${profile.branch_join_date}T00:00:00`) : null;
+ const anniversaryYears = branchJoinDate ? Math.max(0, new Date().getFullYear() - branchJoinDate.getFullYear()) : 0;
+ const anniversaryMessages = [
+   "Cảm ơn bạn đã bền bỉ đồng hành, góp sức bằng sự tận tâm và trách nhiệm trong từng ngày làm việc.",
+   "Chi nhánh trân trọng những nỗ lực thầm lặng, tinh thần sẻ chia và dấu ấn chuyên môn mà bạn đã mang lại.",
+   "Mỗi chặng đường đều có giá trị riêng. Cảm ơn bạn đã cùng tập thể xây dựng một môi trường làm việc tử tế và hiệu quả.",
+   "Chúc bạn luôn giữ được nhiệt huyết, niềm vui trong công việc và tiếp tục có thêm nhiều dấu mốc đáng nhớ tại Chi nhánh."
+ ];
+ const anniversaryMessage = anniversaryMessages[anniversaryYears % anniversaryMessages.length];
 
  React.useEffect(() => {
  setMounted(true);
@@ -69,6 +88,21 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
  };
  cleanup();
  }, []);
+
+ React.useEffect(() => {
+   if (!profile?.id || !profile?.branch_join_date) return;
+
+   const today = new Date();
+   const joined = new Date(`${profile.branch_join_date}T00:00:00`);
+   const isSameDay = today.getDate() === joined.getDate() && today.getMonth() === joined.getMonth();
+   if (!isSameDay) return;
+
+   const storageKey = `branch-anniversary-${profile.id}-${today.getFullYear()}`;
+   if (window.localStorage.getItem(storageKey)) return;
+
+   setIsAnniversaryDialogOpen(true);
+   window.localStorage.setItem(storageKey, "shown");
+ }, [profile?.id, profile?.branch_join_date]);
 
  // Xử lý logic Pull-to-refresh
  const handleTouchStart = (e: React.TouchEvent) => {
@@ -137,6 +171,44 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
 
  return (
  <div className="flex min-h-screen bg-background">
+ {/* Branch anniversary appreciation dialog */}
+ <Dialog open={isAnniversaryDialogOpen} onOpenChange={setIsAnniversaryDialogOpen}>
+ <DialogContent className="overflow-hidden border-none bg-white p-0 shadow-2xl sm:max-w-md">
+ <div className="relative bg-gradient-to-br from-rose-50 via-white to-amber-50 px-6 pb-6 pt-8">
+ <div className="absolute right-5 top-5 flex h-11 w-11 items-center justify-center rounded-2xl bg-white/80 shadow-sm ring-1 ring-rose-100">
+ <Gift className="h-5 w-5 text-rose-500" />
+ </div>
+ <DialogHeader className="space-y-3 pr-14">
+ <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-500 text-white shadow-lg shadow-rose-200">
+ <HeartHandshake className="h-7 w-7" />
+ </div>
+ <DialogTitle className="text-2xl font-bold leading-tight text-slate-950">
+ Cảm ơn {profile?.full_name}
+ </DialogTitle>
+ <DialogDescription className="text-sm font-medium leading-relaxed text-slate-600">
+ Hôm nay là ngày kỷ niệm bạn bắt đầu đồng hành cùng Chi nhánh.
+ </DialogDescription>
+ </DialogHeader>
+ <div className="mt-5 rounded-2xl bg-white/85 p-4 shadow-sm ring-1 ring-rose-100/70">
+ <p className="text-[15px] font-semibold leading-relaxed text-slate-800">
+ {anniversaryMessage}
+ </p>
+ {anniversaryYears > 0 && (
+ <p className="mt-3 text-xs font-bold uppercase tracking-[0.08em] text-rose-500">
+ {anniversaryYears} năm gắn bó
+ </p>
+ )}
+ </div>
+ <Button
+ className="mt-5 h-11 w-full rounded-xl bg-slate-950 text-sm font-bold text-white hover:bg-slate-800"
+ onClick={() => setIsAnniversaryDialogOpen(false)}
+ >
+ Tiếp tục làm việc
+ </Button>
+ </div>
+ </DialogContent>
+ </Dialog>
+
  {/* Logout Confirmation Dialog (Shared) */}
  <AlertDialog open={isLogoutDialogOpen} onOpenChange={setIsLogoutDialogOpen}>
  <AlertDialogContent className="rounded-3xl border-none shadow-2xl">

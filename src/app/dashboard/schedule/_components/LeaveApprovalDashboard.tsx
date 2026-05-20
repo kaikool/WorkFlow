@@ -20,12 +20,12 @@ export default function LeaveApprovalDashboard({ schedules, profile, onStatusUpd
 
     // Nếu người đăng nhập là Ban Giám đốc (director): Chỉ duyệt đơn của các Trưởng phòng (is_department_head = true)
     if (profile?.role === 'director') {
-      return s.creator?.is_department_head === true;
+      return s.creator?.is_department_head === true || s.creator?.role === 'manager';
     }
 
     // Nếu người đăng nhập là Lãnh đạo phòng (manager): Xem và duyệt đơn của cán bộ thuộc phòng của mình
     if (profile?.role === 'manager') {
-      return s.creator?.department_id === profile?.department_id;
+      return s.creator?.department_id === profile?.department_id && s.created_by !== profile?.id && s.creator?.role !== 'manager';
     }
 
     // Các vai trò khác không có quyền duyệt đơn nghỉ phép

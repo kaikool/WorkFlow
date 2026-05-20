@@ -33,9 +33,11 @@ END $$;
 -- 2. Tạo bảng Departments (Phòng ban)
 CREATE TABLE IF NOT EXISTS departments (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    code TEXT UNIQUE,
     name TEXT NOT NULL UNIQUE,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
+ALTER TABLE departments ADD COLUMN IF NOT EXISTS code TEXT UNIQUE;
 
 -- 3. Tạo bảng Profiles (Thông tin người dùng)
 CREATE TABLE IF NOT EXISTS profiles (
@@ -46,12 +48,18 @@ CREATE TABLE IF NOT EXISTS profiles (
     avatar_url TEXT,
     phone TEXT,
     birthday DATE,
+    gender TEXT,
+    ad_account TEXT UNIQUE,
+    branch_join_date DATE,
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- Thêm các cột mới nếu bảng đã được tạo trước đó
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS phone TEXT;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS birthday DATE;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS gender TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS ad_account TEXT UNIQUE;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS branch_join_date DATE;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS title TEXT;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS is_department_head BOOLEAN DEFAULT false;
 
@@ -186,6 +194,8 @@ CREATE TABLE IF NOT EXISTS schedule_participants (
 );
 
 ALTER TABLE schedule_participants ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public read schedule_participants" ON schedule_participants;
+DROP POLICY IF EXISTS "Anyone can join/be invited to schedules" ON schedule_participants;
 CREATE POLICY "Public read schedule_participants" ON schedule_participants FOR SELECT USING (true);
 CREATE POLICY "Anyone can join/be invited to schedules" ON schedule_participants FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
 
@@ -232,8 +242,8 @@ DROP POLICY IF EXISTS "Public read departments" ON departments;
 DROP POLICY IF EXISTS "Users can view all profiles" ON profiles;
 DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
 DROP POLICY IF EXISTS "Staff see assigned tasks" ON tasks;
-DROP POLICY IF EXISTS "Managers and Admin can create tasks" ON tasks;
-DROP POLICY IF EXISTS "Managers and Admin can update tasks" ON tasks;
+DROP POLICY IF EXISTS "Anyone can create tasks" ON tasks;
+DROP POLICY IF EXISTS "Managers, Directors and Admin can update tasks" ON tasks;
 
 -- Tạo lại Policies
 CREATE POLICY "Public read departments" ON departments FOR SELECT USING (true);
@@ -275,6 +285,8 @@ DROP POLICY IF EXISTS "Users can update own notifications" ON notifications;
 CREATE POLICY "Anyone can view task comments" ON task_comments FOR SELECT USING (true);
 CREATE POLICY "Users can post comments" ON task_comments FOR INSERT WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Anyone can view recognitions" ON recognitions;
+DROP POLICY IF EXISTS "Admins can create recognitions" ON recognitions;
 CREATE POLICY "Anyone can view recognitions" ON recognitions FOR SELECT USING (true);
 CREATE POLICY "Admins can create recognitions" ON recognitions FOR INSERT WITH CHECK (
     (SELECT role FROM profiles WHERE id = auth.uid()) IN ('admin', 'director')
@@ -285,7 +297,29 @@ CREATE POLICY "Users can update own notifications" ON notifications FOR UPDATE U
 
 -- Policies cho Lịch trình
 DROP POLICY IF EXISTS "Public read schedules" ON schedules;
-CREATE POLICY "Public read schedules" ON schedules FOR SELECT USING (true);
+CREATE POLICY "Public read schedules" ON schedules FOR SELECT USING (
+    auth.uid() = created_by
+    OR department_id = (SELECT department_id FROM profiles WHERE id = auth.uid())
+    OR EXISTS (
+        SELECT 1 FROM schedule_participants sp
+        WHERE sp.schedule_id = schedules.id AND sp.profile_id = auth.uid()
+    )
+    OR EXISTS (
+        SELECT 1 FROM schedule_participants sp
+        JOIN profiles p ON p.id = sp.profile_id
+        WHERE sp.schedule_id = schedules.id AND p.role = 'director'
+    )
+    OR EXISTS (
+        SELECT 1 FROM profiles p
+        WHERE p.id = schedules.created_by AND p.role = 'director'
+    )
+    OR EXISTS (
+        SELECT 1 FROM profiles p
+        LEFT JOIN departments d ON p.department_id = d.id
+        WHERE p.id = auth.uid()
+        AND (p.role IN ('admin', 'secretary', 'hr_officer') OR d.name = 'Tá»• chá»©c Tá»•ng há»£p')
+    )
+);
 
 DROP POLICY IF EXISTS "Anyone can create schedules" ON schedules;
 CREATE POLICY "Anyone can create schedules" ON schedules FOR INSERT 
@@ -295,7 +329,7 @@ DROP POLICY IF EXISTS "TCTH and Creator can update schedules" ON schedules;
 CREATE POLICY "TCTH and Creator can update schedules" ON schedules FOR UPDATE 
 USING (
     auth.uid() = created_by 
-    OR EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+    OR EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role IN ('admin', 'secretary', 'hr_officer'))
     OR EXISTS (
       SELECT 1 FROM profiles p
       JOIN departments d ON p.department_id = d.id
@@ -353,7 +387,8 @@ CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
 BEGIN
   INSERT INTO public.profiles (id, full_name, role)
-  VALUES (new.id, new.raw_user_meta_data->>'full_name', 'staff');
+  VALUES (new.id, new.raw_user_meta_data->>'full_name', 'staff')
+  ON CONFLICT (id) DO NOTHING;
   RETURN new;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -362,6 +397,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 -- 9. Cấu hình Supabase Storage cho Avatars
 -- Chạy các lệnh này trong SQL Editor để tạo bucket và phân quyền
 /*
@@ -427,5 +463,7 @@ CREATE POLICY "Only admins can update account requests" ON account_requests
 FOR UPDATE USING (
     EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
 );
+
+NOTIFY pgrst, 'reload schema';
 
 

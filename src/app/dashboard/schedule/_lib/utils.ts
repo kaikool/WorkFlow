@@ -126,3 +126,34 @@ export function checkConflicts(params: {
     return [];
   }
 }
+
+export function checkResourceConflicts(params: {
+  roomId?: string | null;
+  vehicleId?: string | null;
+  start: Date;
+  end: Date;
+  schedules: any[];
+  ignoreScheduleId?: string;
+}) {
+  const { roomId, vehicleId, start, end, schedules, ignoreScheduleId } = params;
+  const conflicts: string[] = [];
+
+  schedules.forEach(s => {
+    if (s.id === ignoreScheduleId || s.status === 'rejected') return;
+
+    const sStart = new Date(s.start_time);
+    const sEnd = new Date(s.end_time);
+    const isOverlapping = start < sEnd && end > sStart;
+    if (!isOverlapping) return;
+
+    if (roomId && roomId !== 'none' && s.room_id === roomId) {
+      conflicts.push(`Phòng họp đang bận: ${s.title} (${format(sStart, 'HH:mm')} - ${format(sEnd, 'HH:mm')})`);
+    }
+
+    if (vehicleId && vehicleId !== 'none' && s.vehicle_id === vehicleId) {
+      conflicts.push(`Xe đang bận: ${s.title} (${format(sStart, 'HH:mm')} - ${format(sEnd, 'HH:mm')})`);
+    }
+  });
+
+  return Array.from(new Set(conflicts));
+}
