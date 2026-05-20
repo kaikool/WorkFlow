@@ -1,12 +1,11 @@
 'use client'
 
-import React from "react";
-import { Clock, MapPin, Car, DoorOpen, CheckCircle2, ShieldCheck } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import React, { useState } from "react";
+import { Clock, MapPin, Car, DoorOpen, ChevronRight, ArrowRight, User } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
-import { format } from "date-fns";
+import { format, isAfter } from "date-fns";
 
 interface TcthDashboardProps {
   schedules: any[];
@@ -17,130 +16,167 @@ interface TcthDashboardProps {
 }
 
 export default function TcthDashboard({ schedules, vehicles, rooms, selectedDate, onSelectSchedule }: TcthDashboardProps) {
-  const pendingVehicles = schedules
-    .filter(s => s.use_vehicle && !s.vehicle_id && s.status !== 'rejected')
-    .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
+  const [expandedVehicle, setExpandedVehicle] = useState<string | null>(null);
+  const [expandedRoom, setExpandedRoom] = useState<string | null>(null);
+
+  const now = new Date();
+
+  // Lấy tất cả lịch sắp tới cho một xe/phòng (sau thời điểm hiện tại, sắp xếp theo giờ)
+  const getUpcomingTrips = (vehicleId: string) =>
+    schedules
+      .filter(s =>
+        s.vehicle_id === vehicleId &&
+        (s.status === 'approved' || s.status === 'in_progress') &&
+        isAfter(new Date(s.end_time), now)
+      )
+      .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
+
+  const getUpcomingMeetings = (roomId: string) =>
+    schedules
+      .filter(s =>
+        s.room_id === roomId &&
+        (s.status === 'approved') &&
+        isAfter(new Date(s.end_time), now)
+      )
+      .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
+
+  const fmtTime = (d: Date) => format(d, 'HH:mm');
+  const fmtDateShort = (d: Date) => format(d, 'dd/MM');
+  const fmtDateTime = (d: Date) => format(d, 'dd/MM HH:mm');
 
   return (
-    <div className="space-y-6 md:space-y-10 animate-fade-in-up">
-      {/* 1. Yêu cầu cần xử lý */}
-      <div className="space-y-6">
-        <div className="flex items-center justify-between gap-4">
-          <h2 className="text-base font-bold text-slate-900 flex items-center gap-2 tabular-nums truncate">
-            <ShieldCheck className="w-5 h-5 text-orange-500 shrink-0" /> Danh sách yêu cầu cần xử lý
-          </h2>
-          <Badge className="bg-orange-100 text-orange-700 border-none font-bold px-3 py-1 rounded-full whitespace-nowrap shrink-0">
-            {pendingVehicles.length} MỚI
-          </Badge>
-        </div>
-
-        <div className="grid grid-cols-1 gap-6">
-          {pendingVehicles.length === 0 ? (
-            <div className="premium-card p-6 flex flex-col items-center justify-center text-center border-dashed border-2 border-slate-200 bg-slate-50 shadow-none">
-              <div className="w-14 h-14 bg-emerald-100 rounded-full flex items-center justify-center mb-4">
-                <CheckCircle2 className="w-7 h-7 text-emerald-600" />
-              </div>
-              <h3 className="text-[15px] font-bold text-slate-800">Tuyệt vời!</h3>
-              <p className="text-slate-500 font-medium text-[13px] max-w-xs mt-1">Không còn yêu cầu gán xe nào đang bị treo.</p>
-            </div>
-          ) : (
-            pendingVehicles.map(s => (
-              <div key={s.id} className="premium-card p-6 border-none flex flex-col sm:flex-row sm:items-center gap-6 group">
-                {/* Info */}
-                <div className="flex-1 space-y-4 min-w-0">
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-10 w-10 border border-slate-100 shadow-sm shrink-0">
-                      <AvatarImage src={s.creator?.avatar_url} />
-                      <AvatarFallback className="bg-slate-100 font-medium text-sm">{s.creator?.full_name?.[0]}</AvatarFallback>
-                    </Avatar>
-                    <div className="min-w-0">
-                      <p className="text-[14px] font-bold text-slate-900 truncate">{s.creator?.full_name}</p>
-                      <p className="text-[12px] font-medium text-slate-500 truncate">{s.departments?.name || "Cán bộ nghiệp vụ"}</p>
-                    </div>
-                  </div>
-                  <div className="space-y-1.5 min-w-0">
-                    <h4 className="font-bold text-slate-800 text-[15px] truncate">{s.title}</h4>
-                    <div className="flex flex-wrap items-center gap-4 text-[12px] font-medium text-slate-500">
-                      <div className="flex items-center gap-1.5 whitespace-nowrap">
-                        <Clock className="w-3.5 h-3.5 shrink-0 text-slate-400" /> {format(new Date(s.start_time), 'dd/MM HH:mm')}
-                      </div>
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <MapPin className="w-3.5 h-3.5 shrink-0 text-slate-400" /> <span className="truncate">{s.location}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="w-full h-px sm:w-px sm:h-16 bg-slate-100 shrink-0" />
-
-                {/* Actions */}
-                <div className="flex flex-col sm:items-end justify-between gap-4 w-full sm:w-auto shrink-0 pt-4 sm:pt-0 border-t sm:border-t-0 border-slate-50">
-                  <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
-                    <span className="text-[11px] font-bold text-slate-500 whitespace-nowrap">Loại xe:</span>
-                    <Badge className="bg-orange-50 text-orange-700 border border-orange-200 font-bold px-2 py-0.5 rounded-md whitespace-nowrap shadow-sm">
-                      {s.requested_vehicle_type}
-                    </Badge>
-                  </div>
-                  <Button
-                    className="bg-primary hover:bg-primary/90 h-10 px-5 rounded-xl font-medium text-[13px] whitespace-nowrap active:scale-95 transition-all w-full sm:w-auto flex items-center justify-center"
-                    onClick={() => onSelectSchedule(s)}
-                  >
-                    Gán Xe & Lái xe
-                  </Button>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
-
-      {/* 2. Giám sát tài nguyên */}
+    <div className="space-y-8 animate-fade-in-up">
+      {/* Giám sát tài nguyên */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Đội xe */}
         <div className="space-y-4">
-          <h3 className="text-sm font-medium text-slate-500 flex items-center gap-2 truncate">
-            <Car className="w-4 h-4 text-emerald-500 shrink-0" /> Giám sát Đội xe
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+            <Car className="w-3.5 h-3.5 text-emerald-500 shrink-0" /> Giám sát Đội xe
           </h3>
-          <div className="grid grid-cols-1 gap-4">
+          <div className="space-y-3">
             {vehicles.map(v => {
-              const now = new Date();
-              // Lịch đang diễn ra thực sự theo giờ hiện tại (không chỉ theo ngày)
-              const currentTrip = schedules.find(s =>
-                s.vehicle_id === v.id &&
-                (s.status === 'approved' || s.status === 'pending') &&
-                new Date(s.start_time) <= now &&
-                new Date(s.end_time) >= now
-              );
-              const isBusy = currentTrip?.status === 'approved';
-              const isPending = currentTrip?.status === 'pending';
+              const upcomingTrips = getUpcomingTrips(v.id);
+              const currentTrip = upcomingTrips.find(s => new Date(s.start_time) <= now);
+              const nextTrip = upcomingTrips.find(s => isAfter(new Date(s.start_time), now));
+              const isBusy = !!currentTrip && currentTrip.status === 'approved';
+              const isInProgress = !!currentTrip && currentTrip.status === 'in_progress';
+              const isExpanded = expandedVehicle === v.id;
+              const clickTarget = currentTrip || nextTrip;
+
               return (
-                <div key={v.id} className="premium-card p-6 border-none group">
-                  <div className="flex items-center justify-between gap-4">
+                <div
+                  key={v.id}
+                  className={cn(
+                    "rounded-2xl border bg-white shadow-sm transition-all duration-200 overflow-hidden",
+                    clickTarget ? "cursor-pointer hover:shadow-md hover:border-slate-200" : "border-slate-100",
+                    isExpanded && "border-slate-200 shadow-md"
+                  )}
+                >
+                  {/* Header row */}
+                  <div
+                    className="flex items-center justify-between gap-4 px-5 py-4"
+                    onClick={() => clickTarget && setExpandedVehicle(isExpanded ? null : v.id)}
+                  >
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className={cn("p-3 rounded-xl transition-all duration-300 shrink-0", isBusy ? "bg-orange-50 text-orange-600" : isPending ? "bg-amber-50 text-amber-600" : "bg-emerald-50 text-emerald-600")}>
+                      <div className={cn(
+                        "p-2.5 rounded-xl shrink-0 transition-colors",
+                        isBusy || isInProgress ? "bg-orange-50 text-orange-500" : "bg-emerald-50 text-emerald-500"
+                      )}>
                         <Car className="w-4 h-4" />
                       </div>
                       <div className="min-w-0">
-                        <p className="font-bold text-slate-900 text-[14px] truncate">{v.name}</p>
-                        <p className="text-[11px] font-medium text-slate-500 truncate tabular-nums">{v.plate_number}</p>
+                        <p className="font-bold text-slate-900 text-sm truncate">{v.name}</p>
+                        <p className="text-[11px] font-medium text-slate-400 truncate tabular-nums">{v.plate_number}</p>
                       </div>
                     </div>
-                    <Badge className={cn("rounded-md font-bold text-[10px] px-2.5 py-1 whitespace-nowrap shrink-0 border-none", isBusy ? "bg-orange-500 text-white" : isPending ? "bg-amber-100 text-amber-700" : "bg-emerald-50 text-emerald-600")}>
-                      {isBusy ? "Bận" : isPending ? "Chờ duyệt" : "Sẵn sàng"}
-                    </Badge>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Badge className={cn(
+                        "rounded-full font-bold text-[10px] px-2.5 py-1 border-none whitespace-nowrap",
+                        isInProgress ? "bg-blue-500 text-white" :
+                        isBusy ? "bg-orange-500 text-white" :
+                        nextTrip ? "bg-amber-50 text-amber-600" :
+                        "bg-emerald-50 text-emerald-600"
+                      )}>
+                        {isInProgress ? "Đang chạy" : isBusy ? "Bận" : nextTrip ? "Sẵn sàng" : "Rảnh"}
+                      </Badge>
+                      {clickTarget && (
+                        <ChevronRight className={cn(
+                          "w-4 h-4 text-slate-400 transition-transform duration-200",
+                          isExpanded && "rotate-90"
+                        )} />
+                      )}
+                    </div>
                   </div>
-                  {isBusy && (
-                    <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between gap-4">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <Avatar className="h-5 w-5 shrink-0">
-                          <AvatarImage src={currentTrip.creator?.avatar_url} />
-                          <AvatarFallback className="text-[8px] font-bold">{currentTrip.creator?.full_name?.[0]}</AvatarFallback>
-                        </Avatar>
-                        <span className="text-[12px] font-medium text-slate-600 truncate">{currentTrip.creator?.full_name}</span>
+
+                  {/* Current trip inline preview */}
+                  {(isBusy || isInProgress) && currentTrip && (
+                    <div className="px-5 pb-3 -mt-1">
+                      <div className="bg-orange-50 rounded-xl px-3.5 py-3 flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <Avatar className="h-5 w-5 shrink-0">
+                            <AvatarImage src={currentTrip.creator?.avatar_url} />
+                            <AvatarFallback className="text-[8px] font-bold">{currentTrip.creator?.full_name?.[0]}</AvatarFallback>
+                          </Avatar>
+                          <span className="text-xs font-semibold text-orange-800 truncate">{currentTrip.title}</span>
+                        </div>
+                        <span className="text-[11px] font-bold text-orange-600 whitespace-nowrap tabular-nums">
+                          {fmtTime(new Date(currentTrip.start_time))} – {fmtTime(new Date(currentTrip.end_time))}
+                        </span>
                       </div>
-                      <span className="text-sm font-medium text-orange-600 whitespace-nowrap shrink-0 tabular-nums bg-orange-50 px-2 py-0.5 rounded-md">
-                        {format(new Date(currentTrip.start_time), 'HH:mm')} - {format(new Date(currentTrip.end_time), 'HH:mm')}
-                      </span>
+                    </div>
+                  )}
+
+                  {/* Next trip inline teaser (when idle) */}
+                  {!isBusy && !isInProgress && nextTrip && !isExpanded && (
+                    <div className="px-5 pb-3 -mt-1">
+                      <div className="flex items-center gap-2 text-xs text-slate-400">
+                        <ArrowRight className="w-3 h-3 shrink-0" />
+                        <span className="truncate">Kế tiếp: <span className="font-semibold text-slate-600">{nextTrip.title}</span> lúc <span className="font-bold text-slate-700 tabular-nums">{fmtDateTime(new Date(nextTrip.start_time))}</span></span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Expanded: all upcoming trips */}
+                  {isExpanded && clickTarget && (
+                    <div className="border-t border-slate-100 px-5 py-4 space-y-3 bg-slate-50/50">
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Lịch trình sắp tới</p>
+                      {upcomingTrips.length === 0 ? (
+                        <p className="text-xs text-slate-400">Không có lịch trình nào.</p>
+                      ) : (
+                        upcomingTrips.slice(0, 5).map((trip, idx) => {
+                          const isNow = new Date(trip.start_time) <= now;
+                          return (
+                            <div
+                              key={trip.id}
+                              className={cn(
+                                "flex items-start gap-3 rounded-xl px-3.5 py-3 cursor-pointer transition-colors",
+                                isNow ? "bg-orange-50 hover:bg-orange-100" : "bg-white hover:bg-slate-50 border border-slate-100"
+                              )}
+                              onClick={(e) => { e.stopPropagation(); onSelectSchedule(trip); }}
+                            >
+                              <div className={cn(
+                                "mt-0.5 w-1.5 h-1.5 rounded-full shrink-0",
+                                isNow ? "bg-orange-500" : "bg-slate-300"
+                              )} />
+                              <div className="min-w-0 flex-1">
+                                <p className="text-xs font-bold text-slate-800 truncate">{trip.title}</p>
+                                {trip.location && (
+                                  <div className="flex items-center gap-1 text-[10px] text-slate-400 mt-0.5">
+                                    <MapPin className="w-2.5 h-2.5 shrink-0" />
+                                    <span className="truncate">{trip.location}</span>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="text-right shrink-0">
+                                <p className="text-[11px] font-bold text-slate-700 tabular-nums whitespace-nowrap">
+                                  {fmtTime(new Date(trip.start_time))} – {fmtTime(new Date(trip.end_time))}
+                                </p>
+                                <p className="text-[10px] text-slate-400 tabular-nums">{fmtDateShort(new Date(trip.start_time))}</p>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
                     </div>
                   )}
                 </div>
@@ -151,49 +187,129 @@ export default function TcthDashboard({ schedules, vehicles, rooms, selectedDate
 
         {/* Phòng họp */}
         <div className="space-y-4">
-          <h3 className="text-sm font-medium text-slate-500 flex items-center gap-2 truncate">
-            <DoorOpen className="w-4 h-4 text-blue-500 shrink-0" /> Tình trạng Phòng họp
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+            <DoorOpen className="w-3.5 h-3.5 text-blue-500 shrink-0" /> Tình trạng Phòng họp
           </h3>
-          <div className="grid grid-cols-1 gap-4">
+          <div className="space-y-3">
             {rooms.map(r => {
-              const now = new Date();
-              // Lịch đang diễn ra thực sự theo giờ hiện tại (không chỉ theo ngày)
-              const currentMeeting = schedules.find(s =>
-                s.room_id === r.id &&
-                (s.status === 'approved' || s.status === 'pending') &&
-                new Date(s.start_time) <= now &&
-                new Date(s.end_time) >= now
-              );
-              const isBusy = currentMeeting?.status === 'approved';
-              const isPending = currentMeeting?.status === 'pending';
+              const upcomingMeetings = getUpcomingMeetings(r.id);
+              const currentMeeting = upcomingMeetings.find(s => new Date(s.start_time) <= now);
+              const nextMeeting = upcomingMeetings.find(s => isAfter(new Date(s.start_time), now));
+              const isBusy = !!currentMeeting;
+              const isExpanded = expandedRoom === r.id;
+              const clickTarget = currentMeeting || nextMeeting;
+
               return (
-                <div key={r.id} className="premium-card p-6 border-none group">
-                  <div className="flex items-center justify-between gap-4">
+                <div
+                  key={r.id}
+                  className={cn(
+                    "rounded-2xl border bg-white shadow-sm transition-all duration-200 overflow-hidden",
+                    clickTarget ? "cursor-pointer hover:shadow-md hover:border-slate-200" : "border-slate-100",
+                    isExpanded && "border-slate-200 shadow-md"
+                  )}
+                >
+                  {/* Header row */}
+                  <div
+                    className="flex items-center justify-between gap-4 px-5 py-4"
+                    onClick={() => clickTarget && setExpandedRoom(isExpanded ? null : r.id)}
+                  >
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className={cn("p-3 rounded-xl transition-all duration-300 shrink-0", isBusy ? "bg-blue-50 text-blue-600" : isPending ? "bg-amber-50 text-amber-600" : "bg-emerald-50 text-emerald-600")}>
+                      <div className={cn(
+                        "p-2.5 rounded-xl shrink-0",
+                        isBusy ? "bg-blue-50 text-blue-500" : "bg-emerald-50 text-emerald-500"
+                      )}>
                         <DoorOpen className="w-4 h-4" />
                       </div>
                       <div className="min-w-0">
-                        <p className="font-bold text-slate-900 text-[14px] truncate">{r.name}</p>
-                        <p className="text-[11px] font-medium text-slate-500 truncate">{r.capacity} chỗ • {r.location}</p>
+                        <p className="font-bold text-slate-900 text-sm truncate">{r.name}</p>
+                        <p className="text-[11px] font-medium text-slate-400 truncate">{r.capacity} chỗ • {r.location}</p>
                       </div>
                     </div>
-                    <Badge className={cn("rounded-md font-bold text-[10px] px-2.5 py-1 whitespace-nowrap shrink-0 border-none", isBusy ? "bg-blue-600 text-white" : isPending ? "bg-amber-100 text-amber-700" : "bg-emerald-50 text-emerald-600")}>
-                      {isBusy ? "Họp" : isPending ? "Chờ duyệt" : "Trống"}
-                    </Badge>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Badge className={cn(
+                        "rounded-full font-bold text-[10px] px-2.5 py-1 border-none whitespace-nowrap",
+                        isBusy ? "bg-blue-600 text-white" :
+                        nextMeeting ? "bg-amber-50 text-amber-600" :
+                        "bg-emerald-50 text-emerald-600"
+                      )}>
+                        {isBusy ? "Đang họp" : nextMeeting ? "Trống" : "Trống"}
+                      </Badge>
+                      {clickTarget && (
+                        <ChevronRight className={cn(
+                          "w-4 h-4 text-slate-400 transition-transform duration-200",
+                          isExpanded && "rotate-90"
+                        )} />
+                      )}
+                    </div>
                   </div>
-                  {isBusy && (
-                    <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between gap-4">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <Avatar className="h-5 w-5 shrink-0">
-                          <AvatarImage src={currentMeeting.creator?.avatar_url} />
-                          <AvatarFallback className="text-[8px] font-bold">{currentMeeting.creator?.full_name?.[0]}</AvatarFallback>
-                        </Avatar>
-                        <span className="text-[12px] font-medium text-slate-600 truncate">{currentMeeting.creator?.full_name}</span>
+
+                  {/* Current meeting inline */}
+                  {isBusy && currentMeeting && (
+                    <div className="px-5 pb-3 -mt-1">
+                      <div className="bg-blue-50 rounded-xl px-3.5 py-3 flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <Avatar className="h-5 w-5 shrink-0">
+                            <AvatarImage src={currentMeeting.creator?.avatar_url} />
+                            <AvatarFallback className="text-[8px] font-bold">{currentMeeting.creator?.full_name?.[0]}</AvatarFallback>
+                          </Avatar>
+                          <span className="text-xs font-semibold text-blue-800 truncate">{currentMeeting.title}</span>
+                        </div>
+                        <span className="text-[11px] font-bold text-blue-600 whitespace-nowrap tabular-nums">
+                          {fmtTime(new Date(currentMeeting.start_time))} – {fmtTime(new Date(currentMeeting.end_time))}
+                        </span>
                       </div>
-                      <span className="text-sm font-medium text-blue-600 whitespace-nowrap shrink-0 tabular-nums bg-blue-50 px-2 py-0.5 rounded-md">
-                        {format(new Date(currentMeeting.start_time), 'HH:mm')} - {format(new Date(currentMeeting.end_time), 'HH:mm')}
-                      </span>
+                    </div>
+                  )}
+
+                  {/* Next meeting teaser (when idle) */}
+                  {!isBusy && nextMeeting && !isExpanded && (
+                    <div className="px-5 pb-3 -mt-1">
+                      <div className="flex items-center gap-2 text-xs text-slate-400">
+                        <ArrowRight className="w-3 h-3 shrink-0" />
+                        <span className="truncate">Kế tiếp: <span className="font-semibold text-slate-600">{nextMeeting.title}</span> lúc <span className="font-bold text-slate-700 tabular-nums">{fmtDateTime(new Date(nextMeeting.start_time))}</span></span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Expanded: upcoming meetings list */}
+                  {isExpanded && clickTarget && (
+                    <div className="border-t border-slate-100 px-5 py-4 space-y-3 bg-slate-50/50">
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Lịch họp sắp tới</p>
+                      {upcomingMeetings.length === 0 ? (
+                        <p className="text-xs text-slate-400">Không có lịch họp nào.</p>
+                      ) : (
+                        upcomingMeetings.slice(0, 5).map((meeting) => {
+                          const isNow = new Date(meeting.start_time) <= now;
+                          return (
+                            <div
+                              key={meeting.id}
+                              className={cn(
+                                "flex items-start gap-3 rounded-xl px-3.5 py-3 cursor-pointer transition-colors",
+                                isNow ? "bg-blue-50 hover:bg-blue-100" : "bg-white hover:bg-slate-50 border border-slate-100"
+                              )}
+                              onClick={(e) => { e.stopPropagation(); onSelectSchedule(meeting); }}
+                            >
+                              <div className={cn(
+                                "mt-0.5 w-1.5 h-1.5 rounded-full shrink-0",
+                                isNow ? "bg-blue-500" : "bg-slate-300"
+                              )} />
+                              <div className="min-w-0 flex-1">
+                                <p className="text-xs font-bold text-slate-800 truncate">{meeting.title}</p>
+                                <div className="flex items-center gap-1 text-[10px] text-slate-400 mt-0.5">
+                                  <User className="w-2.5 h-2.5 shrink-0" />
+                                  <span className="truncate">{meeting.creator?.full_name} • {meeting.participants?.length || 0} người</span>
+                                </div>
+                              </div>
+                              <div className="text-right shrink-0">
+                                <p className="text-[11px] font-bold text-slate-700 tabular-nums whitespace-nowrap">
+                                  {fmtTime(new Date(meeting.start_time))} – {fmtTime(new Date(meeting.end_time))}
+                                </p>
+                                <p className="text-[10px] text-slate-400 tabular-nums">{fmtDateShort(new Date(meeting.start_time))}</p>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
                     </div>
                   )}
                 </div>

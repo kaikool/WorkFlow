@@ -20,7 +20,7 @@ interface ScheduleCardProps {
 
 export default function ScheduleCard({ item, isTCTH, profile, onSelect, onStatusUpdate }: ScheduleCardProps) {
   const type = typeLabels[item.type] || typeLabels.meeting;
-  const status = statusLabels[item.status];
+  const status = statusLabels[item.status] ?? { label: item.status ?? "Không rõ", color: "bg-slate-100 text-slate-500" };
   const isTrip = item.type === 'trip';
   const sortedParticipants = [...(item.participants || [])].sort((a: any, b: any) => compareProfilesByHierarchy(a.profile, b.profile));
   const startTime = new Date(item.start_time);

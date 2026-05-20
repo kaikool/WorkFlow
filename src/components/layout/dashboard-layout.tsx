@@ -116,11 +116,11 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
   const canManageSystem = profile?.role === 'admin' || profile?.role === 'secretary';
 
   const navItems = [
-   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-   { name: 'Công việc', href: '/dashboard/tasks', icon: ListTodo, hideFor: ['driver'] },
+   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, hideFor: ['driver', 'secretary'] },
+   { name: 'Công việc', href: '/dashboard/tasks', icon: ListTodo, hideFor: ['driver', 'secretary'] },
    { name: 'Kế hoạch', href: '/dashboard/kpi', icon: Target, hideFor: ['driver', 'hr_officer', 'secretary'] },
    { name: 'Lịch trình', href: '/dashboard/schedule', icon: CalendarDays },
-   { name: 'Cán bộ', href: '/dashboard/team', icon: Users },
+   { name: 'Cán bộ', href: '/dashboard/team', icon: Users, hideFor: ['driver', 'secretary'] },
   ].filter(item => !(item.hideFor || []).includes(profile?.role));
 
   const roleLabels: Record<string, string> = {

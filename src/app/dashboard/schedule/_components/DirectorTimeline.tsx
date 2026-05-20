@@ -93,8 +93,11 @@ export default function DirectorTimeline({
                         const eTime = rawEnd > selectedEnd ? selectedEnd : rawEnd;
                         const sMin = sTime.getHours() * 60 + sTime.getMinutes();
                         const eMin = eTime.getHours() * 60 + eTime.getMinutes();
-                        const leftPercent = Math.max(0, Math.min(100, ((sMin - startLimit) / duration) * 100));
-                        const widthPercent = Math.max(4, Math.min(100 - leftPercent, ((eMin - sMin) / duration) * 100));
+                        const visualStartMin = Math.max(startLimit, sMin);
+                        const visualEndMin = Math.min(startLimit + duration, Math.max(visualStartMin, eMin));
+                        
+                        const leftPercent = ((visualStartMin - startLimit) / duration) * 100;
+                        const widthPercent = Math.max(4, ((visualEndMin - visualStartMin) / duration) * 100);
                         const typeColor = dirColor.bullet;
                         // Phát hiện lịch bị cắt bớt ngoài khung 8-17h
                         const isCutLeft = rawStart < selectedStart || sMin < startLimit;

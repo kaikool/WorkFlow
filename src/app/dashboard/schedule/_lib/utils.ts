@@ -93,8 +93,9 @@ export function checkConflicts(params: {
   startTime: string;
   endTime: string;
   schedules: any[];
+  ignoreScheduleId?: string;
 }) {
-  const { checkIds, startDate, endDate, startTime, endTime, schedules } = params;
+  const { checkIds, startDate, endDate, startTime, endTime, schedules, ignoreScheduleId } = params;
 
   if (checkIds.length === 0) return [];
 
@@ -106,7 +107,7 @@ export function checkConflicts(params: {
 
     const foundConflicts: string[] = [];
     schedules.forEach(s => {
-      if (s.status === 'rejected') return;
+      if (s.id === ignoreScheduleId || s.status === 'rejected') return;
       const isPending = s.status === 'pending';
       const sStart = new Date(s.start_time);
       const sEnd = new Date(s.end_time);

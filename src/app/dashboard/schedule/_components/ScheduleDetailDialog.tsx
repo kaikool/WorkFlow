@@ -181,7 +181,8 @@ export default function ScheduleDetailDialog({
       endDate: editEndDate,
       startTime: editStartTime,
       endTime: editEndTime,
-      schedules
+      schedules,
+      ignoreScheduleId: schedule?.id
     });
 
     const rConflicts = checkResourceConflicts({

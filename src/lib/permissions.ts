@@ -1,5 +1,8 @@
 export function hasTCTHPermission(profile: any): boolean {
   if (!profile) return false;
+  
+  // Drivers never have TCTH permission for vehicle assignment
+  if (profile.role === 'driver') return false;
 
   // 1. Check roles (admin, secretary, hr_officer)
   const allowedRoles = ['admin', 'secretary', 'hr_officer'];

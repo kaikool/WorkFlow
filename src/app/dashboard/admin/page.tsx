@@ -55,6 +55,7 @@ import {
  DialogHeader,
  DialogTitle,
  DialogTrigger,
+ DialogDescription,
 } from "@/components/ui/dialog";
 import { cn, sortProfilesByHierarchy } from "@/lib/utils";
 import { createClient } from "@/utils/supabase/client";
@@ -71,10 +72,11 @@ export default function AdminPage() {
  const [vehicles, setVehicles] = useState<any[]>([]);
  const [stats, setStats] = useState({ tasks: 0, goals: 0, members: 0 });
  const [searchQuery, setSearchQuery] = useState("");
+ const [drivers, setDrivers] = useState<any[]>([]);
 
  // State cho tạo mới
  const [newRoom, setNewRoom] = useState({ name: "", capacity: 10, location: "" });
- const [newVehicle, setNewVehicle] = useState({ name: "", plate_number: "", type: "4 chỗ", driver_name: "", driver_phone: "" });
+ const [newVehicle, setNewVehicle] = useState({ name: "", plate_number: "", type: "4 chỗ", driver_id: "none" });
  const [isRoomOpen, setIsRoomOpen] = useState(false);
  const [isVehicleOpen, setIsVehicleOpen] = useState(false);
 
@@ -125,12 +127,14 @@ export default function AdminPage() {
  const { count: memberCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
  const { data: userList } = await supabase.from('profiles').select('*, departments (name)').order('full_name');
  const { data: roomList } = await supabase.from('rooms').select('*').order('name');
- const { data: vehicleList } = await supabase.from('vehicles').select('*').order('name');
+ const { data: vehicleList } = await supabase.from('vehicles').select('*, driver:profiles!vehicles_driver_id_fkey(id, full_name, phone)').order('name');
+ const { data: driverList } = await supabase.from('profiles').select('id, full_name, phone').eq('role', 'driver');
  
  setStats({ tasks: 0, goals: 0, members: memberCount || 0 });
  setUsers(sortProfilesByHierarchy(userList || []));
  setRooms(roomList || []);
  setVehicles(vehicleList || []);
+ setDrivers(driverList || []);
  } catch (error: any) {
  toast({ variant: "destructive", title: "Lỗi tải dữ liệu", description: error.message });
  }
@@ -162,14 +166,20 @@ export default function AdminPage() {
 
  const handleCreateVehicle = async () => {
  try {
- const { data, error } = await supabase.from('vehicles').insert([newVehicle]).select();
+ const { data, error } = await supabase.from('vehicles').insert([{
+   name: newVehicle.name, plate_number: newVehicle.plate_number, type: newVehicle.type, driver_id: newVehicle.driver_id === "none" ? null : newVehicle.driver_id
+ }]).select('*, driver:profiles!vehicles_driver_id_fkey(id, full_name, phone)');
  if (error) throw error;
  setVehicles([...vehicles, data[0]]);
  setIsVehicleOpen(false);
- setNewVehicle({ name: "", plate_number: "", type: "4 chỗ", driver_name: "", driver_phone: "" });
+ setNewVehicle({ name: "", plate_number: "", type: "4 chỗ", driver_id: "none" });
  toast({ title: "Thành công", description: "Đã thêm xe mới." });
  } catch (error: any) {
- toast({ variant: "destructive", title: "Lỗi", description: error.message });
+ if (error.code === '23505' || error.code === '409' || error.status === 409 || error.message?.includes('vehicles_plate_number_key') || error.message?.toLowerCase().includes('duplicate')) {
+    toast({ variant: "destructive", title: "Biển số trùng lặp", description: "Biển số xe này đã tồn tại trong hệ thống. Vui lòng kiểm tra lại." });
+  } else {
+    toast({ variant: "destructive", title: "Lỗi", description: error.message || "Đã xảy ra lỗi không xác định." });
+  }
  }
  };
 
@@ -192,20 +202,23 @@ export default function AdminPage() {
 
  const handleUpdateVehicle = async () => {
   try {
-   const { error } = await supabase.from('vehicles').update({
+   const { data, error } = await supabase.from('vehicles').update({
     name: editingVehicle.name,
     plate_number: editingVehicle.plate_number,
     type: editingVehicle.type,
-    driver_name: editingVehicle.driver_name,
-    driver_phone: editingVehicle.driver_phone
-   }).eq('id', editingVehicle.id);
+    driver_id: editingVehicle.driver_id === "none" ? null : editingVehicle.driver_id
+   }).eq('id', editingVehicle.id).select('*, driver:profiles!vehicles_driver_id_fkey(id, full_name, phone)');
    if (error) throw error;
-   setVehicles(vehicles.map(v => v.id === editingVehicle.id ? editingVehicle : v));
+   setVehicles(vehicles.map(v => v.id === editingVehicle.id ? data[0] : v));
    setIsEditVehicleOpen(false);
    setEditingVehicle(null);
    toast({ title: "Thành công", description: "Đã cập nhật xe." });
   } catch (error: any) {
-   toast({ variant: "destructive", title: "Lỗi", description: error.message });
+   if (error.code === '23505' || error.code === '409' || error.status === 409 || error.message?.includes('vehicles_plate_number_key') || error.message?.toLowerCase().includes('duplicate')) {
+     toast({ variant: "destructive", title: "Biển số trùng lặp", description: "Biển số xe này đã tồn tại trong hệ thống. Vui lòng kiểm tra lại." });
+   } else {
+     toast({ variant: "destructive", title: "Lỗi", description: error.message || "Đã xảy ra lỗi không xác định." });
+   }
   }
  };
 
@@ -298,6 +311,7 @@ export default function AdminPage() {
  </div>
 
  {/* Stats */}
+ {isAdmin && (
  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
  <Card className="border-none shadow-sm rounded-[2rem] bg-blue-50/50">
  <CardContent className="p-6 flex items-center gap-4">
@@ -427,8 +441,11 @@ export default function AdminPage() {
  <Plus className="w-4 h-4 mr-2" /> Thêm phòng họp
  </Button>
  </DialogTrigger>
- <DialogContent className="rounded-[32px] border-none shadow-2xl">
- <DialogHeader><DialogTitle className="text-xl font-bold tabular-nums">Thiết lập phòng họp mới</DialogTitle></DialogHeader>
+ <DialogContent className="rounded-[32px] border-none shadow-2xl" aria-describedby={undefined}>
+ <DialogHeader>
+   <DialogTitle className="text-xl font-bold tabular-nums">Thiết lập phòng họp mới</DialogTitle>
+   <DialogDescription className="sr-only">Form thêm phòng họp mới</DialogDescription>
+ </DialogHeader>
  <div className="space-y-6 py-4">
  <div className="space-y-2">
  <Label className="text-sm font-medium text-slate-500 pl-1 truncate whitespace-nowrap">Tên phòng họp</Label>
@@ -484,8 +501,11 @@ export default function AdminPage() {
  ))}
    </div>
   <Dialog open={isEditRoomOpen} onOpenChange={setIsEditRoomOpen}>
-   <DialogContent className="rounded-[32px] border-none shadow-2xl">
-    <DialogHeader><DialogTitle className="text-xl font-bold tabular-nums">Sửa phòng họp</DialogTitle></DialogHeader>
+   <DialogContent className="rounded-[32px] border-none shadow-2xl" aria-describedby={undefined}>
+    <DialogHeader>
+      <DialogTitle className="text-xl font-bold tabular-nums">Sửa phòng họp</DialogTitle>
+      <DialogDescription className="sr-only">Form sửa thông tin phòng họp</DialogDescription>
+    </DialogHeader>
     {editingRoom && (
      <div className="space-y-6 py-4">
       <div className="space-y-2">
@@ -518,8 +538,11 @@ export default function AdminPage() {
  <Plus className="w-4 h-4 mr-2" /> Thêm xe mới
  </Button>
  </DialogTrigger>
- <DialogContent className="rounded-[32px] border-none shadow-2xl">
- <DialogHeader><DialogTitle className="text-xl font-bold tabular-nums">Bổ sung Xe & Lái xe</DialogTitle></DialogHeader>
+ <DialogContent className="rounded-[32px] border-none shadow-2xl" aria-describedby={undefined}>
+ <DialogHeader>
+   <DialogTitle className="text-xl font-bold tabular-nums">Bổ sung Xe & Lái xe</DialogTitle>
+   <DialogDescription className="sr-only">Form thêm xe mới</DialogDescription>
+ </DialogHeader>
  <div className="space-y-6 py-4">
  <div className="space-y-2">
  <Label className="text-sm font-medium text-slate-500 pl-1 truncate whitespace-nowrap">Tên xe / Hãng xe</Label>
@@ -542,14 +565,16 @@ export default function AdminPage() {
  </Select>
  </div>
  </div>
- <div className="grid grid-cols-2 gap-4">
+ <div className="grid grid-cols-1 gap-4">
  <div className="space-y-2">
- <Label className="text-sm font-medium text-slate-500 pl-1 truncate whitespace-nowrap">Họ tên Lái xe</Label>
- <Input placeholder="VD: Nguyễn Văn A..." className="h-12 bg-slate-50 border-none rounded-2xl font-bold text-base md:text-sm" value={newVehicle.driver_name} onChange={e => setNewVehicle({...newVehicle, driver_name: e.target.value})} />
- </div>
- <div className="space-y-2">
- <Label className="text-sm font-medium text-slate-500 pl-1 truncate whitespace-nowrap">SĐT Lái xe</Label>
- <Input placeholder="VD: 0987..." className="h-12 bg-slate-50 border-none rounded-2xl font-bold text-base md:text-sm" value={newVehicle.driver_phone} onChange={e => setNewVehicle({...newVehicle, driver_phone: e.target.value})} />
+ <Label className="text-sm font-medium text-slate-500 pl-1 truncate whitespace-nowrap">Lái xe phụ trách (Tùy chọn)</Label>
+ <Select value={newVehicle.driver_id || "none"} onValueChange={v => setNewVehicle({...newVehicle, driver_id: v})}>
+ <SelectTrigger className="h-12 bg-slate-50 border-none rounded-2xl font-bold text-base md:text-sm"><SelectValue /></SelectTrigger>
+ <SelectContent className="rounded-2xl">
+ <SelectItem value="none" className="text-base md:text-sm py-3 md:py-2">Chưa gán lái xe</SelectItem>
+ {drivers.map(d => <SelectItem key={d.id} value={d.id} className="text-base md:text-sm py-3 md:py-2">{d.full_name} {d.phone ? `- ${d.phone}` : ''}</SelectItem>)}
+ </SelectContent>
+ </Select>
  </div>
  </div>
  </div>
@@ -586,8 +611,8 @@ export default function AdminPage() {
  <p className="text-sm font-medium text-slate-500 truncate whitespace-nowrap">Lái xe phụ trách</p>
  <Phone className="w-3 h-3 text-emerald-600" />
  </div>
- <p className="text-sm font-bold text-slate-700">{v.driver_name || "Chưa gán"}</p>
- <p className="text-sm font-medium text-emerald-600">{v.driver_phone}</p>
+ <p className="text-sm font-bold text-slate-700">{v.driver?.full_name || v.driver_name || "Chưa gán"}</p>
+ <p className="text-sm font-medium text-emerald-600">{v.driver?.phone || v.driver_phone || "---"}</p>
  </div>
  </div>
  </CardContent>
@@ -595,8 +620,11 @@ export default function AdminPage() {
  ))}
    </div>
   <Dialog open={isEditVehicleOpen} onOpenChange={setIsEditVehicleOpen}>
-   <DialogContent className="rounded-[32px] border-none shadow-2xl">
-    <DialogHeader><DialogTitle className="text-xl font-bold tabular-nums">Sửa thông tin Xe & Lái xe</DialogTitle></DialogHeader>
+   <DialogContent className="rounded-[32px] border-none shadow-2xl" aria-describedby={undefined}>
+    <DialogHeader>
+      <DialogTitle className="text-xl font-bold tabular-nums">Sửa thông tin Xe & Lái xe</DialogTitle>
+      <DialogDescription className="sr-only">Form sửa thông tin xe</DialogDescription>
+    </DialogHeader>
     {editingVehicle && (
      <div className="space-y-6 py-4">
       <div className="space-y-2">
@@ -620,14 +648,16 @@ export default function AdminPage() {
         </Select>
        </div>
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4">
        <div className="space-y-2">
-        <Label className="text-sm font-medium text-slate-500 pl-1 truncate whitespace-nowrap">Họ tên Lái xe</Label>
-        <Input placeholder="VD: Nguyễn Văn A..." className="h-12 bg-slate-50 border-none rounded-2xl font-bold text-base md:text-sm" value={editingVehicle.driver_name} onChange={e => setEditingVehicle({...editingVehicle, driver_name: e.target.value})} />
-       </div>
-       <div className="space-y-2">
-        <Label className="text-sm font-medium text-slate-500 pl-1 truncate whitespace-nowrap">SĐT Lái xe</Label>
-        <Input placeholder="VD: 0987..." className="h-12 bg-slate-50 border-none rounded-2xl font-bold text-base md:text-sm" value={editingVehicle.driver_phone} onChange={e => setEditingVehicle({...editingVehicle, driver_phone: e.target.value})} />
+        <Label className="text-sm font-medium text-slate-500 pl-1 truncate whitespace-nowrap">Lái xe phụ trách (Tùy chọn)</Label>
+        <Select value={editingVehicle.driver_id || "none"} onValueChange={val => setEditingVehicle({...editingVehicle, driver_id: val})}>
+         <SelectTrigger className="h-12 bg-slate-50 border-none rounded-2xl font-bold text-base md:text-sm"><SelectValue /></SelectTrigger>
+         <SelectContent className="rounded-2xl">
+          <SelectItem value="none" className="text-base md:text-sm py-3 md:py-2">Chưa gán lái xe</SelectItem>
+          {drivers.map(d => <SelectItem key={d.id} value={d.id} className="text-base md:text-sm py-3 md:py-2">{d.full_name} {d.phone ? `- ${d.phone}` : ''}</SelectItem>)}
+         </SelectContent>
+        </Select>
        </div>
       </div>
      </div>

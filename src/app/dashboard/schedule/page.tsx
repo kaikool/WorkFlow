@@ -442,11 +442,12 @@ export default function SchedulePage() {
       const { error } = await supabase.from('schedules').update({ end_time: newEndTime.toISOString() }).eq('id', id);
       if (error) throw error;
 
-      // Ghi nhận lịch sử / cảnh báo cho những người khác (thông báo)
+      // Ghi nhận lịch sử / cảnh báo cho những người khác (thông báo) — loại trừ lái xe
       if (schedule.participants?.length > 0) {
         const otherParticipantIds = schedule.participants
-          .filter((p: any) => p.profile?.id !== profile?.id)
-          .map((p: any) => p.profile?.id);
+          .filter((p: any) => p.profile?.id !== profile?.id && p.profile?.role !== 'driver')
+          .map((p: any) => p.profile?.id)
+          .filter(Boolean);
         
         if (otherParticipantIds.length > 0) {
           await sendNotifications(
@@ -534,7 +535,12 @@ export default function SchedulePage() {
         }
       }
 
-      const notifyTargets = finalParticipantIds.filter((uid: string) => uid && uid !== profile?.id);
+      // Loại trừ lái xe: lái xe không nhận thông báo cập nhật lịch chung
+      const notifyTargets = finalParticipantIds.filter((uid: string) => {
+        if (!uid || uid === profile?.id) return false;
+        const targetProfile = allProfiles.find(p => p.id === uid);
+        return targetProfile?.role !== 'driver';
+      });
 
       if (notifyTargets.length > 0) {
         await sendNotifications(
@@ -686,7 +692,12 @@ export default function SchedulePage() {
         }
       }
 
-      const participantNotifyTargets = finalParticipants.filter((uid: string) => uid !== profile?.id);
+      // Loại trừ lái xe: lái xe không nhận thông báo lịch chung khi phòng ban đăng ký
+      const participantNotifyTargets = finalParticipants.filter((uid: string) => {
+        if (uid === profile?.id) return false;
+        const targetProfile = allProfiles.find(p => p.id === uid);
+        return targetProfile?.role !== 'driver';
+      });
       if (participantNotifyTargets.length > 0) {
         await sendNotifications(
           participantNotifyTargets.map((uid: string) => ({
@@ -851,9 +862,31 @@ export default function SchedulePage() {
         currentProfile={profile}
         onAssignVehicle={async (id, vId, dId) => {
           try {
+            const schedule = schedules.find(s => s.id === id);
             const { error } = await supabase.from('schedules').update({ vehicle_id: vId, driver_id: dId, status: vId ? 'approved' : 'pending' }).eq('id', id);
             if (error) throw error;
+
+            // Thông báo riêng cho tài xế được gán
+            if (vId && dId && schedule) {
+              const vehicle = vehicles.find(v => v.id === vId);
+              await sendNotifications([{
+                user_id: dId,
+                title: "🚗 Bạn được phân công lịch chạy xe",
+                content: `Bạn được phân công điều khiển xe ${vehicle?.name || ''} (${vehicle?.plate_number || ''}) cho chuyến: "${schedule.title}" – ${new Date(schedule.start_time).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}.`,
+                link: "/dashboard/schedule"
+              }]);
+            } else if (!vId && schedule?.driver_id) {
+              // Thông báo hủy gán xe cho tài xế cũ
+              await sendNotifications([{
+                user_id: schedule.driver_id,
+                title: "Hủy phân công lịch chạy xe",
+                content: `Lịch chạy xe "${schedule.title}" đã bị hủy phân công. Vui lòng liên hệ phòng Tổ chức Tổng hợp để biết thêm thông tin.`,
+                link: "/dashboard/schedule"
+              }]);
+            }
+
             toast({ title: "Thành công", description: vId ? "Đã gán xe và tài xế thành công" : "Đã hủy gán xe" });
+            fetchData();
           } catch (error: any) {
             toast({ variant: "destructive", title: "Lỗi", description: error.message });
           }

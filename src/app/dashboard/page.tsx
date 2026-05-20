@@ -30,6 +30,7 @@ import { Progress } from "@/components/ui/progress";
 import { createClient } from "@/utils/supabase/client";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 const INSPIRATIONAL_QUOTES = [
  "Hôm nay là cơ hội để bạn bứt phá chỉ tiêu kinh doanh.",
@@ -62,6 +63,7 @@ export default function DashboardPage() {
  });
 
  const supabase = createClient();
+ const router = useRouter();
 
  useEffect(() => {
  fetchDashboardData();
@@ -93,6 +95,12 @@ export default function DashboardPage() {
   if (!user) return;
 
   const { data: currentProfile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+  
+  if (currentProfile?.role === 'driver' || currentProfile?.role === 'secretary') {
+    router.push('/dashboard/schedule');
+    return;
+  }
+
   setProfile(currentProfile);
 
   const isPowerUser = currentProfile?.role === 'admin' || currentProfile?.role === 'director';
