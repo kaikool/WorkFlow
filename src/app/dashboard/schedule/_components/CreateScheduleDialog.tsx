@@ -342,8 +342,16 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
           )}
         </div>
         <DialogFooter className="shrink-0 border-t border-slate-100 bg-background/95 px-5 py-4 sm:px-6">
-          <Button onClick={onSubmit} className="w-full h-11 rounded-xl font-semibold active:scale-95 transition-all">
-            {isLeave ? 'Gửi Đơn nghỉ phép' : 'Xác nhận đăng ký'}
+          <Button
+            onClick={onSubmit}
+            className={cn(
+              "w-full h-11 rounded-xl font-semibold active:scale-95 transition-all",
+              !isLeave && conflicts.length > 0
+                ? "bg-amber-500 hover:bg-amber-600 text-white"
+                : "bg-primary hover:bg-primary/90 text-white"
+            )}
+          >
+            {isLeave ? 'Gửi Đơn nghỉ phép' : (!isLeave && conflicts.length > 0 ? 'Vẫn tiếp tục đặt lịch?' : 'Xác nhận đăng ký')}
           </Button>
         </DialogFooter>
       </DialogContent>

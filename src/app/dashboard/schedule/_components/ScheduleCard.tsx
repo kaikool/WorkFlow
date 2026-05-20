@@ -6,18 +6,19 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { cn, compareProfilesByHierarchy } from "@/lib/utils";
+import { cn, compareProfilesByHierarchy, canViewLeaveDetails } from "@/lib/utils";
 import { format, isSameDay } from "date-fns";
 import { typeLabels, statusLabels } from "../_lib/constants";
 
 interface ScheduleCardProps {
   item: any;
   isTCTH: boolean;
+  profile?: any;
   onSelect: (item: any) => void;
   onStatusUpdate: (id: string, status: string) => void;
 }
 
-export default function ScheduleCard({ item, isTCTH, onSelect, onStatusUpdate }: ScheduleCardProps) {
+export default function ScheduleCard({ item, isTCTH, profile, onSelect, onStatusUpdate }: ScheduleCardProps) {
   const type = typeLabels[item.type] || typeLabels.meeting;
   const status = statusLabels[item.status];
   const isTrip = item.type === 'trip';
@@ -25,6 +26,9 @@ export default function ScheduleCard({ item, isTCTH, onSelect, onStatusUpdate }:
   const startTime = new Date(item.start_time);
   const endTime = new Date(item.end_time);
   const sameDay = isSameDay(startTime, endTime);
+
+  const isAllowedToView = canViewLeaveDetails(item, profile);
+  const displayTitle = isAllowedToView ? item.title : `Nghỉ phép (${item.creator?.full_name || 'Cán bộ'})`;
 
   return (
     <Card className={cn(
@@ -51,7 +55,7 @@ export default function ScheduleCard({ item, isTCTH, onSelect, onStatusUpdate }:
                     {status.label}
                   </Badge>
                 </div>
-                <h3 className="text-[15px] md:text-base font-bold text-slate-900 leading-tight line-clamp-2 pt-1">{item.title}</h3>
+                <h3 className="text-[15px] md:text-base font-bold text-slate-900 leading-tight line-clamp-2 pt-1">{displayTitle}</h3>
               </div>
               <div className="bg-slate-50 p-2 rounded-xl group-hover:bg-white transition-colors">
                 <MoreVertical className="w-3.5 h-3.5 text-slate-500" />

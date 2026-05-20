@@ -3,7 +3,7 @@
 import React from "react";
 import { CalendarDays } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { cn, canViewLeaveDetails } from "@/lib/utils";
 import { endOfDay, format, startOfDay } from "date-fns";
 import { filterBGD, getDirectorColor } from "../_lib/utils";
 
@@ -17,12 +17,13 @@ interface DirectorTimelineProps {
   startLimit: number;
   duration: number;
   onSelectSchedule: (s: any) => void;
+  currentProfile?: any;
 }
 
 export default function DirectorTimeline({
   allProfiles, schedules, selectedDate, timelineContainerRef,
   isTodaySelected, currentTimePercent, startLimit, duration,
-  onSelectSchedule
+  onSelectSchedule, currentProfile
 }: DirectorTimelineProps) {
   const bgdProfiles = filterBGD(allProfiles);
   const selectedStart = startOfDay(selectedDate);
@@ -99,13 +100,16 @@ export default function DirectorTimeline({
                         const isCutLeft = rawStart < selectedStart || sMin < startLimit;
                         const isCutRight = rawEnd > selectedEnd || eMin > (startLimit + duration);
 
+                        const isAllowedToView = canViewLeaveDetails(sched, currentProfile);
+                        const displayTitle = isAllowedToView ? sched.title : `Nghỉ phép (${sched.creator?.full_name || 'Cán bộ'})`;
+
                         return (
                           <div
                             key={sched.id}
                             onClick={() => onSelectSchedule(sched)}
                             style={{ left: `${leftPercent}%`, width: `${widthPercent}%` }}
                             className={`absolute h-2.5 rounded-full cursor-pointer transition-all hover:scale-y-125 hover:shadow-xs active:scale-[0.95] select-none ${typeColor} border-none shadow-xs ${(isCutLeft || isCutRight) ? 'opacity-60' : ''}`}
-                            title={`${sched.title} (${format(sTime, 'HH:mm')} - ${format(eTime, 'HH:mm')})${isCutLeft ? ' ◀ ngoài khung' : ''}${isCutRight ? ' ▶ ngoài khung' : ''}`}
+                            title={`${displayTitle} (${format(sTime, 'HH:mm')} - ${format(eTime, 'HH:mm')})${isCutLeft ? ' ◀ ngoài khung' : ''}${isCutRight ? ' ▶ ngoài khung' : ''}`}
                           />
                         );
                       })}

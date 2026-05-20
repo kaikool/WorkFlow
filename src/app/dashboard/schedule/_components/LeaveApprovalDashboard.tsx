@@ -2,6 +2,7 @@ import React from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Check, X, Calendar, Clock, User } from "lucide-react";
+import { canViewLeaveDetails } from "@/lib/utils";
 
 interface LeaveApprovalDashboardProps {
   schedules: any[];
@@ -72,8 +73,10 @@ export default function LeaveApprovalDashboard({ schedules, profile, onStatusUpd
 
                   {/* Chi tiết đơn */}
                   <div className="space-y-1 bg-slate-50/50 p-4 rounded-2xl">
-                    <p className="text-sm font-bold text-slate-950 line-clamp-1">{leave.title}</p>
-                    {leave.description && (
+                    <p className="text-sm font-bold text-slate-950 line-clamp-1">
+                      {canViewLeaveDetails(leave, profile) ? leave.title : "Nghỉ phép"}
+                    </p>
+                    {leave.description && canViewLeaveDetails(leave, profile) && (
                       <p className="text-xs text-slate-500 line-clamp-2 mt-1">{leave.description}</p>
                     )}
                   </div>

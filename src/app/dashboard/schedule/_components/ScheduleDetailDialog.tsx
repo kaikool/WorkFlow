@@ -17,16 +17,17 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from "@/components/ui/select";
-import { cn, compareProfilesByHierarchy } from "@/lib/utils";
+import { cn, compareProfilesByHierarchy, canViewLeaveDetails } from "@/lib/utils";
 import { format } from "date-fns";
 import { typeLabels, timeOptions } from "../_lib/constants";
-import { filterBGD, filterStaff, resolveParticipantIds } from "../_lib/utils";
+import { filterBGD, filterStaff, resolveParticipantIds, checkConflicts, checkResourceConflicts } from "../_lib/utils";
 import ParticipantSelector from "./ParticipantSelector";
 
 interface ScheduleDetailDialogProps {
   isOpen: boolean;
   setIsOpen: (v: boolean) => void;
   schedule: any;
+  schedules: any[];
   vehicles: any[];
   rooms: any[];
   isTCTH: boolean;
@@ -89,7 +90,7 @@ function RenderParticipants({ schedule, allProfiles }: { schedule: any; allProfi
 }
 
 export default function ScheduleDetailDialog({
-  isOpen, setIsOpen, schedule, vehicles, rooms, isTCTH, allProfiles, departments, currentProfile, onAssignVehicle, onUpdateEndTime, onUpdateSchedule
+  isOpen, setIsOpen, schedule, schedules, vehicles, rooms, isTCTH, allProfiles, departments, currentProfile, onAssignVehicle, onUpdateEndTime, onUpdateSchedule
 }: ScheduleDetailDialogProps) {
   const [isEditingTime, setIsEditingTime] = React.useState(false);
   const [isEditingSchedule, setIsEditingSchedule] = React.useState(false);
@@ -153,6 +154,43 @@ export default function ScheduleDetailDialog({
     }
   }, [schedule, isOpen]);
 
+  const conflicts = React.useMemo(() => {
+    if (!editStartDate || !editEndDate || editData.type === 'leave') return [];
+
+    const startString = `${format(editStartDate, 'yyyy-MM-dd')}T${editStartTime}`;
+    const endString = `${format(editEndDate, 'yyyy-MM-dd')}T${editEndTime}`;
+    let start: Date;
+    let end: Date;
+    try {
+      start = new Date(startString);
+      end = new Date(endString);
+    } catch {
+      return [];
+    }
+
+    const finalParticipantIds = resolveParticipantIds({ selectedParticipants, bgdMode, selectedBGD, deptMode, filterDepts, participantMode, allProfiles });
+
+    const pConflicts = checkConflicts({
+      checkIds: finalParticipantIds,
+      startDate: editStartDate,
+      endDate: editEndDate,
+      startTime: editStartTime,
+      endTime: editEndTime,
+      schedules
+    });
+
+    const rConflicts = checkResourceConflicts({
+      roomId: editData.location === 'Chi nhánh' && editData.room_id !== 'none' ? editData.room_id : null,
+      vehicleId: editData.use_vehicle && editData.vehicle_id !== 'none' ? editData.vehicle_id : null,
+      start,
+      end,
+      schedules,
+      ignoreScheduleId: schedule?.id
+    });
+
+    return [...pConflicts, ...rConflicts];
+  }, [editStartDate, editEndDate, editStartTime, editEndTime, selectedParticipants, bgdMode, selectedBGD, deptMode, filterDepts, participantMode, allProfiles, schedules, editData.location, editData.room_id, editData.use_vehicle, editData.vehicle_id, editData.type, schedule?.id]);
+
   if (!schedule) return null;
 
   const matchedVehicle = vehicles.find(v => v.id === schedule.vehicle_id);
@@ -174,7 +212,11 @@ export default function ScheduleDetailDialog({
 
   const isParticipant = schedule.participants?.some((p: any) => p.profile?.id === currentProfile?.id);
   const isCreator = schedule.created_by === currentProfile?.id;
-  const canEdit = isParticipant || isCreator || isTCTH;
+  const isLeave = schedule.type === 'leave';
+  const isAllowedToView = canViewLeaveDetails(schedule, currentProfile);
+  const canEdit = isLeave 
+    ? (isCreator || isAllowedToView)
+    : (isParticipant || isCreator || isTCTH);
 
   const handleSaveTime = () => {
     if (!newEndTime) return;
@@ -238,7 +280,7 @@ export default function ScheduleDetailDialog({
                 {typeLabels[schedule.type]?.label}
               </Badge>
               <DialogTitle className="text-lg sm:text-xl md:text-2xl font-bold leading-tight tabular-nums text-slate-900 break-words">
-                {schedule.title}
+                {isAllowedToView ? schedule.title : `Nghỉ phép (${schedule.creator?.full_name || 'Cán bộ'})`}
               </DialogTitle>
               <div className="flex flex-wrap items-center gap-2 text-slate-600 text-[13px] font-semibold pt-1">
                 <div className="flex min-w-0 items-center gap-1.5">
@@ -252,7 +294,7 @@ export default function ScheduleDetailDialog({
 
           {/* Body */}
           <div className="min-h-0 flex-1 p-5 sm:p-6 space-y-6 overflow-y-auto overscroll-contain">
-            {schedule.description && (
+            {schedule.description && isAllowedToView && (
               <div className="space-y-2">
                 <p className="text-[11px] text-slate-500 truncate">Nội dung chi tiết</p>
                 <p className="text-sm font-bold text-slate-600 leading-relaxed bg-slate-50 p-4 rounded-2xl">{schedule.description}</p>
@@ -436,9 +478,34 @@ export default function ScheduleDetailDialog({
                       </div>
                     )}
 
+                    {editData.type !== 'leave' && conflicts.length > 0 && (
+                      <div className="p-3 bg-red-50/50 rounded-2xl border border-red-100 mt-2 space-y-2 animate-in fade-in zoom-in-95">
+                        <div className="flex items-center gap-2">
+                          <AlertCircle className="w-4 h-4 text-red-600" />
+                          <span className="text-[13px] font-semibold text-red-700">Cảnh báo trùng lịch</span>
+                        </div>
+                        <ul className="list-disc pl-5 text-xs font-medium text-red-600/80 space-y-1">
+                          {conflicts.map((c, i) => (
+                            <li key={i} className="leading-relaxed">{c}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
                     <div className="flex gap-2 justify-end">
                       <Button variant="ghost" size="sm" className="h-9 px-4 rounded-xl text-sm font-medium text-slate-500 active:scale-95 transition-all" onClick={() => setIsEditingSchedule(false)}>Hủy</Button>
-                      <Button size="sm" className="h-9 px-4 rounded-xl text-sm font-medium bg-primary text-white shadow-sm active:scale-95 transition-all" onClick={handleSaveSchedule}>Lưu lịch trình</Button>
+                      <Button
+                        size="sm"
+                        className={cn(
+                          "h-9 px-4 rounded-xl text-sm font-medium shadow-sm active:scale-95 transition-all",
+                          editData.type !== 'leave' && conflicts.length > 0
+                            ? "bg-amber-500 hover:bg-amber-600 text-white"
+                            : "bg-primary hover:bg-primary/90 text-white"
+                        )}
+                        onClick={handleSaveSchedule}
+                      >
+                        {editData.type !== 'leave' && conflicts.length > 0 ? 'Vẫn tiếp tục lưu?' : 'Lưu lịch trình'}
+                      </Button>
                     </div>
                   </div>
                 )}

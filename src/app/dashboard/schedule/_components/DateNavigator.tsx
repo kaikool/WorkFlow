@@ -55,23 +55,41 @@ export default function DateNavigator({ selectedDate, setSelectedDate, weekDays,
                 key={idx}
                 onClick={() => setSelectedDate(day)}
                 className={cn(
-                  "flex flex-col items-center py-2.5 rounded-xl transition-all relative",
+                  "flex flex-col items-center py-2 rounded-xl transition-all relative h-14 justify-between",
                   isSelected
                     ? "bg-primary text-white ring-2 ring-primary/20"
                     : "hover:bg-slate-100 text-slate-500"
                 )}
               >
-                <span className={cn("text-[9px] font-bold mb-1", isSelected ? "text-white/70" : "text-slate-400")}>
+                <span className={cn("text-[9px] font-bold", isSelected ? "text-white/70" : "text-slate-400")}>
                   {format(day, 'EEEEEE', { locale: vi })}
                 </span>
-                <span className={cn("text-[15px] font-bold")}>
+                
+                <span className={cn(
+                  "text-[13px] font-bold flex items-center justify-center w-6 h-6 rounded-full transition-all mb-1",
+                  isToday 
+                    ? isSelected 
+                      ? "bg-white text-primary font-extrabold shadow-sm" 
+                      : "bg-primary/10 text-primary font-extrabold"
+                    : ""
+                )}>
                   {format(day, 'd')}
                 </span>
-                {(hasPending || hasApproved || isToday) && !isSelected && (
-                  <div className="absolute bottom-1 left-1/2 -translate-x-1/2 flex items-center gap-0.5">
-                    {hasPending && <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />}
-                    {hasApproved && <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />}
-                    {!hasPending && !hasApproved && isToday && <span className="h-1 w-1 rounded-full bg-primary" />}
+
+                {(hasPending || hasApproved) && (
+                  <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 flex items-center gap-0.5">
+                    {hasPending && (
+                      <span className={cn(
+                        "h-1 w-1 rounded-full shrink-0",
+                        isSelected ? "bg-amber-300 ring-[0.5px] ring-white/40" : "bg-amber-400"
+                      )} />
+                    )}
+                    {hasApproved && (
+                      <span className={cn(
+                        "h-1 w-1 rounded-full shrink-0",
+                        isSelected ? "bg-emerald-300 ring-[0.5px] ring-white/40" : "bg-emerald-500"
+                      )} />
+                    )}
                   </div>
                 )}
               </button>

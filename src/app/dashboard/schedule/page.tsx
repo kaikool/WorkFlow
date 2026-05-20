@@ -55,11 +55,11 @@ export default function SchedulePage() {
   const [isEndOpen, setIsEndOpen] = useState(false);
 
   // State chọn thành phần tham gia
-  const [bgdMode, setBgdMode] = useState<'all' | 'specific' | 'none'>('specific');
+  const [bgdMode, setBgdMode] = useState<'all' | 'specific' | 'none'>('none');
   const [selectedBGD, setSelectedBGD] = useState<string[]>([]);
-  const [deptMode, setDeptMode] = useState<'all' | 'specific' | 'none'>('specific');
+  const [deptMode, setDeptMode] = useState<'all' | 'specific' | 'none'>('none');
   const [filterDepts, setFilterDepts] = useState<string[]>([]);
-  const [participantMode, setParticipantMode] = useState<'all' | 'manager' | 'staff'>('all');
+  const [participantMode, setParticipantMode] = useState<'all' | 'manager' | 'staff'>('staff');
   const [selectedParticipants, setSelectedParticipants] = useState<string[]>([]);
 
   // State dialog chi tiết
@@ -195,8 +195,31 @@ export default function SchedulePage() {
     }
   }, [filterType, loading]);
 
-  // Fetch dữ liệu
-  useEffect(() => { fetchData(); }, [selectedDate]);
+  // Fetch dữ liệu và kích hoạt Real-time đồng bộ
+  useEffect(() => {
+    fetchData();
+
+    // Đăng ký kênh lắng nghe thay đổi PostgreSQL của Supabase
+    const channel = supabase
+      .channel('schedule_realtime_sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'schedules' }, () => {
+        fetchData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'schedule_participants' }, () => {
+        fetchData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'vehicles' }, () => {
+        fetchData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms' }, () => {
+        fetchData();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [selectedDate]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -360,8 +383,7 @@ export default function SchedulePage() {
       }) : [];
 
       if (vehicleConflicts.length > 0) {
-        toast({ variant: "destructive", title: "Trùng lịch xe", description: vehicleConflicts[0] });
-        return;
+        toast({ title: "Cảnh báo trùng lịch xe", description: vehicleConflicts[0] });
       }
 
       const { error } = await supabase.from('schedules').update({ vehicle_id: vehicleId, status: vehicleId ? 'approved' : 'pending' }).eq('id', scheduleId);
@@ -390,7 +412,7 @@ export default function SchedulePage() {
           }))
         );
       }
-      toast({ title: "Thành công", description: vehicleId ? "Đã gán xe cho lịch trình." : "Đã hủy gán xe." });
+      toast({ title: "Thành công", description: vehicleId ? (vehicleConflicts.length > 0 ? "Đã gán xe (Lưu ý: trùng lịch xe)." : "Đã gán xe cho lịch trình.") : "Đã hủy gán xe." });
       if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
       setIsDetailOpen(false);
       fetchData();
@@ -460,7 +482,9 @@ export default function SchedulePage() {
         return;
       }
 
-      const resourceErrors = checkResourceConflicts({
+      const isLeave = (updates.type || schedule.type) === 'leave';
+
+      const resourceErrors = isLeave ? [] : checkResourceConflicts({
         roomId: updates.room_id,
         vehicleId: updates.vehicle_id,
         start: nextStart,
@@ -469,16 +493,16 @@ export default function SchedulePage() {
         ignoreScheduleId: id
       });
 
+      const allConflicts: string[] = [];
       if (resourceErrors.length > 0) {
-        toast({ variant: "destructive", title: "Trùng tài nguyên", description: resourceErrors[0] });
-        return;
+        allConflicts.push(...resourceErrors);
       }
 
       const { participant_ids, ...scheduleUpdates } = updates;
       const nextParticipantIds = Array.isArray(participant_ids)
         ? Array.from(new Set([schedule.created_by, ...participant_ids].filter(Boolean)))
         : (schedule.participants || []).map((p: any) => p.profile?.id).filter(Boolean);
-      const participantConflicts = await findParticipantConflicts({
+      const participantConflicts = isLeave ? [] : await findParticipantConflicts({
         participantIds: nextParticipantIds,
         start: nextStart,
         end: nextEnd,
@@ -486,12 +510,7 @@ export default function SchedulePage() {
       });
 
       if (participantConflicts.length > 0) {
-        toast({
-          variant: "destructive",
-          title: "Trùng lịch người tham gia",
-          description: participantConflicts.slice(0, 3).join('\n')
-        });
-        return;
+        allConflicts.push(...participantConflicts);
       }
 
       const { error } = await supabase.from('schedules').update(scheduleUpdates).eq('id', id);
@@ -533,7 +552,11 @@ export default function SchedulePage() {
         );
       }
 
-      toast({ title: "Thành công", description: "Đã cập nhật lịch trình." });
+      if (allConflicts.length > 0) {
+        toast({ title: "Cảnh báo trùng lịch", description: allConflicts[0] });
+      } else {
+        toast({ title: "Thành công", description: "Đã cập nhật lịch trình." });
+      }
       if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
       setIsDetailOpen(false);
       fetchData();
@@ -573,14 +596,13 @@ export default function SchedulePage() {
       return;
     }
 
+    const allConflicts: string[] = [];
     if (!isLeave && conflicts.length > 0) {
-      toast({ variant: "destructive", title: "Trùng lịch trình", description: "Vui lòng điều chỉnh lại thời gian hoặc thành phần tham gia do có người đang bận." });
-      return;
+      allConflicts.push(...conflicts);
     }
 
     if (!isLeave && resourceConflicts.length > 0) {
-      toast({ variant: "destructive", title: "Trùng tài nguyên", description: resourceConflicts[0] });
-      return;
+      allConflicts.push(...resourceConflicts);
     }
 
     try {
@@ -590,19 +612,14 @@ export default function SchedulePage() {
         : resolveParticipantIds({ selectedParticipants, bgdMode, selectedBGD, deptMode, filterDepts, participantMode, allProfiles });
       const finalParticipants = Array.from(new Set([profile?.id, ...selectedParticipantIds].filter(Boolean)));
 
-      const participantConflicts = await findParticipantConflicts({
+      const participantConflicts = isLeave ? [] : await findParticipantConflicts({
         participantIds: finalParticipants,
         start,
         end
       });
 
       if (participantConflicts.length > 0) {
-        toast({
-          variant: "destructive",
-          title: "Trùng lịch người tham gia",
-          description: participantConflicts.slice(0, 3).join('\n')
-        });
-        return;
+        allConflicts.push(...participantConflicts);
       }
 
       const { data: createdSchedule, error } = await supabase.from('schedules').insert({
@@ -615,7 +632,9 @@ export default function SchedulePage() {
         use_vehicle: !isLeave && use_vehicle,
         created_by: profile?.id,
         department_id: profile?.department_id,
-        status: (profile?.role === 'admin' || profile?.role === 'secretary' || profile?.role === 'hr_officer' || profile?.departments?.name === 'Tổ chức Tổng hợp') ? 'approved' : 'pending'
+        status: isLeave
+          ? 'pending'
+          : (profile?.role === 'admin' || profile?.role === 'secretary' || profile?.role === 'hr_officer' || profile?.departments?.name === 'Tổ chức Tổng hợp') ? 'approved' : 'pending'
       }).select().single();
       if (error) throw error;
 
@@ -629,13 +648,32 @@ export default function SchedulePage() {
       }
 
       if (createdSchedule.status === 'pending') {
-        // Nghỉ phép: thông báo cho lãnh đạo phòng + TCTH
+        // Nghỉ phép: thông báo cho lãnh đạo phòng + TCTH lãnh đạo + BGĐ
         // Lịch thường: thông báo chỉ cho TCTH
         const notifyTargets = isLeave
-          ? allProfiles.filter(p =>
-              isScheduleApprover(p) ||
-              (p.department_id === profile?.department_id && (p.role === 'manager' || p.is_department_head))
-            )
+          ? allProfiles.filter(p => {
+              if (p.id === profile?.id) return false;
+              
+              const isCreatorManager = profile?.role === 'manager' || profile?.is_department_head === true;
+              
+              // BGĐ (director/admin) luôn nhận
+              if (p.role === 'admin' || p.role === 'director') return true;
+              
+              // Cán bộ nhân sự (hr_officer) nhận (trừ khi creator là manager)
+              if (p.role === 'hr_officer' && !isCreatorManager) return true;
+              
+              // Lãnh đạo trực tiếp cùng phòng ban
+              if (!isCreatorManager && p.department_id === profile?.department_id && (p.role === 'manager' || p.is_department_head === true)) {
+                return true;
+              }
+              
+              // Lãnh đạo phòng Tổ chức Tổng hợp
+              if (getDepartmentName(p) === 'Tổ chức Tổng hợp' && (p.role === 'manager' || p.is_department_head === true)) {
+                return true;
+              }
+              
+              return false;
+            })
           : allProfiles.filter(isScheduleApprover);
 
         if (notifyTargets.length > 0) {
@@ -664,18 +702,22 @@ export default function SchedulePage() {
         );
       }
 
-      toast({ title: "Thành công", description: isLeave ? "Đơn nghỉ phép đã được gửi." : "Lịch trình đã được đăng ký." });
+      if (allConflicts.length > 0) {
+        toast({ title: "Cảnh báo trùng lịch", description: allConflicts[0] });
+      } else {
+        toast({ title: "Thành công", description: isLeave ? "Đơn nghỉ phép đã được gửi." : "Lịch trình đã được đăng ký." });
+      }
       // Reset toàn bộ form về trạng thái mặc định
       setNewSchedule({ title: "", description: "", location: "", department_id: "", type: "trip", use_room: false, room_id: "", use_vehicle: false, vehicle_id: "", requested_vehicle_type: "4 chỗ", participants: [] });
       setStartDate(new Date());
       setEndDate(new Date());
       setStartTime("08:00");
       setEndTime("09:00");
-      setBgdMode('specific');
+      setBgdMode('none');
       setSelectedBGD([]);
-      setDeptMode('specific');
+      setDeptMode('none');
       setFilterDepts(profile?.department_id ? [profile.department_id] : []);
-      setParticipantMode('all');
+      setParticipantMode('staff');
       setSelectedParticipants([]);
       setIsCreateOpen(false);
       fetchData();
@@ -808,7 +850,7 @@ export default function SchedulePage() {
       {/* Dialog chi tiết */}
       <ScheduleDetailDialog
         isOpen={isDetailOpen} setIsOpen={setIsDetailOpen}
-        schedule={selectedSchedule} vehicles={vehicles} rooms={rooms}
+        schedule={selectedSchedule} schedules={schedules} vehicles={vehicles} rooms={rooms}
         isTCTH={isTCTH} allProfiles={allProfiles} departments={departments}
         currentProfile={profile}
         onAssignVehicle={handleAssignVehicle}

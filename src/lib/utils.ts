@@ -26,3 +26,24 @@ export function compareProfilesByHierarchy(a: any, b: any) {
 export function sortProfilesByHierarchy<T extends { role?: string; is_department_head?: boolean; full_name?: string }>(profiles: T[]) {
   return [...profiles].sort(compareProfilesByHierarchy)
 }
+
+export function canViewLeaveDetails(leave: any, currentUser: any) {
+  if (!leave || !currentUser) return false;
+  if (leave.type !== 'leave') return true;
+
+  const creatorId = leave.created_by || leave.creator?.id;
+  if (creatorId === currentUser.id) return true;
+
+  if (currentUser.role === 'admin' || currentUser.role === 'hr_officer' || currentUser.role === 'director') return true;
+
+  // Nếu người xem là Trưởng bộ phận của người tạo đơn
+  const creator = leave.creator;
+  if (creator) {
+    const isCreatorManager = creator.role === 'manager' || creator.is_department_head === true;
+    if (currentUser.role === 'manager') {
+      return creator.department_id === currentUser.department_id && !isCreatorManager;
+    }
+  }
+
+  return false;
+}

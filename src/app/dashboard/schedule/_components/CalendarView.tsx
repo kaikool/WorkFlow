@@ -1,12 +1,14 @@
 'use client'
 
 import React, { useState } from "react";
-import { Clock, Loader2, ChevronDown, ChevronUp } from "lucide-react";
+import { Clock, Loader2, ChevronDown, ChevronUp, Plane } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { addDays, endOfDay, format, isSameDay, startOfDay } from "date-fns";
 import ScheduleCard from "./ScheduleCard";
 import DirectorTimeline from "./DirectorTimeline";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 interface CalendarViewProps {
   loading: boolean;
@@ -62,6 +64,37 @@ export default function CalendarView(props: CalendarViewProps) {
       .slice(0, 6);
   }, [schedules, selectedDate, filterType, profile]);
 
+  // Lọc danh sách nhân sự đang hoặc sắp nghỉ phép
+  const leaveList = React.useMemo(() => {
+    const todayStart = startOfDay(new Date());
+    const todayEnd = endOfDay(new Date());
+
+    return schedules
+      .filter(s => s.type === 'leave' && s.status === 'approved')
+      .map(s => {
+        const start = new Date(s.start_time);
+        const end = new Date(s.end_time);
+        // Đang nghỉ: thời gian hiện tại nằm giữa start và end
+        const isCurrent = start <= todayEnd && end >= todayStart;
+        return {
+          ...s,
+          isCurrent,
+          startDate: start,
+          endDate: end
+        };
+      })
+      .filter(leave => leave.endDate >= todayStart)
+      .sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
+  }, [schedules]);
+
+  // Tra cứu phòng ban từ danh sách hồ sơ
+  const getProfileDeptName = (profileId: string) => {
+    const p = allProfiles.find(ap => ap.id === profileId);
+    if (!p) return "";
+    const dept = p.departments;
+    return Array.isArray(dept) ? dept[0]?.name : dept?.name;
+  };
+
   const displayedSchedules = showAllSchedules 
     ? filteredSchedules 
     : filteredSchedules.slice(0, DEFAULT_LIMIT);
@@ -102,6 +135,7 @@ export default function CalendarView(props: CalendarViewProps) {
             startLimit={startLimit}
             duration={duration}
             onSelectSchedule={onSelectSchedule}
+            currentProfile={profile}
           />
         ) : (
           <div className="space-y-6">
@@ -118,6 +152,7 @@ export default function CalendarView(props: CalendarViewProps) {
                       key={item.id}
                       item={item}
                       isTCTH={isTCTH}
+                      profile={profile}
                       onSelect={onSelectSchedule}
                       onStatusUpdate={onStatusUpdate}
                     />
@@ -153,10 +188,83 @@ export default function CalendarView(props: CalendarViewProps) {
                       key={`upcoming-${item.id}`}
                       item={item}
                       isTCTH={isTCTH}
+                      profile={profile}
                       onSelect={onSelectSchedule}
                       onStatusUpdate={onStatusUpdate}
                     />
                   ))}
+                </div>
+              </div>
+            )}
+
+            {/* Danh sách người nghỉ phép (đang nghỉ/sắp nghỉ) */}
+            {leaveList.length > 0 && (
+              <div className="space-y-4 pt-6 border-t border-slate-100 mt-8">
+                <div className="flex items-center justify-between px-2">
+                  <h3 className="text-[12px] font-bold text-slate-400 flex items-center gap-2 uppercase tracking-wider">
+                    <Plane className="w-4 h-4 text-indigo-500 shrink-0" />
+                    Nhân sự nghỉ phép ({leaveList.length})
+                  </h3>
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {leaveList.map(leave => {
+                    const deptName = getProfileDeptName(leave.created_by);
+                    const formattedRange = isSameDay(leave.startDate, leave.endDate)
+                      ? format(leave.startDate, 'dd/MM/yyyy')
+                      : `${format(leave.startDate, 'dd/MM')} - ${format(leave.endDate, 'dd/MM/yyyy')}`;
+
+                    return (
+                      <Card 
+                        key={leave.id}
+                        onClick={() => onSelectSchedule(leave)}
+                        className="rounded-2xl overflow-hidden border-none shadow-sm hover:shadow-lg transition-all duration-300 group cursor-pointer hover:-translate-y-0.5 hover:bg-slate-50/30"
+                      >
+                        <CardContent className="p-0">
+                          <div className="flex h-full">
+                            <div className={cn(
+                              "w-2 transition-all duration-300 group-hover:w-2.5 shrink-0",
+                              leave.isCurrent ? "bg-amber-400" : "bg-indigo-400"
+                            )} />
+                            
+                            <div className="flex-1 p-3.5 flex items-center gap-3.5 min-w-0">
+                              <Avatar className="h-9 w-9 shrink-0 border border-slate-100 shadow-sm">
+                                <AvatarImage src={leave.creator?.avatar_url} />
+                                <AvatarFallback className="text-xs bg-slate-150 font-extrabold text-slate-600">
+                                  {leave.creator?.full_name?.[0]}
+                                </AvatarFallback>
+                              </Avatar>
+                              
+                              <div className="flex-1 min-w-0 space-y-1">
+                                <div className="flex items-center justify-between gap-2">
+                                  <p className="text-[13px] font-extrabold text-slate-800 truncate group-hover:text-primary transition-colors">
+                                    {leave.creator?.full_name}
+                                  </p>
+                                  <span className={cn(
+                                    "text-[9px] font-extrabold px-2 py-0.5 rounded-md tracking-normal shrink-0",
+                                    leave.isCurrent 
+                                      ? "bg-amber-50 text-amber-600 border border-amber-200/50" 
+                                      : "bg-indigo-50/50 text-indigo-600 border border-indigo-200/40"
+                                  )}>
+                                    {leave.isCurrent ? "Đang nghỉ" : "Sắp nghỉ"}
+                                  </span>
+                                </div>
+                                
+                                <p className="text-[10px] text-slate-400 font-bold truncate">
+                                  {deptName || "Chưa phân phòng"}
+                                </p>
+                                
+                                <div className="flex items-center justify-between gap-1.5 pt-1.5 border-t border-slate-100">
+                                  <span className="text-[9.5px] font-medium text-slate-400">Thời gian nghỉ:</span>
+                                  <span className="text-[10.5px] font-bold text-slate-750">{formattedRange}</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
               </div>
             )}
