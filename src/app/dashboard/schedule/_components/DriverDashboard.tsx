@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { createClient } from "@/utils/supabase/client";
@@ -105,11 +105,11 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
 
       // Thông báo tự động cho Tổ chức Tổng hợp để quyết toán xăng xe
       const { data: tcthStaff } = await supabase.from('profiles').select('id, role, departments(name)');
-      const tcthTargets = tcthStaff?.filter(p => (p.departments as any)?.name === 'Tổ chức Tổng hợp' || p.role === 'admin') || [];
+      const tcthTargets = tcthStaff?.filter((p: any) => (p.departments as any)?.name === 'Tổ chức Tổng hợp' || p.role === 'admin') || [];
 
       if (tcthTargets.length > 0) {
         await supabase.from('notifications').insert(
-          tcthTargets.map(target => ({
+          tcthTargets.map((target: any) => ({
             user_id: target.id,
             title: "Quyết toán hành trình xe công 🚗",
             content: `Tài xế ${profile?.full_name} đã kết thúc chuyến "${schedule.title}". Quãng đường di chuyển thực tế: ${actual_distance} KM.`,
@@ -153,11 +153,11 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
 
       // Thông báo cho TCTH
       const { data: tcthStaff } = await supabase.from('profiles').select('id, role, departments(name)');
-      const tcthTargets = tcthStaff?.filter(p => (p.departments as any)?.name === 'Tổ chức Tổng hợp' || p.role === 'admin') || [];
+      const tcthTargets = tcthStaff?.filter((p: any) => (p.departments as any)?.name === 'Tổ chức Tổng hợp' || p.role === 'admin') || [];
 
       if (tcthTargets.length > 0) {
         await supabase.from('notifications').insert(
-          tcthTargets.map(target => ({
+          tcthTargets.map((target: any) => ({
             user_id: target.id,
             title: "Báo cáo sự cố phương tiện khẩn cấp ⚠️",
             content: `Tài xế ${profile?.full_name} báo cáo sự cố xe "${(schedule.vehicle as any)?.name}": "${issueText}"`,
@@ -318,6 +318,7 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
       <Dialog open={isStartOpen} onOpenChange={setIsStartOpen}>
         <DialogContent className="rounded-[32px] max-w-sm border-none p-6 shadow-2xl">
           <DialogHeader>
+            <DialogDescription className="sr-only">Nhập chỉ số kilomet hiện tại trước khi bắt đầu chuyến đi.</DialogDescription>
             <DialogTitle className="text-lg font-bold text-slate-900">Bắt đầu chuyến đi</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -349,6 +350,7 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
       <Dialog open={isEndOpen} onOpenChange={setIsEndOpen}>
         <DialogContent className="rounded-[32px] max-w-sm border-none p-6 shadow-2xl">
           <DialogHeader>
+            <DialogDescription className="sr-only">Nhập chỉ số kilomet kết thúc để hoàn thành chuyến đi.</DialogDescription>
             <DialogTitle className="text-lg font-bold text-slate-900">Kết thúc chuyến đi</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -380,6 +382,7 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
       <Dialog open={isIssueOpen} onOpenChange={setIsIssueOpen}>
         <DialogContent className="rounded-[32px] max-w-sm border-none p-6 shadow-2xl">
           <DialogHeader>
+            <DialogDescription className="sr-only">Mô tả sự cố phương tiện phát sinh để gửi thông báo bảo trì.</DialogDescription>
             <DialogTitle className="text-lg font-bold text-slate-900 flex items-center gap-2 text-rose-600">
               <AlertTriangle className="w-5 h-5 shrink-0" /> Báo cáo sự cố xe
             </DialogTitle>

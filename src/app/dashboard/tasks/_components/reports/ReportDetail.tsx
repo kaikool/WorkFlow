@@ -75,13 +75,13 @@ export function ReportDetail({ id }: { id: string }) {
       finally { setLoading(false) }
     }
     fetchData()
-    const ch = supabase.channel(`report_${id}`).on("postgres_changes", { event: "UPDATE", schema: "public", table: "tasks", filter: `id=eq.${id}` }, (p) => setTask(p.new)).subscribe()
+    const ch = supabase.channel(`report_${id}`).on("postgres_changes", { event: "UPDATE", schema: "public", table: "tasks", filter: `id=eq.${id}` }, (p: any) => setTask(p.new)).subscribe()
     return () => { supabase.removeChannel(ch) }
   }, [id])
 
   useEffect(() => {
     if (profile?.department_id)
-      supabase.from("profiles").select("*").eq("department_id", profile.department_id).neq("role", "manager").then(({ data }) => setDeptProfiles(sortProfilesByHierarchy(data || [])))
+      supabase.from("profiles").select("*").eq("department_id", profile.department_id).neq("role", "manager").then(({ data }: any) => setDeptProfiles(sortProfilesByHierarchy(data || [])))
   }, [profile])
 
   const isCreatorOrAdmin = task?.created_by === profile?.id || profile?.role === "admin" || profile?.role === "director"
@@ -282,7 +282,7 @@ export function ReportDetail({ id }: { id: string }) {
                           </td>
                           <td className="py-4 text-right pr-2">
                             <div className="flex items-center justify-end gap-2" onClick={e=>e.stopPropagation()}>
-                              <Checkbox checked={isDone} disabled={!isCreatorOrAdmin} onCheckedChange={()=>handleToggleSiblingStatus(sib.id,sib.status)} className="h-4.5 w-4.5 rounded border-slate-300 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500"/>
+                              <Checkbox checked={isDone} disabled={!isCreatorOrAdmin} onCheckedChange={()=>handleToggleSiblingStatus(sib.id,sib.status)} className="h-[18px] w-[18px] rounded border-slate-300 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500"/>
                               <span className={cn("text-sm font-medium cursor-pointer select-none",isDone?"text-emerald-600":"text-slate-400")} onClick={()=>isCreatorOrAdmin&&handleToggleSiblingStatus(sib.id,sib.status)}>
                                 {isDone?"Đã nộp":"Chưa nộp"}
                               </span>

@@ -1,14 +1,14 @@
 'use client'
 
 import React from "react";
-import { Clock, MapPin, Car, UserCheck } from "lucide-react";
+import { Clock, MapPin, Car, UserCheck, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription
 } from "@/components/ui/dialog";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
@@ -105,7 +105,8 @@ export default function ScheduleDetailDialog({
         room_id: schedule.room_id || "none",
         use_vehicle: !!schedule.use_vehicle,
         vehicle_id: schedule.vehicle_id || "none",
-        requested_vehicle_type: schedule.requested_vehicle_type || "4 chỗ"
+        requested_vehicle_type: schedule.requested_vehicle_type || "4 chỗ",
+        participant_ids: (schedule.participants || []).map((p: any) => p.profile?.id).filter(Boolean)
       });
     }
   }, [schedule, isOpen]);
@@ -168,7 +169,8 @@ export default function ScheduleDetailDialog({
       room_id: !isLeave && isBranchLocation && editData.room_id !== 'none' ? editData.room_id : null,
       use_vehicle: !isLeave && !!editData.use_vehicle,
       vehicle_id: !isLeave && editData.vehicle_id !== 'none' ? editData.vehicle_id : null,
-      requested_vehicle_type: !isLeave && editData.use_vehicle ? editData.requested_vehicle_type : null
+      requested_vehicle_type: !isLeave && editData.use_vehicle ? editData.requested_vehicle_type : null,
+      participant_ids: editData.participant_ids || []
     });
   };
 
@@ -176,6 +178,7 @@ export default function ScheduleDetailDialog({
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="rounded-2xl border-none shadow-2xl max-w-xl p-0 overflow-hidden bg-white">
         <DialogHeader className="sr-only">
+          <DialogDescription>Thông tin chi tiết, thành phần tham gia, phương tiện và các thao tác cập nhật lịch trình.</DialogDescription>
           <DialogTitle className="text-[17px] font-semibold text-slate-900">Chi tiết lịch trình</DialogTitle>
         </DialogHeader>
         <div className="flex flex-col">
@@ -283,6 +286,48 @@ export default function ScheduleDetailDialog({
                             )}
                           </div>
                         )}
+                      </div>
+                    )}
+
+                    {editData.type !== 'leave' && (
+                      <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4">
+                        <div className="flex items-center gap-2">
+                          <Users className="h-4 w-4 text-primary" />
+                          <p className="text-[13px] font-semibold text-slate-700">Thêm / bớt người tham gia</p>
+                        </div>
+                        <div className="max-h-44 overflow-y-auto pr-1">
+                          <div className="flex flex-wrap gap-2">
+                            {allProfiles
+                              .filter((p: any) => p.role !== 'admin')
+                              .map((p: any) => {
+                                const selected = (editData.participant_ids || []).includes(p.id);
+                                const locked = p.id === schedule.created_by;
+                                return (
+                                  <button
+                                    key={p.id}
+                                    type="button"
+                                    disabled={locked}
+                                    onClick={() => {
+                                      const current = editData.participant_ids || [];
+                                      setEditData({
+                                        ...editData,
+                                        participant_ids: selected
+                                          ? current.filter((id: string) => id !== p.id)
+                                          : [...current, p.id]
+                                      });
+                                    }}
+                                    className={cn(
+                                      "rounded-xl border px-3 py-1.5 text-[12px] font-semibold transition-all",
+                                      selected ? "border-primary bg-primary text-white" : "border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100",
+                                      locked && "cursor-not-allowed opacity-80"
+                                    )}
+                                  >
+                                    {p.full_name}{locked ? " (người tạo)" : ""}
+                                  </button>
+                                );
+                              })}
+                          </div>
+                        </div>
                       </div>
                     )}
 

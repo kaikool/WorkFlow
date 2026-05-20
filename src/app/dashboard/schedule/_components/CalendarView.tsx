@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { Clock, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { format, isSameDay } from "date-fns";
+import { addDays, endOfDay, format, isSameDay, startOfDay } from "date-fns";
 import ScheduleCard from "./ScheduleCard";
 import DirectorTimeline from "./DirectorTimeline";
 import { Button } from "@/components/ui/button";
@@ -39,11 +39,27 @@ export default function CalendarView(props: CalendarViewProps) {
 
   // Lọc lịch trình theo ngày và phòng ban
   const filteredSchedules = React.useMemo(() => {
+    const selectedStart = startOfDay(selectedDate);
+    const selectedEnd = endOfDay(selectedDate);
     return schedules.filter(s => {
-      if (!isSameDay(new Date(s.start_time), selectedDate)) return false;
+      if (new Date(s.start_time) > selectedEnd || new Date(s.end_time) < selectedStart) return false;
       if (filterType === 'dept') return s.department_id === profile?.department_id;
       return true;
     });
+  }, [schedules, selectedDate, filterType, profile]);
+
+  const upcomingSchedules = React.useMemo(() => {
+    const selectedEnd = endOfDay(selectedDate);
+    const rangeEnd = endOfDay(addDays(selectedDate, 3));
+    return schedules
+      .filter(s => {
+        const start = new Date(s.start_time);
+        if (start <= selectedEnd || start > rangeEnd || s.status === 'rejected') return false;
+        if (filterType === 'dept') return s.department_id === profile?.department_id;
+        return true;
+      })
+      .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
+      .slice(0, 6);
   }, [schedules, selectedDate, filterType, profile]);
 
   const displayedSchedules = showAllSchedules 
@@ -124,6 +140,25 @@ export default function CalendarView(props: CalendarViewProps) {
                   </div>
                 )}
               </>
+            )}
+
+            {upcomingSchedules.length > 0 && (
+              <div className="space-y-3 pt-2">
+                <h3 className="text-[13px] font-medium text-slate-500 flex items-center gap-2 px-2">
+                  <Clock className="w-3.5 h-3.5 text-amber-500" /> Lịch sắp tới trong 3 ngày
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {upcomingSchedules.map(item => (
+                    <ScheduleCard
+                      key={`upcoming-${item.id}`}
+                      item={item}
+                      isTCTH={isTCTH}
+                      onSelect={onSelectSchedule}
+                      onStatusUpdate={onStatusUpdate}
+                    />
+                  ))}
+                </div>
+              </div>
             )}
           </div>
         )}

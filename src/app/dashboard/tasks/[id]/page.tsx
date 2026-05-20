@@ -16,7 +16,7 @@ function TaskRouter() {
 
   useEffect(() => {
     supabase.from('tasks').select('task_type').eq('id', id).single()
-      .then(({ data }) => setTaskType(data?.task_type ?? 'regular'))
+      .then(({ data }: any) => setTaskType(data?.task_type ?? 'regular'))
   }, [id])
 
   if (!taskType) return <div className="flex h-96 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>

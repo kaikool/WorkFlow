@@ -23,6 +23,7 @@ export function NotificationsDropdown() {
   const [unreadCount, setUnreadCount] = useState(0);
   const supabase = createClient();
   const router = useRouter();
+  const unreadBadgeLabel = unreadCount > 9 ? "9+" : unreadCount;
 
   useEffect(() => {
     setMounted(true);
@@ -44,7 +45,7 @@ export function NotificationsDropdown() {
           schema: 'public',
           table: 'notifications',
           filter: `user_id=eq.${user.id}`
-        }, (payload) => {
+        }, (payload: any) => {
           setNotifications(prev => [payload.new, ...prev].slice(0, 10));
           setUnreadCount(prev => prev + 1);
           toast({
@@ -64,7 +65,7 @@ export function NotificationsDropdown() {
         supabase.removeChannel(channel);
       }
     };
-  }, [supabase]);
+  }, [supabase, toast]);
 
   const fetchNotifications = async (userId: string) => {
     setLoading(true);
@@ -77,7 +78,7 @@ export function NotificationsDropdown() {
         .limit(10);
 
       setNotifications(data || []);
-      setUnreadCount(data?.filter(n => !n.is_read).length || 0);
+      setUnreadCount(data?.filter((n: any) => !n.is_read).length || 0);
     } catch (error) {
       console.error(error);
     } finally {
@@ -150,8 +151,8 @@ export function NotificationsDropdown() {
         <Button variant="ghost" size="icon" className="relative h-11 w-11 rounded-full bg-slate-50 hover:bg-slate-100 transition-all">
           <Bell className="h-5 w-5 text-slate-600" />
           {unreadCount > 0 && (
-            <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-red-600 border-2 border-white text-sm font-medium">
-              {unreadCount}
+            <Badge className="absolute -top-1 -right-1 !flex !h-5 !min-h-5 !w-5 !min-w-5 items-center justify-center rounded-full border-2 border-white bg-red-600 !p-0 text-[10px] font-bold leading-none text-white tabular-nums">
+              {unreadBadgeLabel}
             </Badge>
           )}
         </Button>

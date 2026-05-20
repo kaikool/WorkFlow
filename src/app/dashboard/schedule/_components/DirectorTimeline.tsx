@@ -4,7 +4,7 @@ import React from "react";
 import { CalendarDays } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { format, isSameDay } from "date-fns";
+import { endOfDay, format, startOfDay } from "date-fns";
 import { filterBGD, getDirectorColor } from "../_lib/utils";
 
 interface DirectorTimelineProps {
@@ -25,6 +25,8 @@ export default function DirectorTimeline({
   onSelectSchedule
 }: DirectorTimelineProps) {
   const bgdProfiles = filterBGD(allProfiles);
+  const selectedStart = startOfDay(selectedDate);
+  const selectedEnd = endOfDay(selectedDate);
 
   return (
     <div className="space-y-6 overflow-hidden animate-in fade-in duration-150">
@@ -46,7 +48,7 @@ export default function DirectorTimeline({
             {bgdProfiles.map(dir => {
               const dirColor = getDirectorColor(dir.full_name, allProfiles);
               const dirSchedules = schedules.filter(s => {
-                if (!isSameDay(new Date(s.start_time), selectedDate)) return false;
+                if (new Date(s.start_time) > selectedEnd || new Date(s.end_time) < selectedStart) return false;
                 return s.participants?.some((p: any) => p.profile?.id === dir.id);
               });
 
@@ -84,16 +86,18 @@ export default function DirectorTimeline({
                   })() : dirSchedules.length > 0 && (
                     <div className="relative w-full h-full z-10 flex items-center">
                       {dirSchedules.map(sched => {
-                        const sTime = new Date(sched.start_time);
-                        const eTime = new Date(sched.end_time);
+                        const rawStart = new Date(sched.start_time);
+                        const rawEnd = new Date(sched.end_time);
+                        const sTime = rawStart < selectedStart ? selectedStart : rawStart;
+                        const eTime = rawEnd > selectedEnd ? selectedEnd : rawEnd;
                         const sMin = sTime.getHours() * 60 + sTime.getMinutes();
                         const eMin = eTime.getHours() * 60 + eTime.getMinutes();
                         const leftPercent = Math.max(0, Math.min(100, ((sMin - startLimit) / duration) * 100));
                         const widthPercent = Math.max(4, Math.min(100 - leftPercent, ((eMin - sMin) / duration) * 100));
                         const typeColor = dirColor.bullet;
                         // Phát hiện lịch bị cắt bớt ngoài khung 8-17h
-                        const isCutLeft = sMin < startLimit;
-                        const isCutRight = eMin > (startLimit + duration);
+                        const isCutLeft = rawStart < selectedStart || sMin < startLimit;
+                        const isCutRight = rawEnd > selectedEnd || eMin > (startLimit + duration);
 
                         return (
                           <div

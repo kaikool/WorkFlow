@@ -112,7 +112,13 @@ export default function DashboardPage() {
   let recentTasksQuery = supabase.from('tasks').select('*').order('created_at', { ascending: false });
   let recsQuery = supabase.from('recognitions').select(`*, sender:profiles!recognitions_sender_id_fkey(full_name, avatar_url), receiver:profiles!recognitions_receiver_id_fkey(full_name, avatar_url)`).order('created_at', { ascending: false });
   let commentsQuery = supabase.from('task_comments').select(`*, user:profiles(full_name, avatar_url), task:tasks(title)`).order('created_at', { ascending: false });
-  let allTasksQuery = supabase.from('tasks').select('*').neq('task_type', 'kpi');
+  let assignedCountQuery = supabase.from('tasks').select('id', { count: 'exact', head: true }).neq('task_type', 'kpi');
+  let completedVisibleQuery = supabase.from('tasks').select('id', { count: 'exact', head: true }).neq('task_type', 'kpi').eq('status', 'done');
+  let lateVisibleQuery = supabase
+    .from('tasks')
+    .select('id', { count: 'exact', head: true })
+    .neq('task_type', 'kpi')
+    .or(`status.eq.late,and(status.neq.done,due_date.lt.${now.toISOString()})`);
 
   // Áp dụng bộ lọc RLS/Phòng ban nếu không phải Admin
   if (!isPowerUser && currentProfile?.department_id) {
@@ -124,7 +130,9 @@ export default function DashboardPage() {
     lastWeekQuery = lastWeekQuery.or(filterStr);
     recentTasksQuery = recentTasksQuery.or(filterStr);
     recsQuery = recsQuery.or(`department_id.eq.${currentProfile.department_id},sender_id.eq.${user.id},receiver_id.eq.${user.id}`);
-    allTasksQuery = allTasksQuery.or(filterStr);
+    assignedCountQuery = assignedCountQuery.or(filterStr);
+    completedVisibleQuery = completedVisibleQuery.or(filterStr);
+    lateVisibleQuery = lateVisibleQuery.or(filterStr);
   }
 
   // 2. Thực thi tất cả cùng lúc với promise.all
@@ -137,7 +145,9 @@ export default function DashboardPage() {
     { count: lastWeekCount },
     { data: recentTasksList },
     { data: recs },
-    { data: allTasksList }
+    { count: assignedCount },
+    { count: completedVisibleCount },
+    { count: lateVisibleCount }
   ] = await Promise.all([
     activeQuery,
     urgentQuery,
@@ -147,14 +157,16 @@ export default function DashboardPage() {
     lastWeekQuery,
     recentTasksQuery.limit(5),
     recsQuery.limit(5),
-    allTasksQuery
+    assignedCountQuery,
+    completedVisibleQuery,
+    lateVisibleQuery
   ]);
 
   // Query comments yêu cầu lookup danh sách task_ids trước nếu có filter phòng ban
   let finalComments: any[] = [];
   if (!isPowerUser && currentProfile?.department_id) {
     const { data: deptTasks } = await supabase.from('tasks').select('id').or(`department_id.eq.${currentProfile.department_id},created_by.eq.${user.id},assignee_id.eq.${user.id}`);
-    const deptTaskIds = deptTasks?.map(t => t.id) || [];
+    const deptTaskIds = deptTasks?.map((t: any) => t.id) || [];
     if (deptTaskIds.length > 0) {
       commentsQuery = commentsQuery.in('task_id', deptTaskIds);
       const { data: cmts } = await commentsQuery.limit(5);
@@ -173,7 +185,7 @@ export default function DashboardPage() {
   });
 
   const kpiProg = filteredKpis.length > 0
-  ? Math.round(filteredKpis.reduce((acc, k) => {
+  ? Math.round(filteredKpis.reduce((acc: number, k: any) => {
       const prog = k.target_value ? Math.round(((k.current_value || 0) / k.target_value) * 100) : (k.progress || 0);
       return acc + prog;
     }, 0) / filteredKpis.length)
@@ -187,9 +199,9 @@ export default function DashboardPage() {
   }
 
   const activityFeed = [
-    ...(recentTasksList?.map(t => ({ ...t, type: 'task' })) || []),
-    ...(recs?.map(r => ({ ...r, type: 'recognition', rec_type: r.type })) || []),
-    ...(finalComments?.map(c => ({ ...c, type: 'comment' })) || [])
+    ...(recentTasksList?.map((t: any) => ({ ...t, type: 'task' })) || []),
+    ...(recs?.map((r: any) => ({ ...r, type: 'recognition', rec_type: r.type })) || []),
+    ...(finalComments?.map((c: any) => ({ ...c, type: 'comment' })) || [])
   ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 8);
 
   // 5. Tìm KPI trọng tâm
@@ -201,11 +213,6 @@ export default function DashboardPage() {
   return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
   })[0] || null;
 
-  const list = allTasksList || [];
-  const assigned = list.length;
-  const completed = list.filter((t: any) => t.status === 'done').length;
-  const late = list.filter((t: any) => t.status === 'late' || (t.status !== 'done' && new Date(t.due_date) < new Date())).length;
-
   setStats({
   productivity: thisWeekCount || 0,
   productivityChange: change,
@@ -216,9 +223,9 @@ export default function DashboardPage() {
   kpiCount: filteredKpis.length,
   topKpi: topKpi,
   recentTasks: activityFeed,
-  totalAssigned: assigned,
-  totalCompleted: completed,
-  totalLate: late
+  totalAssigned: assignedCount || 0,
+  totalCompleted: completedVisibleCount || 0,
+  totalLate: lateVisibleCount || 0
   });
 
   } catch (error) {

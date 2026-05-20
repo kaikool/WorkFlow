@@ -4,16 +4,17 @@ import React from "react";
 import { ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { format, addDays, isSameDay } from "date-fns";
+import { endOfDay, format, addDays, isSameDay, startOfDay } from "date-fns";
 import { vi } from "date-fns/locale";
 
 interface DateNavigatorProps {
   selectedDate: Date;
   setSelectedDate: (d: Date) => void;
   weekDays: Date[];
+  schedules?: any[];
 }
 
-export default function DateNavigator({ selectedDate, setSelectedDate, weekDays }: DateNavigatorProps) {
+export default function DateNavigator({ selectedDate, setSelectedDate, weekDays, schedules = [] }: DateNavigatorProps) {
   return (
     <div className="w-full">
       <div className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm flex flex-col gap-3">
@@ -41,6 +42,14 @@ export default function DateNavigator({ selectedDate, setSelectedDate, weekDays 
           {weekDays.map((day, idx) => {
             const isSelected = isSameDay(day, selectedDate);
             const isToday = isSameDay(day, new Date());
+            const dayStart = startOfDay(day);
+            const dayEnd = endOfDay(day);
+            const daySchedules = schedules.filter(s => {
+              if (s.status === 'rejected') return false;
+              return new Date(s.start_time) <= dayEnd && new Date(s.end_time) >= dayStart;
+            });
+            const hasPending = daySchedules.some(s => s.status === 'pending' || (s.use_vehicle && !s.vehicle_id));
+            const hasApproved = daySchedules.some(s => s.status === 'approved');
             return (
               <button
                 key={idx}
@@ -58,8 +67,12 @@ export default function DateNavigator({ selectedDate, setSelectedDate, weekDays 
                 <span className={cn("text-[15px] font-bold")}>
                   {format(day, 'd')}
                 </span>
-                {isToday && !isSelected && (
-                  <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-primary rounded-full" />
+                {(hasPending || hasApproved || isToday) && !isSelected && (
+                  <div className="absolute bottom-1 left-1/2 -translate-x-1/2 flex items-center gap-0.5">
+                    {hasPending && <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />}
+                    {hasApproved && <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />}
+                    {!hasPending && !hasApproved && isToday && <span className="h-1 w-1 rounded-full bg-primary" />}
+                  </div>
                 )}
               </button>
             );

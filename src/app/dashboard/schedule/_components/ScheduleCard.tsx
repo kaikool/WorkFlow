@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { cn, compareProfilesByHierarchy } from "@/lib/utils";
-import { format } from "date-fns";
+import { format, isSameDay } from "date-fns";
 import { typeLabels, statusLabels } from "../_lib/constants";
 
 interface ScheduleCardProps {
@@ -22,6 +22,9 @@ export default function ScheduleCard({ item, isTCTH, onSelect, onStatusUpdate }:
   const status = statusLabels[item.status];
   const isTrip = item.type === 'trip';
   const sortedParticipants = [...(item.participants || [])].sort((a: any, b: any) => compareProfilesByHierarchy(a.profile, b.profile));
+  const startTime = new Date(item.start_time);
+  const endTime = new Date(item.end_time);
+  const sameDay = isSameDay(startTime, endTime);
 
   return (
     <Card className={cn(
@@ -61,7 +64,7 @@ export default function ScheduleCard({ item, isTCTH, onSelect, onStatusUpdate }:
                   <Clock className="w-4 h-4" />
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-[14px] font-medium text-slate-900">{format(new Date(item.start_time), 'HH:mm')}</span>
+                  <span className="text-[14px] font-medium text-slate-900">{format(startTime, sameDay ? 'HH:mm' : 'dd/MM HH:mm')}</span>
                   <span className="text-[11px] text-slate-500 truncate">Bắt đầu</span>
                 </div>
               </div>
@@ -70,7 +73,7 @@ export default function ScheduleCard({ item, isTCTH, onSelect, onStatusUpdate }:
                   <Clock className="w-4 h-4" />
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-[14px] font-medium text-slate-900">{format(new Date(item.end_time), 'HH:mm')}</span>
+                  <span className="text-[14px] font-medium text-slate-900">{format(endTime, sameDay ? 'HH:mm' : 'dd/MM HH:mm')}</span>
                   <span className="text-[11px] text-slate-500 truncate">Kết thúc</span>
                 </div>
               </div>
@@ -115,10 +118,10 @@ export default function ScheduleCard({ item, isTCTH, onSelect, onStatusUpdate }:
 
             {isTCTH && item.status === 'pending' && (
               <div className="flex gap-2 pt-4 border-t border-slate-50">
-                <Button size="sm"
+                <Button size="sm" disabled={item.use_vehicle && !item.vehicle_id}
                   onClick={(e) => { e.stopPropagation(); onStatusUpdate(item.id, 'approved'); }}
                   className="bg-emerald-500 hover:bg-emerald-600 h-10 md:h-9 rounded-xl font-medium text-sm md:text-[11px] shadow-lg shadow-emerald-500/20 px-4"
-                >Duyệt lịch</Button>
+                >{item.use_vehicle && !item.vehicle_id ? "Cần gán xe trước" : "Duyệt lịch"}</Button>
                 <Button size="sm" variant="outline"
                   onClick={(e) => { e.stopPropagation(); onStatusUpdate(item.id, 'rejected'); }}
                   className="h-10 md:h-9 rounded-xl font-medium text-sm md:text-[11px] border-red-100 text-red-500 hover:bg-red-50 hover:text-red-600 px-4"

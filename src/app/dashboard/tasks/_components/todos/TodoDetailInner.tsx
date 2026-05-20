@@ -74,7 +74,7 @@ export function TodoDetailInner({ id }: { id: string }) {
       finally { setLoading(false) }
     }
     fetchData()
-    const ch = supabase.channel(`task_${id}`).on("postgres_changes", { event: "UPDATE", schema: "public", table: "tasks", filter: `id=eq.${id}` }, (p) => setTask(p.new)).subscribe()
+    const ch = supabase.channel(`task_${id}`).on("postgres_changes", { event: "UPDATE", schema: "public", table: "tasks", filter: `id=eq.${id}` }, (p: any) => setTask(p.new)).subscribe()
     return () => { supabase.removeChannel(ch) }
   }, [id])
 
@@ -84,7 +84,7 @@ export function TodoDetailInner({ id }: { id: string }) {
 
   useEffect(() => {
     if (profile?.department_id)
-      supabase.from("profiles").select("*").eq("department_id", profile.department_id).neq("role", "manager").then(({ data }) => setDeptProfiles(sortProfilesByHierarchy(data || [])))
+      supabase.from("profiles").select("*").eq("department_id", profile.department_id).neq("role", "manager").then(({ data }: any) => setDeptProfiles(sortProfilesByHierarchy(data || [])))
   }, [profile])
   const handleDelegate = async () => {
     if (!selectedDelegate) return; setSaving(true)

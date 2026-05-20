@@ -110,14 +110,14 @@ export default function MemberDetailPage() {
  .select('id')
  .eq('assignee_id', id);
  
- const directTaskIds = directTasks?.map(t => t.id) || [];
+ const directTaskIds = directTasks?.map((t: any) => t.id) || [];
 
  const { data: assignments } = await supabase
  .from('task_assignees')
  .select('task_id')
  .eq('user_id', id);
  
- const assigneeTaskIds = assignments?.map(a => a.task_id) || [];
+ const assigneeTaskIds = assignments?.map((a: any) => a.task_id) || [];
  
  // Gộp và loại bỏ trùng lặp
  const allTaskIds = Array.from(new Set([...directTaskIds, ...assigneeTaskIds]));
@@ -133,10 +133,10 @@ export default function MemberDetailPage() {
  const filteredTasks = fetchedTasks || [];
  setMemberTasks(filteredTasks);
 
- const done = filteredTasks.filter(t => t.status === 'done').length;
- const pending = filteredTasks.filter(t => t.status !== 'done').length;
- const total = filteredTasks.length;
- const progressSum = filteredTasks.reduce((acc, t) => acc + (t.progress || 0), 0);
+  const done = filteredTasks.filter((t: any) => t.status === 'done').length;
+  const pending = filteredTasks.filter((t: any) => t.status !== 'done').length;
+  const total = filteredTasks.length;
+  const progressSum = filteredTasks.reduce((acc: number, t: any) => acc + (t.progress || 0), 0);
  const avgProgress = total > 0 ? Math.round(progressSum / total) : 0;
  setStats({ done, pending, total, avgProgress });
  } else {
@@ -170,10 +170,10 @@ export default function MemberDetailPage() {
  let targetUserIds: string[] = [];
  if (recognitionScope === 'branch') {
  const { data: allProfiles } = await supabase.from('profiles').select('id');
- targetUserIds = allProfiles?.map(p => p.id) || [];
+  targetUserIds = allProfiles?.map((p: any) => p.id) || [];
  } else if (recognitionScope === 'department') {
  const { data: deptProfiles } = await supabase.from('profiles').select('id').eq('department_id', member.department_id);
- targetUserIds = deptProfiles?.map(p => p.id) || [];
+  targetUserIds = deptProfiles?.map((p: any) => p.id) || [];
  } else {
  targetUserIds = [id as string]; // Mặc định chỉ gửi cho người nhận
  }
@@ -394,7 +394,7 @@ export default function MemberDetailPage() {
  {member.phone && (
  <div className="flex items-center gap-4">
  <div className="p-3 bg-blue-50/80 text-blue-500 rounded-[14px] border border-blue-100/50">
- <Phone className="w-4.5 h-4.5" />
+ <Phone className="h-[18px] w-[18px]" />
  </div>
  <div className="flex-1 min-w-0 space-y-0.5">
  <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Điện thoại</p>
@@ -405,7 +405,7 @@ export default function MemberDetailPage() {
  {member.birthday && (
  <div className="flex items-center gap-4">
  <div className="p-3 bg-amber-50/80 text-amber-500 rounded-[14px] border border-amber-100/50">
- <Calendar className="w-4.5 h-4.5" />
+ <Calendar className="h-[18px] w-[18px]" />
  </div>
  <div className="flex-1 min-w-0 space-y-0.5">
  <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Ngày sinh</p>

@@ -528,7 +528,7 @@ export default function GoalsPage() {
  <TableCell className="pl-8">
  <div className="flex items-center gap-4">
  <div className={cn("p-2.5 rounded-lg shrink-0 shadow-sm border border-white/50", category.bg, category.color)}>
- <CatIcon className="w-4.5 h-4.5" />
+ <CatIcon className="h-[18px] w-[18px]" />
  </div>
  <div className="space-y-1">
  <p className="text-[14px] font-bold text-slate-900 group-hover:text-primary transition-colors leading-tight">{goal.title}</p>

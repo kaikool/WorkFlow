@@ -78,16 +78,24 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
 
  React.useEffect(() => {
  setMounted(true);
- // Kích hoạt dọn dẹp dữ liệu cũ ngầm (Archive & Cleanup)
- const cleanup = async () => {
+ const cleanupKey = `workflow-cleanup-${new Date().toISOString().slice(0, 10)}`;
+ if (window.localStorage.getItem(cleanupKey)) return;
+
+ const runCleanup = async () => {
    try {
      await supabase.rpc('auto_archive_and_cleanup');
+     window.localStorage.setItem(cleanupKey, "done");
    } catch (e) {
      console.error("Cleanup error:", e);
    }
  };
- cleanup();
- }, []);
+
+ const idleCallback = window.requestIdleCallback || ((cb: IdleRequestCallback) => window.setTimeout(cb, 1500));
+ const cancelIdleCallback = window.cancelIdleCallback || window.clearTimeout;
+ const cleanupId = idleCallback(runCleanup);
+
+ return () => cancelIdleCallback(cleanupId);
+ }, [supabase]);
 
  React.useEffect(() => {
    if (!profile?.id || !profile?.branch_join_date) return;
