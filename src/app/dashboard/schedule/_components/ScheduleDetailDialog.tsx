@@ -176,24 +176,24 @@ export default function ScheduleDetailDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="rounded-2xl border-none shadow-2xl max-w-xl p-0 overflow-hidden bg-white">
+      <DialogContent className="w-[calc(100dvw-2rem)] max-w-xl max-h-[calc(100dvh-2rem)] rounded-2xl border-none shadow-2xl p-0 overflow-hidden bg-white">
         <DialogHeader className="sr-only">
           <DialogDescription>Thông tin chi tiết, thành phần tham gia, phương tiện và các thao tác cập nhật lịch trình.</DialogDescription>
           <DialogTitle className="text-[17px] font-semibold text-slate-900">Chi tiết lịch trình</DialogTitle>
         </DialogHeader>
-        <div className="flex flex-col">
+        <div className="flex max-h-[calc(100dvh-2rem)] flex-col overflow-hidden">
           {/* Header */}
-          <div className={cn("p-6 relative overflow-hidden backdrop-blur-xl border-b border-slate-100", headerBg)}>
+          <div className={cn("p-5 sm:p-6 relative overflow-hidden backdrop-blur-xl border-b border-slate-100", headerBg)}>
             <div className="relative z-10 space-y-3">
               <Badge className={cn("bg-white/60 backdrop-blur-md shadow-sm font-bold text-[10px] px-3 py-1", badgeColor)}>
                 {typeLabels[schedule.type]?.label}
               </Badge>
-              <DialogTitle className="text-xl md:text-2xl font-bold leading-tight tabular-nums text-slate-900">
+              <DialogTitle className="text-lg sm:text-xl md:text-2xl font-bold leading-tight tabular-nums text-slate-900 break-words">
                 {schedule.title}
               </DialogTitle>
-              <div className="flex items-center gap-4 text-slate-600 text-[13px] font-semibold pt-1">
-                <div className="flex items-center gap-1.5">
-                  <Clock className="w-4 h-4 text-slate-400" />
+              <div className="flex flex-wrap items-center gap-2 text-slate-600 text-[13px] font-semibold pt-1">
+                <div className="flex min-w-0 items-center gap-1.5">
+                  <Clock className="w-4 h-4 text-slate-400 shrink-0" />
                   {format(new Date(schedule.start_time), 'HH:mm dd/MM')} - {format(new Date(schedule.end_time), 'HH:mm dd/MM')}
                 </div>
               </div>
@@ -202,7 +202,7 @@ export default function ScheduleDetailDialog({
           </div>
 
           {/* Body */}
-          <div className="p-6 space-y-6 max-h-[60vh] overflow-y-auto">
+          <div className="min-h-0 flex-1 p-5 sm:p-6 space-y-6 overflow-y-auto overscroll-contain">
             {schedule.description && (
               <div className="space-y-2">
                 <p className="text-[11px] text-slate-500 truncate">Nội dung chi tiết</p>
@@ -457,7 +457,7 @@ export default function ScheduleDetailDialog({
             )}
           </div>
 
-          <DialogFooter className="px-6 py-4 border-t border-slate-100 bg-slate-50/50 flex flex-row justify-between items-center gap-4">
+          <DialogFooter className="shrink-0 px-5 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/50 flex flex-row flex-wrap justify-between items-center gap-3 sm:gap-4">
             <Button variant="ghost" className="h-10 px-4 rounded-xl font-medium text-slate-600 text-[13px] hover:bg-slate-200 active:scale-95 transition-all" onClick={() => setIsOpen(false)}>Đóng cửa sổ</Button>
             {isTCTH && schedule.vehicle_id && (
               <Button

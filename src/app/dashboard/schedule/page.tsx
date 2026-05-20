@@ -93,6 +93,39 @@ export default function SchedulePage() {
   const pendingLeavesCount = getPendingLeavesCount();
   const pendingLeavesBadge = pendingLeavesCount > 9 ? "9+" : pendingLeavesCount;
 
+  const getDepartmentName = (user: any) => {
+    const dept = user?.departments;
+    return Array.isArray(dept) ? dept[0]?.name : dept?.name;
+  };
+
+  const isScheduleApprover = (user: any) =>
+    user?.role === 'admin' ||
+    user?.role === 'secretary' ||
+    user?.role === 'hr_officer' ||
+    getDepartmentName(user) === 'Tổ chức Tổng hợp';
+
+  const sendNotifications = async (rows: any[]) => {
+    const uniqueRows = rows.filter((row, index, arr) =>
+      row?.user_id && arr.findIndex(item =>
+        item.user_id === row.user_id &&
+        item.title === row.title &&
+        item.content === row.content &&
+        item.link === row.link
+      ) === index
+    );
+    if (uniqueRows.length === 0) return;
+
+    const { error } = await supabase.from('notifications').insert(uniqueRows);
+    if (error) {
+      console.error('Notification insert failed:', error);
+      toast({
+        variant: "destructive",
+        title: "Chưa gửi được thông báo",
+        description: "Bảng notifications đang thiếu quyền INSERT. Cần chạy cập nhật RLS trong schema.sql."
+      });
+    }
+  };
+
   const weekDays = eachDayOfInterval({
     start: startOfWeek(selectedDate, { weekStartsOn: 1 }),
     end: endOfWeek(selectedDate, { weekStartsOn: 1 })
@@ -244,6 +277,26 @@ export default function SchedulePage() {
     const participantIds = Array.from(new Set(params.participantIds.filter(Boolean)));
     if (participantIds.length === 0) return [];
 
+    const { data: rpcData, error: rpcError } = await supabase.rpc('check_schedule_participant_conflicts', {
+      p_participant_ids: participantIds,
+      p_start: params.start.toISOString(),
+      p_end: params.end.toISOString(),
+      p_ignore_schedule_id: params.ignoreScheduleId || null
+    });
+
+    if (!rpcError && rpcData) {
+      return rpcData.map((row: any) => {
+        const sStart = new Date(row.start_time).toLocaleString('vi-VN');
+        const sEnd = new Date(row.end_time).toLocaleString('vi-VN');
+        const suffix = row.status === 'pending' ? ' (Chờ duyệt)' : '';
+        return `${row.full_name || 'Người tham gia'} đang bận${suffix}: ${row.title} (${sStart} - ${sEnd})`;
+      });
+    }
+
+    if (rpcError) {
+      console.warn('Conflict RPC unavailable, falling back to RLS-limited query:', rpcError);
+    }
+
     const { data, error } = await supabase
       .from('schedules')
       .select(`id, title, start_time, end_time, status, participants:schedule_participants(profile:profiles(id, full_name))`)
@@ -279,14 +332,14 @@ export default function SchedulePage() {
       const { error } = await supabase.from('schedules').update({ status }).eq('id', id);
       if (error) throw error;
       if (schedule?.created_by) {
-        await supabase.from('notifications').insert({
+        await sendNotifications([{
           user_id: schedule.created_by,
           title: status === 'approved' ? "Lịch trình Đã Duyệt" : "Lịch trình Từ Chối",
           content: status === 'approved'
             ? `Lịch trình "${schedule.title}" đã được phê duyệt. Chúc bạn có một buổi làm việc hiệu quả.`
             : `Lịch trình "${schedule.title}" không được phê duyệt. Vui lòng kiểm tra lại.`,
           link: "/dashboard/schedule"
-        });
+        }]);
       }
       toast({ title: "Thành công", description: `Đã ${status === 'approved' ? 'xác nhận' : 'từ chối'} lịch trình.` });
       fetchData();
@@ -315,20 +368,20 @@ export default function SchedulePage() {
       if (error) throw error;
       const vehicle = vehicles.find(v => v.id === vehicleId);
       if (schedule?.created_by) {
-        await supabase.from('notifications').insert({
+        await sendNotifications([{
           user_id: schedule.created_by,
           title: vehicleId ? "Đã gán Xe điều động 🚗" : "Đã hủy gán Xe",
           content: vehicleId
             ? `Lịch trình "${schedule.title}" đã được gán xe: ${vehicle?.plate_number} - ${vehicle?.name}.`
             : `Lịch trình "${schedule.title}" đã bị hủy gán xe điều động.`,
           link: "/dashboard/schedule"
-        });
+        }]);
       }
       const participantIds = (schedule?.participants || [])
         .map((p: any) => p.profile?.id)
         .filter((uid: string) => uid && uid !== profile?.id && uid !== schedule?.created_by);
       if (vehicleId && participantIds.length > 0) {
-        await supabase.from('notifications').insert(
+        await sendNotifications(
           participantIds.map((uid: string) => ({
             user_id: uid,
             title: "Lịch trình đã được duyệt",
@@ -377,7 +430,7 @@ export default function SchedulePage() {
           .map((p: any) => p.profile?.id);
         
         if (otherParticipantIds.length > 0) {
-          await supabase.from('notifications').insert(
+          await sendNotifications(
             otherParticipantIds.map((uid: string) => ({
               user_id: uid,
               title: isEndEarly ? "Lịch trình kết thúc sớm" : "Lịch trình thay đổi thời gian",
@@ -465,7 +518,7 @@ export default function SchedulePage() {
       const notifyTargets = finalParticipantIds.filter((uid: string) => uid && uid !== profile?.id);
 
       if (notifyTargets.length > 0) {
-        await supabase.from('notifications').insert(
+        await sendNotifications(
           notifyTargets.map((uid: string) => ({
             user_id: uid,
             title: addedParticipantIds.includes(uid) ? "Bạn được thêm vào lịch trình" : `Lịch trình đã được cập nhật`,
@@ -576,13 +629,13 @@ export default function SchedulePage() {
         // Lịch thường: thông báo chỉ cho TCTH
         const notifyTargets = isLeave
           ? allProfiles.filter(p =>
-              p.departments?.name === 'Tổ chức Tổng hợp' ||
-              (p.department_id === profile?.department_id && p.role === 'manager')
+              isScheduleApprover(p) ||
+              (p.department_id === profile?.department_id && (p.role === 'manager' || p.is_department_head))
             )
-          : allProfiles.filter(p => p.departments?.name === 'Tổ chức Tổng hợp');
+          : allProfiles.filter(isScheduleApprover);
 
         if (notifyTargets.length > 0) {
-          await supabase.from('notifications').insert(
+          await sendNotifications(
             notifyTargets.map(user => ({
               user_id: user.id,
               title: isLeave ? "Đơn xin nghỉ phép mới" : "Yêu cầu lịch trình mới",
@@ -597,7 +650,7 @@ export default function SchedulePage() {
 
       const participantNotifyTargets = finalParticipants.filter((uid: string) => uid !== profile?.id);
       if (participantNotifyTargets.length > 0) {
-        await supabase.from('notifications').insert(
+        await sendNotifications(
           participantNotifyTargets.map((uid: string) => ({
             user_id: uid,
             title: createdSchedule.status === 'approved' ? "Lịch trình mới" : "Lịch trình đang chờ duyệt",

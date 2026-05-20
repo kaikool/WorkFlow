@@ -12,8 +12,6 @@ import {
  Menu,
  X,
  Building2,
- RefreshCw,
- Loader2,
  CalendarDays,
  ShieldCheck,
  Gift,
@@ -61,10 +59,7 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
  const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
  const [mounted, setMounted] = useState(false);
- const [isRefreshing, setIsRefreshing] = useState(false);
  const [isAnniversaryDialogOpen, setIsAnniversaryDialogOpen] = useState(false);
- const [pullDistance, setPullDistance] = useState(0);
- const [startY, setStartY] = useState(0);
  const supabase = createClient();
  const branchJoinDate = profile?.branch_join_date ? new Date(`${profile.branch_join_date}T00:00:00`) : null;
  const anniversaryYears = branchJoinDate ? Math.max(0, new Date().getFullYear() - branchJoinDate.getFullYear()) : 0;
@@ -111,45 +106,6 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
    setIsAnniversaryDialogOpen(true);
    window.localStorage.setItem(storageKey, "shown");
  }, [profile?.id, profile?.branch_join_date]);
-
- // Xử lý logic Pull-to-refresh
- const handleTouchStart = (e: React.TouchEvent) => {
- if (window.scrollY === 0) {
- setStartY(e.touches[0].pageY);
- }
- };
-
- const handleTouchMove = (e: React.TouchEvent) => {
- if (startY === 0 || window.scrollY > 0) return;
- const currentY = e.touches[0].pageY;
- const distance = currentY - startY;
- if (distance > 0 && distance < 150) {
- setPullDistance(distance);
- // Ngăn chặn cuộn trang mặc định khi đang kéo làm mới
- if (distance > 20 && e.cancelable) e.preventDefault();
- }
- };
-
- const handleTouchEnd = () => {
- if (pullDistance > 80) {
- handleRefresh();
- }
- setPullDistance(0);
- setStartY(0);
- };
-
- const handleRefresh = async () => {
- setIsRefreshing(true);
- // Rung nhẹ nếu là điện thoại
- if (window.navigator && window.navigator.vibrate) {
- window.navigator.vibrate(50);
- }
- router.refresh();
- // Giả lập thời gian nạp dữ liệu mượt mà
- setTimeout(() => {
- setIsRefreshing(false);
- }, 1000);
- };
 
  const handleLogout = async () => {
     setIsLogoutDialogOpen(false);
@@ -416,34 +372,8 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
  )}
 
  <main 
- className="flex-1 p-4 lg:p-8 max-w-full relative"
- onTouchStart={handleTouchStart}
- onTouchMove={handleTouchMove}
- onTouchEnd={handleTouchEnd}
+ className="flex-1 p-4 lg:p-8 max-w-full relative overflow-x-hidden overscroll-x-none touch-pan-y"
  >
- {/* Pull to refresh indicator */}
- <div 
- className="absolute left-0 right-0 flex justify-center pointer-events-none transition-all duration-200 z-50"
- style={{ 
- top: pullDistance > 0 ? `${pullDistance/2}px` : '-40px',
- opacity: pullDistance / 100
- }}
- >
- <div className="bg-white rounded-full p-2 shadow-xl border border-slate-100">
- <RefreshCw className={cn("w-5 h-5 text-primary", pullDistance > 80 && "rotate-180 transition-transform")} />
- </div>
- </div>
-
- {/* Refreshing Overlay */}
- {isRefreshing && (
- <div className="fixed inset-0 bg-white/80 backdrop-blur-[2px] z-[999] flex flex-col items-center justify-center animate-in fade-in duration-300">
- <div className="bg-white p-6 rounded-[2rem] shadow-2xl flex flex-col items-center gap-4 border border-slate-50">
- <Loader2 className="w-8 h-8 text-primary animate-spin" />
- <span className="text-sm font-medium text-slate-900 truncate whitespace-nowrap">Đang cập nhật dữ liệu...</span>
- </div>
- </div>
- )}
-
  {children}
  </main>
  </div>

@@ -90,15 +90,15 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
           <Plus className="w-5 h-5 mr-2" /> Đăng ký lịch mới
         </Button>
       </DialogTrigger>
-      <DialogContent className="rounded-2xl border-none shadow-2xl max-w-lg p-6">
-        <DialogHeader>
+      <DialogContent className="flex w-[calc(100dvw-2rem)] max-w-lg max-h-[calc(100dvh-2rem)] flex-col overflow-hidden rounded-2xl border-none p-0 shadow-2xl">
+        <DialogHeader className="shrink-0 px-5 pt-5 sm:px-6 sm:pt-6">
           <DialogTitle className="text-[17px] font-semibold text-slate-900">Thiết lập lịch trình mới</DialogTitle>
           <DialogDescription className="sr-only">Thiết lập chi tiết thời gian và thành phần tham gia cho lịch trình mới</DialogDescription>
         </DialogHeader>
-        <div className="space-y-5 py-4 max-h-[65vh] overflow-y-auto px-1">
+        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain px-5 py-4 scroll-smooth sm:px-6">
 
           {/* 1. Thời gian */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 min-[420px]:grid-cols-2">
             <div className="space-y-2">
               <Label className="text-[13px] font-medium text-slate-500 whitespace-nowrap">Từ ngày</Label>
               <Popover open={isStartOpen} onOpenChange={setIsStartOpen}>
@@ -144,7 +144,7 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 min-[420px]:grid-cols-2">
             <div className="space-y-2">
               <Label className="text-[13px] font-medium text-slate-500 whitespace-nowrap">Đến ngày</Label>
               <Popover open={isEndOpen} onOpenChange={setIsEndOpen}>
@@ -210,7 +210,7 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
               </Label>
               <Input
                 placeholder={isLeave ? "Lý do nghỉ phép..." : "Nội dung chính..."}
-                className="h-10 bg-slate-50 border-none rounded-xl font-medium text-[14px]"
+                className="h-10 scroll-mt-24 bg-slate-50 border-none rounded-xl font-medium text-[14px]"
                 value={newSchedule.title}
                 onChange={(e) => setNewSchedule({ ...newSchedule, title: e.target.value })}
               />
@@ -341,8 +341,8 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
             </div>
           )}
         </div>
-        <DialogFooter className="pt-4 border-t border-slate-100">
-          <Button onClick={onSubmit} className="w-full h-10 rounded-xl font-semibold active:scale-95 transition-all">
+        <DialogFooter className="shrink-0 border-t border-slate-100 bg-white px-5 py-4 sm:px-6">
+          <Button onClick={onSubmit} className="w-full h-11 rounded-xl font-semibold active:scale-95 transition-all">
             {isLeave ? 'Gửi Đơn nghỉ phép' : 'Xác nhận đăng ký'}
           </Button>
         </DialogFooter>
