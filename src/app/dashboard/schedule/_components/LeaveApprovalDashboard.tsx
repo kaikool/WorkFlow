@@ -13,8 +13,8 @@ export default function LeaveApprovalDashboard({ schedules, profile, onStatusUpd
   const pendingLeaves = schedules.filter(s => {
     if (s.type !== 'leave' || s.status !== 'pending') return false;
 
-    // Nếu người đăng nhập là Admin hoặc HR-Officer hoặc TCTH: Xem và duyệt toàn bộ đơn (quyết định cuối)
-    if (profile?.role === 'admin' || profile?.role === 'hr_officer' || profile?.departments?.name === 'Tổ chức Tổng hợp') {
+    // Nếu người đăng nhập là Admin hoặc HR-Officer: Xem và duyệt toàn bộ đơn (quyết định cuối)
+    if (profile?.role === 'admin' || profile?.role === 'hr_officer') {
       return true;
     }
 
@@ -45,8 +45,8 @@ export default function LeaveApprovalDashboard({ schedules, profile, onStatusUpd
           <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4 text-slate-400">
             <User className="w-6 h-6" />
           </div>
-          <p className="text-sm font-bold text-slate-700">Không có đơn xin nghỉ phép nào cần duyệt</p>
-          <p className="text-xs text-slate-400 mt-1">Tất cả các đơn xin nghỉ phép của cán bộ đều đã được xử lý.</p>
+          <p className="text-sm font-bold text-slate-700">Không có đơn cần duyệt</p>
+          <p className="text-xs text-slate-400 mt-1">Tất cả các đơn nghỉ phép đều đã được xử lý.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

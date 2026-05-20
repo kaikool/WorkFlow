@@ -166,7 +166,7 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
     staff: "Cán bộ",
     hr_officer: "Cán bộ Nhân sự",
     driver: "Tài xế",
-    secretary: "Thư ký"
+    secretary: "Lễ tân"
   };
 
  return (
@@ -324,7 +324,7 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
  {profile?.full_name || 'Cán bộ'}
  </span>
   <span className="text-sm font-medium text-primary mt-1.5 truncate whitespace-nowrap">
-  {profile?.role === 'admin' ? 'Hệ thống' : profile?.role === 'director' ? 'Giám đốc' : profile?.role === 'manager' ? 'Lãnh đạo' : profile?.role === 'hr_officer' ? 'Nhân sự' : profile?.role === 'driver' ? 'Tài xế' : profile?.role === 'secretary' ? 'Thư ký' : 'Cán bộ'}
+  {profile?.role === 'admin' ? 'Hệ thống' : profile?.role === 'director' ? 'Giám đốc' : profile?.role === 'manager' ? 'Lãnh đạo' : profile?.role === 'hr_officer' ? 'Nhân sự' : profile?.role === 'driver' ? 'Tài xế' : profile?.role === 'secretary' ? 'Lễ tân' : 'Cán bộ'}
   </span>
  </div>
 

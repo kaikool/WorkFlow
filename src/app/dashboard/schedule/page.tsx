@@ -75,7 +75,7 @@ export default function SchedulePage() {
     if (!profile) return 0;
     return schedules.filter(s => {
       if (s.type !== 'leave' || s.status !== 'pending') return false;
-      if (profile.role === 'admin' || profile.role === 'hr_officer' || profile.departments?.name === 'Tổ chức Tổng hợp') {
+      if (profile.role === 'admin' || profile.role === 'hr_officer') {
         return true;
       }
       if (profile.role === 'director') {
@@ -572,7 +572,7 @@ export default function SchedulePage() {
               )}
             </TabsTrigger>
           )}
-          {(profile?.role === 'hr_officer' || profile?.role === 'admin' || profile?.departments?.name === 'Tổ chức Tổng hợp' || profile?.role === 'director' || profile?.role === 'manager') && (
+          {(profile?.role === 'hr_officer' || profile?.role === 'admin' || profile?.role === 'director' || profile?.role === 'manager') && (
             <TabsTrigger value="leave-approval" className="flex-1 rounded-lg py-1.5 font-medium text-[13px] md:text-[14px] data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm flex items-center justify-center">
               <CalendarIcon className="w-3.5 h-3.5 mr-1.5 shrink-0" /> 
               <span className="hidden sm:inline">Phê duyệt nghỉ phép</span>
@@ -615,7 +615,7 @@ export default function SchedulePage() {
             />
           </TabsContent>
         )}
-        {(profile?.role === 'hr_officer' || profile?.role === 'admin' || profile?.departments?.name === 'Tổ chức Tổng hợp' || profile?.role === 'director' || profile?.role === 'manager') && (
+        {(profile?.role === 'hr_officer' || profile?.role === 'admin' || profile?.role === 'director' || profile?.role === 'manager') && (
           <TabsContent value="leave-approval">
             <LeaveApprovalDashboard
               schedules={schedules}

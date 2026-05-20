@@ -41,7 +41,7 @@ export default function TcthDashboard({ schedules, vehicles, rooms, selectedDate
                 <CheckCircle2 className="w-7 h-7 text-emerald-600" />
               </div>
               <h3 className="text-[15px] font-bold text-slate-800">Tuyệt vời!</h3>
-              <p className="text-slate-500 font-medium text-[13px] max-w-xs mt-1">Hiện tại không còn yêu cầu gán xe nào đang bị treo.</p>
+              <p className="text-slate-500 font-medium text-[13px] max-w-xs mt-1">Không còn yêu cầu gán xe nào đang bị treo.</p>
             </div>
           ) : (
             pendingVehicles.map(s => (

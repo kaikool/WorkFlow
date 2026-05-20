@@ -104,7 +104,7 @@ export default function AdminPage() {
 
  // Chỉ ADMIN hoặc SECRETARY mới được vào trang này
  if (profile?.role !== 'admin' && profile?.role !== 'secretary') {
- toast({ variant: "destructive", title: "Từ chối truy cập", description: "Khu vực này chỉ dành cho Quản trị viên và Thư ký Ban Giám Đốc." });
+ toast({ variant: "destructive", title: "Từ chối truy cập", description: "Khu vực này chỉ dành cho Quản trị viên và Lễ tân." });
  router.push('/dashboard/schedule');
  return;
  }

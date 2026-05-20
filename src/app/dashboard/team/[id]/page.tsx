@@ -206,8 +206,8 @@ export default function MemberDetailPage() {
  const perf = getPerf(stats.avgProgress);
 
  return (
- <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-10 animate-fade-in-up pb-20">
- <div className="flex items-center justify-between mb-8 pt-4 sm:pt-0">
+ <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-8 animate-fade-in-up pb-20">
+ <div className="flex items-center justify-between pt-4 sm:pt-0">
  <Button variant="ghost" asChild className="p-0 hover:bg-transparent text-slate-500 hover:text-primary transition-colors group">
  <Link href="/dashboard/team" className="flex items-center gap-2">
  <div className="p-2 rounded-xl group-hover:bg-primary/5 transition-colors">
@@ -228,9 +228,10 @@ export default function MemberDetailPage() {
  </div>
  ) : (
  <>
- <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-8">
- <div className="flex items-center gap-8">
- <div className="relative">
+ {/* Profile Header - Wrapped in premium-card */}
+ <div className="premium-card p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-8">
+ <div className="flex flex-col sm:flex-row sm:items-center gap-6 min-w-0 flex-1">
+ <div className="relative shrink-0 w-24">
  <Avatar className="h-24 w-24 border-4 border-white shadow-premium ring-1 ring-slate-100">
  <AvatarImage src={member.avatar_url} className="object-cover" />
  <AvatarFallback className="bg-primary text-white text-3xl font-bold tabular-nums">
@@ -241,15 +242,14 @@ export default function MemberDetailPage() {
  <CheckCircle2 className="w-4 h-4 text-white" />
  </div>
  </div>
- <div className="space-y-1">
- <h1 className="text-3xl font-bold text-slate-900 leading-none tabular-nums">{member.full_name}</h1>
- <div className="flex items-center gap-3 text-[11px] font-bold pt-2 truncate whitespace-nowrap">
- <div className="flex items-center gap-1.5 text-primary">
+ <div className="space-y-1.5 min-w-0 flex-1">
+ <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 leading-tight tabular-nums truncate">{member.full_name}</h1>
+ <div className="flex flex-wrap items-center gap-3 text-[12px] font-bold pt-1">
+ <div className="flex items-center gap-1.5 text-primary bg-primary/5 px-2.5 py-1 rounded-lg">
  <Building2 className="w-3.5 h-3.5" />
- <span>{member.departments?.name || "Hội sở / Chi nhánh"}</span>
+ <span className="truncate max-w-[200px]">{member.departments?.name || "Hội sở / Chi nhánh"}</span>
  </div>
- <span className="text-slate-200">|</span>
- <Badge variant="secondary" className="bg-slate-100 text-slate-500 border-none font-bold px-2 py-0">
+ <Badge variant="secondary" className="bg-slate-100 text-slate-600 border-none font-bold px-2.5 py-1">
  {member.role === 'admin' ? "Quản trị" : member.role === 'manager' ? "Lãnh đạo đơn vị" : "Cán bộ"}
  </Badge>
  </div>
@@ -257,9 +257,10 @@ export default function MemberDetailPage() {
  </div>
  
  {currentUser?.id !== member.id && (currentUser?.role === 'admin' || currentUser?.role === 'manager' || currentUser?.role === 'director') && (
+ <div className="shrink-0">
  <Dialog open={isRecognizeOpen} onOpenChange={setIsRecognizeOpen}>
  <DialogTrigger asChild>
- <Button className="bg-amber-400 hover:bg-amber-500 text-white rounded-2xl font-bold px-8 h-12 shadow-lg shadow-amber-200 active:scale-95 transition-all gap-2">
+ <Button className="w-full sm:w-auto bg-amber-400 hover:bg-amber-500 text-white rounded-2xl font-bold px-8 h-12 shadow-lg shadow-amber-200/50 active:scale-95 transition-all gap-2">
  <Award className="w-5 h-5" /> Vinh danh & chấn chỉnh
  </Button>
  </DialogTrigger>
@@ -319,7 +320,7 @@ export default function MemberDetailPage() {
  <label className="text-sm font-medium text-slate-500 pl-1 truncate whitespace-nowrap">Nội dung ghi nhận</label>
  <Textarea 
  placeholder={recognitionType === 'praise' ? "Nhập lời khen ngợi cho những đóng góp của cán bộ..." : "Nhập ý kiến nhắc nhở, chấn chỉnh tế nhị mang tính xây dựng..."} 
- className="rounded-[24px] bg-slate-50 border-none focus-visible:ring-amber-400 text-sm p-5 shadow-inner placeholder:text-slate-500 min-h-[120px]"
+ className="rounded-[24px] bg-slate-50 border-none focus-visible:ring-amber-400 text-sm p-5 shadow-inner placeholder:text-slate-500 min-h-[120px] resize-none"
  value={recognitionText}
  onChange={(e) => setRecognitionText(e.target.value)}
  />
@@ -331,73 +332,83 @@ export default function MemberDetailPage() {
  </div>
  </DialogContent>
  </Dialog>
+ </div>
  )}
  </div>
 
- <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
- <div className="lg:col-span-8 space-y-8">
- <div className="flex items-center justify-between pl-1">
- <h3 className="text-[11px] font-bold text-slate-500 flex items-center gap-2 truncate whitespace-nowrap">
- <Briefcase className="w-4 h-4 text-primary" /> Hành trình công việc ({memberTasks.length})
+ <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
+ <div className="xl:col-span-8 space-y-6">
+ <div className="premium-card p-6 md:p-8 border-none space-y-6">
+ <div className="flex items-center justify-between">
+ <h3 className="text-[13px] font-bold text-slate-900 flex items-center gap-2">
+ <Briefcase className="w-4 h-4 text-primary" /> 
+ <span>Hành trình công việc <Badge variant="secondary" className="ml-2 bg-primary/10 text-primary">{memberTasks.length}</Badge></span>
  </h3>
  </div>
+ 
  <div className="flex flex-col gap-3">
  {memberTasks.length > 0 ? (
  memberTasks.map((t) => (
  <Link key={t.id} href={`/dashboard/tasks/${t.id}`} className="block">
- <div className="premium-card p-6 flex items-center justify-between group border-none active:scale-[0.99] transition-all">
- <div className="space-y-1.5 flex-1 min-w-0">
+ <div className="bg-slate-50/50 hover:bg-white p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 group border border-slate-100 hover:border-primary/20 hover:shadow-md transition-all active:scale-[0.99]">
+ <div className="space-y-2 flex-1 min-w-0">
  <p className="text-[14px] font-bold text-slate-900 group-hover:text-primary transition-colors leading-tight truncate">{t.title}</p>
- <div className="flex items-center gap-3 text-[9px] text-slate-500 font-bold ">
- <span className="flex items-center gap-1.5 bg-slate-50 px-2 py-0.5 rounded-lg text-primary/70"><Calendar className="w-3 h-3" /> {new Date(t.due_date).toLocaleDateString('vi-VN')}</span>
- <span className={cn("px-2 py-0.5 rounded-lg", t.priority === 'high' ? "bg-red-50 text-red-500" : "bg-slate-50 text-slate-500")}>
+ <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500 font-medium">
+ <span className="flex items-center gap-1.5 bg-white px-2 py-1 rounded-lg border border-slate-200/60 shadow-sm"><Calendar className="w-3.5 h-3.5 text-primary/70" /> {new Date(t.due_date).toLocaleDateString('vi-VN')}</span>
+ <span className={cn("px-2 py-1 rounded-lg border shadow-sm", t.priority === 'high' ? "bg-red-50 text-red-600 border-red-100" : "bg-white text-slate-500 border-slate-200/60")}>
  {t.priority === 'high' ? 'Khẩn cấp' : 'Thường'}
  </span>
  </div>
  </div>
- <div className="flex items-center gap-4 shrink-0">
- <div className="text-right flex flex-col items-end gap-1">
- <span className="text-sm font-medium text-primary truncate whitespace-nowrap">{t.progress}%</span>
- <Progress value={t.progress} className="h-0.5 w-12 bg-slate-100 shadow-none" />
+ <div className="flex items-center justify-between sm:justify-end gap-5 shrink-0 w-full sm:w-auto mt-2 sm:mt-0">
+ <div className="text-right flex flex-col items-start sm:items-end gap-1.5 w-full sm:w-24">
+ <span className="text-sm font-bold text-primary">{t.progress}%</span>
+ <Progress value={t.progress} className="h-1.5 w-full sm:w-20 bg-slate-200/60 shadow-inner" />
  </div>
- <div className="p-1.5 bg-slate-50 rounded-lg group-hover:bg-primary/5 transition-colors">
- <ArrowUpRight className="w-3.5 h-3.5 text-slate-500 group-hover:text-primary transition-all" />
+ <div className="hidden sm:flex p-2 bg-white rounded-xl shadow-sm border border-slate-100 group-hover:bg-primary group-hover:border-primary transition-all">
+ <ArrowUpRight className="w-4 h-4 text-slate-400 group-hover:text-white transition-colors" />
  </div>
  </div>
  </div>
  </Link>
  ))
  ) : (
- <div className="py-20 bg-slate-50/50 rounded-[2rem] text-center text-slate-500 italic text-sm border-2 border-dashed border-slate-100/50">
- Cán bộ chưa tham gia hành trình nào.
+ <div className="py-16 bg-slate-50 rounded-3xl text-center border-2 border-dashed border-slate-200/60">
+ <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-sm border border-slate-100">
+ <Briefcase className="w-6 h-6 text-slate-400" />
+ </div>
+ <p className="text-slate-500 font-medium text-sm">Cán bộ chưa có nhiệm vụ nào</p>
  </div>
  )}
  </div>
  </div>
+ </div>
 
- <div className="lg:col-span-4 space-y-10">
+ <div className="xl:col-span-4 space-y-8">
  {(member.phone || member.birthday) && (
- <div className="premium-card p-6 border-none space-y-6">
- <p className="text-sm font-medium text-slate-500 pl-1 truncate whitespace-nowrap">Thông tin cá nhân</p>
+ <div className="premium-card p-6 md:p-8 border-none space-y-6">
+ <h3 className="text-[13px] font-bold text-slate-900 flex items-center gap-2">
+ <Mail className="w-4 h-4 text-primary" /> Thông tin liên hệ
+ </h3>
  <div className="space-y-4">
  {member.phone && (
- <div className="flex items-center gap-3">
- <div className="p-2.5 bg-blue-50/80 text-blue-500 rounded-2xl border border-blue-100/50">
- <Phone className="w-4 h-4" />
+ <div className="flex items-center gap-4">
+ <div className="p-3 bg-blue-50/80 text-blue-500 rounded-[14px] border border-blue-100/50">
+ <Phone className="w-4.5 h-4.5" />
  </div>
  <div className="flex-1 min-w-0 space-y-0.5">
- <p className="text-sm font-medium text-slate-500">Điện thoại</p>
+ <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Điện thoại</p>
  <a href={`tel:${member.phone}`} className="text-[14px] font-bold text-slate-900 truncate hover:text-blue-600 hover:underline block">{member.phone}</a>
  </div>
  </div>
  )}
  {member.birthday && (
- <div className="flex items-center gap-3">
- <div className="p-2.5 bg-amber-50/80 text-amber-500 rounded-2xl border border-amber-100/50">
- <Calendar className="w-4 h-4" />
+ <div className="flex items-center gap-4">
+ <div className="p-3 bg-amber-50/80 text-amber-500 rounded-[14px] border border-amber-100/50">
+ <Calendar className="w-4.5 h-4.5" />
  </div>
  <div className="flex-1 min-w-0 space-y-0.5">
- <p className="text-sm font-medium text-slate-500">Ngày sinh</p>
+ <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Ngày sinh</p>
  <p className="text-[14px] font-bold text-slate-900 truncate">{new Date(member.birthday).toLocaleDateString('vi-VN')}</p>
  </div>
  </div>
@@ -406,32 +417,32 @@ export default function MemberDetailPage() {
  </div>
  )}
 
- <div className="premium-card p-6 border-none space-y-6">
- <div className="space-y-2">
- <p className="text-sm font-medium text-slate-500 pl-1 truncate whitespace-nowrap">Đánh giá năng lực</p>
- <div className="p-5 bg-slate-50 rounded-3xl border border-slate-100/50 text-center">
- <span className={cn("text-3xl font-bold block", perf.color)}>{perf.label}</span>
- <p className="text-[9px] font-bold text-slate-500 mt-0.5">Hiệu suất tháng này</p>
- </div>
+ <div className="premium-card p-6 md:p-8 border-none space-y-8">
+ <h3 className="text-[13px] font-bold text-slate-900 flex items-center gap-2">
+ <Target className="w-4 h-4 text-primary" /> Đánh giá năng lực
+ </h3>
+ <div className="space-y-6">
+ <div className="p-6 bg-slate-50/80 rounded-3xl border border-slate-100 text-center shadow-sm">
+ <span className={cn("text-4xl font-extrabold block tracking-tight", perf.color)}>{perf.label}</span>
+ <p className="text-[11px] font-bold text-slate-500 mt-2 uppercase tracking-widest">Hiệu suất tháng này</p>
  </div>
 
- <div className="pt-6 border-t border-slate-50/80 space-y-6">
- <div className="space-y-6">
- <div className="space-y-3">
- <div className="flex justify-between text-[11px] font-bold truncate whitespace-nowrap">
+ <div className="space-y-5">
+ <div className="space-y-2">
+ <div className="flex justify-between text-[12px] font-bold">
  <span className="text-slate-500">Tiến độ bình quân</span>
  <span className="text-primary">{stats.avgProgress}%</span>
  </div>
- <Progress value={stats.avgProgress} className="h-2.5 bg-slate-50 shadow-inner" />
+ <Progress value={stats.avgProgress} className="h-2.5 bg-slate-100 shadow-inner" />
  </div>
  <div className="grid grid-cols-2 gap-4">
- <div className="space-y-2 p-5 bg-emerald-50/30 rounded-[24px] border border-emerald-50 text-center">
- <p className="text-sm font-medium text-emerald-600 truncate whitespace-nowrap">Hoàn thành</p>
- <p className="text-3xl font-bold text-emerald-700 tabular-nums">{stats.done}</p>
+ <div className="space-y-1.5 p-4 bg-emerald-50/50 rounded-[20px] border border-emerald-100 text-center">
+ <p className="text-[11px] font-bold text-emerald-600 uppercase tracking-wider">Hoàn thành</p>
+ <p className="text-3xl font-extrabold text-emerald-700 tabular-nums">{stats.done}</p>
  </div>
- <div className="space-y-2 p-5 bg-amber-50/30 rounded-[24px] border border-amber-50 text-center">
- <p className="text-sm font-medium text-amber-600 truncate whitespace-nowrap">Đang chờ</p>
- <p className="text-3xl font-bold text-amber-700 tabular-nums">{stats.pending}</p>
+ <div className="space-y-1.5 p-4 bg-amber-50/50 rounded-[20px] border border-amber-100 text-center">
+ <p className="text-[11px] font-bold text-amber-600 uppercase tracking-wider">Đang chờ</p>
+ <p className="text-3xl font-extrabold text-amber-700 tabular-nums">{stats.pending}</p>
  </div>
  </div>
  </div>
