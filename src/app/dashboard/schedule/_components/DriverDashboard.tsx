@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
@@ -36,6 +36,37 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
   const [isIssueOpen, setIsIssueOpen] = useState(false);
   const [selectedIssueSchedule, setSelectedIssueSchedule] = useState<any>(null);
   const [issueText, setIssueText] = useState("");
+
+  // Thống kê toàn bộ lịch trình và Km từ CSDL toàn thời gian (All-Time Sync)
+  const [driverStats, setDriverStats] = useState({ totalTrips: 0, totalKm: 0 });
+
+  const fetchDriverStats = async () => {
+    if (!profile?.id) return;
+    try {
+      const { data, error } = await supabase
+        .from('schedules')
+        .select('status, metadata')
+        .eq('type', 'trip')
+        .eq('driver_id', profile.id);
+
+      if (error) throw error;
+
+      if (data) {
+        const completed = data.filter((s: any) => s.status === 'completed');
+        const totalKmVal = completed.reduce((acc: number, s: any) => acc + (Number(s.metadata?.actual_distance) || 0), 0);
+        setDriverStats({
+          totalTrips: data.length,
+          totalKm: totalKmVal
+        });
+      }
+    } catch (err) {
+      console.error("Error fetching driver stats:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchDriverStats();
+  }, [profile?.id, schedules]);
 
   // Hiển thị các chuyến được gán cho tài xế (đã duyệt, đang chạy, hoặc đã hoàn thành)
   const myTrips = schedules.filter(s => {
@@ -239,54 +270,60 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
     }
   };
 
-  const completedTrips = myTrips.filter(s => s.status === 'completed');
-  const totalKm = completedTrips.reduce((acc, s) => acc + (s.metadata?.actual_distance || 0), 0);
   const activeTrip = myTrips.find(s => s.status === 'in_progress');
-  const driverStatus = activeTrip ? "Đang di chuyển" : "Sẵn sàng nhận lệnh";
+  const driverStatus = activeTrip ? "Di chuyển" : "Sẵn sàng";
 
   return (
     <div className="space-y-8 animate-fade-in-up">
 
       {/* Grid Thống kê Premium - Apple HIG Style */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 gap-2.5 sm:gap-4">
         {/* Card 1: Tổng chuyến */}
-        <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100 shadow-sm transition-all hover:bg-white hover:shadow-md group flex items-center justify-between">
-          <div className="space-y-1.5 min-w-0">
-            <p className="text-[12px] font-semibold text-slate-400 uppercase tracking-wider">Tổng chuyến chạy</p>
-            <p className="text-2xl font-bold text-slate-900 tabular-nums">{myTrips.length}</p>
+        <div className="p-3 sm:p-5 bg-slate-50 rounded-[20px] border border-slate-100/80 shadow-sm transition-all duration-300 hover:bg-white hover:shadow-lg active:scale-95 flex flex-col justify-between h-28 sm:h-32 group cursor-pointer">
+          <div className="flex items-center justify-between w-full">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-slate-900/5 flex items-center justify-center shrink-0">
+              <Car className="w-4 h-4 sm:w-5 sm:h-5 text-slate-900" />
+            </div>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-            <Car className="w-5 h-5 text-primary" />
+          <div className="space-y-0.5 sm:space-y-1">
+            <p className="text-[10px] sm:text-[12px] font-semibold text-slate-400 uppercase tracking-wider truncate">Tổng chuyến</p>
+            <p className="text-lg sm:text-2xl font-bold text-slate-900 tabular-nums truncate">
+              {driverStats.totalTrips}
+            </p>
           </div>
         </div>
 
-        {/* Card 2: Tổng Km */}
-        <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100 shadow-sm transition-all hover:bg-white hover:shadow-md group flex items-center justify-between">
-          <div className="space-y-1.5 min-w-0">
-            <p className="text-[12px] font-semibold text-slate-400 uppercase tracking-wider">Quãng đường tích lũy</p>
-            <p className="text-2xl font-bold text-slate-900 tabular-nums">
-              {totalKm} <span className="text-sm font-medium text-slate-500">Km</span>
-            </p>
+        {/* Card 2: Quãng đường tích lũy */}
+        <div className="p-3 sm:p-5 bg-slate-50 rounded-[20px] border border-slate-100/80 shadow-sm transition-all duration-300 hover:bg-white hover:shadow-lg active:scale-95 flex flex-col justify-between h-28 sm:h-32 group cursor-pointer">
+          <div className="flex items-center justify-between w-full">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-amber-500/10 flex items-center justify-center shrink-0">
+              <Gauge className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600" />
+            </div>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center shrink-0">
-            <Gauge className="w-5 h-5 text-amber-600" />
+          <div className="space-y-0.5 sm:space-y-1">
+            <p className="text-[10px] sm:text-[12px] font-semibold text-slate-400 uppercase tracking-wider truncate">Tích lũy</p>
+            <p className="text-lg sm:text-2xl font-bold text-slate-900 tabular-nums truncate">
+              {driverStats.totalKm} <span className="text-xs sm:text-sm font-medium text-slate-500">Km</span>
+            </p>
           </div>
         </div>
 
         {/* Card 3: Trạng thái */}
-        <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100 shadow-sm transition-all hover:bg-white hover:shadow-md group flex items-center justify-between">
-          <div className="space-y-1.5 min-w-0">
-            <p className="text-[12px] font-semibold text-slate-400 uppercase tracking-wider">Trạng thái hiện tại</p>
-            <p className={`text-sm font-bold truncate ${activeTrip ? "text-emerald-600" : "text-primary"}`}>
+        <div className="p-3 sm:p-5 bg-slate-50 rounded-[20px] border border-slate-100/80 shadow-sm transition-all duration-300 hover:bg-white hover:shadow-lg active:scale-95 flex flex-col justify-between h-28 sm:h-32 group cursor-pointer">
+          <div className="flex items-center justify-between w-full">
+            <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0 ${activeTrip ? "bg-emerald-50 animate-pulse" : "bg-slate-900/5"}`}>
+              {activeTrip ? (
+                <Navigation className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600" />
+              ) : (
+                <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-slate-500" />
+              )}
+            </div>
+          </div>
+          <div className="space-y-0.5 sm:space-y-1">
+            <p className="text-[10px] sm:text-[12px] font-semibold text-slate-400 uppercase tracking-wider truncate">Trạng thái</p>
+            <p className={`text-[13px] sm:text-lg font-bold truncate ${activeTrip ? "text-emerald-600" : "text-slate-900"}`}>
               {driverStatus}
             </p>
-          </div>
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${activeTrip ? "bg-emerald-50 animate-pulse" : "bg-slate-100"}`}>
-            {activeTrip ? (
-              <Navigation className="w-5 h-5 text-emerald-600" />
-            ) : (
-              <CheckCircle2 className="w-5 h-5 text-slate-500" />
-            )}
           </div>
         </div>
       </div>

@@ -59,7 +59,7 @@ import { useRouter } from "next/navigation";
 const KPI_CATEGORIES = [
  { id: 'lending', label: "Tín dụng", icon: TrendingUp, color: "text-primary", bg: "bg-primary/5", activeBg: "bg-primary/10" },
  { id: 'saving', label: "Huy động", icon: Award, color: "text-emerald-600", bg: "bg-emerald-50", activeBg: "bg-emerald-100" },
- { id: 'card', label: "Thẻ & Phí", icon: CreditCard, color: "text-purple-600", bg: "bg-purple-50", activeBg: "bg-purple-100" },
+ { id: 'card', label: "Thẻ & Phí", icon: CreditCard, color: "text-blue-600", bg: "bg-blue-50/80", activeBg: "bg-blue-100" },
  { id: 'digital', label: "Dịch vụ số", icon: Zap, color: "text-amber-600", bg: "bg-amber-50", activeBg: "bg-amber-100" },
  { id: 'other', label: "Khác", icon: Activity, color: "text-slate-600", bg: "bg-slate-50", activeBg: "bg-slate-200" },
 ];
@@ -87,165 +87,19 @@ const KPI_TEMPLATES = [
  { category: 'other', title: "Tự nhập nội dung...", description: "Thiết lập chỉ tiêu tùy chỉnh theo nhu cầu riêng.", unit: "" }
 ];
 
+import { useKPI } from "./_hooks/useKPI";
+
 export default function GoalsPage() {
- const router = useRouter();
- const [goals, setGoals] = useState<any[]>([]);
- const [team, setTeam] = useState<any[]>([]);
- const [loading, setLoading] = useState(true);
- const [isCreateOpen, setIsCreateOpen] = useState(false);
- const [isSuccess, setIsSuccess] = useState(false);
- const [profile, setProfile] = useState<any>(null);
- const [searchQuery, setSearchQuery] = useState("");
-
- const [selectedCategory, setSelectedCategory] = useState<string>('lending');
- const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
- const [targetType, setTargetType] = useState<'department' | 'individual'>('department');
- const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
- const [timeframe, setTimeframe] = useState<'week' | 'month' | 'quarter' | 'year'>('month');
- const [unitValue, setUnitValue] = useState("");
- const [customTitle, setCustomTitle] = useState("");
- const [customDescription, setCustomDescription] = useState("");
-
- const { toast } = useToast();
- const supabase = createClient();
-
- useEffect(() => {
- fetchInitialData();
- }, []);
-
- const fetchInitialData = async () => {
- setLoading(true);
- try {
- const { data: { user } } = await supabase.auth.getUser();
- if (!user) return;
-
- const { data: p } = await supabase.from('profiles').select('*').eq('id', user.id).single();
- setProfile(p);
-
- if (p?.department_id) {
- const { data: members } = await supabase
- .from('profiles')
- .select('id, full_name, avatar_url, role, is_department_head')
- .eq('department_id', p.department_id)
- .order('full_name');
- setTeam(sortProfilesByHierarchy(members || []));
- }
-
- await fetchGoals(p);
- } catch (error: any) {
- console.error(error);
- } finally {
- setLoading(false);
- }
- };
-
- const fetchGoals = async (p?: any) => {
- const userProfile = p || profile;
- let query = supabase
- .from('kpis')
- .select(`*, assignee:profiles!kpis_assignee_id_fkey(full_name, avatar_url)`);
-
- // Phân quyền: Lọc theo phòng ban nếu không phải admin hoặc director
- if (userProfile && userProfile.role !== 'admin' && userProfile.role !== 'director' && userProfile.department_id) {
- query = query.or(`department_id.eq.${userProfile.department_id},created_by.eq.${userProfile.id},assignee_id.eq.${userProfile.id}`);
- }
-
- const { data, error } = await query.order('created_at', { ascending: false });
- if (error) throw error;
- setGoals(data || []);
- };
-
- const toggleMember = (id: string) => {
- setSelectedMemberIds(prev =>
- prev.includes(id) ? prev.filter(mid => mid !== id) : [...prev, id]
- );
- };
-
- const handleCreateGoal = async (e: React.FormEvent<HTMLFormElement>) => {
- e.preventDefault();
- const formData = new FormData(e.currentTarget);
-
- const targetValue = parseInt(formData.get('target_value') as string);
- const unit = formData.get('unit') as string;
- const title = customTitle || formData.get('title') as string;
- const description = customDescription || formData.get('description') as string;
-
- const baseTask = {
- title,
- description,
- target_value: targetValue,
- unit,
- created_by: profile?.id,
- department_id: profile?.department_id,
- due_date: new Date(Date.now() + (timeframe === 'week' ? 7 : timeframe === 'month' ? 30 : timeframe === 'quarter' ? 90 : 365) * 24 * 60 * 60 * 1000).toISOString(),
- metadata: {
- category: selectedCategory,
- timeframe: timeframe,
- target_type: targetType
- }
- };
-
- try {
- if (targetType === 'department') {
- const { data: newTask, error } = await supabase.from('kpis').insert(baseTask).select().single();
- if (error) throw error;
-
- // Thêm: Thông báo cho tất cả thành viên trong phòng
- if (team.length > 0) {
- const deptNotifications = team.map(member => ({
- user_id: member.id,
- title: "Chỉ tiêu phòng mới",
- content: `Lãnh đạo đã giao chỉ tiêu chung cho phòng: "${title}". Mục tiêu: ${targetValue} ${unit}.`,
- link: `/dashboard/tasks/${newTask.id}`
- }));
- await supabase.from('notifications').insert(deptNotifications);
- }
- } else {
- if (selectedMemberIds.length === 0) {
- toast({ variant: "destructive", title: "Lỗi", description: "Vui lòng chọn ít nhất một cán bộ." });
- return;
- }
-
- const tasks = selectedMemberIds.map(memberId => ({
- ...baseTask,
- assignee_id: memberId,
- }));
- const { error } = await supabase.from('kpis').insert(tasks);
- if (error) throw error;
-
- const notifications = selectedMemberIds.map(memberId => ({
- user_id: memberId,
- title: "Chỉ tiêu KPIs mới",
- content: `Lãnh đạo đã giao chỉ tiêu: "${title}". Mục tiêu cần đạt: ${targetValue} ${unit}.`,
- link: '/dashboard/kpi'
- }));
- await supabase.from('notifications').insert(notifications);
- }
-
- setIsSuccess(true);
- fetchGoals();
- setTimeout(() => {
- setIsSuccess(false);
- setIsCreateOpen(false);
- setSelectedTemplate(null);
- setCustomTitle("");
- setCustomDescription("");
- setSelectedMemberIds([]);
- }, 2000);
- } catch (error: any) {
- toast({
- title: "Lỗi",
- description: error.message,
- variant: "destructive"
- });
- }
- };
-
- const filteredGoals = goals.filter(g => g.title.toLowerCase().includes(searchQuery.toLowerCase()));
-
- const avgProgress = goals.length > 0
- ? Math.round(goals.reduce((acc, g) => acc + (g.progress || 0), 0) / goals.length)
- : 0;
+  const kpiProps = useKPI(KPI_CATEGORIES, KPI_TEMPLATES);
+  const {
+    router, goals, team, loading, isCreateOpen, setIsCreateOpen,
+    isSuccess, setIsSuccess, profile, searchQuery, setSearchQuery,
+    selectedCategory, setSelectedCategory, selectedTemplate, setSelectedTemplate,
+    targetType, setTargetType, selectedMemberIds, setSelectedMemberIds,
+    timeframe, setTimeframe, unitValue, setUnitValue, customTitle, setCustomTitle,
+    customDescription, setCustomDescription,
+    toggleMember, handleCreateGoal, filteredGoals, avgProgress
+  } = kpiProps;
 
  if (loading) return <div className="flex h-96 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
 

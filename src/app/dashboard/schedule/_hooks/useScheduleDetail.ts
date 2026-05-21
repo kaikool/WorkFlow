@@ -1,0 +1,250 @@
+'use client'
+
+import React from "react";
+import { format } from "date-fns";
+import { filterBGD, filterStaff, resolveParticipantIds, checkConflicts, checkResourceConflicts } from "../_lib/utils";
+
+interface UseScheduleDetailProps {
+  isOpen: boolean;
+  schedule: any;
+  schedules: any[];
+  vehicles: any[];
+  rooms: any[];
+  allProfiles: any[];
+  currentProfile: any;
+  isTCTH: boolean;
+  onAssignVehicle: (scheduleId: string, vehicleId: string | null, driverId: string | null) => void;
+  onUpdateEndTime: (scheduleId: string, newEndTime: string) => void;
+  onUpdateSchedule: (scheduleId: string, updates: any) => void;
+}
+
+export function useScheduleDetail({
+  isOpen, schedule, schedules, vehicles, rooms, allProfiles, currentProfile, isTCTH,
+  onAssignVehicle, onUpdateEndTime, onUpdateSchedule
+}: UseScheduleDetailProps) {
+  // --- Trạng thái chỉnh sửa ---
+  const [isEditingTime, setIsEditingTime] = React.useState(false);
+  const [isEditingSchedule, setIsEditingSchedule] = React.useState(false);
+  const [newEndTime, setNewEndTime] = React.useState("");
+  const [editData, setEditData] = React.useState<any>({});
+
+  // --- Trạng thái điều phối xe (TCTH) ---
+  const [tempVehicleId, setTempVehicleId] = React.useState<string | null>(null);
+  const [tempDriverId, setTempDriverId] = React.useState<string | null>(null);
+
+  // --- Trạng thái chọn ngày giờ khi sửa ---
+  const [editStartDate, setEditStartDate] = React.useState<Date | undefined>(undefined);
+  const [editEndDate, setEditEndDate] = React.useState<Date | undefined>(undefined);
+  const [editStartTime, setEditStartTime] = React.useState<string>("08:00");
+  const [editEndTime, setEditEndTime] = React.useState<string>("09:00");
+  const [isStartOpen, setIsStartOpen] = React.useState(false);
+  const [isEndOpen, setIsEndOpen] = React.useState(false);
+
+  // --- Trạng thái chọn thành phần tham gia ---
+  const [bgdMode, setBgdMode] = React.useState<'all' | 'specific' | 'none'>('specific');
+  const [selectedBGD, setSelectedBGD] = React.useState<string[]>([]);
+  const [deptMode, setDeptMode] = React.useState<'all' | 'specific' | 'none'>('specific');
+  const [filterDepts, setFilterDepts] = React.useState<string[]>([]);
+  const [participantMode, setParticipantMode] = React.useState<'all' | 'manager' | 'staff'>('staff');
+  const [selectedParticipants, setSelectedParticipants] = React.useState<string[]>([]);
+
+  // --- Đồng bộ dữ liệu khi mở Dialog ---
+  React.useEffect(() => {
+    if (schedule?.end_time && isOpen) {
+      setNewEndTime(format(new Date(schedule.end_time), "yyyy-MM-dd'T'HH:mm"));
+      setIsEditingTime(false);
+      setIsEditingSchedule(false);
+      setTempVehicleId(schedule.vehicle_id || null);
+      setTempDriverId(schedule.driver_id || null);
+
+      const existingIds = (schedule.participants || []).map((p: any) => p.profile?.id).filter(Boolean);
+      const bgdProfiles = filterBGD(allProfiles);
+      const bgdIds = bgdProfiles.filter(p => existingIds.includes(p.id)).map(p => p.id);
+      const otherIds = existingIds.filter((id: string) => !bgdProfiles.some(bp => bp.id === id));
+      const activeDepts = Array.from(new Set(allProfiles.filter(p => otherIds.includes(p.id)).map(p => p.department_id).filter(Boolean)));
+
+      setBgdMode(bgdIds.length > 0 ? 'specific' : 'none');
+      setSelectedBGD(bgdIds);
+      setDeptMode(otherIds.length > 0 ? 'specific' : 'none');
+      setFilterDepts(activeDepts.length > 0 ? activeDepts : (currentProfile?.department_id ? [currentProfile.department_id] : []));
+      setParticipantMode('staff');
+      setSelectedParticipants(otherIds);
+
+      const start = new Date(schedule.start_time);
+      const end = new Date(schedule.end_time);
+      setEditStartDate(start);
+      setEditEndDate(end);
+      setEditStartTime(format(start, "HH:mm"));
+      setEditEndTime(format(end, "HH:mm"));
+
+      setEditData({
+        title: schedule.title || "",
+        description: schedule.description || "",
+        type: schedule.type || "trip",
+        start_time: format(start, "yyyy-MM-dd'T'HH:mm"),
+        end_time: format(end, "yyyy-MM-dd'T'HH:mm"),
+        location: schedule.location || "",
+        room_id: schedule.room_id || "none",
+        use_vehicle: !!schedule.use_vehicle,
+        vehicle_id: schedule.vehicle_id || "none",
+        requested_vehicle_type: schedule.requested_vehicle_type || "4 chỗ",
+      });
+    }
+  }, [schedule, isOpen]);
+
+  // --- Kiểm tra xung đột lịch trình (realtime) ---
+  const conflicts = React.useMemo(() => {
+    if (!editStartDate || !editEndDate || editData.type === 'leave') return [];
+
+    const startString = `${format(editStartDate, 'yyyy-MM-dd')}T${editStartTime}`;
+    const endString = `${format(editEndDate, 'yyyy-MM-dd')}T${editEndTime}`;
+    let start: Date;
+    let end: Date;
+    try {
+      start = new Date(startString);
+      end = new Date(endString);
+    } catch {
+      return [];
+    }
+
+    const finalParticipantIds = resolveParticipantIds({ selectedParticipants, bgdMode, selectedBGD, deptMode, filterDepts, participantMode, allProfiles });
+
+    const pConflicts = checkConflicts({
+      checkIds: finalParticipantIds,
+      startDate: editStartDate,
+      endDate: editEndDate,
+      startTime: editStartTime,
+      endTime: editEndTime,
+      schedules,
+      ignoreScheduleId: schedule?.id
+    });
+
+    const rConflicts = checkResourceConflicts({
+      roomId: editData.location === 'Chi nhánh' && editData.room_id !== 'none' ? editData.room_id : null,
+      vehicleId: editData.use_vehicle && editData.vehicle_id !== 'none' ? editData.vehicle_id : null,
+      start,
+      end,
+      schedules,
+      ignoreScheduleId: schedule?.id
+    });
+
+    return [...pConflicts, ...rConflicts];
+  }, [editStartDate, editEndDate, editStartTime, editEndTime, selectedParticipants, bgdMode, selectedBGD, deptMode, filterDepts, participantMode, allProfiles, schedules, editData.location, editData.room_id, editData.use_vehicle, editData.vehicle_id, editData.type, schedule?.id]);
+
+  // --- Tính toán phái sinh ---
+  const matchedVehicle = schedule ? vehicles.find(v => v.id === schedule.vehicle_id) : null;
+
+  const headerBgMap: any = {
+    meeting: "bg-blue-50/80",
+    trip: "bg-orange-50/80",
+    event: "bg-amber-50/80",
+    leave: "bg-slate-100/80",
+  };
+  const badgeColorMap: any = {
+    meeting: "text-blue-700 border-blue-200/50",
+    trip: "text-orange-700 border-orange-200/50",
+    event: "text-amber-700 border-amber-200/50",
+    leave: "text-slate-700 border-slate-200/50",
+  };
+  const headerBg = schedule ? (headerBgMap[schedule.type] || "bg-slate-50/80") : "bg-slate-50/80";
+  const badgeColor = schedule ? (badgeColorMap[schedule.type] || "text-slate-700 border-slate-200/50") : "";
+
+  // --- Kiểm tra quyền ---
+  const isParticipant = schedule?.participants?.some((p: any) => p.profile?.id === currentProfile?.id);
+  const isCreator = schedule?.created_by === currentProfile?.id;
+  const isLeave = schedule?.type === 'leave';
+
+  // --- Hàm xử lý ---
+  const handleSaveTime = () => {
+    if (!newEndTime || !schedule) return;
+    const confirmMsg = "Bạn có chắc chắn muốn thay đổi thời gian kết thúc của lịch trình này không? Tất cả những người tham gia sẽ nhận được thông báo.";
+    if (confirm(confirmMsg)) {
+      onUpdateEndTime(schedule.id, new Date(newEndTime).toISOString());
+      setIsEditingTime(false);
+    }
+  };
+
+  const handleEndNow = () => {
+    if (!schedule) return;
+    const confirmMsg = "Bạn có chắc chắn muốn báo kết thúc lịch trình này ngay bây giờ? Tất cả những người tham gia sẽ nhận được thông báo.";
+    if (confirm(confirmMsg)) {
+      onUpdateEndTime(schedule.id, new Date().toISOString());
+      setIsEditingTime(false);
+    }
+  };
+
+  const handleSaveSchedule = () => {
+    if (!schedule) return;
+    const isLeaveType = editData.type === 'leave';
+    const isBranchLocation = editData.location === 'Chi nhánh';
+
+    if (!editData.title?.trim()) return;
+    if (!isLeaveType && isBranchLocation && (!editData.room_id || editData.room_id === 'none')) return;
+    if (!isLeaveType && !isBranchLocation && !editData.location?.trim()) return;
+
+    const finalParticipantIds = isLeaveType
+      ? [currentProfile?.id].filter(Boolean)
+      : resolveParticipantIds({ selectedParticipants, bgdMode, selectedBGD, deptMode, filterDepts, participantMode, allProfiles });
+
+    const startString = `${format(editStartDate || new Date(), 'yyyy-MM-dd')}T${editStartTime}`;
+    const endString = `${format(editEndDate || new Date(), 'yyyy-MM-dd')}T${editEndTime}`;
+
+    onUpdateSchedule(schedule.id, {
+      title: editData.title,
+      description: editData.description || null,
+      type: editData.type,
+      start_time: new Date(startString).toISOString(),
+      end_time: new Date(endString).toISOString(),
+      location: isLeaveType ? null : editData.location,
+      room_id: !isLeaveType && isBranchLocation && editData.room_id !== 'none' ? editData.room_id : null,
+      use_vehicle: !isLeaveType && !!editData.use_vehicle,
+      vehicle_id: !isLeaveType && editData.vehicle_id !== 'none' ? editData.vehicle_id : null,
+      requested_vehicle_type: !isLeaveType && editData.use_vehicle ? editData.requested_vehicle_type : null,
+      participant_ids: finalParticipantIds
+    });
+  };
+
+  const handleStartTimeChange = (v: string) => {
+    setEditStartTime(v);
+    const [h, m] = v.split(':');
+    const endH = Math.min(parseInt(h) + 1, 23);
+    setEditEndTime(`${endH.toString().padStart(2, '0')}:${m}`);
+  };
+
+  const handleVehicleSelect = (v: string) => {
+    setTempVehicleId(v);
+    const selectedV = vehicles.find(x => x.id === v);
+    if (selectedV?.driver_id) setTempDriverId(selectedV.driver_id);
+  };
+
+  return {
+    // Trạng thái chỉnh sửa
+    isEditingTime, setIsEditingTime,
+    isEditingSchedule, setIsEditingSchedule,
+    newEndTime, setNewEndTime,
+    editData, setEditData,
+    // Điều phối xe
+    tempVehicleId, setTempVehicleId,
+    tempDriverId, setTempDriverId,
+    // Ngày giờ
+    editStartDate, setEditStartDate,
+    editEndDate, setEditEndDate,
+    editStartTime, setEditStartTime,
+    editEndTime, setEditEndTime,
+    isStartOpen, setIsStartOpen,
+    isEndOpen, setIsEndOpen,
+    // Thành phần tham gia
+    bgdMode, setBgdMode,
+    selectedBGD, setSelectedBGD,
+    deptMode, setDeptMode,
+    filterDepts, setFilterDepts,
+    participantMode, setParticipantMode,
+    selectedParticipants, setSelectedParticipants,
+    // Tính toán phái sinh
+    conflicts, matchedVehicle, headerBg, badgeColor,
+    isParticipant, isCreator, isLeave,
+    // Hàm xử lý
+    handleSaveTime, handleEndNow, handleSaveSchedule,
+    handleStartTimeChange, handleVehicleSelect,
+  };
+}

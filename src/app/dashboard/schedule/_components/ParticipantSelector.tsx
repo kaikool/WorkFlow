@@ -182,7 +182,7 @@ export default function ParticipantSelector({
           </div>
           <Popover modal={true}>
             <PopoverTrigger asChild>
-              <Button type="button" variant="outline" className="w-[170px] h-8 bg-white border border-slate-200 rounded-lg justify-between px-2.5 text-[12px] font-semibold text-slate-755 hover:text-slate-900 shadow-xs transition-all truncate">
+              <Button type="button" variant="outline" className="w-[170px] h-10 bg-white border border-slate-200 rounded-lg justify-between px-2.5 text-[12px] font-semibold text-slate-755 hover:text-slate-900 shadow-xs transition-all truncate whitespace-nowrap">
                 <span className="truncate">
                   {bgdMode === 'all' && "Tất cả BGĐ"}
                   {bgdMode === 'none' && "Không ai"}
@@ -198,10 +198,10 @@ export default function ParticipantSelector({
               onWheel={(e) => e.stopPropagation()}
               onTouchMove={(e) => e.stopPropagation()}
             >
-              <div className="flex bg-slate-100 p-0.5 rounded-lg w-full mb-1">
-                <button type="button" onClick={() => { setBgdMode('all'); setSelectedBGD([]); }} className={cn("flex-1 py-0.5 text-[10px] font-bold rounded-md transition-all", bgdMode === 'all' ? "bg-white text-primary shadow-xs" : "text-slate-500")}>Tất cả</button>
-                <button type="button" onClick={() => { setBgdMode('specific'); }} className={cn("flex-1 py-0.5 text-[10px] font-bold rounded-md transition-all", bgdMode === 'specific' ? "bg-white text-primary shadow-xs" : "text-slate-500")}>Chọn cụ thể</button>
-                <button type="button" onClick={() => { setBgdMode('none'); setSelectedBGD([]); }} className={cn("flex-1 py-0.5 text-[10px] font-bold rounded-md transition-all", bgdMode === 'none' ? "bg-white text-primary shadow-xs" : "text-slate-500")}>Không ai</button>
+              <div className="flex bg-slate-100 p-1 rounded-lg w-full mb-1 gap-1">
+                <button type="button" onClick={() => { setBgdMode('all'); setSelectedBGD([]); }} className={cn("flex-1 h-10 flex items-center justify-center whitespace-nowrap px-1 text-[11px] font-bold rounded-md transition-all", bgdMode === 'all' ? "bg-white text-primary shadow-sm" : "text-slate-500")}>Tất cả</button>
+                <button type="button" onClick={() => { setBgdMode('specific'); }} className={cn("flex-1 h-10 flex items-center justify-center whitespace-nowrap px-1 text-[11px] font-bold rounded-md transition-all", bgdMode === 'specific' ? "bg-white text-primary shadow-sm" : "text-slate-500")}>Chọn cụ thể</button>
+                <button type="button" onClick={() => { setBgdMode('none'); setSelectedBGD([]); }} className={cn("flex-1 h-10 flex items-center justify-center whitespace-nowrap px-1 text-[11px] font-bold rounded-md transition-all", bgdMode === 'none' ? "bg-white text-primary shadow-sm" : "text-slate-500")}>Không ai</button>
               </div>
               {bgdMode === 'specific' && (
                 <div className="space-y-0.5 pt-1 animate-in fade-in slide-in-from-top-1">
@@ -244,7 +244,7 @@ export default function ParticipantSelector({
           </div>
           <Popover modal={true}>
             <PopoverTrigger asChild>
-              <Button type="button" variant="outline" className="w-[170px] h-8 bg-white border border-slate-200 rounded-lg justify-between px-2.5 text-[12px] font-semibold text-slate-755 hover:text-slate-900 shadow-xs transition-all truncate">
+              <Button type="button" variant="outline" className="w-[170px] h-10 bg-white border border-slate-200 rounded-lg justify-between px-2.5 text-[12px] font-semibold text-slate-755 hover:text-slate-900 shadow-xs transition-all truncate whitespace-nowrap">
                 <span className="truncate">
                   {deptMode === 'all' && "Tất cả phòng"}
                   {deptMode === 'none' && "Không ai"}
@@ -260,10 +260,10 @@ export default function ParticipantSelector({
               onWheel={(e) => e.stopPropagation()}
               onTouchMove={(e) => e.stopPropagation()}
             >
-              <div className="flex bg-slate-100 p-0.5 rounded-lg w-full mb-1">
-                <button type="button" onClick={() => { setDeptMode('all'); setFilterDepts([]); }} className={cn("flex-1 py-0.5 text-[10px] font-bold rounded-md transition-all", deptMode === 'all' ? "bg-white text-primary shadow-xs" : "text-slate-500")}>Tất cả</button>
-                <button type="button" onClick={() => { setDeptMode('specific'); }} className={cn("flex-1 py-0.5 text-[10px] font-bold rounded-md transition-all", deptMode === 'specific' ? "bg-white text-primary shadow-xs" : "text-slate-500")}>Chọn cụ thể</button>
-                <button type="button" onClick={() => { setDeptMode('none'); setFilterDepts([]); setSelectedParticipants([]); }} className={cn("flex-1 py-0.5 text-[10px] font-bold rounded-md transition-all", deptMode === 'none' ? "bg-white text-primary shadow-xs" : "text-slate-500")}>Không ai</button>
+              <div className="flex bg-slate-100 p-1 rounded-lg w-full mb-1 gap-1">
+                <button type="button" onClick={() => { setDeptMode('all'); setFilterDepts([]); }} className={cn("flex-1 h-10 flex items-center justify-center whitespace-nowrap px-1 text-[11px] font-bold rounded-md transition-all", deptMode === 'all' ? "bg-white text-primary shadow-sm" : "text-slate-500")}>Tất cả</button>
+                <button type="button" onClick={() => { setDeptMode('specific'); }} className={cn("flex-1 h-10 flex items-center justify-center whitespace-nowrap px-1 text-[11px] font-bold rounded-md transition-all", deptMode === 'specific' ? "bg-white text-primary shadow-sm" : "text-slate-500")}>Chọn cụ thể</button>
+                <button type="button" onClick={() => { setDeptMode('none'); setFilterDepts([]); setSelectedParticipants([]); }} className={cn("flex-1 h-10 flex items-center justify-center whitespace-nowrap px-1 text-[11px] font-bold rounded-md transition-all", deptMode === 'none' ? "bg-white text-primary shadow-sm" : "text-slate-500")}>Không ai</button>
               </div>
               {deptMode === 'specific' && (
                 <div className="space-y-0.5 pt-1 animate-in fade-in slide-in-from-top-1">
@@ -307,7 +307,7 @@ export default function ParticipantSelector({
             </div>
             <Popover modal={true}>
               <PopoverTrigger asChild>
-                <Button type="button" variant="outline" className="w-[170px] h-8 bg-white border border-slate-200 rounded-lg justify-between px-2.5 text-[12px] font-semibold text-slate-755 hover:text-slate-900 shadow-xs transition-all truncate">
+                <Button type="button" variant="outline" className="w-[170px] h-10 bg-white border border-slate-200 rounded-lg justify-between px-2.5 text-[12px] font-semibold text-slate-755 hover:text-slate-900 shadow-xs transition-all truncate whitespace-nowrap">
                   <span className="truncate">
                     {participantMode === 'all' && "Tất cả cán bộ"}
                     {participantMode === 'manager' && "Chỉ lãnh đạo"}
@@ -323,10 +323,10 @@ export default function ParticipantSelector({
                 onWheel={(e) => e.stopPropagation()}
                 onTouchMove={(e) => e.stopPropagation()}
               >
-                <div className="flex bg-slate-100 p-0.5 rounded-lg w-full mb-1">
-                  <button type="button" onClick={() => { setParticipantMode('all'); setSelectedParticipants([]); }} className={cn("flex-1 py-0.5 text-[10px] font-bold rounded-md transition-all", participantMode === 'all' ? "bg-white text-primary shadow-xs" : "text-slate-500")}>Tất cả</button>
-                  <button type="button" onClick={() => { setParticipantMode('manager'); setSelectedParticipants([]); }} className={cn("flex-1 py-0.5 text-[10px] font-bold rounded-md transition-all", participantMode === 'manager' ? "bg-white text-primary shadow-xs" : "text-slate-500")}>Lãnh đạo</button>
-                  <button type="button" onClick={() => { setParticipantMode('staff'); }} className={cn("flex-1 py-0.5 text-[10px] font-bold rounded-md transition-all", participantMode === 'staff' ? "bg-white text-primary shadow-xs" : "text-slate-500")}>Từng người</button>
+                <div className="flex bg-slate-100 p-1 rounded-lg w-full mb-1 gap-1">
+                  <button type="button" onClick={() => { setParticipantMode('all'); setSelectedParticipants([]); }} className={cn("flex-1 h-10 flex items-center justify-center whitespace-nowrap px-1 text-[11px] font-bold rounded-md transition-all", participantMode === 'all' ? "bg-white text-primary shadow-sm" : "text-slate-500")}>Tất cả</button>
+                  <button type="button" onClick={() => { setParticipantMode('manager'); setSelectedParticipants([]); }} className={cn("flex-1 h-10 flex items-center justify-center whitespace-nowrap px-1 text-[11px] font-bold rounded-md transition-all", participantMode === 'manager' ? "bg-white text-primary shadow-sm" : "text-slate-500")}>Lãnh đạo</button>
+                  <button type="button" onClick={() => { setParticipantMode('staff'); }} className={cn("flex-1 h-10 flex items-center justify-center whitespace-nowrap px-1 text-[11px] font-bold rounded-md transition-all", participantMode === 'staff' ? "bg-white text-primary shadow-sm" : "text-slate-500")}>Từng người</button>
                 </div>
                 
                 {participantMode === 'staff' ? (
