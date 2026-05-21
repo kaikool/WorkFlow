@@ -37,6 +37,7 @@ import { createClient } from "@/utils/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { cn, sortProfilesByHierarchy } from "@/lib/utils";
 import { useRouter } from "next/navigation";
+import { canAccessPeopleDirectory } from "@/lib/permissions";
 
 export default function TeamPage() {
  const [members, setMembers] = useState<any[]>([]);
@@ -64,6 +65,12 @@ export default function TeamPage() {
  const { data: p } = await supabase.from('profiles').select('*').eq('id', user.id).single();
  setProfile(p);
  currentProfile = p;
+ }
+
+ if (currentProfile && !canAccessPeopleDirectory(currentProfile)) {
+   toast({ variant: "destructive", title: "Từ chối truy cập", description: "Bạn không có quyền truy cập danh bạ cán bộ." });
+   router.push('/dashboard');
+   return;
  }
 
  let query = supabase.from('profiles').select(`*, departments (name)`);

@@ -7,7 +7,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { format, isAfter } from "date-fns";
 
-interface TcthDashboardProps {
+interface ResourcesManagerDashboardProps {
   schedules: any[];
   vehicles: any[];
   rooms: any[];
@@ -15,7 +15,7 @@ interface TcthDashboardProps {
   onSelectSchedule: (s: any) => void;
 }
 
-export default function TcthDashboard({ schedules, vehicles, rooms, selectedDate, onSelectSchedule }: TcthDashboardProps) {
+export default function ResourcesManagerDashboard({ schedules, vehicles, rooms, selectedDate, onSelectSchedule }: ResourcesManagerDashboardProps) {
   const [expandedVehicle, setExpandedVehicle] = useState<string | null>(null);
   const [expandedRoom, setExpandedRoom] = useState<string | null>(null);
 
@@ -126,7 +126,7 @@ export default function TcthDashboard({ schedules, vehicles, rooms, selectedDate
                     </div>
                   )}
 
-                  {/* Next trip inline teaser (when idle) */}
+                  {/* Next trip teaser (when idle) */}
                   {!isBusy && !isInProgress && nextTrip && !isExpanded && (
                     <div className="px-5 pb-3 -mt-1">
                       <div className="flex items-center gap-2 text-xs text-slate-400">

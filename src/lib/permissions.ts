@@ -38,7 +38,7 @@ export function canAccessPeopleDirectory(profile: any): boolean {
 export function canApproveLeave(profile: any, leave?: any): boolean {
   if (!profile) return false;
 
-  if (profile.role === 'admin' || profile.role === 'hr_officer') return true;
+  if (profile.role === 'admin') return true;
 
   if (!leave) {
     return profile.role === 'director' || profile.role === 'manager';
@@ -49,10 +49,14 @@ export function canApproveLeave(profile: any, leave?: any): boolean {
   }
 
   if (profile.role === 'manager') {
+    const isCurrentUserHead = profile.is_department_head === true;
+    const isCreatorHead = leave.creator?.is_department_head === true;
+    const isCreatorManager = leave.creator?.role === 'manager';
+
     return (
       leave.creator?.department_id === profile.department_id &&
       leave.created_by !== profile.id &&
-      leave.creator?.role !== 'manager'
+      (isCurrentUserHead || (!isCreatorHead && !isCreatorManager))
     );
   }
 

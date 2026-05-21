@@ -23,68 +23,68 @@ export const statusLabels: any = {
 
 export const directorColors = [
   {
-    bg: 'bg-slate-50/80',
-    border: 'border-slate-200',
-    text: 'text-slate-700',
-    bullet: 'bg-slate-500',
-    pill: 'bg-slate-50/80 text-slate-700 border-slate-200 hover:bg-slate-100',
-    hover: 'hover:bg-slate-100'
+    bg: 'bg-indigo-50/80',
+    border: 'border-indigo-100',
+    text: 'text-indigo-700',
+    bullet: 'bg-indigo-600',
+    pill: 'bg-indigo-50/80 text-indigo-700 border-indigo-100 hover:bg-indigo-100',
+    hover: 'hover:bg-indigo-100'
   },
   {
-    bg: 'bg-slate-50/80',
-    border: 'border-slate-200',
-    text: 'text-slate-700',
-    bullet: 'bg-slate-500',
-    pill: 'bg-slate-50/80 text-slate-700 border-slate-200 hover:bg-slate-100',
-    hover: 'hover:bg-slate-100'
+    bg: 'bg-emerald-50/80',
+    border: 'border-emerald-100',
+    text: 'text-emerald-700',
+    bullet: 'bg-emerald-600',
+    pill: 'bg-emerald-50/80 text-emerald-700 border-emerald-100 hover:bg-emerald-100',
+    hover: 'hover:bg-emerald-100'
   },
   {
-    bg: 'bg-amber-50/80',
-    border: 'border-amber-200',
-    text: 'text-amber-700',
-    bullet: 'bg-amber-500',
-    pill: 'bg-amber-50/80 text-amber-700 border-amber-200 hover:bg-amber-100',
-    hover: 'hover:bg-amber-100'
+    bg: 'bg-violet-50/80',
+    border: 'border-violet-100',
+    text: 'text-violet-700',
+    bullet: 'bg-violet-600',
+    pill: 'bg-violet-50/80 text-violet-700 border-violet-100 hover:bg-violet-100',
+    hover: 'hover:bg-violet-100'
   },
   {
-    bg: 'bg-amber-50/80',
-    border: 'border-amber-200',
-    text: 'text-amber-700',
-    bullet: 'bg-amber-500',
-    pill: 'bg-amber-50/80 text-amber-700 border-amber-200 hover:bg-amber-100',
-    hover: 'hover:bg-amber-100'
+    bg: 'bg-rose-50/80',
+    border: 'border-rose-100',
+    text: 'text-rose-700',
+    bullet: 'bg-rose-600',
+    pill: 'bg-rose-50/80 text-rose-700 border-rose-100 hover:bg-rose-100',
+    hover: 'hover:bg-rose-100'
   },
   {
-    bg: 'bg-slate-50/80',
-    border: 'border-slate-200',
-    text: 'text-slate-700',
-    bullet: 'bg-slate-500',
-    pill: 'bg-slate-50/80 text-slate-700 border-slate-200 hover:bg-slate-100',
-    hover: 'hover:bg-slate-100'
+    bg: 'bg-sky-50/80',
+    border: 'border-sky-100',
+    text: 'text-sky-700',
+    bullet: 'bg-sky-600',
+    pill: 'bg-sky-50/80 text-sky-700 border-sky-100 hover:bg-sky-100',
+    hover: 'hover:bg-sky-100'
   },
   {
-    bg: 'bg-amber-50/80',
-    border: 'border-amber-200',
-    text: 'text-amber-700',
-    bullet: 'bg-amber-500',
-    pill: 'bg-amber-50/80 text-amber-700 border-amber-200 hover:bg-amber-100',
-    hover: 'hover:bg-amber-100'
+    bg: 'bg-orange-50/80',
+    border: 'border-orange-100',
+    text: 'text-orange-700',
+    bullet: 'bg-orange-600',
+    pill: 'bg-orange-50/80 text-orange-700 border-orange-100 hover:bg-orange-100',
+    hover: 'hover:bg-orange-100'
   },
   {
-    bg: 'bg-slate-50/80',
-    border: 'border-slate-200',
-    text: 'text-slate-700',
-    bullet: 'bg-slate-500',
-    pill: 'bg-slate-50/80 text-slate-700 border-slate-200 hover:bg-slate-100',
-    hover: 'hover:bg-slate-100'
+    bg: 'bg-teal-50/80',
+    border: 'border-teal-100',
+    text: 'text-teal-700',
+    bullet: 'bg-teal-600',
+    pill: 'bg-teal-50/80 text-teal-700 border-teal-100 hover:bg-teal-100',
+    hover: 'hover:bg-teal-100'
   },
   {
-    bg: 'bg-amber-50/80',
-    border: 'border-amber-200',
-    text: 'text-amber-700',
-    bullet: 'bg-amber-500',
-    pill: 'bg-amber-50/80 text-amber-700 border-amber-200 hover:bg-amber-100',
-    hover: 'hover:bg-amber-100'
+    bg: 'bg-fuchsia-50/80',
+    border: 'border-fuchsia-100',
+    text: 'text-fuchsia-700',
+    bullet: 'bg-fuchsia-600',
+    pill: 'bg-fuchsia-50/80 text-fuchsia-700 border-fuchsia-100 hover:bg-fuchsia-100',
+    hover: 'hover:bg-fuchsia-100'
   }
 ];
 

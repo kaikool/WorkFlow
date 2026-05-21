@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Label } from "@/components/ui/label";
-import { cn } from "@/lib/utils";
+import { cn, sortProfilesByHierarchy } from "@/lib/utils";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 import { timeOptions } from "../_lib/constants";
@@ -64,6 +64,7 @@ interface CreateScheduleDialogProps {
   setParticipantMode: (v: 'all' | 'manager' | 'staff') => void;
   selectedParticipants: string[];
   setSelectedParticipants: (v: string[]) => void;
+  profile?: any;
 }
 
 export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
@@ -79,9 +80,15 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
     deptMode, setDeptMode, filterDepts, setFilterDepts,
     participantMode, setParticipantMode,
     selectedParticipants, setSelectedParticipants,
+    profile,
   } = props;
 
   const isLeave = newSchedule.type === 'leave';
+  const showEmployeeSelector = isLeave && ['hr_officer', 'secretary', 'admin'].includes(profile?.role);
+  const sortedProfiles = React.useMemo(() => {
+    const sorted = [...allProfiles];
+    return sortProfilesByHierarchy(sorted);
+  }, [allProfiles]);
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -217,6 +224,33 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
             </div>
           </div>
 
+          {/* Chọn nhân sự nghỉ phép (chỉ dành cho HR Officer / Thư ký / Admin khi đăng ký Nghỉ phép) */}
+          {showEmployeeSelector && (
+            <div className="space-y-2 animate-in fade-in zoom-in-95 duration-200">
+              <Label className="text-[13px] font-medium text-slate-500">Nhân sự nghỉ phép</Label>
+              <Select
+                value={newSchedule.target_profile_id || profile?.id || ""}
+                onValueChange={(val) => setNewSchedule({ ...newSchedule, target_profile_id: val })}
+              >
+                <SelectTrigger className="h-10 bg-slate-50 border-none rounded-xl font-medium text-[14px]">
+                  <SelectValue placeholder="Chọn nhân sự..." />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl border-none shadow-lg max-h-[200px] overflow-y-auto">
+                  {sortedProfiles.map((p: any) => {
+                    const deptName = p.departments?.name || (Array.isArray(p.departments) ? p.departments[0]?.name : p.departments?.name) || "";
+                    const deptLabel = deptName ? ` - ${deptName}` : "";
+                    const roleLabel = p.role === 'director' ? ' (BGĐ)' : p.role === 'manager' ? ' (Lãnh đạo)' : '';
+                    return (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.full_name}{roleLabel}{deptLabel}
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           {/* 3. Địa điểm & Phương tiện — ẩn khi là nghỉ phép */}
           {!isLeave && (
             <div className="space-y-4 bg-slate-50/50 p-5 rounded-2xl border border-slate-100">
@@ -293,15 +327,21 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
             </div>
           )}
 
-          {/* Banner thông tin đơn nghỉ phép cá nhân */}
+          {/* Banner thông tin đơn nghỉ phép */}
           {isLeave && (
             <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 flex items-start gap-3 animate-in fade-in zoom-in-95 duration-300">
               <div className="p-2 bg-white rounded-xl shadow-sm shrink-0">
                 <Users className="w-4 h-4 text-slate-500" />
               </div>
               <div className="space-y-1">
-                <p className="text-[13px] font-bold text-slate-700">Đơn nghỉ phép cá nhân</p>
-                <p className="text-[12px] text-slate-500 leading-relaxed">Chỉ áp dụng cho cá nhân. Đơn sẽ được gửi tới lãnh đạo phòng và TCTH để phê duyệt. Khi được duyệt, trạng thái của bạn sẽ hiển thị là "Nghỉ phép" trên lịch trình phòng ban và cá nhân.</p>
+                <p className="text-[13px] font-bold text-slate-700">
+                  {showEmployeeSelector ? "Đăng ký nghỉ phép hộ" : "Đơn nghỉ phép cá nhân"}
+                </p>
+                <p className="text-[12px] text-slate-500 leading-relaxed">
+                  {showEmployeeSelector
+                    ? "Bạn đang đăng ký nghỉ phép thay cho cán bộ được chọn. Đơn nghỉ phép của thành viên Ban Giám đốc sẽ tự động được phê duyệt ngay lập tức và hiển thị trên Timeline."
+                    : "Chỉ áp dụng cho cá nhân. Đơn sẽ được gửi tới lãnh đạo phòng để phê duyệt trực tiếp. Khi được duyệt, trạng thái của bạn sẽ hiển thị là \"Nghỉ phép\" trên lịch trình."}
+                </p>
               </div>
             </div>
           )}

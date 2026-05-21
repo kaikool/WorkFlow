@@ -18,7 +18,7 @@ import CreateScheduleDialog from "./_components/CreateScheduleDialog";
 import ScheduleDetailDialog from "./_components/ScheduleDetailDialog";
 import DateNavigator from "./_components/DateNavigator";
 import CalendarView from "./_components/CalendarView";
-import TcthDashboard from "./_components/TcthDashboard";
+import ResourcesManagerDashboard from "./_components/ResourcesManagerDashboard";
 import LeaveApprovalDashboard from "./_components/LeaveApprovalDashboard";
 import DriverDashboard from "./_components/DriverDashboard";
 import { Car } from "lucide-react";
@@ -48,7 +48,8 @@ export default function SchedulePage() {
   const [newSchedule, setNewSchedule] = useState({
     title: "", description: "", location: "", department_id: "",
     type: "trip", use_room: false, room_id: "",
-    use_vehicle: false, vehicle_id: "", requested_vehicle_type: "4 chỗ", participants: []
+    use_vehicle: false, vehicle_id: "", requested_vehicle_type: "4 chỗ", participants: [],
+    target_profile_id: ""
   });
   const [startDate, setStartDate] = useState<Date | undefined>(new Date());
   const [endDate, setEndDate] = useState<Date | undefined>(new Date());
@@ -604,10 +605,16 @@ export default function SchedulePage() {
 
     try {
       const { use_vehicle, participants, vehicle_id, ...insertData } = newSchedule;
+      
+      const targetId = (isLeave && newSchedule.target_profile_id) ? newSchedule.target_profile_id : profile?.id;
+      const targetProfile = isLeave ? allProfiles.find(p => p.id === targetId) : profile;
+      
       const selectedParticipantIds = isLeave
-        ? [profile?.id].filter(Boolean)
+        ? [targetId].filter(Boolean)
         : resolveParticipantIds({ selectedParticipants, bgdMode, selectedBGD, deptMode, filterDepts, participantMode, allProfiles });
-      const finalParticipants = Array.from(new Set([profile?.id, ...selectedParticipantIds].filter(Boolean)));
+      const finalParticipants = isLeave
+        ? [targetId].filter(Boolean)
+        : Array.from(new Set([profile?.id, ...selectedParticipantIds].filter(Boolean)));
 
       const participantConflicts = isLeave ? [] : await findParticipantConflicts({
         participantIds: finalParticipants,
@@ -619,6 +626,13 @@ export default function SchedulePage() {
         allConflicts.push(...participantConflicts);
       }
 
+      const isTargetBGD = targetProfile?.role === 'director' || targetProfile?.role === 'admin';
+      const isAuthorizedCreator = ['admin', 'secretary', 'hr_officer'].includes(profile?.role);
+      const shouldApproveImmediately = isLeave 
+        ? (isTargetBGD || isAuthorizedCreator)
+        : canCoordinateSharedResources(profile);
+      const status = shouldApproveImmediately ? 'approved' : 'pending';
+
       const { data: createdSchedule, error } = await supabase.from('schedules').insert({
         ...insertData,
         start_time: start.toISOString(),
@@ -628,10 +642,8 @@ export default function SchedulePage() {
         requested_vehicle_type: (!isLeave && use_vehicle) ? newSchedule.requested_vehicle_type : null,
         use_vehicle: !isLeave && use_vehicle,
         created_by: profile?.id,
-        department_id: profile?.department_id,
-        status: isLeave
-          ? 'pending'
-          : canCoordinateSharedResources(profile) ? 'approved' : 'pending'
+        department_id: targetProfile?.department_id || profile?.department_id,
+        status
       }).select().single();
       if (error) throw error;
 
@@ -656,8 +668,8 @@ export default function SchedulePage() {
               // BGĐ (director/admin) luôn nhận
               if (p.role === 'admin' || p.role === 'director') return true;
               
-              // Cán bộ nhân sự (hr_officer) nhận (trừ khi creator là manager)
-              if (p.role === 'hr_officer' && !isCreatorManager) return true;
+              // Cán bộ nhân sự (hr_officer) nhận để duyệt bước 2
+              if (p.role === 'hr_officer') return true;
               
               // Lãnh đạo trực tiếp cùng phòng ban
               if (!isCreatorManager && p.department_id === profile?.department_id && (p.role === 'manager' || p.is_department_head === true)) {
@@ -709,7 +721,7 @@ export default function SchedulePage() {
         toast({ title: "Thành công", description: isLeave ? "Đơn nghỉ phép đã được gửi." : "Lịch trình đã được đăng ký." });
       }
       // Reset toàn bộ form về trạng thái mặc định
-      setNewSchedule({ title: "", description: "", location: "", department_id: "", type: "trip", use_room: false, room_id: "", use_vehicle: false, vehicle_id: "", requested_vehicle_type: "4 chỗ", participants: [] });
+      setNewSchedule({ title: "", description: "", location: "", department_id: "", type: "trip", use_room: false, room_id: "", use_vehicle: false, vehicle_id: "", requested_vehicle_type: "4 chỗ", participants: [], target_profile_id: "" });
       setStartDate(new Date());
       setEndDate(new Date());
       setStartTime("08:00");
@@ -766,6 +778,7 @@ export default function SchedulePage() {
             filterDepts={filterDepts} setFilterDepts={setFilterDepts}
             participantMode={participantMode} setParticipantMode={setParticipantMode}
             selectedParticipants={selectedParticipants} setSelectedParticipants={setSelectedParticipants}
+            profile={profile}
           />
         </div>
       </div>
@@ -829,7 +842,7 @@ export default function SchedulePage() {
 
         {canCoordinateResources && (
           <TabsContent value="tcth">
-            <TcthDashboard
+            <ResourcesManagerDashboard
               schedules={schedules} vehicles={vehicles} rooms={rooms}
               selectedDate={selectedDate} onSelectSchedule={handleSelectSchedule}
             />

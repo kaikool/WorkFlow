@@ -36,12 +36,17 @@ export function canViewLeaveDetails(leave: any, currentUser: any) {
 
   if (currentUser.role === 'admin' || currentUser.role === 'hr_officer' || currentUser.role === 'director') return true;
 
-  // Nếu người xem là Trưởng bộ phận của người tạo đơn
   const creator = leave.creator;
   if (creator) {
-    const isCreatorManager = creator.role === 'manager' || creator.is_department_head === true;
     if (currentUser.role === 'manager') {
-      return creator.department_id === currentUser.department_id && !isCreatorManager;
+      const isCurrentUserHead = currentUser.is_department_head === true;
+      const isCreatorHead = creator.is_department_head === true;
+      const isCreatorManager = creator.role === 'manager';
+
+      return (
+        creator.department_id === currentUser.department_id &&
+        (isCurrentUserHead || (!isCreatorHead && !isCreatorManager))
+      );
     }
   }
 

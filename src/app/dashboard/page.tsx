@@ -37,7 +37,7 @@ import { useToast } from "@/hooks/use-toast";
 import { addDays, endOfDay, endOfWeek, isSameDay, startOfWeek } from "date-fns";
 import { canCoordinateSharedResources, canUseDriverWorkspace, canUseHumanResourcesWorkspace } from "@/lib/permissions";
 import DriverDashboard from "./schedule/_components/DriverDashboard";
-import TcthDashboard from "./schedule/_components/TcthDashboard";
+import ResourcesManagerDashboard from "./schedule/_components/ResourcesManagerDashboard";
 import DirectorTimeline from "./schedule/_components/DirectorTimeline";
 import ScheduleDetailDialog from "./schedule/_components/ScheduleDetailDialog";
 import LeaveApprovalDashboard from "./schedule/_components/LeaveApprovalDashboard";
@@ -154,7 +154,7 @@ export default function DashboardPage() {
 
     const schedulesQuery = supabase
       .from('schedules')
-      .select(`*, creator:profiles!schedules_created_by_fkey(full_name, avatar_url, department_id, role, is_department_head), room:rooms(name), vehicle:vehicles(name, plate_number), driver:profiles!schedules_driver_id_fkey(id, full_name, phone, avatar_url), participants:schedule_participants(profile:profiles(id, full_name, avatar_url, role, is_department_head))`)
+      .select(`*, creator:profiles!schedules_created_by_fkey(full_name, avatar_url, department_id, role, is_department_head, departments(name)), room:rooms(name), vehicle:vehicles(name, plate_number), driver:profiles!schedules_driver_id_fkey(id, full_name, phone, avatar_url), participants:schedule_participants(profile:profiles(id, full_name, avatar_url, role, is_department_head, departments(name)))`)
       .gte('end_time', start.toISOString())
       .lte('start_time', end.toISOString())
       .order('start_time');
@@ -162,7 +162,7 @@ export default function DashboardPage() {
     const pendingQueueQuery = canSeePendingQueue
       ? supabase
         .from('schedules')
-        .select(`*, creator:profiles!schedules_created_by_fkey(full_name, avatar_url, department_id, role, is_department_head), room:rooms(name), vehicle:vehicles(name, plate_number), driver:profiles!schedules_driver_id_fkey(id, full_name, phone, avatar_url), participants:schedule_participants(profile:profiles(id, full_name, avatar_url, role, is_department_head))`)
+        .select(`*, creator:profiles!schedules_created_by_fkey(full_name, avatar_url, department_id, role, is_department_head, departments(name)), room:rooms(name), vehicle:vehicles(name, plate_number), driver:profiles!schedules_driver_id_fkey(id, full_name, phone, avatar_url), participants:schedule_participants(profile:profiles(id, full_name, avatar_url, role, is_department_head, departments(name)))`)
         .or('status.eq.pending,and(use_vehicle.eq.true,vehicle_id.is.null)')
         .order('start_time')
       : Promise.resolve({ data: [] as any[], error: null });
@@ -470,10 +470,17 @@ export default function DashboardPage() {
   }
 
   if (canUseHumanResourcesWorkspace(profile)) {
-    const pendingLeaves = scheduleData.schedules.filter(s => s.type === 'leave' && s.status === 'pending');
     const approvedLeaves = scheduleData.schedules.filter(s => s.type === 'leave' && s.status === 'approved');
     const today = new Date();
     const activeLeaves = approvedLeaves.filter(s => new Date(s.start_time) <= today && new Date(s.end_time) >= today);
+    
+    const start = startOfWeek(today, { weekStartsOn: 1 });
+    const end = endOfWeek(today, { weekStartsOn: 1 });
+    const thisWeekLeaves = approvedLeaves.filter(s => {
+      const sStart = new Date(s.start_time);
+      const sEnd = new Date(s.end_time);
+      return sStart <= end && sEnd >= start;
+    });
 
     return (
       <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-8 animate-fade-in-up pb-20">
@@ -482,17 +489,24 @@ export default function DashboardPage() {
             <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Bảng nhân sự</h1>
             <p className="text-[13px] text-slate-500 font-medium">Theo dõi nghỉ phép và hồ sơ nhân sự toàn cơ quan.</p>
           </div>
-          <Button asChild className="h-11 rounded-xl font-bold">
-            <Link href="/dashboard/team">
-              <Users className="mr-2 h-4 w-4" /> Danh sách cán bộ
-            </Link>
-          </Button>
+          <div className="flex gap-3">
+            <Button asChild variant="outline" className="h-11 rounded-xl font-bold">
+              <Link href="/dashboard/schedule">
+                <CalendarDays className="mr-2 h-4 w-4" /> Đăng ký nghỉ phép (BGD)
+              </Link>
+            </Button>
+            <Button asChild className="h-11 rounded-xl font-bold">
+              <Link href="/dashboard/team">
+                <Users className="mr-2 h-4 w-4" /> Danh sách cán bộ
+              </Link>
+            </Button>
+          </div>
         </header>
 
         <section className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="premium-card border border-slate-200">
-            <p className="text-xs font-bold text-slate-500">Đơn chờ duyệt</p>
-            <p className="mt-2 text-3xl font-extrabold text-slate-900 tabular-nums">{pendingLeaves.length}</p>
+            <p className="text-xs font-bold text-slate-500">Nghỉ phép tuần này</p>
+            <p className="mt-2 text-3xl font-extrabold text-slate-900 tabular-nums">{thisWeekLeaves.length}</p>
           </div>
           <div className="premium-card border border-slate-200">
             <p className="text-xs font-bold text-slate-500">Đang nghỉ hôm nay</p>
@@ -504,17 +518,80 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        <LeaveApprovalDashboard
-          schedules={scheduleData.schedules}
-          profile={profile}
-          onStatusUpdate={handleStatusUpdate}
-        />
+        <div className="space-y-6">
+          <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2 pl-1">
+            <CalendarDays className="w-4 h-4 text-slate-700" /> Lịch nghỉ phép tuần này ({thisWeekLeaves.length})
+          </h3>
+
+          {thisWeekLeaves.length === 0 ? (
+            <div className="premium-card text-center border border-slate-200 bg-white">
+              <p className="text-sm font-bold text-slate-700">Không có cán bộ nào nghỉ phép tuần này</p>
+              <p className="text-sm text-slate-500 mt-1">Lịch nghỉ phép của toàn cơ quan tuần này đang trống.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {thisWeekLeaves.map((leave) => {
+                const startDate = new Date(leave.start_time);
+                const endDate = new Date(leave.end_time);
+                const isActive = startDate <= today && endDate >= today;
+
+                const leaveUser = leave.participants?.[0]?.profile || leave.creator;
+                const userDept = leaveUser?.departments;
+                const deptName = userDept ? (Array.isArray(userDept) ? userDept[0]?.name : userDept?.name) : "";
+
+                return (
+                  <div key={leave.id} className="premium-card border border-slate-200 bg-white hover:shadow-premium-hover transition-all duration-300 flex flex-col justify-between group">
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-10 w-10 border border-slate-100 shadow-sm">
+                            <AvatarImage src={leaveUser?.avatar_url} />
+                            <AvatarFallback className="font-medium text-sm bg-slate-100 text-slate-700">
+                              {leaveUser?.full_name?.[0]}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="text-sm font-bold text-slate-900">{leaveUser?.full_name || "Cán bộ"}</p>
+                            <p className="text-xs font-semibold text-slate-500">
+                              {deptName || "Chi nhánh"}
+                            </p>
+                          </div>
+                        </div>
+                        {isActive && (
+                          <span className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-700 border border-amber-100 animate-pulse">
+                            Hôm nay
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="space-y-1 bg-slate-50/80 p-4 rounded-xl">
+                        <p className="text-sm font-bold text-slate-950 line-clamp-1">
+                          Nghỉ phép: {leave.title}
+                        </p>
+                        {leave.description && (
+                          <p className="text-xs text-slate-500 line-clamp-2 mt-1">{leave.description}</p>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 pl-1">
+                        <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        <span>
+                          {startDate.toLocaleDateString("vi-VN")} - {endDate.toLocaleDateString("vi-VN")}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
     );
   }
 
-  const isTcthDashboard = canCoordinateSharedResources(profile) && profile?.role !== 'admin' && profile?.role !== 'director';
-  if (isTcthDashboard) {
+  const isResourcesManagerDashboard = canCoordinateSharedResources(profile) && profile?.role !== 'admin' && profile?.role !== 'director';
+  if (isResourcesManagerDashboard) {
     const pendingSchedules = scheduleData.schedules
       .filter(s => s.status === 'pending' || (s.use_vehicle && !s.vehicle_id))
       .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
@@ -610,7 +687,7 @@ export default function DashboardPage() {
           />
         </section>
 
-        <TcthDashboard
+        <ResourcesManagerDashboard
           schedules={scheduleData.schedules}
           vehicles={scheduleData.vehicles}
           rooms={scheduleData.rooms}

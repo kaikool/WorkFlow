@@ -121,7 +121,7 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
    { name: 'Công việc', href: '/dashboard/tasks', icon: ListTodo, hideFor: ['driver', 'secretary', 'hr_officer'] },
    { name: 'Kế hoạch', href: '/dashboard/kpi', icon: Target, hideFor: ['driver', 'hr_officer', 'secretary'] },
    { name: 'Lịch trình', href: '/dashboard/schedule', icon: CalendarDays },
-   { name: 'Cán bộ', href: '/dashboard/team', icon: Users, hideFor: ['driver', 'secretary'] },
+   { name: 'Cán bộ', href: '/dashboard/team', icon: Users, hideFor: ['driver', 'secretary', 'staff'] },
   ].filter(item => !(item.hideFor || []).includes(profile?.role));
 
   const roleLabels: Record<string, string> = {
