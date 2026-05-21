@@ -202,7 +202,7 @@ export default function CalendarView(props: CalendarViewProps) {
               <div className="space-y-4 pt-6 border-t border-slate-100 mt-8">
                 <div className="flex items-center justify-between px-2">
                   <h3 className="text-[12px] font-bold text-slate-400 flex items-center gap-2 uppercase tracking-wider">
-                    <Plane className="w-4 h-4 text-indigo-500 shrink-0" />
+                    <Plane className="w-4 h-4 text-blue-500 shrink-0" />
                     Nhân sự nghỉ phép ({leaveList.length})
                   </h3>
                 </div>
@@ -224,7 +224,7 @@ export default function CalendarView(props: CalendarViewProps) {
                           <div className="flex h-full">
                             <div className={cn(
                               "w-2 transition-all duration-300 group-hover:w-2.5 shrink-0",
-                              leave.isCurrent ? "bg-amber-400" : "bg-indigo-400"
+                              leave.isCurrent ? "bg-amber-400" : "bg-blue-400"
                             )} />
                             
                             <div className="flex-1 p-3.5 flex items-center gap-3.5 min-w-0">
@@ -244,7 +244,7 @@ export default function CalendarView(props: CalendarViewProps) {
                                     "text-[9px] font-extrabold px-2 py-0.5 rounded-md tracking-normal shrink-0",
                                     leave.isCurrent 
                                       ? "bg-amber-50 text-amber-600 border border-amber-200/50" 
-                                      : "bg-indigo-50/50 text-indigo-600 border border-indigo-200/40"
+                                      : "bg-blue-50/50 text-blue-600 border border-blue-200/40"
                                   )}>
                                     {leave.isCurrent ? "Đang nghỉ" : "Sắp nghỉ"}
                                   </span>

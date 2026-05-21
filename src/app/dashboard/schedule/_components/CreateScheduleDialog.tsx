@@ -90,6 +90,16 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
     return sortProfilesByHierarchy(sorted);
   }, [allProfiles]);
 
+  const leaveOnBehalfProfiles = React.useMemo(() => {
+    return sortedProfiles.filter((p: any) => {
+      // Cho phép đăng ký nghỉ cho BGĐ
+      if (p.role === 'director') return true;
+      // Và cũng cho phép tự chọn chính mình (HR, Thư ký, Admin) để đăng ký nghỉ phép cá nhân
+      if (p.id === profile?.id) return true;
+      return false;
+    });
+  }, [sortedProfiles, profile?.id]);
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
@@ -110,7 +120,7 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
               <Label className="text-[13px] font-medium text-slate-500 whitespace-nowrap">Từ ngày</Label>
               <Popover open={isStartOpen} onOpenChange={setIsStartOpen}>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-full h-10 bg-slate-50 border-none rounded-xl font-medium justify-start text-left text-[14px] active:scale-95 transition-all truncate">
+                  <Button variant="outline" className="w-full h-11 bg-slate-50 border-none rounded-xl font-medium justify-start text-left text-[14px] active:scale-95 transition-all truncate">
                     <CalendarIcon className="mr-2 h-4 w-4 text-primary shrink-0" />
                     <span className="truncate">{startDate ? format(startDate, "dd/MM/yyyy") : "Chọn ngày"}</span>
                   </Button>
@@ -138,9 +148,11 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
                 const endH = Math.min(parseInt(h) + 1, 18);
                 setEndTime(`${endH.toString().padStart(2, '0')}:${m}`);
               }}>
-                <SelectTrigger className="h-10 bg-slate-50 border-none rounded-xl font-medium text-[14px]">
-                  <Clock className="mr-2 h-4 w-4 text-primary shrink-0" />
-                  <SelectValue />
+                <SelectTrigger className="h-11 bg-slate-50 border-none rounded-xl font-medium text-[14px]">
+                  <Clock className="h-4 w-4 text-primary shrink-0" />
+                  <span className="flex-1 min-w-0 truncate text-left">
+                    <SelectValue />
+                  </span>
                 </SelectTrigger>
                 <SelectContent className="rounded-xl border-none shadow-lg">
                   {timeOptions.map(time => (
@@ -156,7 +168,7 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
               <Label className="text-[13px] font-medium text-slate-500 whitespace-nowrap">Đến ngày</Label>
               <Popover open={isEndOpen} onOpenChange={setIsEndOpen}>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-full h-10 bg-slate-50 border-none rounded-xl font-medium justify-start text-left text-[14px] active:scale-95 transition-all truncate">
+                  <Button variant="outline" className="w-full h-11 bg-slate-50 border-none rounded-xl font-medium justify-start text-left text-[14px] active:scale-95 transition-all truncate">
                     <CalendarIcon className="mr-2 h-4 w-4 text-primary shrink-0" />
                     <span className="truncate">{endDate ? format(endDate, "dd/MM/yyyy") : "Chọn ngày"}</span>
                   </Button>
@@ -182,9 +194,11 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
             <div className="space-y-2">
               <Label className="text-[13px] font-medium text-slate-500 whitespace-nowrap">Giờ kết thúc</Label>
               <Select value={endTime} onValueChange={setEndTime}>
-                <SelectTrigger className="h-10 bg-slate-50 border-none rounded-xl font-medium text-[14px]">
-                  <Clock className="mr-2 h-4 w-4 text-primary shrink-0" />
-                  <SelectValue />
+                <SelectTrigger className="h-11 bg-slate-50 border-none rounded-xl font-medium text-[14px]">
+                  <Clock className="h-4 w-4 text-primary shrink-0" />
+                  <span className="flex-1 min-w-0 truncate text-left">
+                    <SelectValue />
+                  </span>
                 </SelectTrigger>
                 <SelectContent className="rounded-xl border-none shadow-lg">
                   {timeOptions.map(time => (
@@ -200,7 +214,7 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
             <div className="space-y-2">
               <Label className="text-[13px] font-medium text-slate-500 whitespace-nowrap">Loại hình</Label>
               <Select value={newSchedule.type} onValueChange={(v) => setNewSchedule({ ...newSchedule, type: v })}>
-                <SelectTrigger className="h-10 bg-slate-50 border-none rounded-xl font-medium text-[14px]">
+                <SelectTrigger className="h-11 bg-slate-50 border-none rounded-xl font-medium text-[14px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl border-none shadow-lg">
@@ -217,7 +231,7 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
               </Label>
               <Input
                 placeholder={isLeave ? "Lý do nghỉ phép..." : "Nội dung chính..."}
-                className="h-10 scroll-mt-24 bg-slate-50 border-none rounded-xl font-medium text-[14px]"
+                className="h-11 scroll-mt-24 bg-slate-50 border-none rounded-xl font-medium text-[14px]"
                 value={newSchedule.title}
                 onChange={(e) => setNewSchedule({ ...newSchedule, title: e.target.value })}
               />
@@ -232,17 +246,22 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
                 value={newSchedule.target_profile_id || profile?.id || ""}
                 onValueChange={(val) => setNewSchedule({ ...newSchedule, target_profile_id: val })}
               >
-                <SelectTrigger className="h-10 bg-slate-50 border-none rounded-xl font-medium text-[14px]">
+                <SelectTrigger className="h-11 bg-slate-50 border-none rounded-xl font-medium text-[14px]">
                   <SelectValue placeholder="Chọn nhân sự..." />
                 </SelectTrigger>
-                <SelectContent className="rounded-xl border-none shadow-lg max-h-[200px] overflow-y-auto">
-                  {sortedProfiles.map((p: any) => {
-                    const deptName = p.departments?.name || (Array.isArray(p.departments) ? p.departments[0]?.name : p.departments?.name) || "";
-                    const deptLabel = deptName ? ` - ${deptName}` : "";
-                    const roleLabel = p.role === 'director' ? ' (BGĐ)' : p.role === 'manager' ? ' (Lãnh đạo)' : '';
+                <SelectContent className="rounded-xl border-none shadow-lg">
+                  {leaveOnBehalfProfiles.map((p: any) => {
+                    const isSelf = p.id === profile?.id;
+                    if (isSelf) {
+                      return (
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.full_name} (Tôi)
+                        </SelectItem>
+                      );
+                    }
                     return (
                       <SelectItem key={p.id} value={p.id}>
-                        {p.full_name}{roleLabel}{deptLabel}
+                        {p.full_name}
                       </SelectItem>
                     );
                   })}
@@ -272,7 +291,7 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
                 <div className="space-y-2 animate-in fade-in zoom-in-95 duration-300">
                   <Label className="text-[10px] md:text-[13px] font-medium text-slate-500 whitespace-nowrap">Chọn phòng họp</Label>
                   <Select value={newSchedule.room_id} onValueChange={(v) => setNewSchedule({ ...newSchedule, room_id: v })}>
-                    <SelectTrigger className="h-10 bg-white border-none rounded-xl font-medium shadow-sm text-[14px]">
+                    <SelectTrigger className="h-11 bg-white border-none rounded-xl font-medium shadow-sm text-[14px]">
                       <SelectValue placeholder="Chọn phòng họp..." />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl border-none shadow-lg">
@@ -285,7 +304,7 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
                   <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                   <Input
                     placeholder="Nhập địa chỉ / lộ trình cụ thể..."
-                    className="h-10 bg-white border-none rounded-xl font-medium pl-11 shadow-sm text-[14px]"
+                    className="h-11 bg-white border-none rounded-xl font-medium pl-11 shadow-sm text-[14px]"
                     value={newSchedule.location}
                     onChange={(e) => setNewSchedule({ ...newSchedule, location: e.target.value })}
                   />
@@ -327,24 +346,7 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
             </div>
           )}
 
-          {/* Banner thông tin đơn nghỉ phép */}
-          {isLeave && (
-            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 flex items-start gap-3 animate-in fade-in zoom-in-95 duration-300">
-              <div className="p-2 bg-white rounded-xl shadow-sm shrink-0">
-                <Users className="w-4 h-4 text-slate-500" />
-              </div>
-              <div className="space-y-1">
-                <p className="text-[13px] font-bold text-slate-700">
-                  {showEmployeeSelector ? "Đăng ký nghỉ phép hộ" : "Đơn nghỉ phép cá nhân"}
-                </p>
-                <p className="text-[12px] text-slate-500 leading-relaxed">
-                  {showEmployeeSelector
-                    ? "Bạn đang đăng ký nghỉ phép thay cho cán bộ được chọn. Đơn nghỉ phép của thành viên Ban Giám đốc sẽ tự động được phê duyệt ngay lập tức và hiển thị trên Timeline."
-                    : "Chỉ áp dụng cho cá nhân. Đơn sẽ được gửi tới lãnh đạo phòng để phê duyệt trực tiếp. Khi được duyệt, trạng thái của bạn sẽ hiển thị là \"Nghỉ phép\" trên lịch trình."}
-                </p>
-              </div>
-            </div>
-          )}
+
 
           {/* 4. Thành phần tham gia — ẩn khi là nghỉ phép */}
           {!isLeave && (
@@ -391,7 +393,7 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
                 : "bg-primary hover:bg-primary/90 text-white"
             )}
           >
-            {isLeave ? 'Gửi Đơn nghỉ phép' : (!isLeave && conflicts.length > 0 ? 'Vẫn tiếp tục đặt lịch?' : 'Xác nhận đăng ký')}
+            {isLeave ? 'Gửi đơn nghỉ phép' : (!isLeave && conflicts.length > 0 ? 'Vẫn tiếp tục đặt lịch?' : 'Xác nhận đăng ký')}
           </Button>
         </DialogFooter>
       </DialogContent>

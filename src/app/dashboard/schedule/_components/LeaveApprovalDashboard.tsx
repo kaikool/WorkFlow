@@ -18,14 +18,15 @@ export default function LeaveApprovalDashboard({ schedules, profile, onStatusUpd
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between pl-1">
-        <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-          <Calendar className="w-4 h-4 text-slate-700" /> Đơn nghỉ phép chờ duyệt ({pendingLeaves.length})
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-medium text-slate-500 flex items-center gap-2">
+          <Calendar className="w-4 h-4 text-primary shrink-0" />
+          <span>Đơn nghỉ phép chờ duyệt ({pendingLeaves.length})</span>
         </h3>
       </div>
 
       {pendingLeaves.length === 0 ? (
-        <div className="premium-card text-center border border-slate-200 bg-white">
+        <div className="premium-card text-center bg-white border border-slate-200">
           <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4 text-slate-400">
             <User className="w-6 h-6" />
           </div>
@@ -37,24 +38,25 @@ export default function LeaveApprovalDashboard({ schedules, profile, onStatusUpd
           {pendingLeaves.map((leave) => {
             const startDate = new Date(leave.start_time);
             const endDate = new Date(leave.end_time);
+            const leaveUser = leave.participants?.[0]?.profile || leave.creator;
 
             return (
               <div key={leave.id} className="premium-card border border-slate-200 bg-white hover:shadow-premium-hover transition-all duration-300 flex flex-col justify-between group">
                 <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-10 w-10 border border-slate-100 shadow-sm">
-                      <AvatarImage src={leave.creator?.avatar_url} />
+                  <div className="flex items-center gap-3 min-w-0">
+                    <Avatar className="h-10 w-10 border border-slate-100 shadow-sm shrink-0">
+                      <AvatarImage src={leaveUser?.avatar_url} />
                       <AvatarFallback className="font-medium text-sm bg-slate-100 text-slate-700">
-                        {leave.creator?.full_name?.[0]}
+                        {leaveUser?.full_name?.[0]}
                       </AvatarFallback>
                     </Avatar>
-                    <div>
-                      <p className="text-sm font-bold text-slate-900">{leave.creator?.full_name || "Cán bộ"}</p>
-                      <p className="text-sm font-medium text-slate-500">Cán bộ xin nghỉ</p>
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-slate-900 truncate">{leaveUser?.full_name || "Cán bộ"}</p>
+                      <p className="text-sm font-medium text-slate-500 truncate">Cán bộ xin nghỉ</p>
                     </div>
                   </div>
 
-                  <div className="space-y-1 bg-slate-50/80 p-4 rounded-xl">
+                  <div className="space-y-1 bg-slate-50/80 p-4 sm:p-5 rounded-xl">
                     <p className="text-sm font-bold text-slate-950 line-clamp-1">
                       {canViewLeaveDetails(leave, profile) ? leave.title : "Nghỉ phép"}
                     </p>
@@ -71,11 +73,11 @@ export default function LeaveApprovalDashboard({ schedules, profile, onStatusUpd
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 pt-6 mt-6 border-t border-slate-100">
+                <div className="flex items-center gap-3 pt-6 sm:pt-7 mt-6 sm:mt-7 border-t border-slate-100">
                   <Button
                     onClick={() => onStatusUpdate(leave.id, "rejected")}
                     variant="outline"
-                    className="flex-1 border-slate-200 hover:bg-slate-100 hover:text-slate-900 text-slate-600 rounded-xl font-semibold min-h-11 text-sm gap-1.5 transition-colors"
+                    className="flex-1 border-slate-200 hover:bg-slate-100 hover:text-slate-900 text-slate-600 rounded-xl font-semibold min-h-11 text-sm gap-1.5 active:scale-95 transition-all"
                   >
                     <X className="w-4 h-4" /> Từ chối
                   </Button>

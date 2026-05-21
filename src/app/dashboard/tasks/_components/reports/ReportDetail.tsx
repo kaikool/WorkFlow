@@ -296,7 +296,7 @@ export function ReportDetail({ id }: { id: string }) {
               </div>
               {siblingReports.some(r=>r.status!=="done")&&(
                 <div className="pt-4 border-t border-slate-100 flex justify-center">
-                  <Button disabled={isRemindingAll} onClick={handleSendReminderAll} className="bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border-none rounded-xl text-sm font-medium min-h-11 px-5 shadow-sm active:scale-95 flex items-center gap-2">
+                  <Button disabled={isRemindingAll} onClick={handleSendReminderAll} className="bg-amber-50 text-amber-700 hover:bg-amber-100 border-none rounded-xl text-sm font-medium min-h-11 px-5 shadow-sm active:scale-95 flex items-center gap-2">
                     {isRemindingAll?<Loader2 className="w-3.5 h-3.5 animate-spin"/>:<Zap className="w-3.5 h-3.5 fill-current"/>}Nhắc báo cáo
                   </Button>
                 </div>

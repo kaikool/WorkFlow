@@ -20,11 +20,11 @@ import {
   Sparkles,
   MessageSquare,
   AlertCircle,
- Trophy,
- ArrowUpRight,
- CalendarDays,
- ShieldCheck,
- Users
+  Trophy,
+  ArrowUpRight,
+  CalendarDays,
+  ShieldCheck,
+  Users
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -144,7 +144,7 @@ export default function DashboardPage() {
     if (error) console.error('Notification insert failed:', error);
   };
 
- const fetchScheduleDashboardData = async (currentProfile: any) => {
+  const fetchScheduleDashboardData = async (currentProfile: any) => {
     const start = startOfWeek(selectedDate, { weekStartsOn: 1 });
     const end = new Date(Math.max(
       endOfWeek(selectedDate, { weekStartsOn: 1 }).getTime(),
@@ -425,27 +425,27 @@ export default function DashboardPage() {
   };
 
   const handleStatusUpdate = async (id: string, status: string) => {
-   try {
-    const schedule = scheduleData.schedules.find(s => s.id === id);
-    const { error } = await supabase.from('schedules').update({ status }).eq('id', id);
-    if (error) throw error;
+    try {
+      const schedule = scheduleData.schedules.find(s => s.id === id);
+      const { error } = await supabase.from('schedules').update({ status }).eq('id', id);
+      if (error) throw error;
 
-    if (schedule?.created_by) {
-     await sendNotifications([{
-      user_id: schedule.created_by,
-      title: status === 'approved' ? "Đơn nghỉ phép đã được phê duyệt" : "Đơn nghỉ phép bị từ chối",
-      content: status === 'approved'
-       ? `Đơn nghỉ phép "${schedule.title}" đã được phê duyệt.`
-       : `Đơn nghỉ phép "${schedule.title}" không được phê duyệt. Vui lòng kiểm tra lại.`,
-      link: "/dashboard/schedule"
-     }]);
+      if (schedule?.created_by) {
+        await sendNotifications([{
+          user_id: schedule.created_by,
+          title: status === 'approved' ? "Đơn nghỉ phép đã được phê duyệt" : "Đơn nghỉ phép bị từ chối",
+          content: status === 'approved'
+            ? `Đơn nghỉ phép "${schedule.title}" đã được phê duyệt.`
+            : `Đơn nghỉ phép "${schedule.title}" không được phê duyệt. Vui lòng kiểm tra lại.`,
+          link: "/dashboard/schedule"
+        }]);
+      }
+
+      toast({ title: "Thành công", description: status === 'approved' ? "Đã phê duyệt đơn nghỉ phép." : "Đã từ chối đơn nghỉ phép." });
+      fetchDashboardData();
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Lỗi", description: error.message });
     }
-
-    toast({ title: "Thành công", description: status === 'approved' ? "Đã phê duyệt đơn nghỉ phép." : "Đã từ chối đơn nghỉ phép." });
-    fetchDashboardData();
-   } catch (error: any) {
-    toast({ variant: "destructive", title: "Lỗi", description: error.message });
-   }
   };
 
   if (loading) return <div className="flex h-96 items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
@@ -455,8 +455,8 @@ export default function DashboardPage() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-6 md:space-y-8 animate-fade-in-up pb-20">
         <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pt-4 sm:pt-0">
           <div className="space-y-1">
-            <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Lịch chạy xe của tôi</h1>
-            <p className="text-[13px] text-slate-500 font-medium">Theo dõi chuyến được gán, cập nhật km và báo cáo sự cố.</p>
+            <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Lịch trình của của tôi</h1>
+            <p className="text-[13px] text-slate-500 font-medium">Theo dõi chuyến được gán, cập nhật hành trình.</p>
           </div>
           <Button asChild variant="outline" className="h-11 rounded-xl font-bold">
             <Link href="/dashboard/schedule">
@@ -473,7 +473,7 @@ export default function DashboardPage() {
     const approvedLeaves = scheduleData.schedules.filter(s => s.type === 'leave' && s.status === 'approved');
     const today = new Date();
     const activeLeaves = approvedLeaves.filter(s => new Date(s.start_time) <= today && new Date(s.end_time) >= today);
-    
+
     const start = startOfWeek(today, { weekStartsOn: 1 });
     const end = endOfWeek(today, { weekStartsOn: 1 });
     const thisWeekLeaves = approvedLeaves.filter(s => {
@@ -489,47 +489,68 @@ export default function DashboardPage() {
             <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Bảng nhân sự</h1>
             <p className="text-[13px] text-slate-500 font-medium">Theo dõi nghỉ phép và hồ sơ nhân sự toàn cơ quan.</p>
           </div>
-          <div className="flex gap-3">
-            <Button asChild variant="outline" className="h-11 rounded-xl font-bold">
-              <Link href="/dashboard/schedule">
-                <CalendarDays className="mr-2 h-4 w-4" /> Đăng ký nghỉ phép (BGD)
+          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+            <Button asChild variant="outline" className="h-11 rounded-xl font-semibold w-full sm:w-auto border-primary/20 text-primary hover:bg-primary/5 hover:border-primary/40">
+              <Link href="/dashboard/schedule?type=leave" className="flex items-center justify-center gap-2">
+                <CalendarDays className="h-4 w-4 shrink-0" />
+                <span>Đăng ký nghỉ phép</span>
               </Link>
             </Button>
-            <Button asChild className="h-11 rounded-xl font-bold">
-              <Link href="/dashboard/team">
-                <Users className="mr-2 h-4 w-4" /> Danh sách cán bộ
+            <Button asChild className="h-11 rounded-xl font-semibold w-full sm:w-auto">
+              <Link href="/dashboard/team" className="flex items-center justify-center gap-2">
+                <Users className="h-4 w-4 shrink-0" />
+                <span>Danh sách cán bộ</span>
               </Link>
             </Button>
           </div>
         </header>
 
         <section className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="premium-card border border-slate-200">
-            <p className="text-xs font-bold text-slate-500">Nghỉ phép tuần này</p>
-            <p className="mt-2 text-3xl font-extrabold text-slate-900 tabular-nums">{thisWeekLeaves.length}</p>
+          <div className="premium-card border border-slate-100 bg-white">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center">
+                <CalendarDays className="w-4 h-4 text-blue-600" />
+              </div>
+              <p className="text-xs font-semibold text-slate-500">Nghỉ phép tuần này</p>
+            </div>
+            <p className="text-3xl font-extrabold text-slate-900 tabular-nums">{thisWeekLeaves.length}</p>
           </div>
-          <div className="premium-card border border-slate-200">
-            <p className="text-xs font-bold text-slate-500">Đang nghỉ hôm nay</p>
-            <p className="mt-2 text-3xl font-extrabold text-slate-900 tabular-nums">{activeLeaves.length}</p>
+          <div className="premium-card border border-slate-100 bg-white">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-8 h-8 rounded-xl bg-amber-50 flex items-center justify-center">
+                <Clock className="w-4 h-4 text-amber-600" />
+              </div>
+              <p className="text-xs font-semibold text-slate-500">Đang nghỉ hôm nay</p>
+            </div>
+            <p className="text-3xl font-extrabold text-slate-900 tabular-nums">{activeLeaves.length}</p>
           </div>
-          <div className="premium-card border border-slate-200">
-            <p className="text-xs font-bold text-slate-500">Tổng cán bộ</p>
-            <p className="mt-2 text-3xl font-extrabold text-slate-900 tabular-nums">{scheduleData.allProfiles.length}</p>
+          <div className="premium-card border border-slate-100 bg-white">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-8 h-8 rounded-xl bg-emerald-50 flex items-center justify-center">
+                <Users className="w-4 h-4 text-emerald-600" />
+              </div>
+              <p className="text-xs font-semibold text-slate-500">Tổng cán bộ</p>
+            </div>
+            <p className="text-3xl font-extrabold text-slate-900 tabular-nums">{scheduleData.allProfiles.length}</p>
           </div>
         </section>
 
-        <div className="space-y-6">
-          <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2 pl-1">
-            <CalendarDays className="w-4 h-4 text-slate-700" /> Lịch nghỉ phép tuần này ({thisWeekLeaves.length})
+        <div className="space-y-4">
+          <h3 className="text-sm font-semibold text-slate-500 flex items-center gap-2 px-1">
+            <CalendarDays className="w-4 h-4 text-primary shrink-0" />
+            Lịch nghỉ phép tuần này
+            <span className="ml-auto text-xs font-bold text-primary bg-primary/10 rounded-full px-2.5 py-0.5">{thisWeekLeaves.length}</span>
           </h3>
 
           {thisWeekLeaves.length === 0 ? (
-            <div className="premium-card text-center border border-slate-200 bg-white">
-              <p className="text-sm font-bold text-slate-700">Không có cán bộ nào nghỉ phép tuần này</p>
-              <p className="text-sm text-slate-500 mt-1">Lịch nghỉ phép của toàn cơ quan tuần này đang trống.</p>
+            <div className="premium-card text-center border border-slate-100 bg-white py-12">
+              <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
+                <CalendarDays className="w-5 h-5 text-slate-400" />
+              </div>
+              <p className="text-sm font-semibold text-slate-700">Tuần này không có cán bộ nghỉ phép</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {thisWeekLeaves.map((leave) => {
                 const startDate = new Date(leave.start_time);
                 const endDate = new Date(leave.end_time);
@@ -540,45 +561,27 @@ export default function DashboardPage() {
                 const deptName = userDept ? (Array.isArray(userDept) ? userDept[0]?.name : userDept?.name) : "";
 
                 return (
-                  <div key={leave.id} className="premium-card border border-slate-200 bg-white hover:shadow-premium-hover transition-all duration-300 flex flex-col justify-between group">
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-10 w-10 border border-slate-100 shadow-sm">
-                            <AvatarImage src={leaveUser?.avatar_url} />
-                            <AvatarFallback className="font-medium text-sm bg-slate-100 text-slate-700">
-                              {leaveUser?.full_name?.[0]}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="text-sm font-bold text-slate-900">{leaveUser?.full_name || "Cán bộ"}</p>
-                            <p className="text-xs font-semibold text-slate-500">
-                              {deptName || "Chi nhánh"}
-                            </p>
-                          </div>
-                        </div>
+                  <div key={leave.id} className="flex items-center gap-3 p-4 bg-white rounded-2xl border border-slate-100 hover:border-slate-200 hover:shadow-sm transition-all duration-200">
+                    <Avatar className="h-10 w-10 border border-slate-100 shadow-sm shrink-0">
+                      <AvatarImage src={leaveUser?.avatar_url} />
+                      <AvatarFallback className="font-semibold text-sm bg-slate-100 text-slate-600">
+                        {leaveUser?.full_name?.[0]}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-bold text-slate-900 truncate">{leaveUser?.full_name || "Cán bộ"}</p>
                         {isActive && (
-                          <span className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-700 border border-amber-100 animate-pulse">
+                          <span className="shrink-0 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-700 border border-amber-100">
                             Hôm nay
                           </span>
                         )}
                       </div>
-
-                      <div className="space-y-1 bg-slate-50/80 p-4 rounded-xl">
-                        <p className="text-sm font-bold text-slate-950 line-clamp-1">
-                          Nghỉ phép: {leave.title}
-                        </p>
-                        {leave.description && (
-                          <p className="text-xs text-slate-500 line-clamp-2 mt-1">{leave.description}</p>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 pl-1">
-                        <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                        <span>
-                          {startDate.toLocaleDateString("vi-VN")} - {endDate.toLocaleDateString("vi-VN")}
-                        </span>
-                      </div>
+                      <p className="text-xs text-slate-500 truncate mt-0.5">{leave.title || "Nghỉ phép"}</p>
+                      <p className="text-xs text-slate-400 mt-0.5 tabular-nums">
+                        {startDate.toLocaleDateString("vi-VN")} – {endDate.toLocaleDateString("vi-VN")}
+                        {deptName ? ` · ${deptName}` : ""}
+                      </p>
                     </div>
                   </div>
                 );
@@ -768,7 +771,7 @@ export default function DashboardPage() {
         <div className="premium-card border border-slate-200 bg-white p-4 sm:p-5 min-h-[104px] transition-all hover:shadow-premium-hover">
           <div className="flex items-start justify-between gap-3">
             <p className="text-xs font-bold text-slate-500 truncate">Nhiệm vụ</p>
-            <Briefcase className="h-5 w-5 shrink-0 text-violet-700" />
+            <Briefcase className="h-5 w-5 shrink-0 text-slate-700" />
           </div>
           <div className="mt-3 flex items-end justify-between gap-3">
             <p className="text-2xl font-extrabold text-slate-900 tabular-nums">{stats.totalCompleted}/{stats.totalAssigned}</p>

@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useRef, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   Calendar as CalendarIcon,
   Loader2,
@@ -29,6 +30,17 @@ export default function SchedulePage() {
   const { toast } = useToast();
   const timelineContainerRef = useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = useState(false);
+  const searchParams = useSearchParams();
+
+  // Auto-open create dialog when navigated with ?type=leave (e.g. from HR dashboard)
+  useEffect(() => {
+    const typeParam = searchParams.get('type');
+    if (typeParam === 'leave') {
+      setNewSchedule(prev => ({ ...prev, type: 'leave' }));
+      setIsCreateOpen(true);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Dữ liệu chính
   const [schedules, setSchedules] = useState<any[]>([]);

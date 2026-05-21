@@ -23,68 +23,68 @@ export const statusLabels: any = {
 
 export const directorColors = [
   {
-    bg: 'bg-indigo-50/80',
-    border: 'border-indigo-100',
-    text: 'text-indigo-700',
-    bullet: 'bg-indigo-600',
-    pill: 'bg-indigo-50/80 text-indigo-700 border-indigo-100 hover:bg-indigo-100',
-    hover: 'hover:bg-indigo-100'
+    bg: 'bg-blue-50/90',
+    border: 'border-blue-200',
+    text: 'text-blue-800',
+    bullet: 'bg-blue-600',
+    pill: 'bg-blue-50/90 text-blue-800 border-blue-200 hover:bg-blue-100',
+    hover: 'hover:bg-blue-100'
   },
   {
-    bg: 'bg-emerald-50/80',
-    border: 'border-emerald-100',
-    text: 'text-emerald-700',
+    bg: 'bg-amber-50/90',
+    border: 'border-amber-200',
+    text: 'text-amber-800',
+    bullet: 'bg-amber-600',
+    pill: 'bg-amber-50/90 text-amber-800 border-amber-200 hover:bg-amber-100',
+    hover: 'hover:bg-amber-100'
+  },
+  {
+    bg: 'bg-emerald-50/90',
+    border: 'border-emerald-200',
+    text: 'text-emerald-800',
     bullet: 'bg-emerald-600',
-    pill: 'bg-emerald-50/80 text-emerald-700 border-emerald-100 hover:bg-emerald-100',
+    pill: 'bg-emerald-50/90 text-emerald-800 border-emerald-200 hover:bg-emerald-100',
     hover: 'hover:bg-emerald-100'
   },
   {
-    bg: 'bg-violet-50/80',
-    border: 'border-violet-100',
-    text: 'text-violet-700',
-    bullet: 'bg-violet-600',
-    pill: 'bg-violet-50/80 text-violet-700 border-violet-100 hover:bg-violet-100',
-    hover: 'hover:bg-violet-100'
-  },
-  {
-    bg: 'bg-rose-50/80',
-    border: 'border-rose-100',
-    text: 'text-rose-700',
-    bullet: 'bg-rose-600',
-    pill: 'bg-rose-50/80 text-rose-700 border-rose-100 hover:bg-rose-100',
-    hover: 'hover:bg-rose-100'
-  },
-  {
-    bg: 'bg-sky-50/80',
-    border: 'border-sky-100',
-    text: 'text-sky-700',
-    bullet: 'bg-sky-600',
-    pill: 'bg-sky-50/80 text-sky-700 border-sky-100 hover:bg-sky-100',
-    hover: 'hover:bg-sky-100'
-  },
-  {
-    bg: 'bg-orange-50/80',
-    border: 'border-orange-100',
-    text: 'text-orange-700',
+    bg: 'bg-orange-50/90',
+    border: 'border-orange-200',
+    text: 'text-orange-800',
     bullet: 'bg-orange-600',
-    pill: 'bg-orange-50/80 text-orange-700 border-orange-100 hover:bg-orange-100',
+    pill: 'bg-orange-50/90 text-orange-800 border-orange-200 hover:bg-orange-100',
     hover: 'hover:bg-orange-100'
   },
   {
-    bg: 'bg-teal-50/80',
-    border: 'border-teal-100',
-    text: 'text-teal-700',
+    bg: 'bg-sky-50/90',
+    border: 'border-sky-200',
+    text: 'text-sky-800',
+    bullet: 'bg-sky-600',
+    pill: 'bg-sky-50/90 text-sky-800 border-sky-200 hover:bg-sky-100',
+    hover: 'hover:bg-sky-100'
+  },
+  {
+    bg: 'bg-cyan-50/90',
+    border: 'border-cyan-200',
+    text: 'text-cyan-800',
+    bullet: 'bg-cyan-600',
+    pill: 'bg-cyan-50/90 text-cyan-800 border-cyan-200 hover:bg-cyan-100',
+    hover: 'hover:bg-cyan-100'
+  },
+  {
+    bg: 'bg-teal-50/90',
+    border: 'border-teal-200',
+    text: 'text-teal-800',
     bullet: 'bg-teal-600',
-    pill: 'bg-teal-50/80 text-teal-700 border-teal-100 hover:bg-teal-100',
+    pill: 'bg-teal-50/90 text-teal-800 border-teal-200 hover:bg-teal-100',
     hover: 'hover:bg-teal-100'
   },
   {
-    bg: 'bg-fuchsia-50/80',
-    border: 'border-fuchsia-100',
-    text: 'text-fuchsia-700',
-    bullet: 'bg-fuchsia-600',
-    pill: 'bg-fuchsia-50/80 text-fuchsia-700 border-fuchsia-100 hover:bg-fuchsia-100',
-    hover: 'hover:bg-fuchsia-100'
+    bg: 'bg-stone-100/90',
+    border: 'border-stone-300',
+    text: 'text-stone-800 font-semibold',
+    bullet: 'bg-stone-600',
+    pill: 'bg-stone-100/90 text-stone-800 border-stone-300 hover:bg-stone-200',
+    hover: 'hover:bg-stone-200'
   }
 ];
 

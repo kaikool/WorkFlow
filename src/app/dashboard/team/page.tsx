@@ -116,7 +116,7 @@ export default function TeamPage() {
  director: { label: "Ban giám đốc", color: "bg-primary text-white shadow-primary-glow" },
  manager: { label: "Lãnh đạo đơn vị", color: "bg-amber-50 text-amber-600 border border-amber-200" },
  staff: { label: "Cán bộ", color: "bg-slate-50 text-slate-500 border border-slate-100" },
- secretary: { label: "Lễ tân", color: "bg-indigo-50 text-indigo-600 border border-indigo-200" },
+ secretary: { label: "Lễ tân", color: "bg-sky-50 text-sky-600 border border-sky-200" },
  hr_officer: { label: "Cán bộ Nhân sự", color: "bg-blue-50 text-blue-600 border border-blue-200" },
  driver: { label: "Lái xe cơ quan", color: "bg-emerald-50 text-emerald-600 border border-emerald-200" }
  };

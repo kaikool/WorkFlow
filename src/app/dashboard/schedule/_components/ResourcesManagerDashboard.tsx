@@ -50,8 +50,9 @@ export default function ResourcesManagerDashboard({ schedules, vehicles, rooms, 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Đội xe */}
         <div className="space-y-4">
-          <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-            <Car className="w-3.5 h-3.5 text-slate-700 shrink-0" /> Giám sát Đội xe
+          <h3 className="text-sm font-medium text-slate-500 flex items-center gap-2">
+            <Car className="w-4 h-4 text-slate-900 shrink-0" />
+            <span>Giám sát Đội xe</span>
           </h3>
           <div className="space-y-3">
             {vehicles.map(v => {
@@ -74,7 +75,7 @@ export default function ResourcesManagerDashboard({ schedules, vehicles, rooms, 
                 >
                   {/* Header row */}
                   <div
-                    className="flex items-center justify-between gap-4 px-5 py-4"
+                    className="flex items-center justify-between gap-4 px-5 sm:px-6 py-4 sm:py-5"
                     onClick={() => clickTarget && setExpandedVehicle(isExpanded ? null : v.id)}
                   >
                     <div className="flex items-center gap-3 min-w-0">
@@ -110,7 +111,7 @@ export default function ResourcesManagerDashboard({ schedules, vehicles, rooms, 
 
                   {/* Current trip inline preview */}
                   {(isBusy || isInProgress) && currentTrip && (
-                    <div className="px-5 pb-3 -mt-1">
+                    <div className="px-5 sm:px-6 pb-3 sm:pb-4 -mt-1">
                       <div className="bg-amber-50 rounded-xl px-3.5 py-3 flex items-center justify-between gap-3 border border-amber-100">
                         <div className="flex items-center gap-2 min-w-0">
                           <Avatar className="h-5 w-5 shrink-0">
@@ -128,7 +129,7 @@ export default function ResourcesManagerDashboard({ schedules, vehicles, rooms, 
 
                   {/* Next trip teaser (when idle) */}
                   {!isBusy && !isInProgress && nextTrip && !isExpanded && (
-                    <div className="px-5 pb-3 -mt-1">
+                    <div className="px-5 sm:px-6 pb-3 sm:pb-4 -mt-1">
                       <div className="flex items-center gap-2 text-xs text-slate-400">
                         <ArrowRight className="w-3 h-3 shrink-0" />
                         <span className="truncate">Kế tiếp: <span className="font-semibold text-slate-600">{nextTrip.title}</span> lúc <span className="font-bold text-slate-700 tabular-nums">{fmtDateTime(new Date(nextTrip.start_time))}</span></span>
@@ -138,7 +139,7 @@ export default function ResourcesManagerDashboard({ schedules, vehicles, rooms, 
 
                   {/* Expanded: all upcoming trips */}
                   {isExpanded && clickTarget && (
-                    <div className="border-t border-slate-100 px-5 py-4 space-y-3 bg-slate-50/50">
+                    <div className="border-t border-slate-100 px-5 sm:px-6 py-4 sm:py-5 space-y-3 bg-slate-50/50">
                       <p className="text-xs font-semibold text-slate-600">Lịch trình sắp tới</p>
                       {upcomingTrips.length === 0 ? (
                         <p className="text-xs text-slate-400">Không có lịch trình nào.</p>
@@ -187,8 +188,9 @@ export default function ResourcesManagerDashboard({ schedules, vehicles, rooms, 
 
         {/* Phòng họp */}
         <div className="space-y-4">
-          <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-            <DoorOpen className="w-3.5 h-3.5 text-slate-700 shrink-0" /> Tình trạng Phòng họp
+          <h3 className="text-sm font-medium text-slate-500 flex items-center gap-2">
+            <DoorOpen className="w-4 h-4 text-slate-900 shrink-0" />
+            <span>Tình trạng Phòng họp</span>
           </h3>
           <div className="space-y-3">
             {rooms.map(r => {
@@ -210,7 +212,7 @@ export default function ResourcesManagerDashboard({ schedules, vehicles, rooms, 
                 >
                   {/* Header row */}
                   <div
-                    className="flex items-center justify-between gap-4 px-5 py-4"
+                    className="flex items-center justify-between gap-4 px-5 sm:px-6 py-4 sm:py-5"
                     onClick={() => clickTarget && setExpandedRoom(isExpanded ? null : r.id)}
                   >
                     <div className="flex items-center gap-3 min-w-0">
@@ -245,7 +247,7 @@ export default function ResourcesManagerDashboard({ schedules, vehicles, rooms, 
 
                   {/* Current meeting inline */}
                   {isBusy && currentMeeting && (
-                    <div className="px-5 pb-3 -mt-1">
+                    <div className="px-5 sm:px-6 pb-3 sm:pb-4 -mt-1">
                       <div className="bg-slate-50 rounded-xl px-3.5 py-3 flex items-center justify-between gap-3 border border-slate-200">
                         <div className="flex items-center gap-2 min-w-0">
                           <Avatar className="h-5 w-5 shrink-0">
@@ -263,7 +265,7 @@ export default function ResourcesManagerDashboard({ schedules, vehicles, rooms, 
 
                   {/* Next meeting teaser (when idle) */}
                   {!isBusy && nextMeeting && !isExpanded && (
-                    <div className="px-5 pb-3 -mt-1">
+                    <div className="px-5 sm:px-6 pb-3 sm:pb-4 -mt-1">
                       <div className="flex items-center gap-2 text-xs text-slate-400">
                         <ArrowRight className="w-3 h-3 shrink-0" />
                         <span className="truncate">Kế tiếp: <span className="font-semibold text-slate-600">{nextMeeting.title}</span> lúc <span className="font-bold text-slate-700 tabular-nums">{fmtDateTime(new Date(nextMeeting.start_time))}</span></span>
@@ -273,7 +275,7 @@ export default function ResourcesManagerDashboard({ schedules, vehicles, rooms, 
 
                   {/* Expanded: upcoming meetings list */}
                   {isExpanded && clickTarget && (
-                    <div className="border-t border-slate-100 px-5 py-4 space-y-3 bg-slate-50/50">
+                    <div className="border-t border-slate-100 px-5 sm:px-6 py-4 sm:py-5 space-y-3 bg-slate-50/50">
                       <p className="text-xs font-semibold text-slate-600">Lịch họp sắp tới</p>
                       {upcomingMeetings.length === 0 ? (
                         <p className="text-xs text-slate-400">Không có lịch họp nào.</p>
