@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -279,14 +280,14 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
       {/* Grid Thống kê Premium - Apple HIG Style */}
       <div className="grid grid-cols-3 gap-2.5 sm:gap-4">
         {/* Card 1: Tổng chuyến */}
-        <div className="p-3 sm:p-5 bg-slate-50 rounded-[20px] border border-slate-100/80 shadow-sm transition-all duration-300 hover:bg-white hover:shadow-lg active:scale-95 flex flex-col justify-between h-28 sm:h-32 group cursor-pointer">
+        <div className="p-3 sm:p-5 bg-slate-50 rounded-2xl border border-slate-100/80 shadow-sm transition-all duration-300 hover:bg-white hover:shadow-lg active:scale-95 flex flex-col justify-between h-28 sm:h-32 group cursor-pointer">
           <div className="flex items-center justify-between w-full">
             <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-slate-900/5 flex items-center justify-center shrink-0">
               <Car className="w-4 h-4 sm:w-5 sm:h-5 text-slate-900" />
             </div>
           </div>
           <div className="space-y-0.5 sm:space-y-1">
-            <p className="text-[10px] sm:text-[12px] font-semibold text-slate-400 uppercase tracking-wider truncate">Tổng chuyến</p>
+            <p className="text-[10px] sm:text-[12px] font-semibold text-slate-400 truncate">Tổng chuyến</p>
             <p className="text-lg sm:text-2xl font-bold text-slate-900 tabular-nums truncate">
               {driverStats.totalTrips}
             </p>
@@ -294,14 +295,14 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
         </div>
 
         {/* Card 2: Quãng đường tích lũy */}
-        <div className="p-3 sm:p-5 bg-slate-50 rounded-[20px] border border-slate-100/80 shadow-sm transition-all duration-300 hover:bg-white hover:shadow-lg active:scale-95 flex flex-col justify-between h-28 sm:h-32 group cursor-pointer">
+        <div className="p-3 sm:p-5 bg-slate-50 rounded-2xl border border-slate-100/80 shadow-sm transition-all duration-300 hover:bg-white hover:shadow-lg active:scale-95 flex flex-col justify-between h-28 sm:h-32 group cursor-pointer">
           <div className="flex items-center justify-between w-full">
             <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-amber-500/10 flex items-center justify-center shrink-0">
               <Gauge className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600" />
             </div>
           </div>
           <div className="space-y-0.5 sm:space-y-1">
-            <p className="text-[10px] sm:text-[12px] font-semibold text-slate-400 uppercase tracking-wider truncate">Tích lũy</p>
+            <p className="text-[10px] sm:text-[12px] font-semibold text-slate-400 truncate">Tích lũy</p>
             <p className="text-lg sm:text-2xl font-bold text-slate-900 tabular-nums truncate">
               {driverStats.totalKm} <span className="text-xs sm:text-sm font-medium text-slate-500">Km</span>
             </p>
@@ -309,7 +310,7 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
         </div>
 
         {/* Card 3: Trạng thái */}
-        <div className="p-3 sm:p-5 bg-slate-50 rounded-[20px] border border-slate-100/80 shadow-sm transition-all duration-300 hover:bg-white hover:shadow-lg active:scale-95 flex flex-col justify-between h-28 sm:h-32 group cursor-pointer">
+        <div className="p-3 sm:p-5 bg-slate-50 rounded-2xl border border-slate-100/80 shadow-sm transition-all duration-300 hover:bg-white hover:shadow-lg active:scale-95 flex flex-col justify-between h-28 sm:h-32 group cursor-pointer">
           <div className="flex items-center justify-between w-full">
             <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0 ${activeTrip ? "bg-emerald-50 animate-pulse" : "bg-slate-900/5"}`}>
               {activeTrip ? (
@@ -320,7 +321,7 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
             </div>
           </div>
           <div className="space-y-0.5 sm:space-y-1">
-            <p className="text-[10px] sm:text-[12px] font-semibold text-slate-400 uppercase tracking-wider truncate">Trạng thái</p>
+            <p className="text-[10px] sm:text-[12px] font-semibold text-slate-400 truncate">Trạng thái</p>
             <p className={`text-[13px] sm:text-lg font-bold truncate ${activeTrip ? "text-emerald-600" : "text-slate-900"}`}>
               {driverStatus}
             </p>
@@ -334,14 +335,14 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
           <Car className="w-3.5 h-3.5 text-primary" />
         </div>
         <h3 className="text-sm font-semibold text-slate-700 flex-1">Lịch trình của tôi</h3>
-        <span className="text-xs font-bold text-primary bg-primary/10 rounded-full px-2.5 py-0.5 tabular-nums">
+        <Badge className="border-none bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary tabular-nums">
           {myTrips.length}
-        </span>
+        </Badge>
       </div>
 
       {myTrips.length === 0 ? (
-        <div className="rounded-2xl border border-slate-100 bg-white p-10 text-center shadow-sm">
-          <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center mx-auto mb-4 border border-slate-100">
+        <div className="rounded-2xl border border-slate-100 bg-white p-6 text-center shadow-sm">
+          <div className="h-12 w-12 rounded-2xl bg-slate-50 flex items-center justify-center mx-auto mb-4 border border-slate-100">
             <Car className="w-5 h-5 text-slate-400" />
           </div>
           <p className="text-sm font-bold text-slate-700">Chưa có chuyến nào được phân công</p>
@@ -385,14 +386,14 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
                 {/* Header thanh lịch với status badge */}
                 <div className="flex items-center justify-between px-5 py-4 border-b border-slate-50 bg-slate-50/20">
                   <div className="flex items-center gap-2">
-                    <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full border ${statusBadgeBg}`}>
+                    <Badge className={`gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium ${statusBadgeBg}`}>
                       {statusIcon}
                       {statusText}
-                    </span>
+                    </Badge>
                     {hasIssue && (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full bg-red-50 text-red-600 border border-red-100">
+                      <Badge className="gap-1 rounded-full border border-red-100 bg-red-50 px-2.5 py-1 text-[11px] font-medium text-red-600">
                         <AlertTriangle className="w-3 h-3 shrink-0 animate-pulse" /> Sự cố
-                      </span>
+                      </Badge>
                     )}
                   </div>
                   <span className="text-[11px] font-semibold text-slate-400 tabular-nums">
@@ -456,11 +457,11 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
                   {trip.metadata?.start_km && (
                     <div className="flex items-stretch gap-2.5 pt-2 border-t border-slate-50">
                       <div className="flex-1 bg-slate-50 rounded-xl px-3 py-2 text-center border border-slate-100/80">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Xuất phát</p>
+                        <p className="text-[10px] font-bold text-slate-400">Xuất phát</p>
                         <p className="text-[13px] font-bold text-slate-700 mt-0.5 tabular-nums">{trip.metadata.start_km} Km</p>
                       </div>
                       <div className="flex-1 bg-slate-50 rounded-xl px-3 py-2 text-center border border-slate-100/80">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Kết thúc</p>
+                        <p className="text-[10px] font-bold text-slate-400">Kết thúc</p>
                         <p className="text-[13px] font-bold mt-0.5 tabular-nums">
                           {hasEnded
                             ? <span className="text-slate-700">{trip.metadata.end_km} Km</span>
@@ -469,7 +470,7 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
                       </div>
                       {hasEnded && trip.metadata?.actual_distance != null && (
                         <div className="flex-1 bg-emerald-50/50 rounded-xl px-3 py-2 text-center border border-emerald-100">
-                          <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Tổng chạy</p>
+                          <p className="text-[10px] font-bold text-emerald-600">Tổng chạy</p>
                           <p className="text-[13px] font-bold text-emerald-700 mt-0.5 tabular-nums">{trip.metadata.actual_distance} Km</p>
                         </div>
                       )}
@@ -551,18 +552,18 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
                       <p className="text-sm font-bold text-slate-800 truncate">{driverName}</p>
-                      <span className="text-[10px] text-slate-400 shrink-0 font-semibold bg-slate-50 border border-slate-100 rounded px-1">
+                      <Badge variant="outline" className="shrink-0 rounded px-1 py-0 text-[10px] font-medium text-slate-400">
                         {(trip.vehicle as any)?.plate_number}
-                      </span>
+                      </Badge>
                     </div>
                     <p className="text-xs text-slate-500 truncate mt-0.5">{trip.title}</p>
                     <p className="text-[10px] font-semibold text-slate-400 mt-1 tabular-nums">
                       {fmtShort(startDt)} – {fmtShort(endDt)}
                     </p>
                   </div>
-                  <span className={`shrink-0 text-[10px] font-bold px-2.5 py-1 rounded-full ${statusChip}`}>
+                  <Badge className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-medium ${statusChip}`}>
                     {hasStarted && !hasEnded ? "Đang chạy" : hasEnded ? "Hoàn thành" : "Chờ khởi hành"}
-                  </span>
+                  </Badge>
                 </div>
               );
             })}
@@ -679,4 +680,3 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
     </div>
   );
 }
-

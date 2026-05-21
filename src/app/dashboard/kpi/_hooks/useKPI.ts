@@ -42,7 +42,7 @@ export function useKPI(KPI_CATEGORIES: any[], KPI_TEMPLATES: any[]) {
  if (p?.department_id) {
  const { data: members } = await supabase
  .from('profiles')
- .select('id, full_name, avatar_url, role, is_department_head')
+ .select('id, full_name, title, avatar_url, role, is_department_head')
  .eq('department_id', p.department_id)
  .order('full_name');
  setTeam(sortProfilesByHierarchy(members || []));
@@ -158,7 +158,8 @@ export function useKPI(KPI_CATEGORIES: any[], KPI_TEMPLATES: any[]) {
  }
  };
 
- const filteredGoals = goals.filter(g => g.title.toLowerCase().includes(searchQuery.toLowerCase()));
+ const normalizedSearch = searchQuery.trim().toLowerCase();
+ const filteredGoals = goals.filter(g => (g.title ?? "").toLowerCase().includes(normalizedSearch));
 
  const avgProgress = goals.length > 0
  ? Math.round(goals.reduce((acc, g) => acc + (g.progress || 0), 0) / goals.length)

@@ -5,6 +5,8 @@ import { MapPin, Car, UserCheck, Pencil, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription
 } from "@/components/ui/dialog";
@@ -158,12 +160,13 @@ export default function ScheduleDetailDialog({
           <DetailHeader schedule={schedule} badgeColor={detail.badgeColor} headerBg={detail.headerBg} isAllowedToView={isAllowedToView} />
 
           {/* Body */}
-          <div className="min-h-0 flex-1 p-5 sm:p-6 space-y-5 overflow-y-auto overscroll-contain">
+          <ScrollArea className="min-h-0 flex-1">
+          <div className="space-y-5 p-5 sm:p-6">
             {/* Nội dung mô tả */}
             {schedule.description && isAllowedToView && (
               <div className="space-y-2">
-                <p className="text-[12px] font-bold text-slate-400 uppercase tracking-wider">Nội dung chi tiết</p>
-                <p className="text-sm font-bold text-slate-600 leading-relaxed bg-slate-50 p-4 rounded-2xl">{schedule.description}</p>
+                <p className="text-[12px] font-medium text-slate-400">Nội dung chi tiết</p>
+                <p className="text-sm font-medium text-slate-600 leading-relaxed bg-slate-50 p-4 rounded-2xl">{schedule.description}</p>
               </div>
             )}
 
@@ -171,7 +174,7 @@ export default function ScheduleDetailDialog({
             {canEdit && (
               <Button
                 variant="outline"
-                className="w-full h-12 rounded-xl text-sm font-bold text-slate-700 border-slate-200 hover:bg-slate-50 active:scale-95 transition-all flex items-center justify-center gap-2"
+                className="w-full min-h-11 rounded-xl text-sm font-medium text-slate-700 border-slate-200 hover:bg-slate-50 active:scale-95 transition-all flex items-center justify-center gap-2"
                 onClick={() => detail.setIsEditingSchedule(true)}
               >
                 <Pencil className="w-4 h-4" />
@@ -181,33 +184,33 @@ export default function ScheduleDetailDialog({
 
             {/* Địa điểm / Phòng họp */}
             <div className="space-y-2">
-              <p className="text-[12px] font-bold text-slate-400 uppercase tracking-wider">Địa điểm</p>
+              <p className="text-[12px] font-medium text-slate-400">Địa điểm</p>
               <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl">
                 <div className="p-2.5 bg-white rounded-xl shadow-sm shrink-0">
                   <MapPin className="w-4 h-4 text-slate-500" />
                 </div>
-                <p className="text-sm font-bold text-slate-700">{schedule.room?.name || schedule.location || "Chưa xác định"}</p>
+                <p className="text-sm font-medium text-slate-700">{schedule.room?.name || schedule.location || "Chưa xác định"}</p>
               </div>
             </div>
 
             {/* Thành phần tham gia */}
             <div className="space-y-3">
-              <p className="text-[12px] font-bold text-slate-400 uppercase tracking-wider">Thành phần tham gia</p>
+              <p className="text-[12px] font-medium text-slate-400">Thành phần tham gia</p>
               <RenderParticipants schedule={schedule} allProfiles={allProfiles} />
             </div>
 
             {/* Thông tin xe & lái xe */}
             {schedule.use_vehicle && (
               <div className="space-y-3">
-                <p className="text-[12px] font-bold text-slate-400 uppercase tracking-wider">Phương tiện & Lái xe</p>
+                <p className="text-[12px] font-medium text-slate-400">Phương tiện & Lái xe</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl">
                     <div className="p-2.5 bg-white rounded-xl shadow-sm shrink-0">
                       <Car className="w-4 h-4 text-slate-500" />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider whitespace-nowrap">Phương tiện</p>
-                      <p className="text-sm font-bold text-slate-700 truncate">
+                      <p className="text-[10px] text-slate-400 font-medium whitespace-nowrap">Phương tiện</p>
+                      <p className="text-sm font-medium text-slate-700 truncate">
                         {schedule.vehicle ? `${schedule.vehicle.name} (${schedule.vehicle.plate_number})` : `Yêu cầu: ${schedule.requested_vehicle_type}`}
                       </p>
                     </div>
@@ -219,14 +222,14 @@ export default function ScheduleDetailDialog({
                         <UserCheck className="w-4 h-4 text-slate-500" />
                       </div>
                       <div className="min-w-0">
-                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider whitespace-nowrap">Lái xe & SĐT</p>
-                        <p className="text-sm font-bold text-slate-700 truncate">
+                        <p className="text-[10px] text-slate-400 font-medium whitespace-nowrap">Lái xe & SĐT</p>
+                        <p className="text-sm font-medium text-slate-700 truncate">
                           {schedule.driver?.full_name || detail.matchedVehicle.default_driver?.full_name || detail.matchedVehicle.driver_name}
                         </p>
                         {(schedule.driver?.phone || detail.matchedVehicle.default_driver?.phone || detail.matchedVehicle.driver_phone) && (
                           <a
                             href={`tel:${schedule.driver?.phone || detail.matchedVehicle.default_driver?.phone || detail.matchedVehicle.driver_phone}`}
-                            className="text-xs font-bold text-primary hover:underline block mt-0.5"
+                            className="text-xs font-medium text-primary hover:underline block mt-0.5"
                           >
                             {schedule.driver?.phone || detail.matchedVehicle.default_driver?.phone || detail.matchedVehicle.driver_phone}
                           </a>
@@ -246,13 +249,13 @@ export default function ScheduleDetailDialog({
                     <Car className="w-4 h-4 text-slate-500" />
                   </div>
                   <div>
-                    <p className="text-[12px] font-bold text-slate-700 whitespace-nowrap">Điều phối phương tiện</p>
-                    <p className="text-[10px] font-semibold text-slate-500">Chọn xe và lái xe phù hợp</p>
+                    <p className="text-[12px] font-medium text-slate-700 whitespace-nowrap">Điều phối phương tiện</p>
+                    <p className="text-[10px] font-medium text-slate-500">Chọn xe và lái xe phù hợp</p>
                   </div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <Select value={detail.tempVehicleId || ''} onValueChange={detail.handleVehicleSelect}>
-                    <SelectTrigger className="h-12 bg-white border-none rounded-xl font-bold shadow-sm text-base md:text-sm">
+                    <SelectTrigger className="min-h-11 bg-white border-none rounded-xl font-medium text-sm shadow-sm">
                       <SelectValue placeholder={`Chọn xe ${schedule.requested_vehicle_type}...`} />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl border-none shadow-2xl">
@@ -267,7 +270,7 @@ export default function ScheduleDetailDialog({
                   </Select>
 
                   <Select value={detail.tempDriverId || ''} onValueChange={detail.setTempDriverId}>
-                    <SelectTrigger className="h-12 bg-white border-none rounded-xl font-bold shadow-sm text-base md:text-sm">
+                    <SelectTrigger className="min-h-11 bg-white border-none rounded-xl font-medium text-sm shadow-sm">
                       <SelectValue placeholder="Chọn Lái xe..." />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl border-none shadow-2xl">
@@ -286,7 +289,7 @@ export default function ScheduleDetailDialog({
                   <Button
                     disabled={!detail.tempVehicleId || !detail.tempDriverId}
                     onClick={() => onAssignVehicle(schedule.id, detail.tempVehicleId, detail.tempDriverId)}
-                    className="bg-primary text-white h-12 px-6 rounded-xl text-sm font-bold shadow-lg shadow-primary/20 active:scale-95 transition-all whitespace-nowrap"
+                    className="bg-primary text-white min-h-11 px-6 rounded-xl text-sm font-medium shadow-lg shadow-primary/20 active:scale-95 transition-all whitespace-nowrap"
                   >
                     Xác nhận gán
                   </Button>
@@ -297,41 +300,42 @@ export default function ScheduleDetailDialog({
             {/* Điều chỉnh thời gian nhanh */}
             {canEdit && (
               <div className="space-y-3">
-                <p className="text-[12px] font-bold text-slate-400 uppercase tracking-wider">Điều chỉnh nhanh</p>
+                <p className="text-[12px] font-medium text-slate-400">Điều chỉnh nhanh</p>
                 {!detail.isEditingTime && new Date(schedule.end_time) > new Date() && (
                   <div className="flex gap-2">
-                    <Button variant="outline" className="flex-1 h-12 rounded-xl text-sm font-bold text-slate-600 border-slate-200 active:scale-95 transition-all whitespace-nowrap" onClick={() => detail.setIsEditingTime(true)}>Sửa giờ kết thúc</Button>
-                    <Button variant="outline" className="flex-1 h-12 rounded-xl text-sm font-bold border-orange-200 text-orange-600 hover:bg-orange-50 active:scale-95 transition-all whitespace-nowrap" onClick={detail.handleEndNow}>Kết thúc sớm</Button>
+                    <Button variant="outline" className="flex-1 min-h-11 rounded-xl text-sm font-medium text-slate-600 border-slate-200 active:scale-95 transition-all whitespace-nowrap" onClick={() => detail.setIsEditingTime(true)}>Sửa giờ kết thúc</Button>
+                    <Button variant="outline" className="flex-1 min-h-11 rounded-xl text-sm font-medium border-orange-200 text-orange-600 hover:bg-orange-50 active:scale-95 transition-all whitespace-nowrap" onClick={detail.handleEndNow}>Kết thúc sớm</Button>
                   </div>
                 )}
                 {detail.isEditingTime && (
                   <div className="flex flex-col gap-3 p-4 bg-slate-50 rounded-2xl animate-in zoom-in-95 duration-200">
                     <div>
-                      <p className="text-[12px] font-bold text-slate-500 mb-2">Giờ kết thúc mới</p>
-                      <input
+                      <p className="text-[12px] font-medium text-slate-500 mb-2">Giờ kết thúc mới</p>
+                      <Input
                         type="datetime-local"
                         value={detail.newEndTime}
                         onChange={(e) => detail.setNewEndTime(e.target.value)}
-                        className="flex h-12 w-full rounded-xl border-none bg-white px-4 py-2 text-base md:text-sm font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary shadow-sm"
+                        className="min-h-11 rounded-xl border-none bg-white px-4 py-2 text-base md:text-sm font-medium shadow-sm"
                       />
                     </div>
                     <div className="flex gap-2 justify-end">
-                      <Button variant="ghost" className="h-12 px-5 rounded-xl text-sm font-bold text-slate-500 active:scale-95 transition-all" onClick={() => detail.setIsEditingTime(false)}>Hủy</Button>
-                      <Button className="h-12 px-5 rounded-xl text-sm font-bold bg-primary text-white shadow-lg shadow-primary/20 active:scale-95 transition-all" onClick={detail.handleSaveTime}>Lưu thay đổi</Button>
+                      <Button variant="ghost" className="min-h-11 px-4 rounded-xl text-sm font-medium text-slate-500 active:scale-95 transition-all" onClick={() => detail.setIsEditingTime(false)}>Hủy</Button>
+                      <Button className="min-h-11 px-4 rounded-xl text-sm font-medium bg-primary text-white shadow-lg shadow-primary/20 active:scale-95 transition-all" onClick={detail.handleSaveTime}>Lưu thay đổi</Button>
                     </div>
                   </div>
                 )}
               </div>
             )}
           </div>
+          </ScrollArea>
 
           {/* Footer */}
           <DialogFooter className="shrink-0 px-5 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/50 flex flex-row flex-wrap justify-between items-center gap-3">
-            <Button variant="ghost" className="h-12 px-5 rounded-xl font-bold text-slate-600 text-[13px] hover:bg-slate-200 active:scale-95 transition-all whitespace-nowrap" onClick={() => setIsOpen(false)}>Đóng cửa sổ</Button>
+            <Button variant="ghost" className="min-h-11 px-4 rounded-xl font-medium text-slate-600 text-[13px] hover:bg-slate-200 active:scale-95 transition-all whitespace-nowrap" onClick={() => setIsOpen(false)}>Đóng cửa sổ</Button>
             {isTCTH && schedule.vehicle_id && (
               <Button
                 variant="outline"
-                className="h-12 px-5 rounded-xl font-bold text-[12px] border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 shadow-sm active:scale-95 transition-all whitespace-nowrap"
+                className="min-h-11 px-4 rounded-xl font-medium text-[12px] border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 shadow-sm active:scale-95 transition-all whitespace-nowrap"
                 onClick={() => onAssignVehicle(schedule.id, null, null)}
               >
                 Hủy gán xe

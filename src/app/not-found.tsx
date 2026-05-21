@@ -21,7 +21,7 @@ export default function NotFound() {
         <div>
           <Link
             href="/dashboard"
-            className="inline-flex items-center justify-center bg-slate-900 hover:bg-black text-white font-bold rounded-2xl min-h-12 px-8 text-[15px] shadow-md hover:shadow-lg active:scale-95 transition-all duration-200"
+            className="inline-flex items-center justify-center bg-slate-900 hover:bg-black text-white font-bold rounded-2xl min-h-12 px-5 text-[15px] shadow-md hover:shadow-lg active:scale-95 transition-all duration-200"
           >
             Quay lại Bảng điều khiển
           </Link>

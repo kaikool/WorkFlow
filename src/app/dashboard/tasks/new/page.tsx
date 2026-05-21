@@ -24,7 +24,7 @@ export default function NewTaskPage() {
 
       <div className="px-4 sm:px-0 mb-6">
         <Tabs defaultValue="task" value={formType} onValueChange={setFormType} className="w-full max-w-sm">
-          <TabsList className="grid w-full grid-cols-2 h-12 p-1 bg-slate-100 rounded-xl">
+          <TabsList className="grid w-full grid-cols-2 min-h-11 p-1 bg-slate-100 rounded-xl">
             <TabsTrigger value="task" className="rounded-lg text-sm font-semibold data-[state=active]:bg-white data-[state=active]:shadow-sm flex items-center justify-center">
               <ListTodo className="w-3.5 h-3.5 mr-1.5 shrink-0" />
               <span className="hidden sm:inline">Giao Công Việc</span>

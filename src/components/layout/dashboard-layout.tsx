@@ -10,14 +10,13 @@ import {
  Target,
  LogOut, 
  Menu,
- X,
  Building2,
  CalendarDays,
  ShieldCheck,
  Gift,
  HeartHandshake
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, getProfileDisplayTitle } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
@@ -45,6 +44,14 @@ import {
  DialogHeader,
  DialogTitle,
 } from "@/components/ui/dialog";
+import {
+ Sheet,
+ SheetContent,
+ SheetDescription,
+ SheetHeader,
+ SheetTitle,
+} from "@/components/ui/sheet";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { createClient } from "@/utils/supabase/client";
 import { NotificationsDropdown } from "@/components/notifications-dropdown";
 import { canManageResourceCatalog } from "@/lib/permissions";
@@ -124,16 +131,6 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
    { name: 'Cán bộ', href: '/dashboard/team', icon: Users, hideFor: ['driver', 'secretary', 'staff'] },
   ].filter(item => !(item.hideFor || []).includes(profile?.role));
 
-  const roleLabels: Record<string, string> = {
-    admin: "Quản trị hệ thống",
-    director: "Ban giám đốc",
-    manager: "Lãnh đạo phòng",
-    staff: "Cán bộ",
-    hr_officer: "Cán bộ Nhân sự",
-    driver: "Tài xế",
-    secretary: "Lễ tân"
-  };
-
  return (
  <div className="flex min-h-screen bg-background">
  {/* Branch anniversary appreciation dialog */}
@@ -159,7 +156,7 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
  {anniversaryMessage}
  </p>
  {anniversaryYears > 0 && (
- <p className="mt-3 text-xs font-bold uppercase tracking-[0.08em] text-rose-500">
+ <p className="mt-3 text-xs font-bold text-rose-500">
  {anniversaryYears} năm gắn bó
  </p>
  )}
@@ -213,7 +210,7 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
  href={item.href}
  aria-current={isActive ? "page" : undefined}
  className={cn(
- "flex h-10 items-center gap-3 rounded-xl px-3 text-[13px] font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20",
+ "flex min-h-11 items-center gap-3 rounded-xl px-3 text-[13px] font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20",
               isActive
                 ? "bg-white text-slate-950 shadow-sm ring-1 ring-slate-200/70"
                 : "text-slate-600 hover:bg-white/70 hover:text-slate-950"
@@ -232,7 +229,7 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
  href="/dashboard/admin"
  aria-current={pathname === "/dashboard/admin" ? "page" : undefined}
  className={cn(
- "flex h-10 items-center gap-3 rounded-xl px-3 text-[13px] font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20",
+ "flex min-h-11 items-center gap-3 rounded-xl px-3 text-[13px] font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20",
                 pathname === "/dashboard/admin"
                   ? "bg-white text-slate-950 shadow-sm ring-1 ring-slate-200/70"
                   : "text-slate-600 hover:bg-white/70 hover:text-slate-950"
@@ -261,7 +258,7 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
  </div>
  <Button 
  variant="ghost" 
- className="w-full justify-start text-red-600 hover:bg-red-50 hover:text-red-700 rounded-xl h-10 font-medium text-[13px] px-3 focus-visible:ring-2 focus-visible:ring-red-500/20" 
+ className="w-full justify-start text-red-600 hover:bg-red-50 hover:text-red-700 rounded-xl min-h-11 font-medium text-[13px] px-3 focus-visible:ring-2 focus-visible:ring-red-500/20" 
  onClick={() => setIsLogoutDialogOpen(true)}
  >
  <LogOut className="w-4 h-4 mr-2.5" />
@@ -273,7 +270,7 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
  <div className="flex-1 flex flex-col min-w-0">
  <header className="h-16 bg-white/80 backdrop-blur-md border border-slate-100 sticky top-0 sm:top-4 z-40 flex items-center justify-between px-4 lg:px-8 mx-0 sm:mx-8 mt-0 sm:mt-4 rounded-none sm:rounded-2xl shadow-sm border-x-0 sm:border-x border-t-0 sm:border-t">
  <div className="flex items-center gap-4">
- <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setIsMobileMenuOpen(true)}>
+ <Button variant="ghost" size="icon" className="lg:hidden" aria-label="Mở menu điều hướng" onClick={() => setIsMobileMenuOpen(true)}>
  <Menu className="w-6 h-6" />
  </Button>
  <div className="hidden md:flex items-center gap-2 text-slate-500">
@@ -289,17 +286,19 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
  {profile?.full_name || 'Cán bộ'}
  </span>
   <span className="text-sm font-medium text-primary mt-1.5 truncate whitespace-nowrap">
-  {profile?.role === 'admin' ? 'Hệ thống' : profile?.role === 'director' ? 'Giám đốc' : profile?.role === 'manager' ? 'Lãnh đạo' : profile?.role === 'hr_officer' ? 'Nhân sự' : profile?.role === 'driver' ? 'Tài xế' : profile?.role === 'secretary' ? 'Lễ tân' : 'Cán bộ'}
+  {getProfileDisplayTitle(profile)}
   </span>
  </div>
 
  {mounted ? (
  <DropdownMenu>
  <DropdownMenuTrigger asChild>
+ <Button variant="ghost" size="icon" className="h-11 w-11 rounded-xl p-0" aria-label="Mở menu tài khoản">
  <Avatar className="h-11 w-11 border-2 border-white shadow-sm cursor-pointer hover:scale-[1.02] transition-transform">
  <AvatarImage src={profile?.avatar_url} className="object-cover" />
  <AvatarFallback className="bg-primary text-primary-foreground font-bold">{profile?.full_name?.[0]}</AvatarFallback>
  </Avatar>
+ </Button>
  </DropdownMenuTrigger>
  <DropdownMenuContent className="w-56 mt-2 rounded-xl" align="end">
  <DropdownMenuLabel>Tài khoản của tôi</DropdownMenuLabel>
@@ -322,23 +321,22 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
  </header>
 
  {/* Mobile Menu */}
- {isMobileMenuOpen && (
- <div className="lg:hidden fixed inset-0 z-[100] flex animate-in fade-in duration-300">
- <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setIsMobileMenuOpen(false)}></div>
- <div className="relative w-[300px] bg-white h-full flex flex-col shadow-2xl animate-in slide-in-from-left duration-500">
- <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-[#f5f5f7]/80">
+ <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+ <SheetContent side="left" className="w-[300px] p-0 lg:hidden">
+ <SheetHeader className="border-b border-slate-100 bg-[#f5f5f7]/80 p-5 pr-14">
  <div className="flex items-center gap-3">
  <div className="flex items-center justify-center shrink-0">
  <img src="/logo.png" alt="Logo" className="w-9 h-9 object-contain" />
  </div>
- <span className="font-semibold text-lg text-slate-900 tabular-nums">WorkFlow</span>
+ <SheetTitle className="font-semibold text-lg text-slate-900 tabular-nums">WorkFlow</SheetTitle>
  </div>
- <Button variant="ghost" size="icon" onClick={() => setIsMobileMenuOpen(false)} className="rounded-xl"><X className="w-5 h-5 text-slate-500" /></Button>
- </div>
- <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+ <SheetDescription className="sr-only">Menu điều hướng chính</SheetDescription>
+ </SheetHeader>
+ <ScrollArea className="flex-1">
+ <nav className="space-y-1 p-4">
  <p className="text-[11px] font-medium text-slate-500 mb-3 pl-2 truncate whitespace-nowrap">Menu điều hướng</p>
  {navItems.map((item) => (
- <Link key={item.name} href={item.href} onClick={() => setIsMobileMenuOpen(false)} className={cn("flex h-12 items-center gap-3 rounded-xl px-4 text-[14px] font-medium transition-colors", pathname === item.href ? "bg-slate-100 text-slate-950" : "text-slate-600 hover:bg-slate-50 hover:text-slate-950")}>
+ <Link key={item.name} href={item.href} onClick={() => setIsMobileMenuOpen(false)} className={cn("flex min-h-11 items-center gap-3 rounded-xl px-4 text-[14px] font-medium transition-colors", pathname === item.href ? "bg-slate-100 text-slate-950" : "text-slate-600 hover:bg-slate-50 hover:text-slate-950")}>
  <item.icon className="w-5 h-5" />{item.name}
  </Link>
  ))}
@@ -350,7 +348,7 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
  href="/dashboard/admin" 
  onClick={() => setIsMobileMenuOpen(false)} 
  className={cn(
- "flex h-12 items-center gap-3 rounded-xl px-4 text-[14px] font-medium transition-colors", 
+ "flex min-h-11 items-center gap-3 rounded-xl px-4 text-[14px] font-medium transition-colors", 
  pathname === "/dashboard/admin" ? "bg-slate-100 text-slate-950" : "text-slate-600 hover:bg-slate-50 hover:text-slate-950"
  )}
  >
@@ -363,20 +361,45 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
  <p className="text-[11px] font-medium text-slate-500 truncate whitespace-nowrap">Đang đăng nhập</p>
  <p className="text-sm font-medium text-slate-900">{profile?.full_name}</p>
  </div>
- <Button variant="ghost" className="w-full h-12 justify-start text-red-600 hover:bg-red-50 hover:text-red-700 font-medium px-4 text-[14px] rounded-xl" onClick={() => { setIsMobileMenuOpen(false); setIsLogoutDialogOpen(true); }}>
+ <Button variant="ghost" className="w-full min-h-11 justify-start text-red-600 hover:bg-red-50 hover:text-red-700 font-medium px-4 text-[14px] rounded-xl" onClick={() => { setIsMobileMenuOpen(false); setIsLogoutDialogOpen(true); }}>
  <LogOut className="w-5 h-5 mr-3" /> Đăng xuất
  </Button>
  </div>
  </nav>
- </div>
- </div>
- )}
+ </ScrollArea>
+ </SheetContent>
+ </Sheet>
 
  <main 
- className="flex-1 p-4 lg:p-8 max-w-full relative overflow-x-hidden overscroll-x-none touch-pan-y"
+ className="relative flex-1 max-w-full overflow-x-hidden overscroll-x-none p-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] touch-pan-y lg:p-8"
  >
  {children}
  </main>
+ <nav className="lg:hidden fixed inset-x-0 bottom-0 z-50 border-t border-slate-200/70 bg-white/88 px-2 pb-[calc(env(safe-area-inset-bottom)+8px)] pt-2 shadow-[0_-12px_30px_-20px_rgba(15,23,42,0.35)] backdrop-blur-xl">
+ <div
+ className="grid gap-1"
+ style={{ gridTemplateColumns: `repeat(${Math.min(navItems.length, 5)}, minmax(0, 1fr))` }}
+ >
+ {navItems.slice(0, 5).map((item) => {
+ const isActive = pathname === item.href;
+ return (
+ <Link
+ key={item.href}
+ href={item.href}
+ aria-current={isActive ? "page" : undefined}
+ aria-label={item.name}
+ className={cn(
+ "flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl px-1 text-[11px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30",
+ isActive ? "bg-primary/10 text-primary" : "text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+ )}
+ >
+ <item.icon className="h-5 w-5 shrink-0" />
+ <span className="max-w-full truncate">{item.name}</span>
+ </Link>
+ );
+ })}
+ </div>
+ </nav>
  </div>
  </div>
  );

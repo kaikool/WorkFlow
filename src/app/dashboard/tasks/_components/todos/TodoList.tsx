@@ -6,6 +6,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow
 } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import {
   Search, Filter, Loader2, Calendar, Zap, Users, ChevronDown, ChevronUp
 } from 'lucide-react'
@@ -16,6 +17,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Progress } from '@/components/ui/progress'
 import { useRouter, useSearchParams } from 'next/navigation'
+import Link from 'next/link'
 import { cn, compareProfilesByHierarchy } from '@/lib/utils'
 
 const STATUS_MAP: Record<string, { label: string; color: string; dot: string; light: string }> = {
@@ -92,10 +94,10 @@ export function TodoList({ searchQuery, filterStatus }: TodoListProps) {
           const firstAssignee = sortedAssignees[0]?.profile
           const otherCount   = sortedAssignees.length - 1
           return (
-            <div
+            <Link
               key={task.id}
-              className="premium-card p-6 space-y-4 active:scale-[0.98] transition-transform"
-              onClick={() => router.push(`/dashboard/tasks/${task.id}`)}
+              href={`/dashboard/tasks/${task.id}`}
+              className="premium-card p-6 space-y-4 active:scale-[0.98] transition-transform block outline-none focus-visible:ring-2 focus-visible:ring-primary/20"
             >
               <div className="flex justify-between items-start gap-4">
                 <div className="space-y-1 flex-1">
@@ -105,9 +107,9 @@ export function TodoList({ searchQuery, filterStatus }: TodoListProps) {
                     {new Date(task.due_date).toLocaleDateString('vi-VN')}
                   </div>
                 </div>
-                <div className={cn('px-2.5 py-1 rounded-full text-[12px] font-medium shrink-0 whitespace-nowrap', status.light, status.color)}>
+                <Badge className={cn('border-none px-2.5 py-1 text-[12px] font-medium shrink-0 whitespace-nowrap', status.light, status.color)}>
                   {status.label}
-                </div>
+                </Badge>
               </div>
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
@@ -128,7 +130,7 @@ export function TodoList({ searchQuery, filterStatus }: TodoListProps) {
                 </div>
                 <Progress value={task.progress} className="h-1.5 bg-slate-100" />
               </div>
-            </div>
+            </Link>
           )
         })}
       </div>
@@ -155,24 +157,25 @@ export function TodoList({ searchQuery, filterStatus }: TodoListProps) {
               return (
                 <TableRow
                   key={task.id}
-                  className="group hover:bg-slate-50/80 transition-all cursor-pointer border-b border-slate-50/80 h-20"
-                  onClick={() => router.push(`/dashboard/tasks/${task.id}`)}
+                  className="group hover:bg-slate-50/80 transition-all border-b border-slate-50/80 h-20"
                 >
-                  <TableCell className="pl-8 py-4">
+                  <TableCell className="pl-8 py-4 relative">
                     <div className="flex items-center gap-3">
                       {task.priority === 'high' && (
                         <div className="p-1.5 bg-red-50 rounded-lg shrink-0">
                           <Zap className="w-3 h-3 text-red-500 fill-red-500" />
                         </div>
                       )}
-                      <span className="text-sm font-bold text-slate-900 group-hover:text-primary transition-colors line-clamp-1">{task.title}</span>
+                      <Link href={`/dashboard/tasks/${task.id}`} className="text-sm font-bold text-slate-900 group-hover:text-primary transition-colors line-clamp-1 before:absolute before:inset-0 outline-none">
+                        {task.title}
+                      </Link>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className={cn('inline-flex items-center px-3 py-1 rounded-full text-xs font-medium', status.light, status.color)}>
+                    <Badge className={cn('border-none px-3 py-1 text-xs font-medium', status.light, status.color)}>
                       <div className={cn('w-1 h-1 rounded-full mr-2 opacity-60', status.dot)} />
                       {status.label}
-                    </div>
+                    </Badge>
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-col gap-2 items-center">
@@ -208,9 +211,9 @@ export function TodoList({ searchQuery, filterStatus }: TodoListProps) {
                     </div>
                   </TableCell>
                   <TableCell className="text-right pr-8">
-                    <span className={cn('text-sm font-medium px-3 py-1 rounded-lg', isLate ? 'bg-red-50 text-red-600' : 'bg-slate-50 text-slate-500')}>
+                    <Badge className={cn('text-[12px] font-medium px-3 py-1 border-none shadow-none', isLate ? 'bg-red-50 text-red-600' : 'bg-slate-50 text-slate-500')}>
                       {new Date(task.due_date).toLocaleDateString('vi-VN')}
-                    </span>
+                    </Badge>
                   </TableCell>
                 </TableRow>
               )

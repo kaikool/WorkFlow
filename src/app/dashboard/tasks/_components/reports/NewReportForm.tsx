@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import {
-  ChevronLeft, Loader2, CheckCircle2, ArrowRight, Calendar, Flag, Check, Building2
+  ChevronLeft, Loader2, CheckCircle2, ArrowRight, Calendar, Flag, Building2
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -13,10 +13,17 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Checkbox } from '@/components/ui/checkbox'
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Switch } from '@/components/ui/switch'
 import { Calendar as CalendarPicker } from '@/components/ui/calendar'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { format } from 'date-fns'
 import { vi } from 'date-fns/locale'
 import { useToast } from '@/hooks/use-toast'
@@ -73,13 +80,13 @@ export function NewReportForm() {
           setLoading(false); return
         }
 
-        const { data: managers, error: mgrError } = await supabase.from('profiles')
-          .select('id, department_id, full_name')
+        const { data: departmentHeads, error: mgrError } = await supabase.from('profiles')
+          .select('id, department_id, full_name, title, role, is_department_head')
           .in('department_id', selectedDepartments)
-          .eq('role', 'manager')
+          .or('is_department_head.eq.true,role.eq.manager')
         if (mgrError) throw mgrError
 
-        const missingDepts = selectedDepartments.filter(id => !managers?.some((m: any) => m.department_id === id))
+        const missingDepts = selectedDepartments.filter(id => !departmentHeads?.some((m: any) => m.department_id === id))
         if (missingDepts.length > 0) {
           const names = missingDepts.map(id => departments.find(d => d.id === id)?.name).join(', ')
           toast({ variant: 'destructive', title: 'Lỗi', description: `Các phòng sau chưa có Trưởng phòng: ${names}` })
@@ -88,7 +95,7 @@ export function NewReportForm() {
 
         for (const deptId of selectedDepartments) {
           // Lấy Tất cả các LĐP của phòng này
-          const deptManagers = managers!.filter((m: any) => m.department_id === deptId)
+          const deptManagers = departmentHeads!.filter((m: any) => m.department_id === deptId)
 
           const { data: newTask, error: taskError } = await supabase.from('tasks').insert({
             title:       formData.get('title'),
@@ -123,35 +130,36 @@ export function NewReportForm() {
           toast({ variant: 'destructive', title: 'Lỗi', description: 'Vui lòng chọn ít nhất một người nhận.' })
           setLoading(false); return
         }
-        const firstAssignee = profiles.find(x => x.id === selectedAssignees[0])
-        const targetDeptId  = firstAssignee?.department_id || creatorProfile?.department_id
+        
+        for (const userId of selectedAssignees) {
+          const assignee = profiles.find(x => x.id === userId)
+          const targetDeptId = assignee?.department_id || creatorProfile?.department_id
 
-        const { data: newTask, error: taskError } = await supabase.from('tasks').insert({
-          title:       formData.get('title'),
-          description: formData.get('description'),
-          assignee_id: selectedAssignees[0],
-          priority:    formData.get('priority') || 'medium',
-          task_type:   'report',
-          due_date:    dueDate?.toISOString(),
-          created_by:  creatorProfile?.id,
-          department_id: targetDeptId,
-          status:      'todo',
-          progress:    0,
-          metadata:    { reminders },
-        }).select().single()
-        if (taskError) throw taskError
+          const { data: newTask, error: taskError } = await supabase.from('tasks').insert({
+            title:       formData.get('title'),
+            description: formData.get('description'),
+            assignee_id: userId,
+            priority:    formData.get('priority') || 'medium',
+            task_type:   'report',
+            due_date:    dueDate?.toISOString(),
+            created_by:  creatorProfile?.id,
+            department_id: targetDeptId,
+            status:      'todo',
+            progress:    0,
+            metadata:    { reminders },
+          }).select().single()
+          
+          if (taskError) throw taskError
 
-        await supabase.from('task_assignees').insert(
-          selectedAssignees.map(userId => ({ task_id: newTask.id, user_id: userId }))
-        )
-        await supabase.from('notifications').insert(
-          selectedAssignees.map(userId => ({
+          await supabase.from('task_assignees').insert({ task_id: newTask.id, user_id: userId })
+
+          await supabase.from('notifications').insert({
             user_id: userId,
             title:   'Bạn có yêu cầu báo cáo mới',
             content: `${creatorProfile?.full_name} đã giao cho bạn: ${formData.get('title')}`,
             link:    `/dashboard/tasks/${newTask.id}`,
-          }))
-        )
+          })
+        }
       }
 
       setIsSuccess(true)
@@ -166,7 +174,7 @@ export function NewReportForm() {
     return (
       <div className="max-w-md mx-auto py-24 text-center space-y-6 animate-in zoom-in duration-500">
         <div className="inline-flex items-center justify-center bg-emerald-50 text-emerald-600 p-6 rounded-full">
-          <CheckCircle2 className="w-12 h-12" />
+          <CheckCircle2 className="h-12 w-12" />
         </div>
         <div className="space-y-2">
           <h2 className="text-2xl font-semibold text-slate-900">Hoàn tất!</h2>
@@ -198,7 +206,7 @@ export function NewReportForm() {
             <Input
               name="title"
               placeholder="Nhập tên báo cáo yêu cầu..."
-              className="h-14 rounded-xl bg-slate-50 border-none shadow-none font-semibold text-slate-900 text-xl focus-visible:ring-0 placeholder:text-slate-500 px-4"
+              className="min-h-11 rounded-xl bg-slate-50 border-none shadow-none font-medium text-slate-900 text-base focus-visible:ring-0 placeholder:text-slate-500 px-4"
               required
             />
             <div className="bg-slate-50 p-4 rounded-xl space-y-2">
@@ -233,8 +241,8 @@ export function NewReportForm() {
               </Tabs>
 
               {assignType === 'profile' ? (
-                <Popover>
-                  <PopoverTrigger asChild>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
                     <Button variant="outline" className="w-full h-auto min-h-[44px] rounded-xl border-none bg-slate-50 justify-between px-4 py-2 text-left font-bold text-slate-900 shadow-sm transition-all hover:bg-slate-100">
                       <div className="flex flex-wrap gap-1.5 overflow-hidden">
                         {selectedAssignees.length === 0
@@ -248,30 +256,30 @@ export function NewReportForm() {
                       </div>
                       <ChevronLeft className="w-4 h-4 text-slate-500 -rotate-90 shrink-0" />
                     </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[300px] p-2 rounded-xl border border-slate-200 shadow-lg" align="end">
-                    <div className="max-h-[300px] overflow-y-auto space-y-1 p-1">
-                      {profiles.map(p => (
-                        <div
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-[300px] rounded-xl border border-slate-200 p-2 shadow-lg" align="end">
+                    <ScrollArea className="h-[min(18rem,var(--radix-dropdown-menu-content-available-height))]">
+                    <div className="space-y-1 pr-2">
+                      {profiles.map(p => {
+                        const checked = selectedAssignees.includes(p.id)
+                        return (
+                        <DropdownMenuCheckboxItem
                           key={p.id}
-                          onClick={() => setAssignees(prev => prev.includes(p.id) ? prev.filter(a => a !== p.id) : [...prev, p.id])}
-                          className={cn('flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all', selectedAssignees.includes(p.id) ? 'bg-primary/5 text-primary' : 'hover:bg-slate-50')}
+                          checked={checked}
+                          onCheckedChange={() => setAssignees(prev => prev.includes(p.id) ? prev.filter(a => a !== p.id) : [...prev, p.id])}
+                          onSelect={(event) => event.preventDefault()}
+                          className="rounded-xl py-3 text-sm font-medium"
                         >
-                          <div className="flex items-center gap-3">
-                            <div className={cn('w-5 h-5 rounded-md border flex items-center justify-center transition-all', selectedAssignees.includes(p.id) ? 'bg-primary border-primary' : 'border-slate-300')}>
-                              {selectedAssignees.includes(p.id) && <Check className="w-3 h-3 text-white" />}
-                            </div>
-                            <span className="text-sm font-medium">{p.full_name}</span>
-                          </div>
-                          {p.role === 'manager' && <Badge className="text-xs bg-amber-50 text-amber-600 border-none px-2.5 font-medium">Lãnh đạo</Badge>}
-                        </div>
-                      ))}
+                          {p.full_name}
+                        </DropdownMenuCheckboxItem>
+                      )})}
                     </div>
-                  </PopoverContent>
-                </Popover>
+                    </ScrollArea>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               ) : (
-                <Popover>
-                  <PopoverTrigger asChild>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
                     <Button variant="outline" className="w-full h-auto min-h-[44px] rounded-xl border-none bg-slate-50 justify-between px-4 py-2 text-left font-bold text-slate-900 shadow-sm transition-all hover:bg-slate-100 active:scale-95">
                       <div className="flex flex-wrap gap-1.5 overflow-hidden">
                         {selectedDepartments.length === 0
@@ -285,24 +293,27 @@ export function NewReportForm() {
                       </div>
                       <Building2 className="w-4 h-4 text-slate-500 shrink-0" />
                     </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[300px] p-2 rounded-xl border border-slate-200 shadow-lg" align="end">
-                    <div className="max-h-[300px] overflow-y-auto space-y-1 p-1">
-                      {departments.map(d => (
-                        <div
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-[300px] rounded-xl border border-slate-200 p-2 shadow-lg" align="end">
+                    <ScrollArea className="h-[min(18rem,var(--radix-dropdown-menu-content-available-height))]">
+                    <div className="space-y-1 pr-2">
+                      {departments.map(d => {
+                        const checked = selectedDepartments.includes(d.id)
+                        return (
+                        <DropdownMenuCheckboxItem
                           key={d.id}
-                          onClick={() => setSelDepts(prev => prev.includes(d.id) ? prev.filter(x => x !== d.id) : [...prev, d.id])}
-                          className={cn('flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all', selectedDepartments.includes(d.id) ? 'bg-primary/5 text-primary' : 'hover:bg-slate-50')}
+                          checked={checked}
+                          onCheckedChange={() => setSelDepts(prev => prev.includes(d.id) ? prev.filter(x => x !== d.id) : [...prev, d.id])}
+                          onSelect={(event) => event.preventDefault()}
+                          className="rounded-xl py-3 text-sm font-medium"
                         >
-                          <div className={cn('w-5 h-5 rounded-md border flex items-center justify-center transition-all', selectedDepartments.includes(d.id) ? 'bg-primary border-primary' : 'border-slate-300')}>
-                            {selectedDepartments.includes(d.id) && <Check className="w-3 h-3 text-white" />}
-                          </div>
-                          <span className="text-sm font-medium">{d.name}</span>
-                        </div>
-                      ))}
+                          {d.name}
+                        </DropdownMenuCheckboxItem>
+                      )})}
                     </div>
-                  </PopoverContent>
-                </Popover>
+                    </ScrollArea>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               )}
             </div>
 
@@ -349,10 +360,9 @@ export function NewReportForm() {
                   { value: '2h', label: 'Nhắc trước 2 giờ'  },
                 ].map(opt => (
                   <label key={opt.value} className="flex items-center gap-3 cursor-pointer group">
-                    <Checkbox
+                    <Switch
                       checked={reminders.includes(opt.value)}
                       onCheckedChange={c => setReminders(prev => c ? [...prev, opt.value] : prev.filter(x => x !== opt.value))}
-                      className="rounded-[6px] data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                     />
                     <span className="text-[13px] font-medium text-slate-700 group-hover:text-slate-900 transition-colors">{opt.label}</span>
                   </label>

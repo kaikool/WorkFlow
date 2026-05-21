@@ -1,12 +1,21 @@
 'use client'
 
-import React, { useState } from "react";
-import { Users, ChevronDown, X, Check, Building2, UserCog, UserCheck, ShieldCheck } from "lucide-react";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
+import React from "react";
+import { Building2, ChevronDown, ShieldCheck, UserCheck, Users, X } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn, sortProfilesByHierarchy } from "@/lib/utils";
 import { filterBGD, filterStaff, resolveParticipantIds } from "../_lib/utils";
 
@@ -27,15 +36,36 @@ interface ParticipantSelectorProps {
   setSelectedParticipants: (v: string[]) => void;
 }
 
-export default function ParticipantSelector({
-  allProfiles, departments,
-  bgdMode, setBgdMode, selectedBGD, setSelectedBGD,
-  deptMode, setDeptMode, filterDepts, setFilterDepts,
-  participantMode, setParticipantMode,
-  selectedParticipants, setSelectedParticipants
-}: ParticipantSelectorProps) {
+function toggleId(list: string[], id: string) {
+  return list.includes(id) ? list.filter((item) => item !== id) : [...list, id];
+}
 
-  // Tính toán toàn bộ ID được chọn dựa trên các filter hiện tại
+function compactName(value?: string | null) {
+  return value || "Chưa đặt tên";
+}
+
+export default function ParticipantSelector({
+  allProfiles,
+  departments,
+  bgdMode,
+  setBgdMode,
+  selectedBGD,
+  setSelectedBGD,
+  deptMode,
+  setDeptMode,
+  filterDepts,
+  setFilterDepts,
+  participantMode,
+  setParticipantMode,
+  selectedParticipants,
+  setSelectedParticipants
+}: ParticipantSelectorProps) {
+  const bgdProfiles = filterBGD(allProfiles);
+  const staffProfiles = filterStaff(allProfiles);
+  const selectedDeptNames = departments
+    .filter((dept) => filterDepts.includes(dept.id))
+    .map((dept) => dept.name);
+
   const finalSelectedIds = resolveParticipantIds({
     selectedParticipants,
     bgdMode,
@@ -46,363 +76,303 @@ export default function ParticipantSelector({
     allProfiles
   });
 
-  // Lọc ra các hồ sơ (profiles) đang được chọn và sắp xếp theo chức vụ
   const selectedProfiles = sortProfilesByHierarchy(
-    allProfiles.filter(p => finalSelectedIds.includes(p.id))
+    allProfiles.filter((profile) => finalSelectedIds.includes(profile.id))
   );
 
-  // Xử lý khi nhấn nút "X" trên từng badge để xóa người tham gia
   const handleRemoveParticipant = (profileId: string) => {
-    const profile = allProfiles.find(p => p.id === profileId);
+    const profile = allProfiles.find((item) => item.id === profileId);
     if (!profile) return;
 
-    const isBgd = profile.role === 'director' || profile.full_name?.toLowerCase().includes('giám đốc');
-
+    const isBgd = bgdProfiles.some((item) => item.id === profileId);
     if (isBgd) {
       if (bgdMode === 'all') {
-        const allBgdIds = filterBGD(allProfiles).map(p => p.id);
         setBgdMode('specific');
-        setSelectedBGD(allBgdIds.filter(id => id !== profileId));
+        setSelectedBGD(bgdProfiles.map((item) => item.id).filter((id) => id !== profileId));
       } else {
-        setSelectedBGD(selectedBGD.filter(id => id !== profileId));
+        setSelectedBGD(selectedBGD.filter((id) => id !== profileId));
       }
-    } else {
-      if (deptMode === 'all') {
-        const allStaff = filterStaff(allProfiles);
-        setDeptMode('specific');
-        setFilterDepts(departments.map(d => d.id));
-        setParticipantMode('staff');
-        setSelectedParticipants(allStaff.map(p => p.id).filter(id => id !== profileId));
-      } else if (deptMode === 'specific') {
-        if (participantMode === 'all') {
-          const staffInSelectedDepts = filterStaff(allProfiles).filter(p => p.department_id && filterDepts.includes(p.department_id));
-          setParticipantMode('staff');
-          setSelectedParticipants(staffInSelectedDepts.map(p => p.id).filter(id => id !== profileId));
-        } else if (participantMode === 'manager') {
-          const managersInSelectedDepts = filterStaff(allProfiles).filter(p => p.department_id && filterDepts.includes(p.department_id) && (p.role === 'manager' || p.is_department_head));
-          setParticipantMode('staff');
-          setSelectedParticipants(managersInSelectedDepts.map(p => p.id).filter(id => id !== profileId));
-        } else {
-          setSelectedParticipants(selectedParticipants.filter(id => id !== profileId));
-        }
-      } else {
-        setSelectedParticipants(selectedParticipants.filter(id => id !== profileId));
-      }
+      return;
     }
+
+    if (deptMode === 'all') {
+      setDeptMode('specific');
+      setFilterDepts(departments.map((dept) => dept.id));
+      setParticipantMode('staff');
+      setSelectedParticipants(staffProfiles.map((item) => item.id).filter((id) => id !== profileId));
+      return;
+    }
+
+    if (deptMode === 'specific' && participantMode !== 'staff') {
+      const eligible = staffProfiles.filter((item) => {
+        if (!item.department_id || !filterDepts.includes(item.department_id)) return false;
+        if (participantMode === 'manager') return item.role === 'manager' || item.is_department_head;
+        return true;
+      });
+      setParticipantMode('staff');
+      setSelectedParticipants(eligible.map((item) => item.id).filter((id) => id !== profileId));
+      return;
+    }
+
+    setSelectedParticipants(selectedParticipants.filter((id) => id !== profileId));
   };
 
-  // Build danh sách Badge siêu dẹt và tối giản diện tích
-  const elements: React.ReactNode[] = [];
-
-  if (bgdMode === 'all') {
-    elements.push(
-      <Badge
-        key="all-bgd"
-        variant="outline"
-        className="bg-red-50 border-red-200 text-red-700 rounded-full px-2 py-0.5 flex items-center gap-1 font-bold shadow-2xs text-[10px] h-6 animate-in fade-in"
-      >
-        <span>Toàn bộ Ban Giám đốc</span>
-        <button
-          type="button"
-          onClick={() => { setBgdMode('none'); setSelectedBGD([]); }}
-          className="p-0.5 rounded-full hover:bg-red-250 text-red-500 hover:text-red-700 transition-colors"
-        >
-          <X className="w-2.5 h-2.5" />
-        </button>
-      </Badge>
-    );
-  }
-
-  if (deptMode === 'all') {
-    elements.push(
-      <Badge
-        key="all-staff"
-        variant="outline"
-        className="bg-blue-50 border-blue-200 text-blue-700 rounded-full px-2 py-0.5 flex items-center gap-1 font-bold shadow-2xs text-[10px] h-6 animate-in fade-in"
-      >
-        <span>Toàn bộ Đơn vị / Phòng ban</span>
-        <button
-          type="button"
-          onClick={() => { setDeptMode('none'); setFilterDepts([]); setSelectedParticipants([]); }}
-          className="p-0.5 rounded-full hover:bg-blue-250 text-blue-500 hover:text-blue-700 transition-colors"
-        >
-          <X className="w-2.5 h-2.5" />
-        </button>
-      </Badge>
-    );
-  }
-
-  const bgdProfiles = filterBGD(allProfiles);
-  const staffProfiles = filterStaff(allProfiles);
-
-  const remainingProfiles = selectedProfiles.filter(p => {
-    const isBgd = bgdProfiles.some(bp => bp.id === p.id);
-    const isStaff = staffProfiles.some(sp => sp.id === p.id);
-    if (isBgd && bgdMode === 'all') return false;
-    if (isStaff && deptMode === 'all') return false;
-    return true;
-  });
-
-  remainingProfiles.forEach(p => {
-    elements.push(
-      <Badge
-        key={p.id}
-        variant="outline"
-        className="bg-white border-slate-200 rounded-full pl-1.5 pr-2 py-0.5 flex items-center gap-1.5 font-semibold text-slate-700 shadow-2xs text-[10px] h-6 animate-in fade-in"
-      >
-        <Avatar className="h-4 w-4">
-          <AvatarImage src={p.avatar_url} />
-          <AvatarFallback className="text-[7px] bg-slate-100">{p.full_name?.[0]}</AvatarFallback>
-        </Avatar>
-        <span className="whitespace-nowrap">{p.full_name}</span>
-        <button
-          type="button"
-          onClick={() => handleRemoveParticipant(p.id)}
-          className="p-0.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-650 transition-colors ml-0.5"
-        >
-          <X className="w-2.5 h-2.5" />
-        </button>
-      </Badge>
-    );
-  });
+  const selectedSummary = selectedProfiles.length > 0
+    ? `${selectedProfiles.length} người`
+    : "Chưa chọn ai";
 
   return (
-    <div className="space-y-3 bg-slate-50/40 p-3.5 rounded-xl border border-slate-100">
-      <div className="flex items-center gap-1.5">
-        <Users className="w-3.5 h-3.5 text-primary shrink-0" />
-        <Label className="text-[12px] font-bold text-slate-700">Thành phần tham gia</Label>
+    <div className="space-y-3 rounded-xl border border-slate-100 bg-slate-50/40 p-3.5">
+      <div className="flex items-center gap-2">
+        <Users className="h-4 w-4 shrink-0 text-primary" />
+        <Label className="text-[13px] font-medium text-slate-700">Thành phần tham gia</Label>
+        <Badge className="ml-auto border-none bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
+          {selectedSummary}
+        </Badge>
       </div>
 
-      <div className="space-y-2.5 pt-0.5">
-        {/* Dòng 1: Ban Giám đốc */}
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-1.5">
-            <div className="w-1 h-3 bg-red-500 rounded-full shrink-0" />
-            <span className="text-[12px] font-semibold text-slate-650">1. Ban giám đốc</span>
-          </div>
-          <Popover modal={true}>
-            <PopoverTrigger asChild>
-              <Button type="button" variant="outline" className="w-[170px] h-10 bg-white border border-slate-200 rounded-lg justify-between px-2.5 text-[12px] font-semibold text-slate-755 hover:text-slate-900 shadow-xs transition-all truncate whitespace-nowrap">
+      <div className="grid gap-2 md:grid-cols-3">
+        <div className="space-y-1.5">
+          <Label className="flex items-center gap-1.5 text-[12px] font-medium text-slate-600">
+            <ShieldCheck className="h-3.5 w-3.5 text-red-500" />
+            Ban giám đốc
+          </Label>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button type="button" variant="outline" className="w-full justify-between rounded-lg bg-white px-3 text-[13px] font-medium">
                 <span className="truncate">
-                  {bgdMode === 'all' && "Tất cả BGĐ"}
+                  {bgdMode === 'all' && "Tất cả"}
                   {bgdMode === 'none' && "Không ai"}
-                  {bgdMode === 'specific' && (selectedBGD.length > 0 ? `Đã chọn ${selectedBGD.length}` : "Chọn cụ thể")}
+                  {bgdMode === 'specific' && (selectedBGD.length ? `${selectedBGD.length} người` : "Chọn người")}
                 </span>
-                <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                <ChevronDown className="h-4 w-4 text-slate-400" />
               </Button>
-            </PopoverTrigger>
-            <PopoverContent 
-              className="w-[280px] p-2 rounded-xl border border-slate-150 shadow-2xl bg-white z-[9999] pointer-events-auto max-h-[300px] overflow-y-auto overscroll-contain touch-pan-y space-y-2" 
-              align="end" 
-              onOpenAutoFocus={(e) => e.preventDefault()}
-              onWheel={(e) => e.stopPropagation()}
-              onTouchMove={(e) => e.stopPropagation()}
-            >
-              <div className="flex bg-slate-100 p-1 rounded-lg w-full mb-1 gap-1">
-                <button type="button" onClick={() => { setBgdMode('all'); setSelectedBGD([]); }} className={cn("flex-1 h-10 flex items-center justify-center whitespace-nowrap px-1 text-[11px] font-bold rounded-md transition-all", bgdMode === 'all' ? "bg-white text-primary shadow-sm" : "text-slate-500")}>Tất cả</button>
-                <button type="button" onClick={() => { setBgdMode('specific'); }} className={cn("flex-1 h-10 flex items-center justify-center whitespace-nowrap px-1 text-[11px] font-bold rounded-md transition-all", bgdMode === 'specific' ? "bg-white text-primary shadow-sm" : "text-slate-500")}>Chọn cụ thể</button>
-                <button type="button" onClick={() => { setBgdMode('none'); setSelectedBGD([]); }} className={cn("flex-1 h-10 flex items-center justify-center whitespace-nowrap px-1 text-[11px] font-bold rounded-md transition-all", bgdMode === 'none' ? "bg-white text-primary shadow-sm" : "text-slate-500")}>Không ai</button>
-              </div>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-[280px]">
+              <Tabs value={bgdMode} onValueChange={(value) => {
+                const mode = value as 'all' | 'specific' | 'none';
+                setBgdMode(mode);
+                if (mode !== 'specific') setSelectedBGD([]);
+              }}>
+                <TabsList className="grid w-full grid-cols-3 rounded-lg bg-slate-100 p-0.5">
+                  <TabsTrigger value="all" className="rounded-md px-1 text-[11px] font-medium">Tất cả</TabsTrigger>
+                  <TabsTrigger value="specific" className="rounded-md px-1 text-[11px] font-medium">Chọn</TabsTrigger>
+                  <TabsTrigger value="none" className="rounded-md px-1 text-[11px] font-medium">Không</TabsTrigger>
+                </TabsList>
+              </Tabs>
               {bgdMode === 'specific' && (
-                <div className="space-y-0.5 pt-1 animate-in fade-in slide-in-from-top-1">
-                  {filterBGD(allProfiles).map(p => {
-                    const isChecked = selectedBGD.includes(p.id);
-                    return (
-                      <div
-                        key={p.id}
-                        onClick={() => {
-                          isChecked 
-                            ? setSelectedBGD(selectedBGD.filter(id => id !== p.id))
-                            : setSelectedBGD([...selectedBGD, p.id]);
-                        }}
-                        className={cn(
-                          "flex items-center gap-2 p-1.5 rounded-lg cursor-pointer transition-all",
-                          isChecked ? "bg-primary/5 text-primary" : "hover:bg-slate-50 text-slate-600"
-                        )}
-                      >
-                        <div className={cn(
-                          "w-4 h-4 rounded-md border flex items-center justify-center transition-all shrink-0",
-                          isChecked ? "bg-primary border-primary" : "border-slate-300"
-                        )}>
-                          {isChecked && <Check className="w-2.5 h-2.5 text-white" />}
-                        </div>
-                        <span className="text-xs font-semibold">{p.full_name}</span>
-                      </div>
-                    );
-                  })}
-                </div>
+                <>
+                  <DropdownMenuSeparator />
+                  <ScrollArea className="h-[min(14rem,var(--radix-dropdown-menu-content-available-height))]">
+                    <div className="space-y-0.5 pr-2">
+                      {bgdProfiles.map((profile) => (
+                        <DropdownMenuCheckboxItem
+                          key={profile.id}
+                          checked={selectedBGD.includes(profile.id)}
+                          onCheckedChange={() => setSelectedBGD(toggleId(selectedBGD, profile.id))}
+                          onSelect={(event) => event.preventDefault()}
+                          className="text-[13px] font-medium"
+                        >
+                          {compactName(profile.full_name)}
+                        </DropdownMenuCheckboxItem>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </>
               )}
-            </PopoverContent>
-          </Popover>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
-        {/* Dòng 2: Phòng ban */}
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-1.5">
-            <div className="w-1 h-3 bg-blue-500 rounded-full shrink-0" />
-            <span className="text-[12px] font-semibold text-slate-655">2. Phòng ban</span>
-          </div>
-          <Popover modal={true}>
-            <PopoverTrigger asChild>
-              <Button type="button" variant="outline" className="w-[170px] h-10 bg-white border border-slate-200 rounded-lg justify-between px-2.5 text-[12px] font-semibold text-slate-755 hover:text-slate-900 shadow-xs transition-all truncate whitespace-nowrap">
+        <div className="space-y-1.5">
+          <Label className="flex items-center gap-1.5 text-[12px] font-medium text-slate-600">
+            <Building2 className="h-3.5 w-3.5 text-blue-500" />
+            Phòng ban
+          </Label>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button type="button" variant="outline" className="w-full justify-between rounded-lg bg-white px-3 text-[13px] font-medium">
                 <span className="truncate">
-                  {deptMode === 'all' && "Tất cả phòng"}
+                  {deptMode === 'all' && "Tất cả"}
                   {deptMode === 'none' && "Không ai"}
-                  {deptMode === 'specific' && (filterDepts.length > 0 ? `Đã chọn ${filterDepts.length}` : "Chọn cụ thể")}
+                  {deptMode === 'specific' && (filterDepts.length ? `${filterDepts.length} phòng` : "Chọn phòng")}
                 </span>
-                <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                <ChevronDown className="h-4 w-4 text-slate-400" />
               </Button>
-            </PopoverTrigger>
-            <PopoverContent 
-              className="w-[280px] p-2 rounded-xl border border-slate-150 shadow-2xl bg-white z-[9999] pointer-events-auto max-h-[300px] overflow-y-auto overscroll-contain touch-pan-y space-y-2" 
-              align="end" 
-              onOpenAutoFocus={(e) => e.preventDefault()}
-              onWheel={(e) => e.stopPropagation()}
-              onTouchMove={(e) => e.stopPropagation()}
-            >
-              <div className="flex bg-slate-100 p-1 rounded-lg w-full mb-1 gap-1">
-                <button type="button" onClick={() => { setDeptMode('all'); setFilterDepts([]); }} className={cn("flex-1 h-10 flex items-center justify-center whitespace-nowrap px-1 text-[11px] font-bold rounded-md transition-all", deptMode === 'all' ? "bg-white text-primary shadow-sm" : "text-slate-500")}>Tất cả</button>
-                <button type="button" onClick={() => { setDeptMode('specific'); }} className={cn("flex-1 h-10 flex items-center justify-center whitespace-nowrap px-1 text-[11px] font-bold rounded-md transition-all", deptMode === 'specific' ? "bg-white text-primary shadow-sm" : "text-slate-500")}>Chọn cụ thể</button>
-                <button type="button" onClick={() => { setDeptMode('none'); setFilterDepts([]); setSelectedParticipants([]); }} className={cn("flex-1 h-10 flex items-center justify-center whitespace-nowrap px-1 text-[11px] font-bold rounded-md transition-all", deptMode === 'none' ? "bg-white text-primary shadow-sm" : "text-slate-500")}>Không ai</button>
-              </div>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-[300px]">
+              <Tabs value={deptMode} onValueChange={(value) => {
+                const mode = value as 'all' | 'specific' | 'none';
+                setDeptMode(mode);
+                if (mode !== 'specific') setFilterDepts([]);
+                if (mode === 'none') setSelectedParticipants([]);
+              }}>
+                <TabsList className="grid w-full grid-cols-3 rounded-lg bg-slate-100 p-0.5">
+                  <TabsTrigger value="all" className="rounded-md px-1 text-[11px] font-medium">Tất cả</TabsTrigger>
+                  <TabsTrigger value="specific" className="rounded-md px-1 text-[11px] font-medium">Chọn</TabsTrigger>
+                  <TabsTrigger value="none" className="rounded-md px-1 text-[11px] font-medium">Không</TabsTrigger>
+                </TabsList>
+              </Tabs>
               {deptMode === 'specific' && (
-                <div className="space-y-0.5 pt-1 animate-in fade-in slide-in-from-top-1">
-                  {departments.map(d => {
-                    const isChecked = filterDepts.includes(d.id);
-                    return (
-                      <div
-                        key={d.id}
-                        onClick={() => {
-                          isChecked
-                            ? setFilterDepts(filterDepts.filter(id => id !== d.id))
-                            : setFilterDepts([...filterDepts, d.id]);
-                        }}
-                        className={cn(
-                          "flex items-center gap-2 p-1.5 rounded-lg cursor-pointer transition-all",
-                          isChecked ? "bg-primary/5 text-primary" : "hover:bg-slate-50 text-slate-600"
-                        )}
-                      >
-                        <div className={cn(
-                          "w-4 h-4 rounded-md border flex items-center justify-center transition-all shrink-0",
-                          isChecked ? "bg-primary border-primary" : "border-slate-300"
-                        )}>
-                          {isChecked && <Check className="w-2.5 h-2.5 text-white" />}
-                        </div>
-                        <span className="text-xs font-semibold">{d.name}</span>
-                      </div>
-                    );
-                  })}
-                </div>
+                <>
+                  <DropdownMenuSeparator />
+                  <ScrollArea className="h-[min(14rem,var(--radix-dropdown-menu-content-available-height))]">
+                    <div className="space-y-0.5 pr-2">
+                      {departments.map((dept) => (
+                        <DropdownMenuCheckboxItem
+                          key={dept.id}
+                          checked={filterDepts.includes(dept.id)}
+                          onCheckedChange={() => setFilterDepts(toggleId(filterDepts, dept.id))}
+                          onSelect={(event) => event.preventDefault()}
+                          className="text-[13px] font-medium"
+                        >
+                          {dept.name}
+                        </DropdownMenuCheckboxItem>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </>
               )}
-            </PopoverContent>
-          </Popover>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
-        {/* Dòng 3: Cán bộ chi tiết */}
-        {deptMode === 'specific' && filterDepts.length > 0 && (
-          <div className="flex items-center justify-between gap-4 animate-in fade-in">
-            <div className="flex items-center gap-1.5">
-              <div className="w-1 h-3 bg-emerald-500 rounded-full shrink-0" />
-              <span className="text-[12px] font-semibold text-slate-655">3. Cán bộ chi tiết</span>
-            </div>
-            <Popover modal={true}>
-              <PopoverTrigger asChild>
-                <Button type="button" variant="outline" className="w-[170px] h-10 bg-white border border-slate-200 rounded-lg justify-between px-2.5 text-[12px] font-semibold text-slate-755 hover:text-slate-900 shadow-xs transition-all truncate whitespace-nowrap">
-                  <span className="truncate">
-                    {participantMode === 'all' && "Tất cả cán bộ"}
-                    {participantMode === 'manager' && "Chỉ lãnh đạo"}
-                    {participantMode === 'staff' && (selectedParticipants.length > 0 ? `Đã chọn ${selectedParticipants.length}` : "Chọn cụ thể")}
-                  </span>
-                  <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent 
-                className="w-[300px] p-2 rounded-xl border border-slate-150 shadow-2xl bg-white z-[9999] pointer-events-auto max-h-[300px] overflow-y-auto overscroll-contain touch-pan-y space-y-2" 
-                align="end" 
-                onOpenAutoFocus={(e) => e.preventDefault()}
-                onWheel={(e) => e.stopPropagation()}
-                onTouchMove={(e) => e.stopPropagation()}
+        <div className="space-y-1.5">
+          <Label className="flex items-center gap-1.5 text-[12px] font-medium text-slate-600">
+            <UserCheck className="h-3.5 w-3.5 text-emerald-500" />
+            Cán bộ
+          </Label>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={deptMode !== 'specific' || filterDepts.length === 0}
+                className="w-full justify-between rounded-lg bg-white px-3 text-[13px] font-medium disabled:opacity-60"
               >
-                <div className="flex bg-slate-100 p-1 rounded-lg w-full mb-1 gap-1">
-                  <button type="button" onClick={() => { setParticipantMode('all'); setSelectedParticipants([]); }} className={cn("flex-1 h-10 flex items-center justify-center whitespace-nowrap px-1 text-[11px] font-bold rounded-md transition-all", participantMode === 'all' ? "bg-white text-primary shadow-sm" : "text-slate-500")}>Tất cả</button>
-                  <button type="button" onClick={() => { setParticipantMode('manager'); setSelectedParticipants([]); }} className={cn("flex-1 h-10 flex items-center justify-center whitespace-nowrap px-1 text-[11px] font-bold rounded-md transition-all", participantMode === 'manager' ? "bg-white text-primary shadow-sm" : "text-slate-500")}>Lãnh đạo</button>
-                  <button type="button" onClick={() => { setParticipantMode('staff'); }} className={cn("flex-1 h-10 flex items-center justify-center whitespace-nowrap px-1 text-[11px] font-bold rounded-md transition-all", participantMode === 'staff' ? "bg-white text-primary shadow-sm" : "text-slate-500")}>Từng người</button>
-                </div>
-                
-                {participantMode === 'staff' ? (
-                  <div className="space-y-2.5 pt-1 animate-in fade-in slide-in-from-top-1 max-h-[200px] overflow-y-auto pr-1">
-                    {departments.filter(d => filterDepts.includes(d.id)).map(dept => {
-                      const deptMembers = sortProfilesByHierarchy(
-                        allProfiles.filter(p => p.department_id === dept.id && p.role !== 'admin' && p.role !== 'director')
-                      );
-                      if (deptMembers.length === 0) return null;
-                      return (
-                        <div key={dept.id} className="space-y-0.5">
-                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider pl-1.5">{dept.name}</p>
-                          <div className="space-y-0.5">
-                            {deptMembers.map(p => {
-                              const isChecked = selectedParticipants.includes(p.id);
-                              return (
-                                <div
-                                  key={p.id}
-                                  onClick={() => {
-                                    isChecked
-                                      ? setSelectedParticipants(selectedParticipants.filter(id => id !== p.id))
-                                      : setSelectedParticipants([...selectedParticipants, p.id]);
-                                  }}
-                                  className={cn(
-                                    "flex items-center gap-2 p-1.5 rounded-lg cursor-pointer transition-all",
-                                    isChecked ? "bg-primary/5 text-primary" : "hover:bg-slate-50 text-slate-600"
-                                  )}
-                                >
-                                  <div className={cn(
-                                    "w-4 h-4 rounded-md border flex items-center justify-center transition-all shrink-0",
-                                    isChecked ? "bg-primary border-primary" : "border-slate-300"
-                                  )}>
-                                    {isChecked && <Check className="w-2.5 h-2.5 text-white" />}
-                                  </div>
-                                  <Avatar className="w-4 h-4 shadow-2xs">
-                                    <AvatarImage src={p.avatar_url} />
-                                    <AvatarFallback className="text-[6px] bg-slate-100">{p.full_name?.[0]}</AvatarFallback>
-                                  </Avatar>
-                                  <span className="text-xs font-semibold truncate">{p.full_name}</span>
-                                </div>
-                              );
-                            })}
+                <span className="truncate">
+                  {deptMode !== 'specific' || filterDepts.length === 0
+                    ? "Theo phòng ban"
+                    : participantMode === 'all'
+                      ? "Tất cả cán bộ"
+                      : participantMode === 'manager'
+                        ? "Chỉ lãnh đạo"
+                        : selectedParticipants.length
+                          ? `${selectedParticipants.length} người`
+                          : "Chọn người"}
+                </span>
+                <ChevronDown className="h-4 w-4 text-slate-400" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-[320px]">
+              <Tabs value={participantMode} onValueChange={(value) => {
+                const mode = value as 'all' | 'manager' | 'staff';
+                setParticipantMode(mode);
+                if (mode !== 'staff') setSelectedParticipants([]);
+              }}>
+                <TabsList className="grid w-full grid-cols-3 rounded-lg bg-slate-100 p-0.5">
+                  <TabsTrigger value="all" className="rounded-md px-1 text-[11px] font-medium">Tất cả</TabsTrigger>
+                  <TabsTrigger value="manager" className="rounded-md px-1 text-[11px] font-medium">Lãnh đạo</TabsTrigger>
+                  <TabsTrigger value="staff" className="rounded-md px-1 text-[11px] font-medium">Chọn</TabsTrigger>
+                </TabsList>
+              </Tabs>
+
+              {participantMode === 'staff' ? (
+                <>
+                  <DropdownMenuSeparator />
+                  <ScrollArea className="h-[min(16rem,var(--radix-dropdown-menu-content-available-height))]">
+                    <div className="space-y-2 pr-2">
+                      {departments.filter((dept) => filterDepts.includes(dept.id)).map((dept) => {
+                        const deptMembers = sortProfilesByHierarchy(
+                          allProfiles.filter((profile) => (
+                            profile.department_id === dept.id &&
+                            profile.role !== 'admin' &&
+                            profile.role !== 'director'
+                          ))
+                        );
+                        if (deptMembers.length === 0) return null;
+
+                        return (
+                          <div key={dept.id}>
+                            <DropdownMenuLabel className="px-2 py-1 text-[11px] font-medium text-slate-400">
+                              {dept.name}
+                            </DropdownMenuLabel>
+                            {deptMembers.map((profile) => (
+                              <DropdownMenuCheckboxItem
+                                key={profile.id}
+                                checked={selectedParticipants.includes(profile.id)}
+                                onCheckedChange={() => setSelectedParticipants(toggleId(selectedParticipants, profile.id))}
+                                onSelect={(event) => event.preventDefault()}
+                                className="gap-2 text-[13px] font-medium"
+                              >
+                                <Avatar className="h-5 w-5">
+                                  <AvatarImage src={profile.avatar_url} />
+                                  <AvatarFallback className="text-[8px]">{compactName(profile.full_name)[0]}</AvatarFallback>
+                                </Avatar>
+                                <span className="truncate">{compactName(profile.full_name)}</span>
+                              </DropdownMenuCheckboxItem>
+                            ))}
                           </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="py-1.5 px-2 bg-slate-50 rounded-lg border border-slate-100 text-center">
-                    {participantMode === 'all' && (
-                      <p className="text-[11px] font-medium text-slate-500 flex items-center justify-center gap-1">
-                        <UserCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                        Tự động mời toàn bộ cán bộ phòng.
-                      </p>
-                    )}
-                    {participantMode === 'manager' && (
-                      <p className="text-[11px] font-medium text-slate-500 flex items-center justify-center gap-1">
-                        <UserCog className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                        Tự động mời lãnh đạo phòng.
-                      </p>
-                    )}
-                  </div>
-                )}
-              </PopoverContent>
-            </Popover>
-          </div>
-        )}
+                        );
+                      })}
+                    </div>
+                  </ScrollArea>
+                </>
+              ) : (
+                <p className="px-3 py-2 text-[12px] font-medium text-slate-500">
+                  {participantMode === 'all'
+                    ? "Tự động mời toàn bộ cán bộ thuộc phòng đã chọn."
+                    : "Tự động mời lãnh đạo các phòng đã chọn."}
+                </p>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
-      {/* Hiển thị danh sách Badge đồng bộ 100% với màn hình Xem chi tiết ngoài */}
-      {elements.length > 0 && (
-        <div className="space-y-1.5 border-t border-slate-100 pt-2.5 animate-in fade-in">
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Danh sách đã chọn</p>
-          <div className="flex flex-wrap gap-2 max-h-36 overflow-y-auto pr-1">
-            {elements}
-          </div>
+      {(selectedDeptNames.length > 0 || selectedProfiles.length > 0) && (
+        <div className="space-y-2 border-t border-slate-100 pt-2.5">
+          {selectedDeptNames.length > 0 && deptMode === 'specific' && (
+            <div className="flex flex-wrap gap-1.5">
+              {selectedDeptNames.map((name) => (
+                <Badge key={name} variant="outline" className="rounded-full bg-white px-2 py-0.5 text-[11px] font-medium text-slate-600">
+                  {name}
+                </Badge>
+              ))}
+            </div>
+          )}
+          {selectedProfiles.length > 0 && (
+            <ScrollArea className="h-24">
+              <div className="flex flex-wrap gap-1.5 pr-2">
+                {selectedProfiles.map((profile) => (
+                  <Badge
+                    key={profile.id}
+                    variant="outline"
+                    className={cn(
+                      "rounded-full bg-white py-0.5 pl-1.5 pr-1 text-[11px] font-medium text-slate-700",
+                      "flex items-center gap-1.5"
+                    )}
+                  >
+                    <Avatar className="h-4 w-4">
+                      <AvatarImage src={profile.avatar_url} />
+                      <AvatarFallback className="text-[7px]">{compactName(profile.full_name)[0]}</AvatarFallback>
+                    </Avatar>
+                    <span className="max-w-32 truncate">{compactName(profile.full_name)}</span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleRemoveParticipant(profile.id)}
+                      aria-label={`Bỏ chọn ${compactName(profile.full_name)}`}
+                      className="h-5 w-5 rounded-full p-0 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </Badge>
+                ))}
+              </div>
+            </ScrollArea>
+          )}
         </div>
       )}
     </div>

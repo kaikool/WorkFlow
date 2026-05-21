@@ -156,7 +156,7 @@ export default function DashboardPage() {
 
     const schedulesQuery = supabase
       .from('schedules')
-      .select(`*, creator:profiles!schedules_created_by_fkey(full_name, avatar_url, department_id, role, is_department_head, departments(name)), room:rooms(name), vehicle:vehicles(name, plate_number), driver:profiles!schedules_driver_id_fkey(id, full_name, phone, avatar_url), participants:schedule_participants(profile:profiles(id, full_name, avatar_url, role, is_department_head, departments(name)))`)
+      .select(`*, creator:profiles!schedules_created_by_fkey(full_name, title, avatar_url, department_id, role, is_department_head, departments(name)), room:rooms(name), vehicle:vehicles(name, plate_number), driver:profiles!schedules_driver_id_fkey(id, full_name, title, phone, avatar_url), participants:schedule_participants(profile:profiles(id, full_name, title, avatar_url, role, is_department_head, departments(name)))`)
       .gte('end_time', start.toISOString())
       .lte('start_time', end.toISOString())
       .order('start_time');
@@ -164,7 +164,7 @@ export default function DashboardPage() {
     const pendingQueueQuery = canSeePendingQueue
       ? supabase
         .from('schedules')
-        .select(`*, creator:profiles!schedules_created_by_fkey(full_name, avatar_url, department_id, role, is_department_head, departments(name)), room:rooms(name), vehicle:vehicles(name, plate_number), driver:profiles!schedules_driver_id_fkey(id, full_name, phone, avatar_url), participants:schedule_participants(profile:profiles(id, full_name, avatar_url, role, is_department_head, departments(name)))`)
+        .select(`*, creator:profiles!schedules_created_by_fkey(full_name, title, avatar_url, department_id, role, is_department_head, departments(name)), room:rooms(name), vehicle:vehicles(name, plate_number), driver:profiles!schedules_driver_id_fkey(id, full_name, title, phone, avatar_url), participants:schedule_participants(profile:profiles(id, full_name, title, avatar_url, role, is_department_head, departments(name)))`)
         .or('status.eq.pending,and(use_vehicle.eq.true,vehicle_id.is.null)')
         .order('start_time')
       : Promise.resolve({ data: [] as any[], error: null });
@@ -181,7 +181,7 @@ export default function DashboardPage() {
       pendingQueueQuery,
       supabase.from('vehicles').select('*, default_driver:profiles!vehicles_driver_id_fkey(id, full_name, phone)'),
       supabase.from('rooms').select('*'),
-      supabase.from('profiles').select('id, full_name, avatar_url, role, department_id, is_department_head, departments(name, code)'),
+      supabase.from('profiles').select('id, full_name, title, avatar_url, role, department_id, is_department_head, departments(name, code)'),
       supabase.from('departments').select('*')
     ]);
 
@@ -491,14 +491,14 @@ export default function DashboardPage() {
             <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Bảng nhân sự</h1>
             <p className="text-[13px] text-slate-500 font-medium">Theo dõi nghỉ phép và hồ sơ nhân sự toàn cơ quan.</p>
           </div>
-          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-            <Button asChild variant="outline" className="h-11 rounded-xl font-semibold w-full sm:w-auto border-primary/20 text-primary hover:bg-primary/5 hover:border-primary/40">
+          <div className="flex flex-wrap gap-3">
+            <Button asChild variant="outline" className="rounded-xl border-primary/20 font-semibold text-primary hover:border-primary/40 hover:bg-primary/5">
               <Link href="/dashboard/schedule?type=leave" className="flex items-center justify-center gap-2">
                 <CalendarDays className="h-4 w-4 shrink-0" />
                 <span>Đăng ký nghỉ phép</span>
               </Link>
             </Button>
-            <Button asChild className="h-11 rounded-xl font-semibold w-full sm:w-auto">
+            <Button asChild className="rounded-xl font-semibold">
               <Link href="/dashboard/team" className="flex items-center justify-center gap-2">
                 <Users className="h-4 w-4 shrink-0" />
                 <span>Danh sách cán bộ</span>
@@ -541,12 +541,12 @@ export default function DashboardPage() {
           <h3 className="text-sm font-semibold text-slate-500 flex items-center gap-2 px-1">
             <CalendarDays className="w-4 h-4 text-primary shrink-0" />
             Lịch nghỉ phép tuần này
-            <span className="ml-auto text-xs font-bold text-primary bg-primary/10 rounded-full px-2.5 py-0.5">{thisWeekLeaves.length}</span>
+            <Badge className="ml-auto border-none bg-primary/10 px-2.5 py-0.5 text-xs font-bold text-primary">{thisWeekLeaves.length}</Badge>
           </h3>
 
           {thisWeekLeaves.length === 0 ? (
-            <div className="premium-card text-center border border-slate-100 bg-white py-12">
-              <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
+            <div className="premium-card text-center border border-slate-100 bg-white py-8">
+              <div className="h-12 w-12 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
                 <CalendarDays className="w-5 h-5 text-slate-400" />
               </div>
               <p className="text-sm font-semibold text-slate-700">Tuần này không có cán bộ nghỉ phép</p>
@@ -574,9 +574,9 @@ export default function DashboardPage() {
                       <div className="flex items-center gap-2">
                         <p className="text-sm font-bold text-slate-900 truncate">{leaveUser?.full_name || "Cán bộ"}</p>
                         {isActive && (
-                          <span className="shrink-0 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-700 border border-amber-100">
+                          <Badge className="shrink-0 border border-amber-100 bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-700">
                             Hôm nay
-                          </span>
+                          </Badge>
                         )}
                       </div>
                       <p className="text-xs text-slate-500 truncate mt-0.5">{leave.title || "Nghỉ phép"}</p>
@@ -628,27 +628,31 @@ export default function DashboardPage() {
               <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                 <ShieldCheck className="h-4 w-4 text-amber-600" /> Cần xử lý
               </h2>
-              <span className="text-xs font-bold text-amber-700 bg-amber-50 rounded-full px-3 py-1.5 border border-amber-100">{pendingSchedules.length}</span>
+              <Badge className="border border-amber-100 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-700">{pendingSchedules.length}</Badge>
             </div>
             <div className="space-y-3">
               {pendingSchedules.length === 0 ? (
                 <p className="rounded-xl bg-slate-50 px-4 py-6 text-center text-sm font-medium text-slate-500">Không có lịch chờ điều phối.</p>
               ) : pendingSchedules.map((schedule) => (
-                <button
+                <Button
+                  type="button"
+                  variant="outline"
                   key={schedule.id}
                   onClick={() => handleSelectSchedule(schedule)}
-                  className="w-full min-h-11 rounded-xl border border-slate-200 bg-white px-4 py-3 text-left transition-colors hover:bg-slate-50"
+                  className="h-auto w-full justify-start rounded-xl border-slate-200 bg-white px-4 py-3 text-left hover:bg-slate-50"
                 >
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="text-sm font-bold text-slate-900 line-clamp-1">{schedule.title}</p>
-                    <span className="shrink-0 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-600">
-                      {schedule.use_vehicle && !schedule.vehicle_id ? "Cần xe" : "Chờ duyệt"}
-                    </span>
+                  <div className="w-full">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-sm font-bold text-slate-900 line-clamp-1">{schedule.title}</p>
+                      <Badge className="shrink-0 border-none bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-600">
+                        {schedule.use_vehicle && !schedule.vehicle_id ? "Cần xe" : "Chờ duyệt"}
+                      </Badge>
+                    </div>
+                    <p className="mt-1 text-xs font-medium text-slate-500 line-clamp-1">
+                      {new Date(schedule.start_time).toLocaleString('vi-VN')} - {schedule.creator?.full_name || 'Người tạo'}
+                    </p>
                   </div>
-                  <p className="mt-1 text-xs font-medium text-slate-500 line-clamp-1">
-                    {new Date(schedule.start_time).toLocaleString('vi-VN')} - {schedule.creator?.full_name || 'Người tạo'}
-                  </p>
-                </button>
+                </Button>
               ))}
             </div>
           </div>
@@ -729,7 +733,7 @@ export default function DashboardPage() {
             <p className="text-[13px] font-semibold italic">{quote}</p>
           </div>
         </div>
-        <Button asChild className="bg-primary hover:bg-primary/90 text-primary-foreground h-12 px-8 rounded-2xl font-bold text-sm shadow-primary-glow active:scale-95 transition-all">
+        <Button asChild className="bg-primary hover:bg-primary/90 text-primary-foreground min-h-11 px-5 rounded-2xl font-medium text-sm shadow-primary-glow active:scale-95 transition-all">
           <Link href="/dashboard/tasks">
             Bắt đầu công việc <ArrowRight className="ml-2 w-4 h-4" />
           </Link>

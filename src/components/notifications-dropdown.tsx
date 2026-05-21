@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { createClient } from "@/utils/supabase/client";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
@@ -139,7 +140,7 @@ export function NotificationsDropdown() {
 
   if (!mounted) {
     return (
-      <Button variant="ghost" size="icon" className="relative h-11 w-11 rounded-full bg-slate-50">
+      <Button variant="ghost" size="icon" className="relative h-11 w-11 rounded-xl bg-slate-50" aria-label="Mở thông báo">
         <Bell className="h-5 w-5 text-slate-600" />
       </Button>
     );
@@ -148,7 +149,7 @@ export function NotificationsDropdown() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative h-11 w-11 rounded-full bg-slate-50 hover:bg-slate-100 transition-all">
+        <Button variant="ghost" size="icon" className="relative h-11 w-11 rounded-xl bg-slate-50 hover:bg-slate-100 transition-all" aria-label={unreadCount > 0 ? `Mở thông báo, có ${unreadCount} thông báo chưa đọc` : "Mở thông báo"}>
           <Bell className="h-5 w-5 text-slate-600" />
           {unreadCount > 0 && (
             <Badge className="absolute -top-1 -right-1 !flex !h-5 !min-h-5 !w-5 !min-w-5 items-center justify-center rounded-full border-2 border-white bg-red-600 !p-0 text-[10px] font-bold leading-none text-white tabular-nums">
@@ -179,9 +180,10 @@ export function NotificationsDropdown() {
           )}
         </div>
 
-        <div className="max-h-[360px] overflow-y-auto space-y-1.5 pr-0.5">
+        <ScrollArea className="max-h-[360px]">
+        <div className="space-y-1.5 pr-2">
           {loading ? (
-            <div className="py-12 text-center"><Loader2 className="h-5 w-5 animate-spin mx-auto text-primary" /></div>
+            <div className="py-8 text-center"><Loader2 className="h-5 w-5 animate-spin mx-auto text-primary" /></div>
           ) : notifications.length > 0 ? (
             notifications.map((n) => (
               <DropdownMenuItem
@@ -222,14 +224,15 @@ export function NotificationsDropdown() {
               </DropdownMenuItem>
             ))
           ) : (
-            <div className="py-16 text-center space-y-3">
-              <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mx-auto">
+            <div className="py-10 text-center space-y-3">
+              <div className="h-12 w-12 bg-slate-50 rounded-full flex items-center justify-center mx-auto">
                 <Inbox className="h-6 w-6 text-slate-500" />
               </div>
               <p className="text-sm font-medium text-slate-500 truncate whitespace-nowrap">Hộp thư trống</p>
             </div>
           )}
         </div>
+        </ScrollArea>
       </DropdownMenuContent>
     </DropdownMenu>
   );

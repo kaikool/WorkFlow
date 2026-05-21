@@ -47,38 +47,54 @@
     --color-award-text: 36 100% 30%;
 
     /* Desktop web default */
-    --app-font-body: 16px;
-    --app-font-callout: 15px;
-    --app-font-subhead: 14px;
-    --app-font-footnote: 13px;
-    --app-font-caption: 12px;
-    --app-touch-target: 40px;
-    --app-page-x: 32px;
-    --app-card-padding: 24px;
+    --app-font-large-title: 2rem;
+    --app-font-title-1: 1.75rem;
+    --app-font-title-2: 1.375rem;
+    --app-font-title-3: 1.25rem;
+    --app-font-headline: 1.0625rem;
+    --app-font-body: 1rem;
+    --app-font-callout: 0.9375rem;
+    --app-font-subhead: 0.875rem;
+    --app-font-footnote: 0.8125rem;
+    --app-font-caption: 0.75rem;
+    --app-touch-target: 44px;
+    --app-page-x: 24px;
+    --app-card-padding: 20px;
     --app-control-radius: 12px;
-    --app-card-radius: 24px;
+    --app-card-radius: 18px;
   }
 
   @media (max-width: 640px) {
     :root {
-      --app-font-body: 17px;
-      --app-font-callout: 16px;
-      --app-font-subhead: 15px;
+      --app-font-large-title: 1.75rem;
+      --app-font-title-1: 1.5rem;
+      --app-font-title-2: 1.25rem;
+      --app-font-title-3: 1.125rem;
+      --app-font-headline: 1.0625rem;
+      --app-font-body: 1rem;
+      --app-font-callout: 0.9375rem;
+      --app-font-subhead: 0.875rem;
       --app-touch-target: 44px;
       --app-page-x: 16px;
-      --app-card-padding: 20px;
-      --app-card-radius: 18px;
+      --app-card-padding: 16px;
+      --app-card-radius: 16px;
     }
   }
 
   @media (min-width: 641px) and (max-width: 1024px) {
     :root {
-      --app-font-body: 17px;
-      --app-font-callout: 16px;
-      --app-font-subhead: 15px;
+      --app-font-large-title: 1.875rem;
+      --app-font-title-1: 1.625rem;
+      --app-font-title-2: 1.3125rem;
+      --app-font-title-3: 1.1875rem;
+      --app-font-headline: 1.0625rem;
+      --app-font-body: 1rem;
+      --app-font-callout: 0.9375rem;
+      --app-font-subhead: 0.875rem;
       --app-touch-target: 44px;
       --app-page-x: 24px;
-      --app-card-radius: 22px;
+      --app-card-padding: 18px;
+      --app-card-radius: 18px;
     }
   }
 
@@ -105,10 +121,25 @@
     @apply font-sans font-bold text-slate-900;
     letter-spacing: 0;
   }
+
+  h1 {
+    font-size: var(--app-font-title-1);
+    line-height: 1.22;
+  }
+
+  h2 {
+    font-size: var(--app-font-title-2);
+    line-height: 1.28;
+  }
+
+  h3 {
+    font-size: var(--app-font-title-3);
+    line-height: 1.32;
+  }
 }
 
 .premium-card {
-  @apply bg-white border border-slate-100 shadow-premium rounded-[2rem] transition-all duration-300 hover:shadow-premium-hover;
+  @apply bg-white border border-slate-100 shadow-premium rounded-2xl transition-all duration-300 hover:shadow-premium-hover;
 }
 
 .glass-card {
@@ -116,7 +147,7 @@
 }
 
 .finance-input {
-  @apply h-12 bg-slate-50/50 border-slate-200/60 rounded-2xl pl-5 pr-5
+  @apply min-h-11 bg-slate-50/50 border-slate-200/60 rounded-2xl pl-5 pr-5
     focus:bg-white focus:border-primary/40 focus:ring-4 focus:ring-primary/5
     transition-all duration-300 text-sm font-medium placeholder:text-slate-500 shadow-sm;
 }
@@ -174,12 +205,32 @@
 
 .text-sm {
   font-size: var(--app-font-callout) !important;
-  line-height: 1.375rem !important;
+  line-height: 1.25rem !important;
 }
 
 .text-base {
   font-size: var(--app-font-body) !important;
   line-height: 1.5rem !important;
+}
+
+.text-lg {
+  font-size: var(--app-font-headline) !important;
+  line-height: 1.375rem !important;
+}
+
+.text-xl {
+  font-size: var(--app-font-title-3) !important;
+  line-height: 1.5rem !important;
+}
+
+.text-2xl {
+  font-size: var(--app-font-title-2) !important;
+  line-height: 1.75rem !important;
+}
+
+.text-3xl {
+  font-size: var(--app-font-title-1) !important;
+  line-height: 2.125rem !important;
 }
 
 button,
@@ -224,6 +275,86 @@ button[class*="w-"],
   border-radius: var(--app-card-radius);
 }
 
+main .space-y-10 > :not([hidden]) ~ :not([hidden]),
+[role="dialog"] .space-y-10 > :not([hidden]) ~ :not([hidden]) {
+  margin-top: 2rem !important;
+}
+
+main .space-y-8 > :not([hidden]) ~ :not([hidden]),
+[role="dialog"] .space-y-8 > :not([hidden]) ~ :not([hidden]) {
+  margin-top: 1.5rem !important;
+}
+
+main .space-y-6 > :not([hidden]) ~ :not([hidden]),
+[role="dialog"] .space-y-6 > :not([hidden]) ~ :not([hidden]) {
+  margin-top: 1.25rem !important;
+}
+
+main .gap-10,
+[role="dialog"] .gap-10 {
+  gap: 2rem !important;
+}
+
+main .gap-8,
+[role="dialog"] .gap-8 {
+  gap: 1.5rem !important;
+}
+
+main .gap-6,
+[role="dialog"] .gap-6 {
+  gap: 1.25rem !important;
+}
+
+main button.h-12,
+main a.h-12,
+main [role="button"].h-12,
+[role="dialog"] button.h-12,
+[role="dialog"] a.h-12,
+[role="dialog"] [role="button"].h-12,
+main button.min-h-12,
+main a.min-h-12,
+[role="dialog"] button.min-h-12,
+[role="dialog"] a.min-h-12 {
+  height: auto !important;
+  min-height: var(--app-touch-target) !important;
+}
+
+main button.h-14,
+main a.h-14,
+main [role="button"].h-14,
+[role="dialog"] button.h-14,
+[role="dialog"] a.h-14,
+[role="dialog"] [role="button"].h-14 {
+  height: auto !important;
+  min-height: var(--app-touch-target) !important;
+}
+
+main button.px-8,
+main a.px-8,
+[role="dialog"] button.px-8,
+[role="dialog"] a.px-8 {
+  padding-left: 1.25rem !important;
+  padding-right: 1.25rem !important;
+}
+
+[role="dialog"] .p-6,
+[role="dialog"] .p-8,
+main .p-6,
+main .p-8 {
+  padding: 1.5rem !important;
+}
+
+main .rounded-\[2rem\],
+main .rounded-\[32px\],
+main .rounded-\[24px\],
+main .rounded-\[20px\],
+[role="dialog"].rounded-\[2rem\],
+[role="dialog"].rounded-\[32px\],
+[role="dialog"] .rounded-\[24px\],
+[role="dialog"] .rounded-\[20px\] {
+  border-radius: var(--app-card-radius) !important;
+}
+
 .finance-input,
 input,
 textarea,
@@ -238,6 +369,17 @@ main > div[class*="max-w-7xl"][class*="mx-auto"],
 main > div[class*="max-w-5xl"][class*="mx-auto"] {
   padding-left: var(--app-page-x) !important;
   padding-right: var(--app-page-x) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 .uppercase,

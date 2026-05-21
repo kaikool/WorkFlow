@@ -27,7 +27,7 @@ export default function LeaveApprovalDashboard({ schedules, profile, onStatusUpd
 
       {pendingLeaves.length === 0 ? (
         <div className="premium-card text-center bg-white border border-slate-200">
-          <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4 text-slate-400">
+          <div className="h-12 w-12 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4 text-slate-400">
             <User className="w-6 h-6" />
           </div>
           <p className="text-sm font-bold text-slate-700">Không có đơn cần duyệt</p>

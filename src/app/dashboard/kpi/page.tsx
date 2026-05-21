@@ -37,6 +37,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
+ DropdownMenu,
+ DropdownMenuCheckboxItem,
+ DropdownMenuContent,
+ DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
  Select,
  SelectContent,
  SelectItem,
@@ -55,6 +63,7 @@ import { useToast } from "@/hooks/use-toast";
 import { cn, sortProfilesByHierarchy } from "@/lib/utils";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 const KPI_CATEGORIES = [
  { id: 'lending', label: "Tín dụng", icon: TrendingUp, color: "text-primary", bg: "bg-primary/5", activeBg: "bg-primary/10" },
@@ -117,7 +126,7 @@ export default function GoalsPage() {
  {(profile?.role === 'manager' || profile?.role === 'admin') && (
  <Dialog open={isCreateOpen} onOpenChange={(open) => { setIsCreateOpen(open); if (!open) { setIsSuccess(false); setSelectedTemplate(null); } }}>
  <DialogTrigger asChild>
- <Button className="bg-primary hover:bg-primary/90 h-10 px-5 rounded-xl font-medium">
+ <Button className="bg-primary hover:bg-primary/90 px-5 font-medium">
  <Plus className="w-5 h-5 mr-2" /> Giao chỉ tiêu mới
  </Button>
  </DialogTrigger>
@@ -128,43 +137,29 @@ export default function GoalsPage() {
  <DialogTitle className="text-[17px] font-semibold text-slate-900">Thiết lập chỉ tiêu mới</DialogTitle>
  </div>
 
- <form onSubmit={handleCreateGoal} className="p-5 sm:p-8 space-y-6 sm:space-y-10 overflow-y-auto">
+ <form onSubmit={handleCreateGoal} className="min-h-0">
+ <ScrollArea className="max-h-[calc(90vh-96px)]">
+ <div className="space-y-6 p-5 sm:space-y-10 sm:p-8">
  <div className="space-y-4 px-1">
  <Label className="text-[13px] font-medium text-slate-500">1. Nhóm nghiệp vụ</Label>
- <div className="flex items-center justify-between gap-2">
- {KPI_CATEGORIES.map((cat) => {
- const Icon = cat.icon;
- const isActive = selectedCategory === cat.id;
- return (
- <button
- key={cat.id}
- type="button"
- onClick={() => {
- setSelectedCategory(cat.id);
+ <Tabs value={selectedCategory} onValueChange={(value) => {
+ setSelectedCategory(value);
  setSelectedTemplate(null);
  setCustomTitle("");
  setCustomDescription("");
- }}
- className="flex flex-col items-center gap-2 group outline-none shrink-0"
- >
- <div className={cn(
- "w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200",
- isActive
- ? cn(cat.activeBg, cat.color, "shadow-sm")
- : "bg-primary/5 text-slate-500 hover:bg-primary/10"
- )}>
- <Icon className="w-4 h-4" />
- </div>
- <span className={cn(
- "text-[12px] font-medium transition-colors",
- isActive ? "text-slate-900" : "text-slate-500"
- )}>
- {cat.label}
- </span>
- </button>
+ }}>
+ <TabsList className="grid h-auto w-full grid-cols-4 rounded-xl bg-primary/5 p-0.5">
+ {KPI_CATEGORIES.map((cat) => {
+ const Icon = cat.icon;
+ return (
+ <TabsTrigger key={cat.id} value={cat.id} className="flex min-h-9 flex-col gap-0.5 rounded-lg px-1 py-1.5 text-[12px] font-medium">
+ <Icon className="h-4 w-4" />
+ <span className="truncate">{cat.label}</span>
+ </TabsTrigger>
  );
  })}
- </div>
+ </TabsList>
+ </Tabs>
  </div>
 
  <div className="space-y-3">
@@ -192,62 +187,57 @@ export default function GoalsPage() {
  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
  <div className="space-y-3">
  <Label className="text-[13px] font-medium text-slate-500">3. Đối tượng nhận</Label>
- <div className="flex bg-primary/5 p-1 rounded-xl">
- <button
- type="button"
- onClick={() => setTargetType('department')}
- className={cn("flex-1 py-2 md:py-1.5 text-xs md:text-sm font-medium rounded-lg transition-all", targetType === 'department' ? "bg-white shadow-sm text-primary" : "text-primary/40")}
- >Cả phòng</button>
- <button
- type="button"
- onClick={() => setTargetType('individual')}
- className={cn("flex-1 py-2 md:py-1.5 text-xs md:text-sm font-medium rounded-lg transition-all", targetType === 'individual' ? "bg-white shadow-sm text-primary" : "text-primary/40")}
- >Nhóm cán bộ</button>
- </div>
+ <Tabs value={targetType} onValueChange={(value) => setTargetType(value as 'department' | 'individual')}>
+ <TabsList className="grid w-full grid-cols-2 rounded-xl bg-primary/5 p-0.5">
+ <TabsTrigger value="department" className="rounded-lg text-xs font-medium md:text-sm">Cả phòng</TabsTrigger>
+ <TabsTrigger value="individual" className="rounded-lg text-xs font-medium md:text-sm">Nhóm cán bộ</TabsTrigger>
+ </TabsList>
+ </Tabs>
  {targetType === 'individual' && (
  <div className="space-y-2 mt-2">
- <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto p-1 scrollbar-hide">
- {team.filter(m => m.id !== profile?.id).map((m) => {
- const isSelected = selectedMemberIds.includes(m.id);
- return (
- <button
+ <DropdownMenu>
+ <DropdownMenuTrigger asChild>
+ <Button type="button" variant="outline" className="w-full justify-between rounded-xl bg-primary/5 px-3 text-[13px] font-medium">
+ <span className="truncate">{selectedMemberIds.length ? `Đã chọn ${selectedMemberIds.length} cán bộ` : "Chọn cán bộ"}</span>
+ <ChevronRight className="h-4 w-4 rotate-90 text-slate-400" />
+ </Button>
+ </DropdownMenuTrigger>
+ <DropdownMenuContent align="start" className="w-[300px] rounded-xl border border-slate-200 p-2 shadow-lg">
+ <ScrollArea className="h-[min(14rem,var(--radix-dropdown-menu-content-available-height))]">
+ <div className="space-y-1 pr-2">
+ {team.filter(m => m.id !== profile?.id).map((m) => (
+ <DropdownMenuCheckboxItem
  key={m.id}
- type="button"
- onClick={() => toggleMember(m.id)}
- className={cn(
- "flex items-center gap-2 p-1.5 rounded-lg border-2 transition-all text-left",
- isSelected ? "border-primary bg-primary/5 text-primary shadow-sm" : "border-slate-50 hover:border-slate-100"
- )}
+ checked={selectedMemberIds.includes(m.id)}
+ onCheckedChange={() => toggleMember(m.id)}
+ onSelect={(event) => event.preventDefault()}
+ className="gap-2 rounded-lg text-[13px] font-medium"
  >
  <Avatar className="h-5 w-5 shrink-0">
  <AvatarImage src={m.avatar_url} />
- <AvatarFallback className="text-[8px] font-bold">{m.full_name[0]}</AvatarFallback>
+ <AvatarFallback className="text-[8px] font-medium">{m.full_name?.[0]}</AvatarFallback>
  </Avatar>
- <span className="text-sm font-medium truncate">{m.full_name}</span>
- </button>
- );
- })}
+ <span className="truncate">{m.full_name}</span>
+ </DropdownMenuCheckboxItem>
+ ))}
  </div>
+ </ScrollArea>
+ </DropdownMenuContent>
+ </DropdownMenu>
  </div>
  )}
  </div>
  <div className="space-y-3">
  <Label className="text-[13px] font-medium text-slate-500">4. Chu kỳ</Label>
- <div className="grid grid-cols-2 gap-2">
+ <Tabs value={timeframe} onValueChange={(value) => setTimeframe(value as any)}>
+ <TabsList className="grid w-full grid-cols-2 rounded-xl bg-primary/5 p-0.5">
  {['week', 'month', 'quarter', 'year'].map((t) => (
- <button
- key={t}
- type="button"
- onClick={() => setTimeframe(t as any)}
- className={cn(
- "py-2 md:py-1.5 text-xs md:text-sm font-medium rounded-lg border-2 transition-all",
- timeframe === t ? "border-primary bg-primary/5 text-primary shadow-sm" : "border-slate-50 text-slate-500"
- )}
- >
+ <TabsTrigger key={t} value={t} className="rounded-lg text-xs font-medium md:text-sm">
  {t === 'week' ? 'Tuần' : t === 'month' ? 'Tháng' : t === 'quarter' ? 'Quý' : 'Năm'}
- </button>
+ </TabsTrigger>
  ))}
- </div>
+ </TabsList>
+ </Tabs>
  </div>
  </div>
 
@@ -258,27 +248,29 @@ export default function GoalsPage() {
  </div>
  <div className="space-y-3">
  <Label className="text-[13px] font-medium text-slate-500">Đơn vị tính</Label>
- <Input name="unit" value={unitValue || ""} onChange={(e) => setUnitValue(e.target.value)} required className="finance-input font-bold text-base md:text-sm focus:ring-primary/20" />
+ <Input name="unit" value={unitValue || ""} onChange={(e) => setUnitValue(e.target.value)} required className="finance-input font-medium text-sm focus:ring-primary/20" />
  </div>
  </div>
 
  <div className="space-y-3">
  <Label className="text-[13px] font-medium text-slate-500">6. Chi tiết kế hoạch</Label>
- <Input name="title" value={customTitle} onChange={(e) => setCustomTitle(e.target.value)} placeholder="Nhập tên kế hoạch..." required className="finance-input font-bold text-base md:text-sm" />
+ <Input name="title" value={customTitle} onChange={(e) => setCustomTitle(e.target.value)} placeholder="Nhập tên kế hoạch..." required className="finance-input font-medium text-sm" />
  <Textarea name="description" value={customDescription} onChange={(e) => setCustomDescription(e.target.value)} placeholder="Nhập mô tả chi tiết..." rows={2} className="bg-primary/5 border-none rounded-xl font-medium resize-none text-base md:text-sm p-4 focus:ring-1 focus:ring-primary/20 transition-all" />
  </div>
 
  <div className="pt-2">
- <Button type="submit" className="w-full bg-primary hover:bg-primary/90 h-12 rounded-xl font-bold text-sm shadow-lg shadow-primary/20 active:scale-[0.98] transition-all">
+ <Button type="submit" className="w-full bg-primary hover:bg-primary/90 min-h-11 rounded-xl font-medium text-sm shadow-lg shadow-primary/20 active:scale-[0.98] transition-all">
  Phát hành chỉ tiêu
  </Button>
  </div>
  </div>
  )}
+ </div>
+ </ScrollArea>
  </form>
  </>
  ) : (
- <div className="p-12 text-center space-y-6">
+ <div className="p-8 text-center space-y-6">
  <div className="w-20 h-20 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto rotate-12">
  <CheckCircle2 className="w-10 h-10" />
  </div>
@@ -306,9 +298,7 @@ export default function GoalsPage() {
           <p className="text-sm font-medium text-slate-500">Tiến độ chung hệ thống chỉ tiêu</p>
           <div className="flex items-center gap-4">
             <p className="text-3xl font-extrabold text-slate-900 tabular-nums">{avgProgress}%</p>
-            <div className="flex-1 h-2 max-w-[200px] bg-slate-100 rounded-full overflow-hidden">
-              <div className="h-full bg-primary transition-all duration-500" style={{ width: `${avgProgress}%` }} />
-            </div>
+            <Progress value={avgProgress} className="h-2 max-w-[200px] flex-1 bg-slate-100" />
           </div>
         </div>
       </div>
@@ -332,9 +322,9 @@ export default function GoalsPage() {
             <p className="text-2xl font-bold text-slate-900 tabular-nums">
               {goals.filter(g => g.progress >= 100).length}
             </p>
-            <span className="text-emerald-500 text-sm font-medium bg-emerald-50 px-2 py-0.5 rounded-full">
+            <Badge className="border-none bg-emerald-50 px-2 py-0.5 text-sm font-medium text-emerald-500">
               100%
-            </span>
+            </Badge>
           </div>
         </div>
       </div>
@@ -344,7 +334,7 @@ export default function GoalsPage() {
    {/* KPI List */}
   <div className="space-y-6 pt-2">
   {/* Unified Search & Filter Bar */}
-  <div className="flex items-center gap-2 bg-slate-50/60 p-1.5 rounded-2xl border border-slate-100/80 shadow-sm w-full h-13 sm:h-14">
+  <div className="flex items-center gap-2 bg-slate-50/60 p-1.5 rounded-2xl border border-slate-100/80 shadow-sm w-full min-h-11">
     <div className="flex items-center gap-2 px-2 shrink-0">
       <Target className="w-4 h-4 text-primary shrink-0" />
       <span className="text-sm font-medium text-slate-600 hidden sm:inline">Danh sách chỉ tiêu ({filteredGoals.length})</span>
@@ -361,10 +351,10 @@ export default function GoalsPage() {
     </div>
   </div>
 
- <div className="hidden md:block premium-card border-none overflow-hidden p-0 rounded-[2rem]">
+ <div className="hidden md:block premium-card border-none overflow-hidden p-0 rounded-2xl">
  <Table>
  <TableHeader>
- <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 border-b border-slate-100 h-14">
+ <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 border-b border-slate-100 min-h-11">
  <TableHead className="w-[400px] font-medium text-[11px] text-slate-500 pl-8">Chỉ tiêu / Nghiệp vụ</TableHead>
  <TableHead className="w-[180px] font-medium text-[11px] text-slate-500">Người thực thi</TableHead>
  <TableHead className="w-[200px] font-medium text-[11px] text-slate-500 text-center">Tiến độ thực hiện</TableHead>
@@ -376,18 +366,23 @@ export default function GoalsPage() {
  const category = KPI_CATEGORIES.find(c => c.id === goal.metadata?.category) || KPI_CATEGORIES[4];
  const CatIcon = category.icon;
  return (
- <TableRow key={goal.id} className="group hover:bg-slate-50/50 transition-all cursor-pointer border-b border-slate-50 h-16" onClick={() => router.push(`/dashboard/kpi/${goal.id}`)}>
+ <TableRow
+ key={goal.id}
+ className="group hover:bg-slate-50/50 transition-all border-b border-slate-50 h-16 relative"
+ >
  <TableCell className="pl-8">
  <div className="flex items-center gap-4">
  <div className={cn("p-2.5 rounded-lg shrink-0 shadow-sm border border-white/50", category.bg, category.color)}>
  <CatIcon className="h-[18px] w-[18px]" />
  </div>
  <div className="space-y-1">
- <p className="text-[14px] font-bold text-slate-900 group-hover:text-primary transition-colors leading-tight">{goal.title}</p>
+ <Link href={`/dashboard/kpi/${goal.id}`} className="text-[14px] font-bold text-slate-900 group-hover:text-primary transition-colors leading-tight before:absolute before:inset-0 outline-none rounded-md focus-visible:ring-2 focus-visible:ring-primary/20">
+  {goal.title}
+ </Link>
  <div className="flex items-center gap-2">
- <span className={cn("text-[9px] font-bold px-1.5 py-0.5 rounded-full ", category.bg, category.color)}>
+ <Badge className={cn("border-none px-1.5 py-0.5 text-[9px] font-bold", category.bg, category.color)}>
  {category.label}
- </span>
+ </Badge>
  </div>
  </div>
  </div>
@@ -434,10 +429,14 @@ export default function GoalsPage() {
  const category = KPI_CATEGORIES.find(c => c.id === goal.metadata?.category) || KPI_CATEGORIES[4];
  const CatIcon = category.icon;
  return (
- <div key={goal.id} className="premium-card p-6 border-none space-y-5 active:scale-[0.98] transition-all" onClick={() => router.push(`/dashboard/kpi/${goal.id}`)}>
+ <Link
+ key={goal.id}
+ href={`/dashboard/kpi/${goal.id}`}
+ className="premium-card p-6 border-none space-y-5 active:scale-[0.98] transition-all block outline-none focus-visible:ring-2 focus-visible:ring-primary/20"
+ >
  <div className="flex justify-between items-start">
  <div className="flex gap-4">
- <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center shrink-0 shadow-sm border border-white/50", category.bg, category.color)}>
+ <div className={cn("h-12 w-12 rounded-xl flex items-center justify-center shrink-0 shadow-sm border border-white/50", category.bg, category.color)}>
  <CatIcon className="w-6 h-6" />
  </div>
  <div className="space-y-1">
@@ -472,7 +471,7 @@ export default function GoalsPage() {
  <ChevronRight className="w-4 h-4 text-slate-500" />
  </div>
  </div>
- </div>
+ </Link>
  );
  })}
  </div>

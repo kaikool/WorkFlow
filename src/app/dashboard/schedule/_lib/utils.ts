@@ -5,7 +5,7 @@ import { sortProfilesByHierarchy } from "@/lib/utils";
 // Lọc danh sách Ban Giám đốc (Sắp xếp đồng bộ: Cấp trưởng lên đầu -> Alphabet Việt)
 export function filterBGD(profiles: any[]) {
   const filtered = profiles.filter(p =>
-    (p.role === 'director' || p.full_name?.toLowerCase().includes('giám đốc')) &&
+    (p.role === 'director' || p.title?.toLowerCase().includes('giám đốc') || p.full_name?.toLowerCase().includes('giám đốc')) &&
     !p.full_name?.toLowerCase().includes('admin') &&
     p.role !== 'admin'
   );
@@ -75,7 +75,7 @@ export function resolveParticipantIds(params: {
       const deptIds = allProfiles.filter(p => filterDepts.includes(p.department_id)).map(p => p.id);
       ids = [...new Set([...ids, ...deptIds])];
     } else if (participantMode === 'manager') {
-      const mgrIds = allProfiles.filter(p => filterDepts.includes(p.department_id) && p.role === 'manager').map(p => p.id);
+      const mgrIds = allProfiles.filter(p => filterDepts.includes(p.department_id) && (p.role === 'manager' || p.is_department_head === true)).map(p => p.id);
       ids = [...new Set([...ids, ...mgrIds])];
     }
     // participantMode = 'staff': không thêm lãnh đạo phòng

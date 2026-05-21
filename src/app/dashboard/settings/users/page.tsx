@@ -32,7 +32,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/utils/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { sortProfilesByHierarchy } from "@/lib/utils";
+import { getProfileDisplayTitle, sortProfilesByHierarchy } from "@/lib/utils";
 
 export default function UserManagementPage() {
  const [users, setUsers] = useState<any[]>([]);
@@ -94,17 +94,17 @@ export default function UserManagementPage() {
  }
  };
 
- const filteredUsers = users.filter(u =>
- u.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
- u.role?.toLowerCase().includes(searchQuery.toLowerCase())
+ const normalizedSearch = searchQuery.trim().toLowerCase();
+ const filteredUsers = users.filter((user) => {
+ const name = user.full_name ?? "";
+ const title = getProfileDisplayTitle(user);
+ const departmentName = user.departments?.name ?? "";
+ return (
+ name.toLowerCase().includes(normalizedSearch) ||
+ title.toLowerCase().includes(normalizedSearch) ||
+ departmentName.toLowerCase().includes(normalizedSearch)
  );
-
- const roleLabels: Record<string, string> = {
- admin: "Quản trị hệ thống",
- director: "Ban giám đốc",
- manager: "Lãnh đạo phòng",
- staff: "Cán bộ"
- };
+ });
 
  if (loading) return <div className="flex h-96 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
 
@@ -122,7 +122,7 @@ export default function UserManagementPage() {
 
  {/* Filters */}
  {/* Unified Search & Filter Bar */}
- <div className="flex items-center gap-2 bg-slate-50/60 p-1.5 rounded-2xl border border-slate-100/80 shadow-sm w-full h-13 sm:h-14">
+ <div className="flex items-center gap-2 bg-slate-50/60 p-1.5 rounded-2xl border border-slate-100/80 shadow-sm w-full min-h-11">
    <div className="flex items-center gap-2 px-2 shrink-0">
      <Shield className="w-4 h-4 text-primary shrink-0" />
      <span className="text-sm font-medium text-slate-600 hidden sm:inline">Cấu hình phân quyền ({filteredUsers.length})</span>
@@ -141,13 +141,13 @@ export default function UserManagementPage() {
 
  {/* User Table */}
  <div className="">
- <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
+ <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
  <Table>
  <TableHeader className="bg-slate-50/50">
  <TableRow className="hover:bg-transparent border-slate-50">
  <TableHead className="w-[300px] text-sm font-medium text-slate-500 py-5 pl-8 truncate whitespace-nowrap">Cán bộ</TableHead>
  <TableHead className="text-sm font-medium text-slate-500 truncate whitespace-nowrap">Phòng ban</TableHead>
- <TableHead className="text-sm font-medium text-slate-500 truncate whitespace-nowrap">Quyền hạn</TableHead>
+ <TableHead className="text-sm font-medium text-slate-500 truncate whitespace-nowrap">Quyền hệ thống</TableHead>
  <TableHead className="text-right pr-8"></TableHead>
  </TableRow>
  </TableHeader>
@@ -159,12 +159,12 @@ export default function UserManagementPage() {
  <Avatar className="h-10 w-10 border-2 border-white shadow-sm">
  <AvatarImage src={user.avatar_url} />
  <AvatarFallback className="bg-primary/5 text-primary text-sm font-medium">
- {user.full_name?.[0]}
+ {user.full_name?.[0] ?? "?"}
  </AvatarFallback>
  </Avatar>
  <div className="flex flex-col">
- <span className="text-sm font-bold text-slate-900 group-hover:text-primary transition-colors">{user.full_name}</span>
- <span className="text-sm font-medium text-slate-500 truncate whitespace-nowrap">{user.role}</span>
+ <span className="text-sm font-bold text-slate-900 group-hover:text-primary transition-colors">{user.full_name || "Chưa cập nhật tên"}</span>
+ <span className="text-sm font-medium text-slate-500 truncate whitespace-nowrap">{getProfileDisplayTitle(user)}</span>
  </div>
  </div>
  </TableCell>

@@ -53,7 +53,7 @@ export default function SettingsPage() {
         <Button 
           onClick={handleSave} 
           disabled={isSaving} 
-          className="bg-slate-900 hover:bg-slate-800 text-white h-10 px-5 rounded-xl font-medium shadow-sm active:scale-95 transition-all w-full sm:w-auto"
+          className="rounded-xl bg-slate-900 px-5 font-medium text-white shadow-sm transition-all hover:bg-slate-800 active:scale-95"
         >
           {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
           Lưu thay đổi

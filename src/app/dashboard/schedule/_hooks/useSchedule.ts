@@ -228,7 +228,7 @@ export function useSchedule() {
       // Lấy tất cả lịch có start_time trong tuần Hoặc end_time >= đầu tuần để bắt lịch nhiều ngày chạy qua tuần
       const schedulesQuery = supabase
         .from('schedules')
-        .select(`*, creator:profiles!schedules_created_by_fkey(full_name, avatar_url, department_id, role, is_department_head), room:rooms(name), vehicle:vehicles(name, plate_number), driver:profiles!schedules_driver_id_fkey(id, full_name, phone), participants:schedule_participants(profile:profiles(id, full_name, avatar_url, role, is_department_head))`)
+        .select(`*, creator:profiles!schedules_created_by_fkey(full_name, title, avatar_url, department_id, role, is_department_head), room:rooms(name), vehicle:vehicles(name, plate_number), driver:profiles!schedules_driver_id_fkey(id, full_name, title, phone), participants:schedule_participants(profile:profiles(id, full_name, title, avatar_url, role, is_department_head))`)
         .gte('end_time', start.toISOString())
         .lte('start_time', end.toISOString())
         .order('start_time');
@@ -237,7 +237,7 @@ export function useSchedule() {
       const pendingQueueQuery = canSeePendingQueue
         ? supabase
             .from('schedules')
-            .select(`*, creator:profiles!schedules_created_by_fkey(full_name, avatar_url, department_id, role, is_department_head), room:rooms(name), vehicle:vehicles(name, plate_number), driver:profiles!schedules_driver_id_fkey(id, full_name, phone), participants:schedule_participants(profile:profiles(id, full_name, avatar_url, role, is_department_head))`)
+            .select(`*, creator:profiles!schedules_created_by_fkey(full_name, title, avatar_url, department_id, role, is_department_head), room:rooms(name), vehicle:vehicles(name, plate_number), driver:profiles!schedules_driver_id_fkey(id, full_name, title, phone), participants:schedule_participants(profile:profiles(id, full_name, title, avatar_url, role, is_department_head))`)
             .or('status.eq.pending,and(use_vehicle.eq.true,vehicle_id.is.null)')
             .order('start_time')
         : Promise.resolve({ data: [] as any[], error: null });
@@ -254,7 +254,7 @@ export function useSchedule() {
         pendingQueueQuery,
         supabase.from('vehicles').select('*, default_driver:profiles!vehicles_driver_id_fkey(id, full_name, phone)'),
         supabase.from('rooms').select('*'),
-        supabase.from('profiles').select('id, full_name, role, department_id, is_department_head, departments(name, code)'),
+        supabase.from('profiles').select('id, full_name, title, role, department_id, is_department_head, departments(name, code)'),
         supabase.from('departments').select('*'),
       ]);
 
@@ -597,7 +597,7 @@ export function useSchedule() {
     }
 
     try {
-      const { use_vehicle, participants, vehicle_id, ...insertData } = newSchedule;
+      const { use_vehicle, participants, vehicle_id, target_profile_id, ...insertData } = newSchedule;
       
       const targetId = (isLeave && newSchedule.target_profile_id) ? newSchedule.target_profile_id : profile?.id;
       const targetProfile = isLeave ? allProfiles.find(p => p.id === targetId) : profile;

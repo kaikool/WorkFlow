@@ -37,6 +37,7 @@ import { createClient } from "@/utils/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { cn, sortProfilesByHierarchy } from "@/lib/utils";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { canAccessPeopleDirectory } from "@/lib/permissions";
 
 export default function TeamPage() {
@@ -194,8 +195,7 @@ export default function TeamPage() {
  {filteredMembers.map((member) => (
  <TableRow
  key={member.id}
- className="group hover:bg-slate-50/80 transition-all cursor-pointer border-b border-slate-50 h-16"
- onClick={() => router.push(`/dashboard/team/${member.id}`)}
+ className="group hover:bg-slate-50/80 transition-all border-b border-slate-50 h-16 relative"
  >
  <TableCell className="pl-8 py-3">
  <div className="flex items-center gap-4">
@@ -203,7 +203,7 @@ export default function TeamPage() {
  <AvatarImage src={member.avatar_url} className="object-cover" />
  <AvatarFallback className="bg-primary text-white text-sm font-medium">{member.full_name?.[0]}</AvatarFallback>
  </Avatar>
- <span className="text-sm font-bold text-slate-900 group-hover:text-primary transition-colors">{member.full_name}</span>
+ <Link href={`/dashboard/team/${member.id}`} className="text-sm font-bold text-slate-900 group-hover:text-primary transition-colors before:absolute before:inset-0 outline-none rounded-md focus-visible:ring-2 focus-visible:ring-primary/20">{member.full_name}</Link>
  </div>
  </TableCell>
  <TableCell>
@@ -227,7 +227,7 @@ export default function TeamPage() {
 
  <div className="block sm:hidden space-y-4">
  {filteredMembers.map((member) => (
- <div key={member.id} className="premium-card p-6 flex items-center justify-between active:scale-[0.98] transition-transform" onClick={() => router.push(`/dashboard/team/${member.id}`)}>
+ <Link key={member.id} href={`/dashboard/team/${member.id}`} className="premium-card p-6 flex items-center justify-between active:scale-[0.98] transition-transform block outline-none focus-visible:ring-2 focus-visible:ring-primary/20">
  <div className="flex items-center gap-4">
  <Avatar className="h-12 w-12 border-2 border-white shadow-sm ring-1 ring-slate-100">
  <AvatarImage src={member.avatar_url} className="object-cover" />
@@ -246,7 +246,7 @@ export default function TeamPage() {
  <div className="p-2 bg-slate-50 rounded-xl">
  <ChevronRight className="w-4 h-4 text-slate-500" />
  </div>
- </div>
+ </Link>
  ))}
  </div>
  </div>

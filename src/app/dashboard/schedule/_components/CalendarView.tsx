@@ -9,6 +9,7 @@ import DirectorTimeline from "./DirectorTimeline";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface CalendarViewProps {
   loading: boolean;
@@ -102,17 +103,13 @@ export default function CalendarView(props: CalendarViewProps) {
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       {/* Bộ lọc nhanh */}
-      <div className="flex bg-slate-100/60 p-1 rounded-xl w-full">
-        <button type="button" onClick={() => setFilterType('all')}
-          className={cn("flex-1 px-2 md:px-5 py-2 text-[12px] md:text-[14px] font-medium rounded-lg transition-all", filterType === 'all' ? "bg-white text-primary shadow-sm" : "text-slate-500")}
-        >Toàn chi nhánh</button>
-        <button type="button" onClick={() => setFilterType('bgd')}
-          className={cn("flex-1 px-2 md:px-5 py-2 text-[12px] md:text-[14px] font-medium rounded-lg transition-all", filterType === 'bgd' ? "bg-white text-primary shadow-sm" : "text-slate-500")}
-        >Ban giám đốc</button>
-        <button type="button" onClick={() => setFilterType('dept')}
-          className={cn("flex-1 px-2 md:px-5 py-2 text-[12px] md:text-[14px] font-medium rounded-lg transition-all", filterType === 'dept' ? "bg-white text-primary shadow-sm" : "text-slate-500")}
-        >Phòng của tôi</button>
-      </div>
+      <Tabs value={filterType} onValueChange={(value) => setFilterType(value as 'all' | 'bgd' | 'dept')} className="hidden">
+        <TabsList className="grid w-full grid-cols-3 rounded-xl bg-slate-100/60 p-0.5">
+          <TabsTrigger value="all" className="rounded-lg px-2 text-[12px] font-medium md:text-[14px]">Toàn chi nhánh</TabsTrigger>
+          <TabsTrigger value="bgd" className="rounded-lg px-2 text-[12px] font-medium md:text-[14px]">Ban giám đốc</TabsTrigger>
+          <TabsTrigger value="dept" className="rounded-lg px-2 text-[12px] font-medium md:text-[14px]">Phòng của tôi</TabsTrigger>
+        </TabsList>
+      </Tabs>
 
       {/* Danh sách lịch */}
       <div className="space-y-4">
@@ -140,7 +137,7 @@ export default function CalendarView(props: CalendarViewProps) {
         ) : (
           <div className="space-y-6">
             {filteredSchedules.length === 0 ? (
-              <div className="text-center py-12 bg-white rounded-2xl border border-slate-100 shadow-sm">
+              <div className="text-center py-8 bg-white rounded-2xl border border-slate-100 shadow-sm">
                 <Clock className="w-8 h-8 text-slate-300 mx-auto mb-2" />
                 <p className="text-sm font-medium text-slate-400">Không có lịch trình nào trong ngày</p>
               </div>
@@ -201,7 +198,7 @@ export default function CalendarView(props: CalendarViewProps) {
             {leaveList.length > 0 && (
               <div className="space-y-4 pt-6 border-t border-slate-100 mt-8">
                 <div className="flex items-center justify-between px-2">
-                  <h3 className="text-[12px] font-bold text-slate-400 flex items-center gap-2 uppercase tracking-wider">
+                  <h3 className="flex items-center gap-2 text-[12px] font-bold text-slate-400">
                     <Plane className="w-4 h-4 text-blue-500 shrink-0" />
                     Nhân sự nghỉ phép ({leaveList.length})
                   </h3>
@@ -230,7 +227,7 @@ export default function CalendarView(props: CalendarViewProps) {
                             <div className="flex-1 p-3.5 flex items-center gap-3.5 min-w-0">
                               <Avatar className="h-9 w-9 shrink-0 border border-slate-100 shadow-sm">
                                 <AvatarImage src={leave.creator?.avatar_url} />
-                                <AvatarFallback className="text-xs bg-slate-150 font-extrabold text-slate-600">
+                                <AvatarFallback className="text-xs bg-slate-100 font-extrabold text-slate-600">
                                   {leave.creator?.full_name?.[0]}
                                 </AvatarFallback>
                               </Avatar>
@@ -256,7 +253,7 @@ export default function CalendarView(props: CalendarViewProps) {
                                 
                                 <div className="flex items-center justify-between gap-1.5 pt-1.5 border-t border-slate-100">
                                   <span className="text-[9.5px] font-medium text-slate-400">Thời gian nghỉ:</span>
-                                  <span className="text-[10.5px] font-bold text-slate-750">{formattedRange}</span>
+                                  <span className="text-[10.5px] font-bold text-slate-700">{formattedRange}</span>
                                 </div>
                               </div>
                             </div>

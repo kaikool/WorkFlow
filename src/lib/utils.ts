@@ -27,6 +27,31 @@ export function sortProfilesByHierarchy<T extends { role?: string; is_department
   return [...profiles].sort(compareProfilesByHierarchy)
 }
 
+export function getProfileDisplayTitle(profile: any) {
+  const title = typeof profile?.title === "string" ? profile.title.trim() : "";
+  if (title) return title;
+
+  if (profile?.role === "admin") return "Quản trị hệ thống";
+  if (profile?.role === "director") return "Ban giám đốc";
+  if (profile?.is_department_head === true) return "Trưởng phòng";
+  if (profile?.role === "manager") return "Lãnh đạo đơn vị";
+  if (profile?.role === "hr_officer") return "Cán bộ Nhân sự";
+  if (profile?.role === "driver") return "Lái xe cơ quan";
+  if (profile?.role === "secretary") return "Lễ tân";
+  return "Cán bộ";
+}
+
+export function getProfileTitleBadgeClass(profile: any) {
+  if (profile?.role === "admin") return "bg-slate-900 text-white shadow-sm";
+  if (profile?.role === "director") return "bg-primary text-white shadow-primary-glow";
+  if (profile?.is_department_head === true) return "bg-amber-50 text-amber-700 border border-amber-200";
+  if (profile?.role === "manager") return "bg-blue-50 text-blue-700 border border-blue-200";
+  if (profile?.role === "hr_officer") return "bg-sky-50 text-sky-700 border border-sky-200";
+  if (profile?.role === "driver") return "bg-emerald-50 text-emerald-700 border border-emerald-200";
+  if (profile?.role === "secretary") return "bg-violet-50 text-violet-700 border border-violet-200";
+  return "bg-slate-50 text-slate-600 border border-slate-100";
+}
+
 export function canViewLeaveDetails(leave: any, currentUser: any) {
   if (!leave || !currentUser) return false;
   if (leave.type !== 'leave') return true;

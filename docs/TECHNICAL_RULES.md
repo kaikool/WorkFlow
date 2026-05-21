@@ -62,6 +62,11 @@ Giao diện của **projectFlow** tuân thủ triết lý **Exaggerated Minimali
 *   Mọi tương tác trạng thái (hover, focus, active) phải sử dụng transition mượt mà với khoảng thời gian từ `150ms` đến `300ms` (`transition-all duration-300 ease-in-out`). Cấm chuyển đổi trạng thái tức thời (instant).
 *   Áp dụng hiệu ứng thu nhỏ nhẹ khi click: `active:scale-95 transition-all` trên toàn bộ các nút bấm (`Button`), thẻ hành động (`Card` có link click) để tạo cảm giác phản hồi vật lý chân thực.
 
+### E. TThiết kế
+*  Sử dụng thư viện Shad/UI để tái sử dụng, không tự chế các component, sau này mỗi nơi một kiểu phá cấu trúc
+*   Giao diện phải đáp ứng các tiêu chuẩn cao về UI/UX, không phải cái gì cũng áp dụng 1 độ dày, độ dài cứng, vì như thế nhìn nó lại không đẹp, ví dụ nó to quá so với màn hình hoặc context sẽ làm xấu UI
+*   Mọi thiết kế đều phải có tính responsive, tương thích đa thiết bị, từ điện thoại, máy tính bảng cho đến máy tính để bàn. 
+*   Điều tối quan trọng là chữ viết phải rõ ràng, dễ đọc. Không được sử dụng các cỡ chữ quá nhỏ hoặc các hiệu ứng làm mờ chữ. Không để chữ nhảy xuống dòng, không viết lan man, không cần giải thích những gì quá hiển nhiên hoặc đã được ghi rõ ở chỗ khác. Hãy giữ giao diện gọn gàng, tối giản, chuyên nghiệp và đi thẳng vào vấn đề.
 ---
 
 ## 3. QUY TẮC PHÁT TRIỂN MÃ NGUỒN & CẤU TRÚC FILE

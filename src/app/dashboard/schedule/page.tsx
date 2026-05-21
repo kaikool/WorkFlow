@@ -10,6 +10,7 @@ import {
 import {
   Tabs, TabsContent, TabsList, TabsTrigger
 } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/utils/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { addDays, endOfDay, isSameDay, startOfWeek, endOfWeek, eachDayOfInterval } from "date-fns";
@@ -58,12 +59,19 @@ export default function SchedulePage() {
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-10 animate-fade-in-up pb-20">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 pt-4 sm:pt-0">
+      <div className="flex flex-col gap-4 pt-4 sm:flex-row sm:items-end sm:justify-between sm:pt-0">
         <div className="space-y-1">
           <h1 className="text-2xl font-semibold text-slate-900">Lịch trình</h1>
           <p className="text-[13px] text-slate-500 font-medium">Điều phối lịch họp & công tác</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <Tabs value={filterType} onValueChange={(value) => setFilterType(value as 'all' | 'bgd' | 'dept')}>
+            <TabsList className="grid min-h-9 w-full grid-cols-3 rounded-xl bg-slate-100/70 p-0.5 sm:w-[360px]">
+              <TabsTrigger value="all" className="rounded-lg px-2 text-[12px] font-medium">Toàn chi nhánh</TabsTrigger>
+              <TabsTrigger value="bgd" className="rounded-lg px-2 text-[12px] font-medium">Ban giám đốc</TabsTrigger>
+              <TabsTrigger value="dept" className="rounded-lg px-2 text-[12px] font-medium">Phòng của tôi</TabsTrigger>
+            </TabsList>
+          </Tabs>
           <CreateScheduleDialog
             isOpen={isCreateOpen} setIsOpen={setIsCreateOpen}
             newSchedule={newSchedule} setNewSchedule={setNewSchedule}
@@ -102,9 +110,9 @@ export default function SchedulePage() {
               <ShieldCheck className="w-3.5 h-3.5 mr-1.5 shrink-0" /> 
               <span>Điều phối</span>
               {pendingVehicleCount > 0 && (
-                <span className="ml-1.5 inline-flex min-h-6 min-w-6 shrink-0 items-center justify-center rounded-full bg-amber-600 px-2 text-xs font-bold leading-none text-white tabular-nums">
+                <Badge className="ml-1.5 min-h-6 min-w-6 shrink-0 justify-center rounded-full border-none bg-amber-600 px-2 text-xs font-medium leading-none text-white tabular-nums">
                   {pendingVehicleBadge}
-                </span>
+                </Badge>
               )}
             </TabsTrigger>
           )}
@@ -114,9 +122,9 @@ export default function SchedulePage() {
               <span className="hidden sm:inline">Phê duyệt nghỉ phép</span>
               <span className="inline sm:hidden">Duyệt phép</span>
               {pendingLeavesCount > 0 && (
-                <span className="ml-1.5 inline-flex min-h-6 min-w-6 shrink-0 items-center justify-center rounded-full bg-slate-900 px-2 text-xs font-bold leading-none text-white tabular-nums">
+                <Badge className="ml-1.5 min-h-6 min-w-6 shrink-0 justify-center rounded-full border-none bg-slate-900 px-2 text-xs font-medium leading-none text-white tabular-nums">
                   {pendingLeavesBadge}
-                </span>
+                </Badge>
               )}
             </TabsTrigger>
           )}

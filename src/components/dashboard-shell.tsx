@@ -11,7 +11,6 @@ import {
  LogOut, 
  Menu,
  ShieldAlert,
- X,
  Search,
  Settings,
  Loader2
@@ -28,6 +27,12 @@ import {
  DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import {
+ Sheet,
+ SheetContent,
+ SheetHeader,
+ SheetTitle,
+} from "@/components/ui/sheet";
 import { useToast } from "@/hooks/use-toast";
 import { createClient } from "@/utils/supabase/client";
 
@@ -112,7 +117,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
  if (loading) {
  return (
  <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 gap-4">
- <div className="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center animate-pulse shadow-lg">
+ <div className="h-12 w-12 bg-slate-900 rounded-2xl flex items-center justify-center animate-pulse shadow-lg">
  <div className="w-5 h-5 bg-white rounded-lg rotate-45" />
  </div>
  <Loader2 className="h-5 w-5 animate-spin text-slate-500" />
@@ -236,14 +241,13 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
  </div>
  </header>
 
- {isMobileMenuOpen && (
- <div className="lg:hidden fixed inset-0 z-[100] flex animate-in fade-in">
- <div className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm" onClick={() => setIsMobileMenuOpen(false)}></div>
- <div className="relative w-72 bg-white h-full flex flex-col animate-in slide-in-from-left duration-300">
- <div className="p-8 border-b border-slate-100 flex justify-between items-center">
+ <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+ <SheetContent side="left" className="w-72 p-0 lg:hidden">
+ <SheetHeader className="border-b border-slate-100 p-8 pr-14">
+ <SheetTitle asChild>
  <AppLogo />
- <Button variant="ghost" size="icon" onClick={() => setIsMobileMenuOpen(false)}><X className="w-5 h-5 text-slate-500" /></Button>
- </div>
+ </SheetTitle>
+ </SheetHeader>
  <nav className="flex-1 p-6 space-y-1">
  {navItems.map((item) => (
  <Link key={item.name} href={item.href} onClick={() => setIsMobileMenuOpen(false)} className={cn("flex items-center gap-3 px-4 py-3 rounded-xl text-[13px] font-bold", pathname === item.href ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-50")}>
@@ -251,9 +255,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
  </Link>
  ))}
  </nav>
- </div>
- </div>
- )}
+ </SheetContent>
+ </Sheet>
 
  <main className="flex-1 py-6 md:py-8 w-full overflow-x-hidden">
  {children}

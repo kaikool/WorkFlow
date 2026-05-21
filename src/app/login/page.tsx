@@ -125,12 +125,8 @@ export default function LoginPage() {
   if (isPendingApproval) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-4 relative overflow-hidden">
-        <div className="absolute inset-0 z-0">
-          <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[100px] opacity-60" />
-        </div>
-
         <div className="w-full max-w-md z-10 flex flex-col items-center gap-8 animate-fade-in-up">
-          <Card className="w-full shadow-2xl border-none rounded-[2.5rem] bg-white/90 backdrop-blur-xl overflow-hidden p-8 text-center space-y-6">
+          <Card className="w-full shadow-2xl border-none rounded-2xl bg-white/90 backdrop-blur-xl overflow-hidden p-8 text-center space-y-6">
             <div className="w-20 h-20 bg-primary/10 text-primary rounded-3xl flex items-center justify-center mx-auto shadow-lg shadow-primary/5 relative">
               <Clock className="w-10 h-10 animate-pulse text-primary" />
               <div className="absolute -top-1 -right-1 w-4 h-4 bg-amber-400 rounded-full animate-ping" />
@@ -171,7 +167,7 @@ export default function LoginPage() {
                 setPassword('')
                 setFullName('')
               }}
-              className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl font-bold shadow-lg shadow-primary/20 active:scale-95 transition-all text-xs"
+              className="w-full min-h-11 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl font-bold shadow-lg shadow-primary/20 active:scale-95 transition-all text-xs"
             >
               Quay lại Đăng nhập
             </Button>
@@ -184,12 +180,8 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-4 relative overflow-hidden">
-      <div className="absolute inset-0 z-0">
-        <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[100px] opacity-60" />
-      </div>
-
       <div className="w-full max-w-md z-10 flex flex-col items-center gap-8">
-        <Card className="w-full shadow-2xl border-none rounded-[2.5rem] bg-white/80 backdrop-blur-xl overflow-hidden transition-all duration-500">
+        <Card className="w-full shadow-2xl border-none rounded-2xl bg-white/80 backdrop-blur-xl overflow-hidden transition-all duration-500">
           <CardHeader className="space-y-1 flex flex-col items-center p-8 pb-4">
             <div className="mb-3 transition-transform hover:scale-105 flex items-center justify-center">
               <img src="/logo.png" alt="Logo" className="h-16 w-16 object-contain" />
@@ -216,7 +208,7 @@ export default function LoginPage() {
                         id="fullName"
                         type="text"
                         placeholder="Nguyễn Văn A"
-                        className="pl-11 h-12 bg-slate-50 border-none rounded-xl font-medium text-sm"
+                        className="pl-11 min-h-11 bg-slate-50 border-none rounded-xl font-medium text-sm"
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
                         required={isSignUp}
@@ -230,7 +222,7 @@ export default function LoginPage() {
                     <div className="relative">
                       <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 z-10" />
                       <Select value={role} onValueChange={setRole}>
-                        <SelectTrigger className="pl-11 h-12 bg-slate-50 border-none rounded-xl font-medium text-sm text-slate-950 focus:ring-0">
+                        <SelectTrigger className="pl-11 min-h-11 bg-slate-50 border-none rounded-xl font-medium text-sm text-slate-950 focus:ring-0">
                           <SelectValue placeholder="Chọn chức danh" />
                         </SelectTrigger>
                         <SelectContent className="rounded-xl border-none shadow-premium p-2">
@@ -247,7 +239,7 @@ export default function LoginPage() {
                     <div className="relative">
                       <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 z-10" />
                       <Select value={departmentId} onValueChange={setDepartmentId}>
-                        <SelectTrigger className="pl-11 h-12 bg-slate-50 border-none rounded-xl font-medium text-sm text-slate-950 focus:ring-0">
+                        <SelectTrigger className="pl-11 min-h-11 bg-slate-50 border-none rounded-xl font-medium text-sm text-slate-950 focus:ring-0">
                           <SelectValue placeholder="Chọn phòng ban" />
                         </SelectTrigger>
                         <SelectContent className="rounded-xl border-none shadow-premium p-2 max-h-48 overflow-y-auto">
@@ -272,7 +264,7 @@ export default function LoginPage() {
                     id="email"
                     type="text"
                     placeholder="VD: UserAD"
-                    className="pl-11 h-12 bg-slate-50 border-none rounded-xl font-medium text-sm"
+                    className="pl-11 min-h-11 bg-slate-50 border-none rounded-xl font-medium text-sm"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
@@ -289,7 +281,7 @@ export default function LoginPage() {
                     id="password"
                     type="password"
                     placeholder="••••••••"
-                    className="pl-11 h-12 bg-slate-50 border-none rounded-xl font-medium text-sm"
+                    className="pl-11 min-h-11 bg-slate-50 border-none rounded-xl font-medium text-sm"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
@@ -301,7 +293,7 @@ export default function LoginPage() {
             <CardFooter className="p-8 pt-0 flex flex-col space-y-4">
               <Button
                 type="submit"
-                className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl font-bold shadow-lg shadow-primary/20 active:scale-95 transition-all text-xs"
+                className="w-full min-h-11 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl font-bold shadow-lg shadow-primary/20 active:scale-95 transition-all text-xs"
                 disabled={loading}
               >
                 {loading ? (
@@ -314,9 +306,10 @@ export default function LoginPage() {
                 )}
               </Button>
 
-              <button
+              <Button
                 type="button"
-                className="text-sm font-medium text-slate-500 hover:text-primary transition-colors duration-300 cursor-pointer flex items-center gap-1.5"
+                variant="ghost"
+                className="flex min-h-11 items-center gap-1.5 rounded-xl px-4 text-sm font-medium text-slate-500 transition-colors duration-300 hover:bg-slate-100 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
                 onClick={() => {
                   setIsSignUp(!isSignUp)
                   setEmail('')
@@ -332,7 +325,7 @@ export default function LoginPage() {
                 ) : (
                   'Yêu cầu cấp tài khoản mới'
                 )}
-              </button>
+              </Button>
             </CardFooter>
           </form>
         </Card>

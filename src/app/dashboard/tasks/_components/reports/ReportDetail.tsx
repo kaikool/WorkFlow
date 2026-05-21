@@ -251,8 +251,8 @@ export function ReportDetail({ id }: { id: string }) {
             <div className="premium-card p-6 border-none space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
                 <div>
-                  <h3 className="text-sm font-medium text-slate-900 flex items-center gap-2"><Target className="w-4 h-4"/>Theo dõi tiến độ các phòng ban</h3>
-                  <p className="text-xs text-slate-500 font-medium mt-1">Tổng số: {siblingReports.length} đơn vị nhận yêu cầu</p>
+                  <h3 className="text-sm font-medium text-slate-900 flex items-center gap-2"><Target className="w-4 h-4"/>Theo dõi tiến độ {siblingReports.some(s => !s.assignee_id) ? 'các phòng ban' : 'cá nhân'}</h3>
+                  <p className="text-xs text-slate-500 font-medium mt-1">Tổng số: {siblingReports.length} {siblingReports.some(s => !s.assignee_id) ? 'đơn vị' : 'người'} nhận yêu cầu</p>
                 </div>
                 <div className="flex gap-2">
                   <Badge className="bg-emerald-50 text-emerald-600 border-none font-medium text-sm">Đã nộp: {siblingReports.filter(r=>r.status==="done").length}</Badge>
@@ -263,7 +263,7 @@ export function ReportDetail({ id }: { id: string }) {
                 <table className="w-full border-collapse text-left">
                   <thead>
                     <tr className="border-b border-slate-100 text-sm font-medium text-slate-400">
-                      <th className="pb-3 pl-2 w-1/2">Đơn vị tiếp nhận</th>
+                      <th className="pb-3 pl-2 w-1/2">{siblingReports.some(s => !s.assignee_id) ? 'Đơn vị tiếp nhận' : 'Cá nhân tiếp nhận'}</th>
                       <th className="pb-3 w-1/2 text-right pr-2">Ghi nhận nộp</th>
                     </tr>
                   </thead>
@@ -277,7 +277,7 @@ export function ReportDetail({ id }: { id: string }) {
                               <span className={cn("p-1 rounded-lg shrink-0",isDone?"bg-emerald-50 text-emerald-600":"bg-amber-50 text-amber-600")}>
                                 {isDone?<CheckCircle2 className="w-3.5 h-3.5"/>:<Target className="w-3.5 h-3.5"/>}
                               </span>
-                              {sib.departments?.name||"Phòng chuyên môn"}
+                              {sib.assignee_id ? sib.assignee?.full_name : (sib.departments?.name||"Phòng chuyên môn")}
                             </Link>
                           </td>
                           <td className="py-4 text-right pr-2">

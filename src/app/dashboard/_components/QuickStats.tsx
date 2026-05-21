@@ -1,6 +1,7 @@
 import React from 'react';
 import { TrendingUp, TrendingDown, Clock, Briefcase, Target, Trophy } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Progress } from '@/components/ui/progress';
 
 export default function QuickStats({ stats }: { stats: any }) {
   return (
@@ -61,9 +62,7 @@ export default function QuickStats({ stats }: { stats: any }) {
             {stats.kpiCount} chỉ tiêu
           </span>
         </div>
-        <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-slate-100">
-          <div className="h-full rounded-full bg-amber-500" style={{ width: Math.min(100, stats.kpiProgress) + '%' }} />
-        </div>
+        <Progress value={Math.min(100, stats.kpiProgress)} className="mt-3 h-1.5 bg-slate-100" />
       </div>
     </div>
   );

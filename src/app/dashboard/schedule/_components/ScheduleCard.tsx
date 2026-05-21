@@ -32,10 +32,16 @@ export default function ScheduleCard({ item, isTCTH, profile, onSelect, onStatus
 
   return (
     <Card className={cn(
-      "rounded-2xl overflow-hidden border-none shadow-sm hover:shadow-xl transition-all duration-500 group",
+      "rounded-2xl overflow-hidden border-none shadow-sm hover:shadow-xl transition-all duration-500 group relative",
       isTrip ? "hover:bg-amber-50/40" : "hover:bg-slate-50"
     )}>
-      <CardContent className="p-0 cursor-pointer" onClick={() => onSelect(item)}>
+      <CardContent className="p-0">
+        <button
+          type="button"
+          className="absolute inset-0 w-full h-full cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 rounded-2xl z-0"
+          onClick={() => onSelect(item)}
+          aria-label={`Chi tiết lịch: ${displayTitle}`}
+        />
         <div className="flex">
           <div className={cn("w-2 transition-all duration-500 group-hover:w-3", isTrip ? "bg-amber-600" : "bg-slate-700")} />
 
@@ -57,7 +63,7 @@ export default function ScheduleCard({ item, isTCTH, profile, onSelect, onStatus
                 </div>
                 <h3 className="text-[15px] md:text-base font-bold text-slate-900 leading-tight line-clamp-2 pt-1">{displayTitle}</h3>
               </div>
-              <div className="bg-slate-50 p-2 rounded-xl group-hover:bg-white transition-colors">
+              <div className="bg-slate-50 p-2 rounded-xl group-hover:bg-white transition-colors relative z-10">
                 <MoreVertical className="w-3.5 h-3.5 text-slate-500" />
               </div>
             </div>
@@ -121,7 +127,7 @@ export default function ScheduleCard({ item, isTCTH, profile, onSelect, onStatus
             </div>
 
             {isTCTH && item.status === 'pending' && (
-              <div className="flex gap-2 pt-4 border-t border-slate-50">
+              <div className="flex gap-2 pt-4 border-t border-slate-50 relative z-10">
                 <Button size="sm" disabled={item.use_vehicle && !item.vehicle_id}
                   onClick={(e) => { e.stopPropagation(); onStatusUpdate(item.id, 'approved'); }}
                   className="bg-slate-900 hover:bg-black min-h-11 rounded-xl font-semibold text-sm shadow-sm px-4"

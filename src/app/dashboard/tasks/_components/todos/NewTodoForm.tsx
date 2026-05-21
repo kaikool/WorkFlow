@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import {
-  ChevronLeft, Plus, Loader2, CheckCircle2, ArrowRight, Calendar, Flag, Check, Lock
+  ChevronLeft, Plus, Loader2, CheckCircle2, ArrowRight, Calendar, Flag, Lock
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -13,8 +13,15 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Calendar as CalendarPicker } from '@/components/ui/calendar'
 import { Badge } from '@/components/ui/badge'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { format } from 'date-fns'
 import { vi } from 'date-fns/locale'
 import { useToast } from '@/hooks/use-toast'
@@ -115,7 +122,7 @@ export function NewTodoForm() {
     return (
       <div className="max-w-md mx-auto py-24 text-center space-y-6 animate-in zoom-in duration-500">
         <div className="inline-flex items-center justify-center bg-emerald-50 text-emerald-600 p-6 rounded-full">
-          <CheckCircle2 className="w-12 h-12" />
+          <CheckCircle2 className="h-12 w-12" />
         </div>
         <div className="space-y-2">
           <h2 className="text-2xl font-semibold text-slate-900">Hoàn tất!</h2>
@@ -147,7 +154,7 @@ export function NewTodoForm() {
             <Input
               name="title"
               placeholder="Nhập tiêu đề công việc..."
-              className="h-14 rounded-xl bg-slate-50 border-none shadow-none font-semibold text-slate-900 text-xl focus-visible:ring-0 placeholder:text-slate-500 px-4"
+              className="min-h-11 rounded-xl bg-slate-50 border-none shadow-none font-medium text-slate-900 text-base focus-visible:ring-0 placeholder:text-slate-500 px-4"
               required
             />
             <div className="bg-slate-50 p-4 rounded-xl space-y-2">
@@ -174,8 +181,8 @@ export function NewTodoForm() {
             {/* Người nhận */}
             <div className="space-y-3">
               <Label className="text-sm font-medium text-slate-500">Người nhận</Label>
-              <Popover>
-                <PopoverTrigger asChild disabled={isStaff}>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild disabled={isStaff}>
                   <Button variant="outline" className={cn(
                     'w-full h-auto min-h-[44px] rounded-xl border-none bg-slate-50 justify-between px-4 py-2 text-left font-bold text-slate-900 shadow-sm transition-all hover:bg-slate-100 active:scale-95',
                     isStaff && 'cursor-not-allowed opacity-80'
@@ -192,30 +199,27 @@ export function NewTodoForm() {
                     </div>
                     {isStaff ? <Lock className="w-3.5 h-3.5 text-slate-500 shrink-0" /> : <ChevronLeft className="w-4 h-4 text-slate-500 -rotate-90 shrink-0" />}
                   </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[300px] p-2 rounded-xl border border-slate-200 shadow-lg" align="end">
-                  <div className="max-h-[300px] overflow-y-auto space-y-1 p-1">
-                    {profiles.map(p => (
-                      <div
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-[300px] rounded-xl border border-slate-200 p-2 shadow-lg" align="end">
+                  <ScrollArea className="h-[min(18rem,var(--radix-dropdown-menu-content-available-height))]">
+                  <div className="space-y-1 p-1 pr-2">
+                    {profiles.map(p => {
+                      const checked = selectedAssignees.includes(p.id)
+                      return (
+                      <DropdownMenuCheckboxItem
                         key={p.id}
-                        onClick={() => toggleAssignee(p.id)}
-                        className={cn(
-                          'flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all',
-                          selectedAssignees.includes(p.id) ? 'bg-primary/5 text-primary' : 'hover:bg-slate-50'
-                        )}
+                        checked={checked}
+                        onCheckedChange={() => toggleAssignee(p.id)}
+                        onSelect={(event) => event.preventDefault()}
+                        className="rounded-xl py-3 text-sm font-medium"
                       >
-                        <div className="flex items-center gap-3">
-                          <div className={cn('w-4 h-4 rounded-md border flex items-center justify-center transition-all', selectedAssignees.includes(p.id) ? 'bg-primary border-primary' : 'border-slate-300')}>
-                            {selectedAssignees.includes(p.id) && <Check className="w-3 h-3 text-white" />}
-                          </div>
-                          <span className="text-sm font-medium">{p.full_name}</span>
-                        </div>
-                        {p.role === 'manager' && <Badge className="text-xs bg-amber-50 text-amber-600 border-none px-1.5 font-medium whitespace-nowrap truncate">Lãnh đạo</Badge>}
-                      </div>
-                    ))}
+                        {p.full_name}
+                      </DropdownMenuCheckboxItem>
+                    )})}
                   </div>
-                </PopoverContent>
-              </Popover>
+                  </ScrollArea>
+                </DropdownMenuContent>
+              </DropdownMenu>
               {isStaff && <p className="text-xs text-slate-500 font-medium pl-1 italic">Bạn đang tự giao việc cho chính mình.</p>}
             </div>
 

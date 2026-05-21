@@ -77,7 +77,7 @@ export default function DirectorTimeline({
                     return (
                       <div
                         onClick={() => onSelectSchedule(leaveSched)}
-                        className="absolute inset-x-0 h-6 mx-1 bg-slate-100 hover:bg-slate-200/80 border border-slate-200/50 rounded-lg z-10 flex items-center justify-center cursor-pointer transition-all select-none shadow-2xs"
+                        className="absolute inset-x-0 h-6 mx-1 bg-slate-100 hover:bg-slate-200/80 border border-slate-200/50 rounded-lg z-10 flex items-center justify-center cursor-pointer transition-all select-none shadow-sm"
                       >
                         <span className="text-[9px] font-black text-slate-500 flex items-center gap-1.5">
                           <CalendarDays className="w-3.5 h-3.5 text-slate-400" /> Nghỉ phép
@@ -111,7 +111,7 @@ export default function DirectorTimeline({
                             key={sched.id}
                             onClick={() => onSelectSchedule(sched)}
                             style={{ left: `${leftPercent}%`, width: `${widthPercent}%` }}
-                            className={`absolute h-2.5 rounded-full cursor-pointer transition-all hover:scale-y-125 hover:shadow-xs active:scale-[0.95] select-none ${typeColor} border-none shadow-xs ${(isCutLeft || isCutRight) ? 'opacity-60' : ''}`}
+                            className={`absolute h-2.5 rounded-full cursor-pointer transition-all hover:scale-y-125 hover:shadow-sm active:scale-[0.95] select-none ${typeColor} border-none shadow-sm ${(isCutLeft || isCutRight) ? 'opacity-60' : ''}`}
                             title={`${displayTitle} (${format(sTime, 'HH:mm')} - ${format(eTime, 'HH:mm')})${isCutLeft ? ' ◀ ngoài khung' : ''}${isCutRight ? ' ▶ ngoài khung' : ''}`}
                           />
                         );
@@ -144,16 +144,16 @@ export default function DirectorTimeline({
           return (
             <div key={dir.id} className="flex justify-between items-center py-2 border-b border-slate-100/50 last:border-none px-1">
               <div className="flex items-center gap-2.5">
-                <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${dirColor.bullet} shadow-xs ring-2 ring-white`} />
+                <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${dirColor.bullet} shadow-sm ring-2 ring-white`} />
                 <span className="text-[13px] font-bold text-slate-800">{dir.full_name}</span>
               </div>
               <div>
                 {onLeave ? (
-                  <Badge className="bg-slate-100 hover:bg-slate-100 text-slate-500 border border-slate-200/80 rounded-full font-extrabold text-[10px] px-3 py-1 shadow-2xs">Nghỉ phép</Badge>
+                  <Badge className="bg-slate-100 hover:bg-slate-100 text-slate-500 border border-slate-200/80 rounded-full font-extrabold text-[10px] px-3 py-1 shadow-sm">Nghỉ phép</Badge>
                 ) : onTrip ? (
-                  <Badge className="bg-orange-50 hover:bg-orange-50 text-orange-600 border border-orange-200/80 rounded-full font-extrabold text-[10px] px-3 py-1 shadow-2xs">Công tác</Badge>
+                  <Badge className="bg-orange-50 hover:bg-orange-50 text-orange-600 border border-orange-200/80 rounded-full font-extrabold text-[10px] px-3 py-1 shadow-sm">Công tác</Badge>
                 ) : (
-                  <Badge className="bg-emerald-50 hover:bg-emerald-50 text-emerald-600 border border-emerald-200/80 rounded-full font-extrabold text-[10px] px-3 py-1 shadow-2xs">Chi nhánh</Badge>
+                  <Badge className="bg-emerald-50 hover:bg-emerald-50 text-emerald-600 border border-emerald-200/80 rounded-full font-extrabold text-[10px] px-3 py-1 shadow-sm">Chi nhánh</Badge>
                 )}
               </div>
             </div>

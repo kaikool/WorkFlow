@@ -8,11 +8,12 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
 import { Progress } from "@/components/ui/progress"
+import { Slider } from "@/components/ui/slider"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { useToast } from "@/hooks/use-toast"
-import { cn, compareProfilesByHierarchy, sortProfilesByHierarchy } from "@/lib/utils"
+import { cn, compareProfilesByHierarchy, getProfileDisplayTitle, sortProfilesByHierarchy } from "@/lib/utils"
 import { createClient } from "@/utils/supabase/client"
 import Link from "next/link"
 
@@ -53,7 +54,7 @@ export function TodoDetailInner({ id, tableName = "tasks" }: { id: string, table
           p = data; setProfile(data)
         }
         const { data, error } = await supabase.from(tableName)
-          .select(`*, creator:profiles!${tableName}_created_by_fkey(full_name,avatar_url,department_id,departments(name)), assignee:profiles!${tableName}_assignee_id_fkey(id,full_name,avatar_url,role,is_department_head)${tableName === "tasks" ? ", task_assignees(user_id,profile:profiles(full_name,avatar_url,role,is_department_head))" : ""}`)
+          .select(`*, creator:profiles!${tableName}_created_by_fkey(full_name,title,avatar_url,department_id,role,is_department_head,departments(name)), assignee:profiles!${tableName}_assignee_id_fkey(id,full_name,title,avatar_url,role,is_department_head)${tableName === "tasks" ? ", task_assignees(user_id,profile:profiles(full_name,title,avatar_url,role,is_department_head))" : ""}`)
           .eq("id", id).single()
         if (error) throw error
         const isOwner = data.created_by === user?.id
@@ -333,7 +334,7 @@ export function TodoDetailInner({ id, tableName = "tasks" }: { id: string, table
                             <div className="flex items-center gap-4 shrink-0">
                               {isLeader?(
                                 <div className="relative max-w-[110px]">
-                                  <input type="number" value={contrib} onChange={e=>handleLeaderUpdateContribution(a.user_id,parseInt(e.target.value)||0)} className="w-full min-h-11 md:min-h-10 bg-slate-50/50 border border-slate-100 rounded-lg text-right text-base md:text-sm font-medium px-2 pr-14 focus:outline-none focus:bg-white focus:border-primary/30 transition-all [appearance:textfield]"/>
+                                  <Input type="number" value={contrib} onChange={e=>handleLeaderUpdateContribution(a.user_id,parseInt(e.target.value)||0)} className="w-full min-h-11 md:min-h-10 bg-slate-50/50 border border-slate-100 rounded-lg text-right text-base md:text-sm font-medium px-2 pr-14 focus:bg-white focus:border-primary/30 [appearance:textfield]"/>
                                   <span className="absolute right-2 top-1/2 -translate-y-1/2 text-sm font-medium text-slate-500 pointer-events-none truncate max-w-[45px]">{task.unit}</span>
                                 </div>
                               ):(
@@ -353,7 +354,7 @@ export function TodoDetailInner({ id, tableName = "tasks" }: { id: string, table
                         <span className="text-xs font-medium text-primary/60 flex items-center gap-2"><TrendingUp className="w-4 h-4"/>Hiệu chỉnh phòng</span>
                         <div className="flex items-center gap-2 bg-white p-1 rounded-xl border border-slate-200/60 shadow-sm">
                           <Button variant="ghost" size="icon" className="h-11 w-11 rounded-xl text-primary hover:bg-primary/5" onClick={()=>handleGeneralAdjustment(-1)}><Minus className="w-4 h-4"/></Button>
-                          <span className="min-w-[40px] text-center font-bold text-sm text-slate-900">{(task.metadata?.general_adjustment||0).toLocaleString("vi-VN")}</span>
+                          <span className="min-w-[40px] text-center font-medium text-sm text-slate-900">{(task.metadata?.general_adjustment||0).toLocaleString("vi-VN")}</span>
                           <Button variant="ghost" size="icon" className="h-11 w-11 rounded-xl text-primary hover:bg-primary/5" onClick={()=>handleGeneralAdjustment(1)}><PlusIcon className="w-4 h-4"/></Button>
                         </div>
                       </div>
@@ -363,11 +364,14 @@ export function TodoDetailInner({ id, tableName = "tasks" }: { id: string, table
               </div>
             ) : (
               <div className="space-y-6">
-                <div className="flex gap-2 h-2">
-                  {[25,50,75,100].map(val=>(
-                    <button key={val} onClick={()=>canEdit&&updateProgress(val)} className={cn("flex-1 rounded-full transition-all duration-300",(task.progress||0)>=val?"bg-primary":"bg-slate-100",!canEdit&&"cursor-default")}/>
-                  ))}
-                </div>
+                <Slider
+                  value={[task.progress || 0]}
+                  min={0}
+                  max={100}
+                  step={25}
+                  disabled={!canEdit}
+                  onValueCommit={([value]) => updateProgress(value)}
+                />
                 <div className="flex justify-between px-1">
                   {["Tiếp nhận","Thực hiện","Kiểm soát","Hoàn tất"].map((label,i)=>(
                     <span key={i} className={cn("text-xs font-medium transition-colors",(task.progress||0)>=(i+1)*25?"text-primary":"text-slate-500")}>{label}</span>
@@ -444,7 +448,7 @@ export function TodoDetailInner({ id, tableName = "tasks" }: { id: string, table
                     <PopoverTrigger asChild><Button variant="ghost" size="sm" className="min-h-10 text-sm font-medium text-primary hover:bg-primary/5">Phân công</Button></PopoverTrigger>
                     <PopoverContent className="w-[260px] p-3 rounded-xl shadow-xl border-slate-200" align="end">
                       <div className="space-y-3">
-                        <h4 className="font-bold text-sm text-slate-900">Phân công cho cán bộ</h4>
+                        <h4 className="font-medium text-sm text-slate-900">Phân công cho cán bộ</h4>
                         <Select value={selectedDelegate} onValueChange={setSelectedDelegate}>
                           <SelectTrigger className="w-full min-h-11 text-xs rounded-lg bg-slate-50 border-slate-200"><SelectValue placeholder="Chọn cán bộ..."/></SelectTrigger>
                           <SelectContent className="rounded-lg">{deptProfiles.map(p=><SelectItem key={p.id} value={p.id} className="text-xs">{p.full_name}</SelectItem>)}</SelectContent>
@@ -459,7 +463,7 @@ export function TodoDetailInner({ id, tableName = "tasks" }: { id: string, table
                 {assignees.length>0 ? assignees.map(a=>(
                   <div key={a.user_id} className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
                     <Avatar className="h-8 w-8 border border-white shadow-sm"><AvatarImage src={a.profile?.avatar_url} className="object-cover"/><AvatarFallback className="bg-primary text-white text-sm font-medium">{a.profile?.full_name?.[0]}</AvatarFallback></Avatar>
-                    <div className="flex flex-col"><span className="text-sm font-medium text-slate-900">{a.profile?.full_name}</span><span className="text-sm font-medium text-slate-500 truncate whitespace-nowrap">Cán bộ</span></div>
+                    <div className="flex flex-col"><span className="text-sm font-medium text-slate-900">{a.profile?.full_name}</span><span className="text-sm font-medium text-slate-500 truncate whitespace-nowrap">{getProfileDisplayTitle(a.profile)}</span></div>
                   </div>
                 )) : task.assignee ? (
                   <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">

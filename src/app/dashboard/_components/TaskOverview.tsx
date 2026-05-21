@@ -35,7 +35,7 @@ export default function TaskOverview({
               href={t.type === 'recognition' ? `/dashboard/team` : `/dashboard/tasks/${t.type === 'comment' ? t.task_id : t.id}`}
               className="block group"
             >
-              <div className="flex items-center justify-between p-4 transition-all duration-300 rounded-[24px] group border border-transparent bg-white hover:bg-slate-50 hover:border-slate-100 hover:shadow-sm">
+              <div className="flex items-center justify-between p-4 transition-all duration-300 rounded-2xl group border border-transparent bg-white hover:bg-slate-50 hover:border-slate-100 hover:shadow-sm">
                 <div className="shrink-0 relative">
                   {t.type === 'task' ? (
                     <div className={cn(
@@ -162,8 +162,8 @@ export default function TaskOverview({
               </Button>
             </div>
           ) : (
-            <div className="py-12 text-center space-y-4">
-              <div className="w-12 h-12 flex items-center justify-center mx-auto text-slate-500">
+            <div className="py-8 text-center space-y-4">
+              <div className="h-12 w-12 flex items-center justify-center mx-auto text-slate-500">
                 <Target className="w-6 h-6" />
               </div>
               <p className="text-sm font-medium text-slate-500 truncate whitespace-nowrap">Chưa có chỉ tiêu trọng tâm</p>

@@ -76,12 +76,8 @@ function RegisterContent() {
 
  return (
  <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-4 relative overflow-hidden">
- <div className="absolute inset-0 z-0">
- <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[100px] opacity-60" />
- </div>
-
  <div className="w-full max-w-md z-10 flex flex-col items-center gap-6">
- <Card className="w-full shadow-2xl border-none rounded-[2.5rem] bg-white/80 backdrop-blur-xl overflow-hidden">
+ <Card className="w-full shadow-2xl border-none rounded-2xl bg-white/80 backdrop-blur-xl overflow-hidden">
  <div className="bg-primary p-8 text-white text-center relative overflow-hidden">
  <div className="absolute top-0 right-0 p-4 opacity-5">
  <img src="/logo.png" alt="" className="w-24 h-24 rotate-12 grayscale" />
@@ -104,7 +100,7 @@ function RegisterContent() {
  <Input
  id="fullName"
  placeholder="Nhập họ và tên cán bộ"
- className="pl-11 h-12 bg-slate-50 border-none rounded-xl font-medium text-base md:text-sm"
+ className="pl-11 min-h-11 bg-slate-50 border-none rounded-xl font-medium text-base md:text-sm"
  value={fullName}
  onChange={(e) => setFullName(e.target.value)}
  required
@@ -120,7 +116,7 @@ function RegisterContent() {
  id="email"
  type="email"
  placeholder="name@bank.com.vn"
- className="pl-11 h-12 bg-slate-50 border-none rounded-xl font-medium text-base md:text-sm"
+ className="pl-11 min-h-11 bg-slate-50 border-none rounded-xl font-medium text-base md:text-sm"
  value={email}
  onChange={(e) => setEmail(e.target.value)}
  required
@@ -136,7 +132,7 @@ function RegisterContent() {
  id="password"
  type="password"
  placeholder="••••••••"
- className="pl-11 h-12 bg-slate-50 border-none rounded-xl font-medium text-base md:text-sm"
+ className="pl-11 min-h-11 bg-slate-50 border-none rounded-xl font-medium text-base md:text-sm"
  value={password}
  onChange={(e) => setPassword(e.target.value)}
  required
@@ -153,7 +149,7 @@ function RegisterContent() {
  </CardContent>
 
  <CardFooter className="p-8 pt-0 flex flex-col space-y-4">
- <Button type="submit" className="w-full h-12 bg-primary hover:bg-primary/90 rounded-xl font-bold shadow-lg shadow-primary/20" disabled={loading}>
+ <Button type="submit" className="w-full min-h-11 bg-primary hover:bg-primary/90 rounded-xl font-bold shadow-lg shadow-primary/20" disabled={loading}>
  {loading ? (
  <>
  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -161,13 +157,14 @@ function RegisterContent() {
  </>
  ) : 'Hoàn tất đăng ký'}
  </Button>
- <button
+ <Button
  type="button"
- className="text-sm font-bold text-slate-500 hover:text-primary transition-colors"
+ variant="ghost"
+ className="min-h-11 rounded-xl px-4 text-sm font-bold text-slate-500 hover:bg-slate-100 hover:text-primary"
  onClick={() => router.push('/login')}
  >
  Đã có tài khoản? Đăng nhập
- </button>
+ </Button>
  </CardFooter>
  </form>
  </Card>

@@ -26,13 +26,13 @@ export default function DateNavigator({ selectedDate, setSelectedDate, weekDays,
             </span>
           </div>
           <div className="flex items-center gap-1.5">
-            <Button variant="outline" size="icon" className="rounded-lg border-slate-200 h-8 w-8" onClick={() => setSelectedDate(addDays(selectedDate, -7))}>
+            <Button variant="outline" size="icon" className="rounded-lg border-slate-200" aria-label="Xem tuần trước" onClick={() => setSelectedDate(addDays(selectedDate, -7))}>
               <ChevronLeft className="w-4 h-4" />
             </Button>
-            <Button variant="outline" className="rounded-lg border-slate-200 font-semibold h-8 px-3 text-[13px]" onClick={() => setSelectedDate(new Date())}>
+            <Button variant="outline" className="rounded-lg border-slate-200 px-3 text-[13px] font-semibold" onClick={() => setSelectedDate(new Date())}>
               Hôm nay
             </Button>
-            <Button variant="outline" size="icon" className="rounded-lg border-slate-200 h-8 w-8" onClick={() => setSelectedDate(addDays(selectedDate, 7))}>
+            <Button variant="outline" size="icon" className="rounded-lg border-slate-200" aria-label="Xem tuần sau" onClick={() => setSelectedDate(addDays(selectedDate, 7))}>
               <ChevronRight className="w-4 h-4" />
             </Button>
           </div>
@@ -51,11 +51,15 @@ export default function DateNavigator({ selectedDate, setSelectedDate, weekDays,
             const hasPending = daySchedules.some(s => s.status === 'pending' || (s.use_vehicle && !s.vehicle_id));
             const hasApproved = daySchedules.some(s => s.status === 'approved');
             return (
-              <button
+              <Button
                 key={idx}
+                type="button"
+                variant="ghost"
                 onClick={() => setSelectedDate(day)}
+                aria-pressed={isSelected}
+                aria-label={`Chọn ngày ${format(day, 'dd/MM/yyyy')}`}
                 className={cn(
-                  "flex flex-col items-center py-2 rounded-xl transition-all relative h-14 justify-between",
+                  "relative h-auto min-h-14 flex-col items-center justify-between rounded-xl px-1 py-2 transition-all",
                   isSelected
                     ? "bg-primary text-white ring-2 ring-primary/20"
                     : "hover:bg-slate-100 text-slate-500"
@@ -92,7 +96,7 @@ export default function DateNavigator({ selectedDate, setSelectedDate, weekDays,
                     )}
                   </div>
                 )}
-              </button>
+              </Button>
             );
           })}
         </div>

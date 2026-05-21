@@ -4,15 +4,18 @@ import React, { useState, useEffect } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Checkbox } from '@/components/ui/checkbox'
+import { Switch } from '@/components/ui/switch'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
-  Search, Filter, Loader2, Calendar, Zap, Users, FileText, ChevronDown, ChevronUp
+  Search, Filter, Loader2, Calendar, Zap, Users, FileText, ChevronDown, ChevronUp, Building2
 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import { useRouter, useSearchParams } from 'next/navigation'
+import Link from 'next/link'
 import { useToast } from '@/hooks/use-toast'
 import { cn, compareProfilesByHierarchy } from '@/lib/utils'
 import { DeadlineProgress } from '../DeadlineProgress'
@@ -130,64 +133,86 @@ export function ReportList({ searchQuery, filterStatus }: ReportListProps) {
           const isCreator    = task.created_by === profile?.id
           const isAdminOrDir = profile?.role === 'admin' || profile?.role === 'director'
 
+          const isDeptAssigned = siblings.some(s => !s.assignee_id)
+
           return (
             <div
               key={task.id}
-              className="premium-card p-6 flex items-center gap-4 cursor-pointer hover:bg-slate-50/50 transition-all"
-              onClick={() => router.push(`/dashboard/tasks/${task.id}`)}
+              className={cn(
+                "premium-card p-5 space-y-4 relative transition-all duration-300",
+                task.status === 'done' ? "opacity-75 bg-slate-50/50" : "hover:border-primary/20 hover:shadow-md"
+              )}
             >
-              {/* Checkbox toggle nộp báo cáo */}
-              <div
-                className="flex items-center justify-center pt-1 self-start"
-                onClick={e => handleToggleStatus(e, task.id, task.status)}
-              >
-                <Checkbox checked={task.status === 'done'} className="w-5 h-5 rounded-[6px]" />
-              </div>
-
-              <div className="flex-1 space-y-1.5">
-                <div className="flex items-center gap-2 flex-wrap">
-                  {task.priority === 'high' && <Zap className="w-3 h-3 text-red-500 fill-red-500 shrink-0" />}
-                  <h3 className={cn('font-bold text-[15px] transition-colors', task.status === 'done' ? 'text-slate-500 line-through' : 'text-slate-900')}>
-                    {task.title}
-                  </h3>
-                  {(isCreator || isAdminOrDir) && totalDepts > 0 && (
-                    <Badge className={cn(
-                      'border-none text-sm font-medium px-2 py-1 rounded-full shadow-sm select-none',
-                      doneDepts === totalDepts
-                        ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-50'
-                        : 'bg-red-50 text-red-600 hover:bg-red-50'
+              <div className="flex justify-between items-start gap-4">
+                <div className="space-y-1.5 flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    {task.priority === 'high' && <Zap className="w-4 h-4 text-amber-500 fill-amber-500 shrink-0" />}
+                    <Link href={`/dashboard/tasks/${task.id}`} className={cn(
+                      'font-bold text-[15px] sm:text-base line-clamp-2 leading-snug hover:text-primary transition-colors outline-none focus-visible:ring-2 focus-visible:ring-primary/20 rounded-sm',
+                      task.status === 'done' && 'text-slate-500 line-through decoration-slate-300'
                     )}>
-                      {doneDepts}/{totalDepts} phòng
-                    </Badge>
+                      {task.title}
+                    </Link>
+                  </div>
+                  
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs font-medium text-slate-500">
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <Calendar className={cn("w-3.5 h-3.5", isLate && task.status !== 'done' && "text-red-500")} />
+                      <span className={cn(isLate && task.status !== 'done' && 'text-red-600 font-bold')}>
+                        {new Date(task.due_date).toLocaleDateString('vi-VN')}
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      {firstAssignee ? (
+                        <>
+                          <Avatar className="w-5 h-5 shrink-0">
+                            <AvatarImage src={firstAssignee.avatar_url} />
+                            <AvatarFallback className="text-[10px] bg-primary/10 text-primary">{firstAssignee.full_name?.charAt(0)}</AvatarFallback>
+                          </Avatar>
+                          <span className="truncate">{firstAssignee.full_name}</span>
+                        </>
+                      ) : deptName ? (
+                        <>
+                          <Building2 className="w-3.5 h-3.5 text-primary shrink-0" />
+                          <span className="truncate">{deptName}</span>
+                        </>
+                      ) : (
+                        <>
+                          <Users className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                          <span>Chưa giao</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col items-end gap-3 shrink-0">
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor={`switch-${task.id}`} className="text-[13px] font-medium text-slate-600 cursor-pointer select-none">
+                      Đã nộp
+                    </Label>
+                    <Switch 
+                      id={`switch-${task.id}`}
+                      checked={task.status === 'done'}
+                      onCheckedChange={() => handleToggleStatus({ stopPropagation: () => {} } as any, task.id, task.status)}
+                    />
+                  </div>
+                  {(isCreator || isAdminOrDir) && totalDepts > 0 && (
+                    <span className="text-xs font-semibold text-slate-500">
+                      {doneDepts}/{totalDepts} {isDeptAssigned ? 'phòng' : 'người'}
+                    </span>
                   )}
                 </div>
-                <div className="flex flex-wrap items-center gap-3 text-xs font-medium text-slate-500">
-                  <span className="flex items-center gap-1">
-                    <Calendar className="w-3.5 h-3.5" />
-                    <span className={cn(isLate && 'text-red-600 font-bold')}>
-                      {new Date(task.due_date).toLocaleDateString('vi-VN')}
-                    </span>
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Users className="w-3.5 h-3.5" />
-                    {firstAssignee?.full_name || deptName || 'Chưa giao'}
-                  </span>
-                </div>
-                <DeadlineProgress
-                  compact
-                  createdAt={task.created_at}
-                  dueDate={task.due_date}
-                  done={task.status === 'done'}
-                  className="max-w-md pt-1"
-                />
               </div>
 
-              <div className="hidden sm:block shrink-0">
-                <div className={cn('inline-flex items-center px-3 py-1 rounded-full text-xs font-medium', status.light, status.color)}>
-                  <div className={cn('w-1 h-1 rounded-full mr-2 opacity-60', status.dot)} />
-                  {status.label}
-                </div>
-              </div>
+              <DeadlineProgress
+                compact
+                createdAt={task.created_at}
+                dueDate={task.due_date}
+                done={task.status === 'done'}
+                className="pt-1 max-w-[400px]"
+              />
             </div>
           )
         })}

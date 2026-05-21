@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { exchangeZaloCodeForToken, getZaloUserProfile } from "@/app/lib/integrations";
 import { Loader2, ShieldCheck, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
 
 export const dynamic = 'force-dynamic';
 
@@ -71,7 +72,7 @@ function ZaloCallbackContent() {
  <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-6 text-center">
  {status === "processing" && (
  <div className="space-y-4 animate-in fade-in">
- <Loader2 className="w-12 h-12 text-primary animate-spin mx-auto" />
+ <Loader2 className="h-12 w-12 text-primary animate-spin mx-auto" />
  <h2 className="text-xl font-bold text-slate-800 tabular-nums">Đang hoàn tất xác thực...</h2>
  <p className="text-slate-500">Đang đồng bộ hồ sơ cán bộ.</p>
  </div>
@@ -94,12 +95,12 @@ function ZaloCallbackContent() {
  </div>
  <h2 className="text-xl font-bold text-red-600 tabular-nums">Xác thực thất bại</h2>
  <p className="text-slate-500 max-w-sm">{errorMsg}</p>
- <button 
+ <Button
  onClick={() => router.push("/")}
- className="mt-4 px-6 py-2 bg-primary text-white rounded-xl font-bold"
+ className="mt-4 rounded-xl px-6 font-bold"
  >
  Quay lại trang đăng nhập
- </button>
+ </Button>
  </div>
  )}
  </div>
@@ -110,7 +111,7 @@ export default function ZaloCallbackPage() {
  return (
  <Suspense fallback={
  <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 text-center">
- <Loader2 className="w-12 h-12 text-primary animate-spin mx-auto mb-4" />
+ <Loader2 className="h-12 w-12 text-primary animate-spin mx-auto mb-4" />
  <h2 className="text-xl font-bold text-slate-800 tabular-nums">Đang tải...</h2>
  </div>
  }>

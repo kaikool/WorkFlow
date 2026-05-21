@@ -23,6 +23,9 @@ import {
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Label } from "@/components/ui/label";
+
+import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn, sortProfilesByHierarchy } from "@/lib/utils";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
@@ -103,7 +106,7 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-primary hover:bg-primary/90 h-10 px-5 rounded-xl font-medium">
+        <Button className="bg-primary hover:bg-primary/90 px-5 font-medium">
           <Plus className="w-5 h-5 mr-2" /> Đăng ký lịch mới
         </Button>
       </DialogTrigger>
@@ -112,7 +115,8 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
           <DialogTitle className="text-[17px] font-semibold text-slate-900">Thiết lập lịch trình mới</DialogTitle>
           <DialogDescription className="sr-only">Thiết lập chi tiết thời gian và thành phần tham gia cho lịch trình mới</DialogDescription>
         </DialogHeader>
-        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain px-5 py-4 scroll-smooth sm:px-6">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+        <div className="space-y-5 px-5 py-4 sm:px-6">
 
           {/* 1. Thời gian */}
           <div className="grid grid-cols-1 gap-4 min-[420px]:grid-cols-2">
@@ -272,19 +276,41 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
 
           {/* 3. Địa điểm & Phương tiện — ẩn khi là nghỉ phép */}
           {!isLeave && (
+            <ParticipantSelector
+              allProfiles={allProfiles}
+              departments={departments}
+              bgdMode={bgdMode}
+              setBgdMode={setBgdMode}
+              selectedBGD={selectedBGD}
+              setSelectedBGD={setSelectedBGD}
+              deptMode={deptMode}
+              setDeptMode={setDeptMode}
+              filterDepts={filterDepts}
+              setFilterDepts={setFilterDepts}
+              participantMode={participantMode}
+              setParticipantMode={setParticipantMode}
+              selectedParticipants={selectedParticipants}
+              setSelectedParticipants={setSelectedParticipants}
+            />
+          )}
+
+          {!isLeave && (
             <div className="space-y-4 bg-slate-50/50 p-5 rounded-2xl border border-slate-100">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2">
                 <Label className="text-[13px] font-medium text-slate-500 whitespace-nowrap">Địa điểm & Phương tiện</Label>
-                <div className="grid grid-cols-2 bg-white p-1 rounded-xl shadow-sm border border-slate-100 w-full sm:w-auto min-w-[180px]">
-                  <button type="button"
-                    onClick={() => setNewSchedule({ ...newSchedule, room_id: 'none', location: '' })}
-                    className={cn("px-3 py-1.5 text-[13px] font-medium rounded-md transition-all whitespace-nowrap", newSchedule.location !== 'Chi nhánh' ? "bg-primary text-white shadow-md shadow-primary/20" : "text-slate-500")}
-                  >Ngoài</button>
-                  <button type="button"
-                    onClick={() => setNewSchedule({ ...newSchedule, location: 'Chi nhánh', room_id: rooms[0]?.id || 'none' })}
-                    className={cn("px-3 py-1.5 text-[13px] font-medium rounded-md transition-all whitespace-nowrap", newSchedule.location === 'Chi nhánh' ? "bg-primary text-white shadow-md shadow-primary/20" : "text-slate-500")}
-                  >Chi nhánh</button>
-                </div>
+                <Tabs
+                  value={newSchedule.location === 'Chi nhánh' ? 'branch' : 'outside'}
+                  onValueChange={(value) => {
+                    if (value === 'branch') setNewSchedule({ ...newSchedule, location: 'Chi nhánh', room_id: rooms[0]?.id || 'none' });
+                    else setNewSchedule({ ...newSchedule, room_id: 'none', location: '' });
+                  }}
+                  className="w-full sm:w-auto"
+                >
+                  <TabsList className="grid w-full min-w-[180px] grid-cols-2 rounded-xl bg-white p-0.5 shadow-sm ring-1 ring-slate-100">
+                    <TabsTrigger value="outside" className="rounded-md text-[13px] font-medium">Ngoài</TabsTrigger>
+                    <TabsTrigger value="branch" className="rounded-md text-[13px] font-medium">Chi nhánh</TabsTrigger>
+                  </TabsList>
+                </Tabs>
               </div>
 
               {newSchedule.location === 'Chi nhánh' ? (
@@ -312,12 +338,11 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
               )}
 
               <div className="flex items-center gap-3 p-3 bg-white rounded-2xl border border-slate-100 shadow-sm">
-                <div
-                  onClick={() => setNewSchedule({ ...newSchedule, use_vehicle: !newSchedule.use_vehicle, vehicle_id: !newSchedule.use_vehicle ? 'none' : newSchedule.vehicle_id })}
-                  className={cn("w-10 h-6 rounded-full relative transition-colors cursor-pointer shrink-0", newSchedule.use_vehicle ? "bg-primary" : "bg-slate-200")}
-                >
-                  <div className={cn("absolute top-1 w-4 h-4 bg-white rounded-full transition-all", newSchedule.use_vehicle ? "left-5" : "left-1")} />
-                </div>
+                <Switch
+                  checked={newSchedule.use_vehicle}
+                  onCheckedChange={(checked) => setNewSchedule({ ...newSchedule, use_vehicle: checked, vehicle_id: checked ? 'none' : newSchedule.vehicle_id })}
+                  aria-label="Bật hoặc tắt sử dụng xe cơ quan"
+                />
                 <div className="flex flex-col flex-1 min-w-0">
                   <span className="text-[14px] font-medium text-slate-900 whitespace-nowrap">Sử dụng xe cơ quan</span>
                   <span className="text-[12px] text-slate-400 truncate">Tích chọn nếu cần điều xe</span>
@@ -327,14 +352,18 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
               {newSchedule.use_vehicle && (
                 <div className="animate-in slide-in-from-top-2 duration-300 space-y-3">
                   <p className="text-[13px] font-medium text-slate-500 whitespace-nowrap">Loại xe cần đăng ký</p>
-                  <div className="flex gap-2 p-1 bg-white rounded-xl shadow-sm border border-slate-100">
-                    {['4 chỗ', '7 chỗ', 'Khác'].map(type => (
-                      <button key={type} type="button"
-                        onClick={() => setNewSchedule({ ...newSchedule, requested_vehicle_type: type })}
-                        className={cn("flex-1 py-1.5 text-[13px] font-medium rounded-md transition-all whitespace-nowrap", newSchedule.requested_vehicle_type === type ? "bg-primary text-white shadow-md shadow-primary/20" : "text-slate-500")}
-                      >{type}</button>
-                    ))}
-                  </div>
+                  <Tabs
+                    value={newSchedule.requested_vehicle_type}
+                    onValueChange={(value) => setNewSchedule({ ...newSchedule, requested_vehicle_type: value })}
+                  >
+                    <TabsList className="grid w-full grid-cols-3 rounded-xl bg-white p-0.5 shadow-sm ring-1 ring-slate-100">
+                      {['4 chỗ', '7 chỗ', 'Khác'].map(type => (
+                        <TabsTrigger key={type} value={type} className="rounded-md text-[13px] font-medium">
+                          {type}
+                        </TabsTrigger>
+                      ))}
+                    </TabsList>
+                  </Tabs>
                   <div className="p-3 bg-blue-50/50 rounded-2xl border border-blue-100 flex items-center gap-3">
                     <div className="p-2 bg-white rounded-xl shadow-sm">
                       <Car className="w-4 h-4 text-blue-600" />
@@ -349,25 +378,6 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
 
 
           {/* 4. Thành phần tham gia — ẩn khi là nghỉ phép */}
-          {!isLeave && (
-            <ParticipantSelector
-              allProfiles={allProfiles}
-              departments={departments}
-              bgdMode={bgdMode}
-              setBgdMode={setBgdMode}
-              selectedBGD={selectedBGD}
-              setSelectedBGD={setSelectedBGD}
-              deptMode={deptMode}
-              setDeptMode={setDeptMode}
-              filterDepts={filterDepts}
-              setFilterDepts={setFilterDepts}
-              participantMode={participantMode}
-              setParticipantMode={setParticipantMode}
-              selectedParticipants={selectedParticipants}
-              setSelectedParticipants={setSelectedParticipants}
-            />
-          )}
-
           {/* Cảnh báo trùng lịch — chỉ hiển thị khi không phải nghỉ phép */}
           {!isLeave && conflicts.length > 0 && (
             <div className="p-3 bg-red-50/50 rounded-2xl border border-red-100 mt-4 space-y-2 animate-in fade-in zoom-in-95">
@@ -382,6 +392,7 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
               </ul>
             </div>
           )}
+        </div>
         </div>
         <DialogFooter className="shrink-0 border-t border-slate-100 bg-background/95 px-5 py-4 sm:px-6">
           <Button

@@ -35,6 +35,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
+import { getProfileDisplayTitle, getProfileTitleBadgeClass, cn } from "@/lib/utils";
 
 export default function ProfilePage() {
   const [profile, setProfile] = useState<any>(null);
@@ -178,13 +179,6 @@ export default function ProfilePage() {
   if (loading) return <div className="flex h-96 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-slate-400" /></div>;
   if (!profile) return null;
 
-  const roleLabels: Record<string, string> = {
-    admin: "Quản trị hệ thống",
-    director: "Ban giám đốc",
-    manager: "Lãnh đạo phòng",
-    staff: "Cán bộ"
-  };
-
   const isAdmin = profile.role === 'admin';
 
   return (
@@ -198,7 +192,7 @@ export default function ProfilePage() {
         <Button 
           variant="ghost" 
           onClick={async () => { await supabase.auth.signOut(); router.push('/login'); }} 
-          className="text-red-500 hover:bg-red-50 hover:text-red-600 h-10 px-5 rounded-xl font-medium active:scale-95 transition-all"
+          className="rounded-xl px-5 font-medium text-red-500 transition-all hover:bg-red-50 hover:text-red-600 active:scale-95"
         >
           <LogOut className="w-4 h-4 mr-2" />
           Đăng xuất
@@ -210,7 +204,19 @@ export default function ProfilePage() {
           
           {/* Card Hồ sơ */}
           <div className="premium-card p-6 border-none flex flex-col sm:flex-row items-center sm:items-start gap-6 sm:gap-10">
-            <div className="relative group cursor-pointer shrink-0" onClick={() => fileInputRef.current?.click()}>
+            <div
+              className="relative group cursor-pointer shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+              role="button"
+              tabIndex={0}
+              aria-label="Cập nhật ảnh đại diện"
+              onClick={() => fileInputRef.current?.click()}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  fileInputRef.current?.click();
+                }
+              }}
+            >
               <Avatar className="h-28 w-28 sm:h-32 sm:w-32 shadow-sm transition-all group-hover:opacity-80">
                 <AvatarImage src={profile.avatar_url} className="object-cover" />
                 <AvatarFallback className="bg-slate-100 text-slate-600 text-3xl font-semibold tabular-nums">
@@ -220,7 +226,7 @@ export default function ProfilePage() {
               <div className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
                 {uploading ? <Loader2 className="w-6 h-6 text-white animate-spin" /> : <Camera className="w-6 h-6 text-white" />}
               </div>
-              <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleAvatarUpload} disabled={uploading} />
+              <Input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleAvatarUpload} disabled={uploading} />
             </div>
             
             <div className="space-y-6 flex-1 text-center sm:text-left min-w-0">
@@ -229,8 +235,8 @@ export default function ProfilePage() {
                   <h2 className="text-[20px] font-bold text-slate-900 truncate w-full sm:w-auto">
                     {profile.full_name}
                   </h2>
-                  <Badge className="bg-slate-100 text-slate-600 border-none text-[11px] font-bold px-2.5 py-0.5 rounded-full shrink-0">
-                    {roleLabels[profile.role] || "Cán bộ"}
+                  <Badge className={cn("text-[11px] font-medium px-2.5 py-0.5 rounded-full shrink-0", getProfileTitleBadgeClass(profile))}>
+                    {getProfileDisplayTitle(profile)}
                   </Badge>
                 </div>
                 <p className="text-slate-500 font-medium text-sm truncate">
@@ -241,7 +247,7 @@ export default function ProfilePage() {
               <div className="pt-2 flex justify-center sm:justify-start">
                 <Dialog open={isUpdateOpen} onOpenChange={setIsUpdateOpen}>
                   <DialogTrigger asChild>
-                    <Button className="bg-slate-900 hover:bg-slate-800 text-white h-10 px-5 rounded-xl font-medium active:scale-95 transition-all shadow-sm">
+                    <Button className="rounded-xl bg-slate-900 px-5 font-medium text-white shadow-sm transition-all hover:bg-slate-800 active:scale-95">
                       Thiết lập hồ sơ
                     </Button>
                   </DialogTrigger>
@@ -282,7 +288,7 @@ export default function ProfilePage() {
 
                       {isAdmin && (
                         <div className="space-y-2 pt-4 border-t border-slate-100">
-                          <Label className="text-sm font-medium text-slate-700 truncate">Chức danh hệ thống (Admin)</Label>
+                          <Label className="text-sm font-medium text-slate-700 truncate">Quyền hệ thống (Admin)</Label>
                           <Select value={newRole} onValueChange={setNewRole}>
                             <SelectTrigger className="h-10 bg-slate-50 border-none rounded-xl font-medium text-slate-900 text-[14px]">
                               <SelectValue />
@@ -328,7 +334,7 @@ export default function ProfilePage() {
                   </div>
                 </div>
               )) : (
-                <div className="py-12 flex flex-col items-center justify-center text-center bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+                <div className="py-8 flex flex-col items-center justify-center text-center bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
                   <p className="text-[13px] font-medium text-slate-500">Chưa có hoạt động nào được ghi nhận.</p>
                 </div>
               )}
@@ -354,7 +360,7 @@ export default function ProfilePage() {
                 <p className="text-[11px] font-bold text-slate-500 truncate">Chức danh</p>
                 <div className="px-4 py-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center gap-3 min-w-0">
                   <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span className="text-[14px] font-medium text-slate-900 truncate">{roleLabels[profile.role] || "Cán bộ"}</span>
+                  <span className="text-[14px] font-medium text-slate-900 truncate">{getProfileDisplayTitle(profile)}</span>
                 </div>
               </div>
               
