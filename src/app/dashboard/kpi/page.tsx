@@ -62,7 +62,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { cn, sortProfilesByHierarchy } from "@/lib/utils";
 import { createClient } from "@/utils/supabase/client";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
 const KPI_CATEGORIES = [
@@ -116,7 +116,7 @@ export default function GoalsPage() {
  <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-10 animate-fade-in-up pb-20">
  {/* Header Section */}
  <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 pt-4 sm:pt-0">
- <div className="space-y-1">
+ <div className="hidden lg:block space-y-1">
  <h1 className="text-2xl font-semibold text-slate-900">
  Mục tiêu
  </h1>
@@ -148,7 +148,7 @@ export default function GoalsPage() {
  setCustomTitle("");
  setCustomDescription("");
  }}>
- <TabsList className="grid h-auto w-full grid-cols-4 rounded-xl bg-primary/5 p-0.5">
+ <TabsList className="grid h-auto grid-cols-4">
  {KPI_CATEGORIES.map((cat) => {
  const Icon = cat.icon;
  return (
@@ -188,7 +188,7 @@ export default function GoalsPage() {
  <div className="space-y-3">
  <Label className="text-[13px] font-medium text-slate-500">3. Đối tượng nhận</Label>
  <Tabs value={targetType} onValueChange={(value) => setTargetType(value as 'department' | 'individual')}>
- <TabsList className="grid w-full grid-cols-2 rounded-xl bg-primary/5 p-0.5">
+ <TabsList className="grid grid-cols-2">
  <TabsTrigger value="department" className="rounded-lg text-xs font-medium md:text-sm">Cả phòng</TabsTrigger>
  <TabsTrigger value="individual" className="rounded-lg text-xs font-medium md:text-sm">Nhóm cán bộ</TabsTrigger>
  </TabsList>
@@ -230,7 +230,7 @@ export default function GoalsPage() {
  <div className="space-y-3">
  <Label className="text-[13px] font-medium text-slate-500">4. Chu kỳ</Label>
  <Tabs value={timeframe} onValueChange={(value) => setTimeframe(value as any)}>
- <TabsList className="grid w-full grid-cols-2 rounded-xl bg-primary/5 p-0.5">
+ <TabsList className="grid grid-cols-2">
  {['week', 'month', 'quarter', 'year'].map((t) => (
  <TabsTrigger key={t} value={t} className="rounded-lg text-xs font-medium md:text-sm">
  {t === 'week' ? 'Tuần' : t === 'month' ? 'Tháng' : t === 'quarter' ? 'Quý' : 'Năm'}

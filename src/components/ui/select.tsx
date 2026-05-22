@@ -88,7 +88,7 @@ const SelectContent = React.forwardRef<
  className={cn(
  "p-1.5 overflow-y-auto",
  position === "popper" &&
- "h-[var(--radix-select-content-available-height)] max-h-[var(--radix-select-content-available-height)] w-[var(--radix-select-trigger-width)] min-w-[var(--radix-select-trigger-width)]"
+ "h-[var(--radix-select-content-available-height)] max-h-[var(--radix-select-content-available-height)] w-full min-w-[var(--radix-select-trigger-width)]"
  )}
  >
  {children}
@@ -118,7 +118,7 @@ const SelectItem = React.forwardRef<
  <SelectPrimitive.Item
  ref={ref}
  className={cn(
- "relative flex min-h-11 w-full cursor-default select-none items-center rounded-lg py-2.5 pl-9 pr-3 text-sm font-medium outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+ "relative flex min-h-11 w-full cursor-default select-none items-center rounded-lg py-2.5 pl-9 pr-3 text-sm font-medium outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 whitespace-nowrap",
  className
  )}
  {...props}

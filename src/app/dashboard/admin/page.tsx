@@ -26,7 +26,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { 
  Table, 
  TableBody, 
@@ -147,7 +147,7 @@ export default function AdminPage() {
  )}
 
  <Tabs defaultValue={isAdmin ? "users" : "rooms"} className="space-y-8">
-  <TabsList className="bg-slate-100/50 p-1 rounded-xl h-11 border border-slate-100 w-full flex gap-1">
+  <TabsList className="h-11 border border-slate-100">
   {isAdmin && (
     <TabsTrigger value="users" className="flex-1 rounded-lg px-2 sm:px-6 py-1.5 font-medium text-sm data-[state=active]:bg-white data-[state=active]:shadow-sm flex items-center justify-center">
     <Users className="w-3.5 h-3.5 mr-1.5 shrink-0" /> <span className="truncate">Cán bộ</span>

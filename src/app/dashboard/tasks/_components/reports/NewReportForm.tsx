@@ -234,7 +234,7 @@ export function NewReportForm() {
             <div className="space-y-3">
               <Label className="text-[13px] font-medium text-slate-500">Người / Phòng nhận</Label>
               <Tabs value={assignType} onValueChange={(v: any) => setAssignType(v)} className="w-full mb-3">
-                <TabsList className="grid w-full grid-cols-2 min-h-11 p-1 bg-slate-100 rounded-xl">
+                <TabsList className="grid grid-cols-2 min-h-11">
                   <TabsTrigger value="profile"    className="rounded-lg text-sm font-medium data-[state=active]:bg-white data-[state=active]:shadow-sm">Cán bộ</TabsTrigger>
                   <TabsTrigger value="department" className="rounded-lg text-sm font-medium data-[state=active]:bg-white data-[state=active]:shadow-sm">Phòng ban</TabsTrigger>
                 </TabsList>

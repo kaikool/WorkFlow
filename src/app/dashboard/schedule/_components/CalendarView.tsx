@@ -103,8 +103,8 @@ export default function CalendarView(props: CalendarViewProps) {
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       {/* Bộ lọc nhanh */}
-      <Tabs value={filterType} onValueChange={(value) => setFilterType(value as 'all' | 'bgd' | 'dept')} className="hidden">
-        <TabsList className="grid w-full grid-cols-3 rounded-xl bg-slate-100/60 p-0.5">
+      <Tabs value={filterType} onValueChange={(value) => setFilterType(value as 'all' | 'bgd' | 'dept')} className="w-full">
+        <TabsList className="grid grid-cols-3 min-h-9">
           <TabsTrigger value="all" className="rounded-lg px-2 text-[12px] font-medium md:text-[14px]">Toàn chi nhánh</TabsTrigger>
           <TabsTrigger value="bgd" className="rounded-lg px-2 text-[12px] font-medium md:text-[14px]">Ban giám đốc</TabsTrigger>
           <TabsTrigger value="dept" className="rounded-lg px-2 text-[12px] font-medium md:text-[14px]">Phòng của tôi</TabsTrigger>

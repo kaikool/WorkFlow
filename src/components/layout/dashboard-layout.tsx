@@ -1,8 +1,8 @@
 'use client'
 
-import React, { useState } from "react";
+import React, { useState, Suspense } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { 
  LayoutDashboard, 
  Users, 
@@ -14,10 +14,13 @@ import {
  CalendarDays,
  ShieldCheck,
  Gift,
- HeartHandshake
+ HeartHandshake,
+ Search
 } from "lucide-react";
 import { cn, getProfileDisplayTitle } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
  DropdownMenu, 
@@ -61,14 +64,157 @@ interface DashboardLayoutProps {
  profile: any;
 }
 
+
+function TopNavActionsContent() {
+  const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
+
+  // Define configurations for pages that need search/filter
+  const configMap: Record<string, { placeholder: string, hasStatusFilter?: boolean }> = {
+    '/dashboard/team': { placeholder: 'Tìm kiếm cán bộ, phòng ban...' },
+    '/dashboard/tasks': { placeholder: 'Tìm kiếm công việc, báo cáo...', hasStatusFilter: true },
+    '/dashboard/kpi': { placeholder: 'Tìm kiếm kế hoạch, mục tiêu...' },
+    '/dashboard/admin': { placeholder: 'Tìm kiếm tài khoản, dữ liệu...' },
+    '/dashboard/settings/users': { placeholder: 'Tìm kiếm người dùng...' },
+  };
+
+  const config = configMap[pathname];
+  if (!config) return null;
+
+  const q = searchParams.get('q') || '';
+  const status = searchParams.get('status') || 'all';
+
+  const handleSearch = (val: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (val) params.set('q', val);
+    else params.delete('q');
+    router.replace(`${pathname}?${params.toString()}`);
+  };
+
+  const handleStatusFilter = (val: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (val !== 'all') params.set('status', val);
+    else params.delete('status');
+    router.replace(`${pathname}?${params.toString()}`);
+  };
+
+  return (
+    <div className="flex items-center justify-end lg:justify-center flex-1 gap-2 w-full min-w-0">
+      {/* Desktop View */}
+      <div className="hidden lg:flex items-center gap-2 w-full max-w-2xl">
+        <div className="relative flex-1 group transition-all duration-300">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors" />
+          <Input
+            placeholder={config.placeholder}
+            className="w-full pl-9 pr-3 h-10 text-[13px] font-medium bg-slate-100 hover:bg-slate-200/50 border-transparent rounded-full focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:bg-white focus-visible:border-primary/30 transition-all shadow-sm"
+            defaultValue={q}
+            onChange={(e) => handleSearch(e.target.value)}
+          />
+        </div>
+        
+        {/* Optional Filter (E.g. Tasks status) */}
+        {config.hasStatusFilter && (
+          <Select value={status} onValueChange={handleStatusFilter}>
+          <SelectTrigger className="flex h-10 items-center justify-between gap-2 px-3 bg-white border border-slate-200 rounded-full text-[13px] font-medium text-slate-700 hover:bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 shadow-sm shrink-0 w-auto whitespace-nowrap">
+            <div className="flex items-center gap-1.5">
+              <ListTodo className="w-4 h-4 text-slate-400" />
+              <SelectValue placeholder="Trạng thái" />
+            </div>
+          </SelectTrigger>
+          <SelectContent className="rounded-xl border border-slate-100 shadow-premium">
+            <SelectItem value="all">Tất cả trạng thái</SelectItem>
+            <SelectItem value="todo">Đang chờ</SelectItem>
+            <SelectItem value="doing">Đang làm</SelectItem>
+            <SelectItem value="done">Hoàn thành</SelectItem>
+            <SelectItem value="late">Trễ hạn</SelectItem>
+          </SelectContent>
+        </Select>
+        )}
+      </div>
+
+      {/* Mobile View */}
+      <Button 
+        variant="ghost" 
+        size="icon" 
+        className="lg:hidden w-10 h-10 rounded-full shrink-0" 
+        onClick={() => setIsMobileSearchOpen(true)}
+      >
+        <Search className="w-5 h-5 text-slate-600" />
+      </Button>
+
+      {/* Mobile Search Overlay */}
+      {isMobileSearchOpen && (
+        <div className="fixed inset-x-0 top-0 h-[60px] bg-white/90 backdrop-blur-2xl z-[60] flex items-center px-3 gap-2 border-b border-slate-100 animate-in fade-in slide-in-from-top-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Input 
+              autoFocus 
+              placeholder={config.placeholder}
+              className="w-full pl-9 pr-3 h-10 bg-slate-100/80 text-[14px] font-medium rounded-full border-none focus-visible:ring-0 shadow-inner" 
+              defaultValue={q}
+              onChange={(e) => handleSearch(e.target.value)}
+            />
+          </div>
+          {config.hasStatusFilter && (
+            <Select value={status} onValueChange={handleStatusFilter}>
+            <SelectTrigger className="flex h-10 items-center justify-between gap-1.5 px-2 bg-transparent border-none text-[13px] font-medium text-primary shadow-none focus:ring-0 shrink-0 w-auto whitespace-nowrap">
+              <div className="flex items-center gap-1.5">
+                <ListTodo className="w-4 h-4 text-primary" />
+                <SelectValue placeholder="Trạng thái" />
+              </div>
+            </SelectTrigger>
+            <SelectContent className="rounded-xl border border-slate-100 shadow-premium">
+              <SelectItem value="all">Tất cả</SelectItem>
+              <SelectItem value="todo">Chờ</SelectItem>
+              <SelectItem value="doing">Đang làm</SelectItem>
+              <SelectItem value="done">Xong</SelectItem>
+              <SelectItem value="late">Trễ</SelectItem>
+            </SelectContent>
+          </Select>
+          )}
+          <Button variant="ghost" className="shrink-0 text-slate-600 font-medium px-2 rounded-full h-10" onClick={() => setIsMobileSearchOpen(false)}>
+            Huỷ
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TopNavActions() {
+  return (
+    <Suspense fallback={<div className="w-10 h-10" />}>
+      <TopNavActionsContent />
+    </Suspense>
+  );
+}
+
 export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
  const pathname = usePathname();
  const router = useRouter();
- const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
- const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
+  const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
  const [mounted, setMounted] = useState(false);
  const [isAnniversaryDialogOpen, setIsAnniversaryDialogOpen] = useState(false);
  const supabase = createClient();
+  const [isScrolledDown, setIsScrolledDown] = useState(false);
+  const [lastScrollY, setLastScrollY] = useState(0);
+
+  React.useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      if (currentScrollY > lastScrollY && currentScrollY > 50) {
+        setIsScrolledDown(true);
+      } else if (currentScrollY < lastScrollY) {
+        setIsScrolledDown(false);
+      }
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [lastScrollY]);
  const branchJoinDate = profile?.branch_join_date ? new Date(`${profile.branch_join_date}T00:00:00`) : null;
  const anniversaryYears = branchJoinDate ? Math.max(0, new Date().getFullYear() - branchJoinDate.getFullYear()) : 0;
  const anniversaryMessages = [
@@ -130,6 +276,9 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
    { name: 'Lịch trình', href: '/dashboard/schedule', icon: CalendarDays },
    { name: 'Cán bộ', href: '/dashboard/team', icon: Users, hideFor: ['driver', 'secretary', 'staff'] },
   ].filter(item => !(item.hideFor || []).includes(profile?.role));
+
+  const currentNavItem = navItems.find(item => item.href === pathname) || (pathname === '/dashboard/admin' ? {name: 'Quản trị'} : null);
+  const pageTitle = currentNavItem ? currentNavItem.name : "WorkFlow";
 
  return (
  <div className="flex min-h-screen bg-background">
@@ -268,18 +417,23 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
  </aside>
 
  <div className="flex-1 flex flex-col min-w-0">
- <header className="h-16 bg-white/80 backdrop-blur-md border border-slate-100 sticky top-0 sm:top-4 z-40 flex items-center justify-between px-4 lg:px-8 mx-0 sm:mx-8 mt-0 sm:mt-4 rounded-none sm:rounded-2xl shadow-sm border-x-0 sm:border-x border-t-0 sm:border-t">
- <div className="flex items-center gap-4">
- <Button variant="ghost" size="icon" className="lg:hidden" aria-label="Mở menu điều hướng" onClick={() => setIsMobileMenuOpen(true)}>
- <Menu className="w-6 h-6" />
- </Button>
- <div className="hidden md:flex items-center gap-2 text-slate-500">
- <span className="text-sm font-medium text-slate-500">{profile?.departments?.name || "Chi nhánh"}</span>
- </div>
- </div>
+ <header className={cn(
+    "h-[60px] lg:h-16 bg-white/80 backdrop-blur-md border border-slate-100 sticky top-0 lg:top-4 z-40 flex items-center px-3 lg:px-8 mx-0 lg:mx-8 mt-0 lg:mt-4 rounded-none lg:rounded-2xl shadow-sm lg:border-x lg:border-t border-x-0 border-t-0 transition-transform duration-300 ease-in-out gap-4",
+    isScrolledDown ? "-translate-y-full lg:translate-y-0" : "translate-y-0"
+  )}>
+    {/* Left: Page Title */}
+    <div className="flex items-center lg:flex-1 shrink-0 overflow-hidden">
+      <span className="text-[18px] lg:text-xl font-bold text-slate-900 tracking-tight truncate">{pageTitle}</span>
+    </div>
 
- <div className="flex items-center gap-5">
- <NotificationsDropdown />
+    {/* Middle: Search & Filter */}
+    <div className="flex items-center justify-end lg:justify-center flex-1 lg:flex-[2] z-20 min-w-0">
+      <TopNavActions />
+    </div>
+
+    {/* Right: Notifications & Profile */}
+    <div className="flex items-center justify-end gap-3 lg:gap-5 relative z-10 shrink-0 lg:flex-1">
+  <NotificationsDropdown />
  
  <div className="hidden sm:flex flex-col text-right">
  <span className="text-sm font-bold text-slate-900 leading-none">
@@ -320,62 +474,14 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
  </div>
  </header>
 
- {/* Mobile Menu */}
- <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
- <SheetContent side="left" className="w-[300px] p-0 lg:hidden">
- <SheetHeader className="border-b border-slate-100 bg-[#f5f5f7]/80 p-5 pr-14">
- <div className="flex items-center gap-3">
- <div className="flex items-center justify-center shrink-0">
- <img src="/logo.png" alt="Logo" className="w-9 h-9 object-contain" />
- </div>
- <SheetTitle className="font-semibold text-lg text-slate-900 tabular-nums">WorkFlow</SheetTitle>
- </div>
- <SheetDescription className="sr-only">Menu điều hướng chính</SheetDescription>
- </SheetHeader>
- <ScrollArea className="flex-1">
- <nav className="space-y-1 p-4">
- <p className="text-[11px] font-medium text-slate-500 mb-3 pl-2 truncate whitespace-nowrap">Menu điều hướng</p>
- {navItems.map((item) => (
- <Link key={item.name} href={item.href} onClick={() => setIsMobileMenuOpen(false)} className={cn("flex min-h-11 items-center gap-3 rounded-xl px-4 text-[14px] font-medium transition-colors", pathname === item.href ? "bg-slate-100 text-slate-950" : "text-slate-600 hover:bg-slate-50 hover:text-slate-950")}>
- <item.icon className="w-5 h-5" />{item.name}
- </Link>
- ))}
  
- {canManageSystem && (
- <div className="pt-5 mt-5 border-t border-slate-100 space-y-1">
- <p className="text-[11px] font-medium text-slate-500 mb-2 pl-2 truncate whitespace-nowrap">Hệ thống</p>
- <Link 
- href="/dashboard/admin" 
- onClick={() => setIsMobileMenuOpen(false)} 
- className={cn(
- "flex min-h-11 items-center gap-3 rounded-xl px-4 text-[14px] font-medium transition-colors", 
- pathname === "/dashboard/admin" ? "bg-slate-100 text-slate-950" : "text-slate-600 hover:bg-slate-50 hover:text-slate-950"
- )}
- >
- <ShieldCheck className="w-5 h-5" />Quản trị hệ thống
- </Link>
- </div>
- )}
- <div className="pt-5 mt-5 border-t border-slate-100 space-y-3">
- <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-1.5">
- <p className="text-[11px] font-medium text-slate-500 truncate whitespace-nowrap">Đang đăng nhập</p>
- <p className="text-sm font-medium text-slate-900">{profile?.full_name}</p>
- </div>
- <Button variant="ghost" className="w-full min-h-11 justify-start text-red-600 hover:bg-red-50 hover:text-red-700 font-medium px-4 text-[14px] rounded-xl" onClick={() => { setIsMobileMenuOpen(false); setIsLogoutDialogOpen(true); }}>
- <LogOut className="w-5 h-5 mr-3" /> Đăng xuất
- </Button>
- </div>
- </nav>
- </ScrollArea>
- </SheetContent>
- </Sheet>
 
  <main 
  className="relative flex-1 max-w-full overflow-x-hidden overscroll-x-none p-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] touch-pan-y lg:p-8"
  >
  {children}
  </main>
- <nav className="lg:hidden fixed inset-x-0 bottom-0 z-50 border-t border-slate-200/70 bg-white/88 px-2 pb-[calc(env(safe-area-inset-bottom)+8px)] pt-2 shadow-[0_-12px_30px_-20px_rgba(15,23,42,0.35)] backdrop-blur-xl">
+ <nav className="lg:hidden fixed inset-x-0 bottom-0 z-50 border-t border-slate-200/50 bg-white/80 px-2 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-2 shadow-[0_-12px_30px_-20px_rgba(15,23,42,0.35)] backdrop-blur-2xl">
  <div
  className="grid gap-1"
  style={{ gridTemplateColumns: `repeat(${Math.min(navItems.length, 5)}, minmax(0, 1fr))` }}

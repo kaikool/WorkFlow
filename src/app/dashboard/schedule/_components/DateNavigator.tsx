@@ -18,22 +18,22 @@ export default function DateNavigator({ selectedDate, setSelectedDate, weekDays,
   return (
     <div className="w-full">
       <div className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm flex flex-col gap-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
+        <div className="flex items-center justify-between pb-1 px-1 gap-2">
+          <div className="flex items-center gap-1.5 shrink-0">
             <CalendarDays className="w-4 h-4 text-primary" />
-            <span className="text-[15px] font-bold text-slate-900 whitespace-nowrap">
-              Tháng {format(selectedDate, 'MM, yyyy')}
+            <span className="text-[14px] sm:text-[15px] font-bold text-slate-900 tracking-tight whitespace-nowrap">
+              Tháng {format(selectedDate, 'MM/yyyy')}
             </span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <Button variant="outline" size="icon" className="rounded-lg border-slate-200" aria-label="Xem tuần trước" onClick={() => setSelectedDate(addDays(selectedDate, -7))}>
-              <ChevronLeft className="w-4 h-4" />
+          <div className="flex items-center bg-slate-100/70 p-0.5 rounded-lg shrink-0">
+            <Button variant="ghost" size="icon" className="h-7 w-7 rounded-md text-slate-500 hover:text-slate-900 hover:bg-white hover:shadow-sm transition-all" aria-label="Xem tuần trước" onClick={() => setSelectedDate(addDays(selectedDate, -7))}>
+              <ChevronLeft className="w-3.5 h-3.5" />
             </Button>
-            <Button variant="outline" className="rounded-lg border-slate-200 px-3 text-[13px] font-semibold" onClick={() => setSelectedDate(new Date())}>
+            <Button variant="ghost" className="h-7 rounded-md px-2.5 text-[12px] font-semibold text-slate-600 hover:text-slate-900 hover:bg-white hover:shadow-sm transition-all" onClick={() => setSelectedDate(new Date())}>
               Hôm nay
             </Button>
-            <Button variant="outline" size="icon" className="rounded-lg border-slate-200" aria-label="Xem tuần sau" onClick={() => setSelectedDate(addDays(selectedDate, 7))}>
-              <ChevronRight className="w-4 h-4" />
+            <Button variant="ghost" size="icon" className="h-7 w-7 rounded-md text-slate-500 hover:text-slate-900 hover:bg-white hover:shadow-sm transition-all" aria-label="Xem tuần sau" onClick={() => setSelectedDate(addDays(selectedDate, 7))}>
+              <ChevronRight className="w-3.5 h-3.5" />
             </Button>
           </div>
         </div>
@@ -68,12 +68,12 @@ export default function DateNavigator({ selectedDate, setSelectedDate, weekDays,
                 <span className={cn("text-[9px] font-bold", isSelected ? "text-white/70" : "text-slate-400")}>
                   {format(day, 'EEEEEE', { locale: vi })}
                 </span>
-                
+
                 <span className={cn(
                   "text-[13px] font-bold flex items-center justify-center w-6 h-6 rounded-full transition-all mb-1",
-                  isToday 
-                    ? isSelected 
-                      ? "bg-white text-primary font-extrabold shadow-sm" 
+                  isToday
+                    ? isSelected
+                      ? "bg-white text-primary font-extrabold shadow-sm"
                       : "bg-primary/10 text-primary font-extrabold"
                     : ""
                 )}>

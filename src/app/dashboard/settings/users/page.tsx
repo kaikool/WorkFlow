@@ -33,12 +33,14 @@ import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/utils/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { getProfileDisplayTitle, sortProfilesByHierarchy } from "@/lib/utils";
+import { useSearchParams } from "next/navigation";
 
 export default function UserManagementPage() {
  const [users, setUsers] = useState<any[]>([]);
  const [departments, setDepartments] = useState<any[]>([]);
  const [loading, setLoading] = useState(true);
- const [searchQuery, setSearchQuery] = useState("");
+  const searchParams = useSearchParams();
+  const searchQuery = searchParams.get('q') || '';
  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
  const { toast } = useToast();
@@ -118,25 +120,6 @@ export default function UserManagementPage() {
  </h1>
  <p className="text-[12px] text-slate-500 font-bold truncate whitespace-nowrap">Cấu hình quyền hạn & phòng ban</p>
  </div>
- </div>
-
- {/* Filters */}
- {/* Unified Search & Filter Bar */}
- <div className="flex items-center gap-2 bg-slate-50/60 p-1.5 rounded-2xl border border-slate-100/80 shadow-sm w-full min-h-11">
-   <div className="flex items-center gap-2 px-2 shrink-0">
-     <Shield className="w-4 h-4 text-primary shrink-0" />
-     <span className="text-sm font-medium text-slate-600 hidden sm:inline">Cấu hình phân quyền ({filteredUsers.length})</span>
-     <span className="text-sm font-medium text-slate-600 inline sm:hidden">({filteredUsers.length})</span>
-   </div>
-   <div className="relative flex-1 group">
-     <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500 group-focus-within:text-primary transition-colors" />
-     <Input
-       placeholder="Tìm kiếm cán bộ hoặc chức danh..."
-       className="w-full pl-9 pr-3 h-10 text-sm font-medium bg-white border-slate-200/60 rounded-xl focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary transition-all"
-       value={searchQuery}
-       onChange={(e) => setSearchQuery(e.target.value)}
-     />
-   </div>
  </div>
 
  {/* User Table */}

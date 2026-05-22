@@ -106,7 +106,7 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-primary hover:bg-primary/90 px-5 font-medium">
+        <Button className="bg-primary hover:bg-primary/90 px-5 font-medium h-11 active:scale-[0.98] transition-all duration-300 ease-in-out">
           <Plus className="w-5 h-5 mr-2" /> Đăng ký lịch mới
         </Button>
       </DialogTrigger>
@@ -124,7 +124,7 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
               <Label className="text-[13px] font-medium text-slate-500 whitespace-nowrap">Từ ngày</Label>
               <Popover open={isStartOpen} onOpenChange={setIsStartOpen}>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-full h-11 bg-slate-50 border-none rounded-xl font-medium justify-start text-left text-[14px] active:scale-95 transition-all truncate">
+                  <Button variant="outline" className="w-full h-11 bg-slate-50 border-none rounded-xl font-medium justify-start text-left text-[14px] active:scale-[0.98] transition-all duration-300 ease-in-out truncate">
                     <CalendarIcon className="mr-2 h-4 w-4 text-primary shrink-0" />
                     <span className="truncate">{startDate ? format(startDate, "dd/MM/yyyy") : "Chọn ngày"}</span>
                   </Button>
@@ -172,7 +172,7 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
               <Label className="text-[13px] font-medium text-slate-500 whitespace-nowrap">Đến ngày</Label>
               <Popover open={isEndOpen} onOpenChange={setIsEndOpen}>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-full h-11 bg-slate-50 border-none rounded-xl font-medium justify-start text-left text-[14px] active:scale-95 transition-all truncate">
+                  <Button variant="outline" className="w-full h-11 bg-slate-50 border-none rounded-xl font-medium justify-start text-left text-[14px] active:scale-[0.98] transition-all duration-300 ease-in-out truncate">
                     <CalendarIcon className="mr-2 h-4 w-4 text-primary shrink-0" />
                     <span className="truncate">{endDate ? format(endDate, "dd/MM/yyyy") : "Chọn ngày"}</span>
                   </Button>
@@ -306,7 +306,7 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
                   }}
                   className="w-full sm:w-auto"
                 >
-                  <TabsList className="grid w-full min-w-[180px] grid-cols-2 rounded-xl bg-white p-0.5 shadow-sm ring-1 ring-slate-100">
+                  <TabsList className="grid min-w-[180px] grid-cols-2 bg-white shadow-sm ring-1 ring-slate-100 min-h-9">
                     <TabsTrigger value="outside" className="rounded-md text-[13px] font-medium">Ngoài</TabsTrigger>
                     <TabsTrigger value="branch" className="rounded-md text-[13px] font-medium">Chi nhánh</TabsTrigger>
                   </TabsList>
@@ -356,7 +356,7 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
                     value={newSchedule.requested_vehicle_type}
                     onValueChange={(value) => setNewSchedule({ ...newSchedule, requested_vehicle_type: value })}
                   >
-                    <TabsList className="grid w-full grid-cols-3 rounded-xl bg-white p-0.5 shadow-sm ring-1 ring-slate-100">
+                    <TabsList className="grid grid-cols-3 bg-white shadow-sm ring-1 ring-slate-100 min-h-9">
                       {['4 chỗ', '7 chỗ', 'Khác'].map(type => (
                         <TabsTrigger key={type} value={type} className="rounded-md text-[13px] font-medium">
                           {type}
@@ -398,7 +398,7 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
           <Button
             onClick={onSubmit}
             className={cn(
-              "w-full h-11 rounded-xl font-semibold active:scale-95 transition-all",
+              "w-full h-11 rounded-xl font-semibold active:scale-[0.98] transition-all duration-300 ease-in-out",
               !isLeave && conflicts.length > 0
                 ? "bg-amber-500 hover:bg-amber-600 text-white"
                 : "bg-primary hover:bg-primary/90 text-white"

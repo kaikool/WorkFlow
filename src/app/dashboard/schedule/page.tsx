@@ -26,6 +26,7 @@ import DriverDashboard from "./_components/DriverDashboard";
 import { Car } from "lucide-react";
 import { canApproveLeave, canCoordinateSharedResources, canUseDriverWorkspace } from "@/lib/permissions";
 import { useSchedule } from "./_hooks/useSchedule";
+import { NavbarPortal } from "@/components/layout/navbar-portal";
 
 export default function SchedulePage() {
   const scheduleProps = useSchedule();
@@ -60,18 +61,11 @@ export default function SchedulePage() {
     <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-10 animate-fade-in-up pb-20">
       {/* Header */}
       <div className="flex flex-col gap-4 pt-4 sm:flex-row sm:items-end sm:justify-between sm:pt-0">
-        <div className="space-y-1">
+        <div className="hidden lg:block space-y-1">
           <h1 className="text-2xl font-semibold text-slate-900">Lịch trình</h1>
           <p className="text-[13px] text-slate-500 font-medium">Điều phối lịch họp & công tác</p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <Tabs value={filterType} onValueChange={(value) => setFilterType(value as 'all' | 'bgd' | 'dept')}>
-            <TabsList className="grid min-h-9 w-full grid-cols-3 rounded-xl bg-slate-100/70 p-0.5 sm:w-[360px]">
-              <TabsTrigger value="all" className="rounded-lg px-2 text-[12px] font-medium">Toàn chi nhánh</TabsTrigger>
-              <TabsTrigger value="bgd" className="rounded-lg px-2 text-[12px] font-medium">Ban giám đốc</TabsTrigger>
-              <TabsTrigger value="dept" className="rounded-lg px-2 text-[12px] font-medium">Phòng của tôi</TabsTrigger>
-            </TabsList>
-          </Tabs>
           <CreateScheduleDialog
             isOpen={isCreateOpen} setIsOpen={setIsCreateOpen}
             newSchedule={newSchedule} setNewSchedule={setNewSchedule}
@@ -94,19 +88,20 @@ export default function SchedulePage() {
         </div>
       </div>
 
+
       {/* Chọn ngày */}
       <DateNavigator selectedDate={selectedDate} setSelectedDate={setSelectedDate} weekDays={weekDays} schedules={schedules} />
 
       {/* Tabs */}
       <Tabs defaultValue={canUseDriverWorkspace(profile) ? "driver-trips" : canCoordinateResources ? "tcth" : "calendar"} className="space-y-8 w-full">
-        <TabsList className="bg-slate-100/60 p-1 rounded-xl min-h-11 w-full flex gap-1">
-          <TabsTrigger value="calendar" className="flex-1 rounded-lg py-2 font-medium text-sm data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm flex items-center justify-center">
+        <TabsList className="bg-slate-100/70 p-0.5 rounded-xl min-h-11 w-full flex">
+          <TabsTrigger value="calendar" className="">
             <CalendarIcon className="w-3.5 h-3.5 mr-1.5 shrink-0" /> 
             <span className="hidden sm:inline">Lịch biểu</span>
             <span className="inline sm:hidden">Lịch</span>
           </TabsTrigger>
           {canCoordinateResources && (
-            <TabsTrigger value="tcth" className="flex-1 rounded-lg py-2 font-medium text-sm data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm flex items-center justify-center">
+            <TabsTrigger value="tcth" className="">
               <ShieldCheck className="w-3.5 h-3.5 mr-1.5 shrink-0" /> 
               <span>Điều phối</span>
               {pendingVehicleCount > 0 && (
@@ -117,7 +112,7 @@ export default function SchedulePage() {
             </TabsTrigger>
           )}
           {canApproveLeave(profile) && (
-            <TabsTrigger value="leave-approval" className="flex-1 rounded-lg py-2 font-medium text-sm data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm flex items-center justify-center">
+            <TabsTrigger value="leave-approval" className="">
               <CalendarIcon className="w-3.5 h-3.5 mr-1.5 shrink-0" /> 
               <span className="hidden sm:inline">Phê duyệt nghỉ phép</span>
               <span className="inline sm:hidden">Duyệt phép</span>
@@ -129,7 +124,7 @@ export default function SchedulePage() {
             </TabsTrigger>
           )}
           {canUseDriverWorkspace(profile) && (
-            <TabsTrigger value="driver-trips" className="flex-1 rounded-lg py-2 font-medium text-sm data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm flex items-center justify-center">
+            <TabsTrigger value="driver-trips" className="">
               <Car className="w-3.5 h-3.5 mr-1.5 shrink-0" /> 
               <span className="hidden sm:inline">Lịch chạy xe</span>
               <span className="inline sm:hidden">Lịch chạy</span>
@@ -137,7 +132,8 @@ export default function SchedulePage() {
           )}
         </TabsList>
 
-        <TabsContent value="calendar">
+        <TabsContent value="calendar" className="space-y-4">
+          
           <CalendarView
             loading={loading}
             filterType={filterType} setFilterType={setFilterType}

@@ -32,7 +32,7 @@ export default function ScheduleCard({ item, isTCTH, profile, onSelect, onStatus
 
   return (
     <Card className={cn(
-      "rounded-2xl overflow-hidden border-none shadow-sm hover:shadow-xl transition-all duration-500 group relative",
+      "rounded-2xl overflow-hidden border-none shadow-sm hover:shadow-xl active:scale-[0.98] transition-all duration-300 ease-in-out group relative",
       isTrip ? "hover:bg-amber-50/40" : "hover:bg-slate-50"
     )}>
       <CardContent className="p-0">
@@ -61,7 +61,7 @@ export default function ScheduleCard({ item, isTCTH, profile, onSelect, onStatus
                     {status.label}
                   </Badge>
                 </div>
-                <h3 className="text-[15px] md:text-base font-bold text-slate-900 leading-tight line-clamp-2 pt-1">{displayTitle}</h3>
+                <h3 className="text-[17px] font-semibold text-slate-900 leading-tight line-clamp-2 pt-1">{displayTitle}</h3>
               </div>
               <div className="bg-slate-50 p-2 rounded-xl group-hover:bg-white transition-colors relative z-10">
                 <MoreVertical className="w-3.5 h-3.5 text-slate-500" />
