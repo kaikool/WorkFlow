@@ -71,6 +71,11 @@ function TopNavActionsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+
+  React.useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Define configurations for pages that need search/filter
   const configMap: Record<string, { placeholder: string, hasStatusFilter?: boolean }> = {
@@ -82,10 +87,11 @@ function TopNavActionsContent() {
   };
 
   const config = configMap[pathname];
-  if (!config) return null;
+  if (!config || !isMounted) return null;
 
   const q = searchParams.get('q') || '';
   const status = searchParams.get('status') || 'all';
+  const isFiltering = status !== 'all';
 
   const handleSearch = (val: string) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -118,10 +124,17 @@ function TopNavActionsContent() {
         {/* Bộ lọc trạng thái — icon-only trigger */}
         {config.hasStatusFilter && (
           <Select value={status} onValueChange={handleStatusFilter}>
-          <SelectTrigger className="relative flex h-11 w-11 items-center justify-center rounded-full border-none bg-transparent shadow-none hover:bg-accent focus:ring-0 shrink-0 [&>svg.lucide-chevron-down]:hidden">
-            <SlidersHorizontal className="w-5 h-5 text-muted-foreground" />
-            {status !== "all" && (
-              <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-primary" />
+          <SelectTrigger
+            className={cn(
+              "relative flex h-11 w-11 items-center justify-center rounded-xl border-none bg-transparent shadow-none hover:bg-accent focus:ring-0 shrink-0 [&>svg.lucide-chevron-down]:hidden",
+              isFiltering && "bg-amber-50 text-amber-700 ring-1 ring-amber-200 hover:bg-amber-100"
+            )}
+            aria-label={isFiltering ? "Bộ lọc đang được áp dụng" : "Mở bộ lọc"}
+            title={isFiltering ? "Đang áp dụng bộ lọc" : "Mở bộ lọc"}
+          >
+            <SlidersHorizontal className={cn("w-5 h-5", isFiltering ? "text-amber-700" : "text-muted-foreground")} />
+            {isFiltering && (
+              <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-amber-500 ring-2 ring-white" />
             )}
           </SelectTrigger>
           <SelectContent className="rounded-xl border border-slate-100 shadow-premium">
@@ -136,14 +149,42 @@ function TopNavActionsContent() {
       </div>
 
       {/* Mobile View */}
-      <Button 
-        variant="ghost" 
-        size="icon" 
-        className="lg:hidden w-10 h-10 rounded-full shrink-0" 
-        onClick={() => setIsMobileSearchOpen(true)}
-      >
-        <Search className="w-5 h-5 text-slate-600" />
-      </Button>
+      <div className="flex items-center gap-1 lg:hidden">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-11 w-11 rounded-xl shrink-0"
+          onClick={() => setIsMobileSearchOpen(true)}
+          aria-label="Mở tìm kiếm"
+        >
+          <Search className="w-5 h-5 text-slate-600" />
+        </Button>
+
+        {config.hasStatusFilter && (
+          <Select value={status} onValueChange={handleStatusFilter}>
+            <SelectTrigger
+              className={cn(
+                "relative flex h-11 w-11 items-center justify-center rounded-xl border-none bg-transparent shadow-none hover:bg-accent focus:ring-0 shrink-0 [&>svg.lucide-chevron-down]:hidden",
+                isFiltering && "bg-amber-50 text-amber-700 ring-1 ring-amber-200 hover:bg-amber-100"
+              )}
+              aria-label={isFiltering ? "Bộ lọc đang được áp dụng" : "Mở bộ lọc"}
+              title={isFiltering ? "Đang áp dụng bộ lọc" : "Mở bộ lọc"}
+            >
+              <SlidersHorizontal className={cn("w-5 h-5", isFiltering ? "text-amber-700" : "text-slate-600")} />
+              {isFiltering && (
+                <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-amber-500 ring-2 ring-white" />
+              )}
+            </SelectTrigger>
+            <SelectContent className="rounded-xl border border-slate-100 shadow-premium">
+              <SelectItem value="all">Tất cả trạng thái</SelectItem>
+              <SelectItem value="todo">Đang chờ</SelectItem>
+              <SelectItem value="doing">Đang làm</SelectItem>
+              <SelectItem value="done">Hoàn thành</SelectItem>
+              <SelectItem value="late">Trễ hạn</SelectItem>
+            </SelectContent>
+          </Select>
+        )}
+      </div>
 
       {/* Mobile Search Overlay */}
       {isMobileSearchOpen && (
@@ -160,10 +201,17 @@ function TopNavActionsContent() {
           </div>
           {config.hasStatusFilter && (
             <Select value={status} onValueChange={handleStatusFilter}>
-            <SelectTrigger className="relative flex h-11 w-11 items-center justify-center rounded-full border-none bg-transparent shadow-none focus:ring-0 shrink-0 [&>svg.lucide-chevron-down]:hidden">
-              <SlidersHorizontal className="w-5 h-5 text-muted-foreground" />
-              {status !== "all" && (
-                <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-primary" />
+            <SelectTrigger
+              className={cn(
+                "relative flex h-11 w-11 items-center justify-center rounded-xl border-none bg-transparent shadow-none focus:ring-0 shrink-0 [&>svg.lucide-chevron-down]:hidden",
+                isFiltering && "bg-amber-50 text-amber-700 ring-1 ring-amber-200"
+              )}
+              aria-label={isFiltering ? "Bộ lọc đang được áp dụng" : "Mở bộ lọc"}
+              title={isFiltering ? "Đang áp dụng bộ lọc" : "Mở bộ lọc"}
+            >
+              <SlidersHorizontal className={cn("w-5 h-5", isFiltering ? "text-amber-700" : "text-muted-foreground")} />
+              {isFiltering && (
+                <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-amber-500 ring-2 ring-white" />
               )}
             </SelectTrigger>
             <SelectContent className="rounded-xl border border-slate-100 shadow-premium">
