@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { createClient } from "@/utils/supabase/client";
 import { sortProfilesByHierarchy } from "@/lib/utils";
@@ -12,7 +12,8 @@ export function useKPI(KPI_CATEGORIES: any[], KPI_TEMPLATES: any[]) {
  const [isCreateOpen, setIsCreateOpen] = useState(false);
  const [isSuccess, setIsSuccess] = useState(false);
  const [profile, setProfile] = useState<any>(null);
- const [searchQuery, setSearchQuery] = useState("");
+ const searchParams = useSearchParams();
+ const searchQuery = searchParams.get('q') || "";
 
  const [selectedCategory, setSelectedCategory] = useState<string>('lending');
  const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
@@ -167,7 +168,7 @@ export function useKPI(KPI_CATEGORIES: any[], KPI_TEMPLATES: any[]) {
 
   return {
     router, goals, setGoals, team, setTeam, loading, setLoading, isCreateOpen, setIsCreateOpen,
-    isSuccess, setIsSuccess, profile, setProfile, searchQuery, setSearchQuery,
+    isSuccess, setIsSuccess, profile, setProfile, searchQuery,
     selectedCategory, setSelectedCategory, selectedTemplate, setSelectedTemplate,
     targetType, setTargetType, selectedMemberIds, setSelectedMemberIds,
     timeframe, setTimeframe, unitValue, setUnitValue, customTitle, setCustomTitle,

@@ -7,6 +7,7 @@ import {
  LayoutDashboard, 
  Users, 
  ListTodo,
+ SlidersHorizontal,
  Target,
  LogOut, 
  Menu,
@@ -103,25 +104,25 @@ function TopNavActionsContent() {
   return (
     <div className="flex items-center justify-end lg:justify-center flex-1 gap-2 w-full min-w-0">
       {/* Desktop View */}
-      <div className="hidden lg:flex items-center gap-2 w-full max-w-2xl">
+      <div className="hidden lg:flex items-center gap-3 w-full">
         <div className="relative flex-1 group transition-all duration-300">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors" />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors" />
           <Input
             placeholder={config.placeholder}
-            className="w-full pl-9 pr-3 h-10 text-[13px] font-medium bg-slate-100 hover:bg-slate-200/50 border-transparent rounded-full focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:bg-white focus-visible:border-primary/30 transition-all shadow-sm"
+            className="pl-10"
             defaultValue={q}
             onChange={(e) => handleSearch(e.target.value)}
           />
         </div>
         
-        {/* Optional Filter (E.g. Tasks status) */}
+        {/* Bộ lọc trạng thái — icon-only trigger */}
         {config.hasStatusFilter && (
           <Select value={status} onValueChange={handleStatusFilter}>
-          <SelectTrigger className="flex h-10 items-center justify-between gap-2 px-3 bg-white border border-slate-200 rounded-full text-[13px] font-medium text-slate-700 hover:bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 shadow-sm shrink-0 w-auto whitespace-nowrap">
-            <div className="flex items-center gap-1.5">
-              <ListTodo className="w-4 h-4 text-slate-400" />
-              <SelectValue placeholder="Trạng thái" />
-            </div>
+          <SelectTrigger className="relative flex h-11 w-11 items-center justify-center rounded-full border-none bg-transparent shadow-none hover:bg-accent focus:ring-0 shrink-0 [&>svg.lucide-chevron-down]:hidden">
+            <SlidersHorizontal className="w-5 h-5 text-muted-foreground" />
+            {status !== "all" && (
+              <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-primary" />
+            )}
           </SelectTrigger>
           <SelectContent className="rounded-xl border border-slate-100 shadow-premium">
             <SelectItem value="all">Tất cả trạng thái</SelectItem>
@@ -146,35 +147,35 @@ function TopNavActionsContent() {
 
       {/* Mobile Search Overlay */}
       {isMobileSearchOpen && (
-        <div className="fixed inset-x-0 top-0 h-[60px] bg-white/90 backdrop-blur-2xl z-[60] flex items-center px-3 gap-2 border-b border-slate-100 animate-in fade-in slide-in-from-top-2">
+        <div className="fixed inset-x-0 top-0 h-[64px] bg-white/90 backdrop-blur-2xl z-[60] flex items-center px-3 gap-2 border-b border-slate-100 animate-in fade-in slide-in-from-top-2">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <Input 
               autoFocus 
               placeholder={config.placeholder}
-              className="w-full pl-9 pr-3 h-10 bg-slate-100/80 text-[14px] font-medium rounded-full border-none focus-visible:ring-0 shadow-inner" 
+              className="pl-10"
               defaultValue={q}
               onChange={(e) => handleSearch(e.target.value)}
             />
           </div>
           {config.hasStatusFilter && (
             <Select value={status} onValueChange={handleStatusFilter}>
-            <SelectTrigger className="flex h-10 items-center justify-between gap-1.5 px-2 bg-transparent border-none text-[13px] font-medium text-primary shadow-none focus:ring-0 shrink-0 w-auto whitespace-nowrap">
-              <div className="flex items-center gap-1.5">
-                <ListTodo className="w-4 h-4 text-primary" />
-                <SelectValue placeholder="Trạng thái" />
-              </div>
+            <SelectTrigger className="relative flex h-11 w-11 items-center justify-center rounded-full border-none bg-transparent shadow-none focus:ring-0 shrink-0 [&>svg.lucide-chevron-down]:hidden">
+              <SlidersHorizontal className="w-5 h-5 text-muted-foreground" />
+              {status !== "all" && (
+                <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-primary" />
+              )}
             </SelectTrigger>
             <SelectContent className="rounded-xl border border-slate-100 shadow-premium">
-              <SelectItem value="all">Tất cả</SelectItem>
-              <SelectItem value="todo">Chờ</SelectItem>
+              <SelectItem value="all">Tất cả trạng thái</SelectItem>
+              <SelectItem value="todo">Đang chờ</SelectItem>
               <SelectItem value="doing">Đang làm</SelectItem>
-              <SelectItem value="done">Xong</SelectItem>
-              <SelectItem value="late">Trễ</SelectItem>
+              <SelectItem value="done">Hoàn thành</SelectItem>
+              <SelectItem value="late">Trễ hạn</SelectItem>
             </SelectContent>
           </Select>
           )}
-          <Button variant="ghost" className="shrink-0 text-slate-600 font-medium px-2 rounded-full h-10" onClick={() => setIsMobileSearchOpen(false)}>
+          <Button variant="ghost" className="shrink-0 text-slate-600 font-medium px-3 rounded-xl h-11" onClick={() => setIsMobileSearchOpen(false)}>
             Huỷ
           </Button>
         </div>
@@ -423,7 +424,7 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
   )}>
     {/* Left: Page Title */}
     <div className="flex items-center lg:flex-1 shrink-0 overflow-hidden">
-      <span className="text-[18px] lg:text-xl font-bold text-slate-900 tracking-tight truncate">{pageTitle}</span>
+       <span className="text-[18px] lg:text-xl font-bold text-slate-900 truncate">{pageTitle}</span>
     </div>
 
     {/* Middle: Search & Filter */}
@@ -447,7 +448,7 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
  {mounted ? (
  <DropdownMenu>
  <DropdownMenuTrigger asChild>
- <Button variant="ghost" size="icon" className="h-11 w-11 rounded-xl p-0" aria-label="Mở menu tài khoản">
+ <Button variant="ghost" size="icon" className="h-11 w-11 rounded-full p-0" aria-label="Mở menu tài khoản">
  <Avatar className="h-11 w-11 border-2 border-white shadow-sm cursor-pointer hover:scale-[1.02] transition-transform">
  <AvatarImage src={profile?.avatar_url} className="object-cover" />
  <AvatarFallback className="bg-primary text-primary-foreground font-bold">{profile?.full_name?.[0]}</AvatarFallback>
@@ -481,7 +482,7 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
  >
  {children}
  </main>
- <nav className="lg:hidden fixed inset-x-0 bottom-0 z-50 border-t border-slate-200/50 bg-white/80 px-2 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-2 shadow-[0_-12px_30px_-20px_rgba(15,23,42,0.35)] backdrop-blur-2xl">
+ <nav className="lg:hidden fixed inset-x-0 bottom-0 z-50 border-t border-slate-200/50 bg-white/80 px-2 pb-[max(env(safe-area-inset-bottom),34px)] pt-2 shadow-[0_-12px_30px_-20px_rgba(15,23,42,0.35)] backdrop-blur-2xl">
  <div
  className="grid gap-1"
  style={{ gridTemplateColumns: `repeat(${Math.min(navItems.length, 5)}, minmax(0, 1fr))` }}

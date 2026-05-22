@@ -140,7 +140,7 @@ export function NotificationsDropdown() {
 
   if (!mounted) {
     return (
-      <Button variant="ghost" size="icon" className="relative h-11 w-11 rounded-xl bg-slate-50" aria-label="Mở thông báo">
+      <Button variant="ghost" size="icon" className="relative h-11 w-11 rounded-full" aria-label="Mở thông báo">
         <Bell className="h-5 w-5 text-slate-600" />
       </Button>
     );
@@ -149,7 +149,7 @@ export function NotificationsDropdown() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative h-11 w-11 rounded-xl bg-slate-50 hover:bg-slate-100 transition-all" aria-label={unreadCount > 0 ? `Mở thông báo, có ${unreadCount} thông báo chưa đọc` : "Mở thông báo"}>
+        <Button variant="ghost" size="icon" className="relative h-11 w-11 rounded-full hover:bg-slate-100 transition-all" aria-label={unreadCount > 0 ? `Mở thông báo, có ${unreadCount} thông báo chưa đọc` : "Mở thông báo"}>
           <Bell className="h-5 w-5 text-slate-600" />
           {unreadCount > 0 && (
             <Badge className="absolute -top-1 -right-1 !flex !h-5 !min-h-5 !w-5 !min-w-5 items-center justify-center rounded-full border-2 border-white bg-red-600 !p-0 text-[10px] font-bold leading-none text-white tabular-nums">

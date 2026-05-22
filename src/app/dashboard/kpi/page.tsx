@@ -102,7 +102,7 @@ export default function GoalsPage() {
   const kpiProps = useKPI(KPI_CATEGORIES, KPI_TEMPLATES);
   const {
     router, goals, team, loading, isCreateOpen, setIsCreateOpen,
-    isSuccess, setIsSuccess, profile, searchQuery, setSearchQuery,
+    isSuccess, setIsSuccess, profile, searchQuery,
     selectedCategory, setSelectedCategory, selectedTemplate, setSelectedTemplate,
     targetType, setTargetType, selectedMemberIds, setSelectedMemberIds,
     timeframe, setTimeframe, unitValue, setUnitValue, customTitle, setCustomTitle,
@@ -334,21 +334,9 @@ export default function GoalsPage() {
    {/* KPI List */}
   <div className="space-y-6 pt-2">
   {/* Unified Search & Filter Bar */}
-  <div className="flex items-center gap-2 bg-slate-50/60 p-1.5 rounded-2xl border border-slate-100/80 shadow-sm w-full min-h-11">
-    <div className="flex items-center gap-2 px-2 shrink-0">
-      <Target className="w-4 h-4 text-primary shrink-0" />
-      <span className="text-sm font-medium text-slate-600 hidden sm:inline">Danh sách chỉ tiêu ({filteredGoals.length})</span>
-      <span className="text-sm font-medium text-slate-600 inline sm:hidden">({filteredGoals.length})</span>
-    </div>
-    <div className="relative flex-1 group">
-      <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500 group-focus-within:text-primary transition-colors" />
-      <Input
-        placeholder="Tìm kiếm chỉ tiêu..."
-        className="w-full pl-9 pr-3 h-10 text-sm font-medium bg-white border-slate-200/60 rounded-xl focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary transition-all"
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
-      />
-    </div>
+  <div className="flex items-center gap-2 px-2">
+    <Target className="w-4 h-4 text-primary shrink-0" />
+    <span className="text-sm font-medium text-slate-600">Danh sách chỉ tiêu ({filteredGoals.length})</span>
   </div>
 
  <div className="hidden md:block premium-card border-none overflow-hidden p-0 rounded-2xl">
