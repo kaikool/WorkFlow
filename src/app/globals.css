@@ -545,6 +545,32 @@ main > div[class*="max-w-5xl"][class*="mx-auto"] {
 }
 
 /* ==============================================================
+   SAFE-AREA UTILITIES — Đồng bộ cho mobile nav, FAB, content padding
+   Mỗi giá trị tính sẵn dựa trên home-indicator (env safe-area).
+   Không hardcode trong component nữa — dùng class này.
+   ============================================================== */
+
+/* Vị trí đáy chuẩn cho mobile floating bar */
+.bottom-safe {
+  bottom: max(env(safe-area-inset-bottom), 0.75rem);
+}
+
+/* Vị trí cho FAB — cao hơn nav 80px (chiều cao nav floating + khoảng thở 16px) */
+.bottom-safe-fab {
+  bottom: calc(max(env(safe-area-inset-bottom), 0.75rem) + 5rem);
+}
+
+/* Padding-bottom cho main content để không bị nav che, tự thích ứng safe-area */
+.pb-mobile-nav {
+  padding-bottom: calc(env(safe-area-inset-bottom) + 6rem);
+}
+@media (min-width: 1024px) {
+  .pb-mobile-nav {
+    padding-bottom: 2rem;
+  }
+}
+
+/* ==============================================================
    ĐỒNG BỘ AVATAR — Snap mọi kích thước về 3 tier (32 / 40 / 44).
    Quy ước: tất cả Avatar shadcn (rounded-full + class h-X w-X)
    sẽ bị ép về 1 trong 3 size duy nhất, dù code cũ pass h-5/h-7/h-9...

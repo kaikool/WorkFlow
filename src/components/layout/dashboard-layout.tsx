@@ -388,7 +388,7 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
  <MustChangePasswordBanner show={profile?.must_change_password === true} />
 
  <main
- className="relative flex-1 max-w-full overflow-x-hidden overscroll-x-none p-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] touch-pan-y lg:p-8"
+ className="relative flex-1 max-w-full overflow-x-hidden p-4 pb-mobile-nav lg:p-8"
  >
  {children}
  </main>

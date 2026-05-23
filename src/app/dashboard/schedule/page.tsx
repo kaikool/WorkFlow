@@ -1,32 +1,16 @@
 'use client'
 
-import React, { useState, useEffect, useRef, useMemo } from "react";
-import { useSearchParams } from "next/navigation";
-import {
-  Calendar as CalendarIcon,
-  Loader2,
-  ShieldCheck,
-} from "lucide-react";
-import {
-  Tabs, TabsContent, TabsList, TabsTrigger
-} from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
+import React from "react";
 import { createClient } from "@/utils/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { addDays, endOfDay, isSameDay, startOfWeek, endOfWeek, eachDayOfInterval } from "date-fns";
 
-import { resolveParticipantIds, checkConflicts, checkResourceConflicts } from "./_lib/utils";
 import CreateScheduleDialog from "./_components/CreateScheduleDialog";
 import ScheduleDetailDialog from "./_components/ScheduleDetailDialog";
 import DateNavigator from "./_components/DateNavigator";
 import CalendarView from "./_components/CalendarView";
-import ResourcesManagerDashboard from "./_components/ResourcesManagerDashboard";
-import LeaveApprovalDashboard from "./_components/LeaveApprovalDashboard";
 import DriverDashboard from "./_components/DriverDashboard";
-import { Car } from "lucide-react";
-import { canApproveLeave, canCoordinateSharedResources, canUseDriverWorkspace } from "@/lib/permissions";
-import { useSchedule } from "./_hooks/useSchedule";
-import { NavbarPortal } from "@/components/layout/navbar-portal";
+import { canApproveLeave, canUseDriverWorkspace } from "@/lib/permissions";
+import { useSchedule } from "./_hooks/useSchedule";
 import PageHeader from "@/components/layout/PageHeader";
 import { ListSkeleton } from "@/components/ui/list-skeleton";
 
@@ -42,19 +26,37 @@ export default function SchedulePage() {
     deptMode, setDeptMode, filterDepts, setFilterDepts,
     participantMode, setParticipantMode, selectedParticipants, setSelectedParticipants,
     selectedSchedule, isDetailOpen, setIsDetailOpen,
-    timelineContainerRef, mounted, setMounted, searchParams,
-    toast, supabase, defaultTab, pendingVehicleCount, pendingVehicleBadge,
-    canCoordinateResources, getPendingLeavesCount, pendingLeavesCount, pendingLeavesBadge,
-    getDepartmentName, isScheduleApprover, sendNotifications, weekDays, isTodaySelected,
-    now, currentMinutes, startLimit, endLimit, duration, isWithinWorkingHours, currentTimePercent,
-    conflicts, resourceConflicts, fetchData, findParticipantConflicts,
-    handleStatusUpdate, handleAssignVehicle, handleDeleteSchedule, handleUpdateEndTime, handleUpdateSchedule, handleCreateSchedule, handleSelectSchedule
+    timelineContainerRef, mounted,
+    toast, supabase, pendingVehicleCount,
+    canCoordinateResources, pendingLeavesCount,
+    sendNotifications, weekDays, isTodaySelected,
+    currentTimePercent, startLimit, duration,
+    conflicts, resourceConflicts, fetchData,
+    handleStatusUpdate, handleUpdateEndTime, handleUpdateSchedule, handleCreateSchedule, handleSelectSchedule
   } = scheduleProps;
 
   if (!mounted) {
     return (
       <div className="page-container py-10">
         <ListSkeleton variant="card" rows={6} />
+      </div>
+    );
+  }
+
+  // Driver có giao diện chuyên biệt — hiện DriverDashboard thay danh sách lịch chung
+  if (canUseDriverWorkspace(profile)) {
+    return (
+      <div className="page-container space-y-8 animate-fade-in-up">
+        <PageHeader
+          title="Lịch trình"
+          description="Lịch chạy xe & hành trình của bạn"
+        />
+        <DriverDashboard
+          schedules={schedules}
+          profile={profile}
+          fetchData={fetchData}
+          toast={toast}
+        />
       </div>
     );
   }
@@ -90,89 +92,24 @@ export default function SchedulePage() {
       {/* Chọn ngày */}
       <DateNavigator selectedDate={selectedDate} setSelectedDate={setSelectedDate} weekDays={weekDays} schedules={schedules} />
 
-      {/* Tabs */}
-      <Tabs defaultValue={canUseDriverWorkspace(profile) ? "driver-trips" : canCoordinateResources ? "tcth" : "calendar"} className="space-y-8 w-full">
-        <TabsList className="bg-slate-100/70 p-0.5 rounded-xl min-h-11 w-full flex">
-          <TabsTrigger value="calendar" className="">
-            <CalendarIcon className="w-3.5 h-3.5 mr-1.5 shrink-0" /> 
-            <span className="hidden sm:inline">Lịch biểu</span>
-            <span className="inline sm:hidden">Lịch</span>
-          </TabsTrigger>
-          {canCoordinateResources && (
-            <TabsTrigger value="tcth" className="">
-              <ShieldCheck className="w-3.5 h-3.5 mr-1.5 shrink-0" /> 
-              <span>Điều phối</span>
-              {pendingVehicleCount > 0 && (
-                <Badge className="ml-1.5 min-h-6 min-w-6 shrink-0 justify-center rounded-full border-none bg-amber-600 px-2 text-xs font-medium leading-none text-white tabular-nums">
-                  {pendingVehicleBadge}
-                </Badge>
-              )}
-            </TabsTrigger>
-          )}
-          {canApproveLeave(profile) && (
-            <TabsTrigger value="leave-approval" className="">
-              <CalendarIcon className="w-3.5 h-3.5 mr-1.5 shrink-0" /> 
-              <span className="hidden sm:inline">Phê duyệt nghỉ phép</span>
-              <span className="inline sm:hidden">Duyệt phép</span>
-              {pendingLeavesCount > 0 && (
-                <Badge className="ml-1.5 min-h-6 min-w-6 shrink-0 justify-center rounded-full border-none bg-slate-900 px-2 text-xs font-medium leading-none text-white tabular-nums">
-                  {pendingLeavesBadge}
-                </Badge>
-              )}
-            </TabsTrigger>
-          )}
-          {canUseDriverWorkspace(profile) && (
-            <TabsTrigger value="driver-trips" className="">
-              <Car className="w-3.5 h-3.5 mr-1.5 shrink-0" /> 
-              <span className="hidden sm:inline">Lịch chạy xe</span>
-              <span className="inline sm:hidden">Lịch chạy</span>
-            </TabsTrigger>
-          )}
-        </TabsList>
-
-        <TabsContent value="calendar" className="space-y-4">
-          
-          <CalendarView
-            loading={loading}
-            filterType={filterType} setFilterType={setFilterType}
-            schedules={schedules} selectedDate={selectedDate}
-            profile={profile} allProfiles={allProfiles} isTCTH={canCoordinateResources}
-            timelineContainerRef={timelineContainerRef}
-            isTodaySelected={isTodaySelected} currentTimePercent={currentTimePercent}
-            startLimit={startLimit} duration={duration}
-            onSelectSchedule={handleSelectSchedule}
-            onStatusUpdate={handleStatusUpdate}
-          />
-        </TabsContent>
-
-        {canCoordinateResources && (
-          <TabsContent value="tcth">
-            <ResourcesManagerDashboard
-              schedules={schedules} vehicles={vehicles} rooms={rooms}
-              selectedDate={selectedDate} onSelectSchedule={handleSelectSchedule}
-            />
-          </TabsContent>
-        )}
-        {canApproveLeave(profile) && (
-          <TabsContent value="leave-approval">
-            <LeaveApprovalDashboard
-              schedules={schedules}
-              profile={profile}
-              onStatusUpdate={handleStatusUpdate}
-            />
-          </TabsContent>
-        )}
-        {canUseDriverWorkspace(profile) && (
-          <TabsContent value="driver-trips">
-            <DriverDashboard
-              schedules={schedules}
-              profile={profile}
-              fetchData={fetchData}
-              toast={toast}
-            />
-          </TabsContent>
-        )}
-      </Tabs>
+      {/* View duy nhất — Tablist phạm vi (Toàn chi nhánh / BGĐ / Phòng của tôi)
+          đã nhúng sẵn "Điều phối tài nguyên" (cho TCTH) và "Duyệt nghỉ phép" (cho lãnh đạo) */}
+      <CalendarView
+        loading={loading}
+        filterType={filterType} setFilterType={setFilterType}
+        schedules={schedules} vehicles={vehicles} rooms={rooms}
+        selectedDate={selectedDate}
+        profile={profile} allProfiles={allProfiles}
+        isTCTH={canCoordinateResources}
+        canApproveLeavePermission={canApproveLeave(profile)}
+        pendingVehicleCount={pendingVehicleCount}
+        pendingLeavesCount={pendingLeavesCount}
+        timelineContainerRef={timelineContainerRef}
+        isTodaySelected={isTodaySelected} currentTimePercent={currentTimePercent}
+        startLimit={startLimit} duration={duration}
+        onSelectSchedule={handleSelectSchedule}
+        onStatusUpdate={handleStatusUpdate}
+      />
 
       {/* Dialog chi tiết */}
       <ScheduleDetailDialog
@@ -191,12 +128,11 @@ export default function SchedulePage() {
               const vehicle = vehicles.find(v => v.id === vId);
               await sendNotifications([{
                 user_id: dId,
-                title: "🚗 Bạn được phân công lịch chạy xe",
+                title: "Bạn được phân công lịch chạy xe",
                 content: `Bạn được phân công điều khiển xe ${vehicle?.name || ''} (${vehicle?.plate_number || ''}) cho chuyến: "${schedule.title}" – ${new Date(schedule.start_time).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}.`,
                 link: "/dashboard/schedule"
               }]);
             } else if (!vId && schedule?.driver_id) {
-              // Thông báo hủy gán xe cho tài xế cũ
               await sendNotifications([{
                 user_id: schedule.driver_id,
                 title: "Hủy phân công lịch chạy xe",

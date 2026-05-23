@@ -43,21 +43,18 @@ export default function MobileCreateFab() {
       type="button"
       onClick={handleClick}
       aria-label="Tạo mới"
-      // Nav mobile có chiều cao = pt-2 (8) + min-h-14 (56) + pb-max(safe, 34) = 64 + max(safe, 34)
-      // FAB phải nằm trên nav + khoảng thở 16px ⇒ bottom = 80 + max(safe, 34)
-      style={{
-        bottom: 'calc(max(env(safe-area-inset-bottom), 34px) + 5rem)',
-      }}
       className={cn(
         // Hiển thị duy nhất mobile/tablet; desktop ẩn (sidebar đã có nút tạo)
-        "lg:hidden fixed z-[55] right-5",
+        "lg:hidden fixed z-[55] right-4 bottom-safe-fab",
         // Kích thước HIG compose button (56pt)
         "h-14 w-14 rounded-full",
-        // Hình thức
-        "bg-primary text-white shadow-xl shadow-primary/30",
+        // Liquid glass primary
+        "bg-primary text-white",
+        "shadow-[0_8px_24px_-4px_rgba(37,99,235,0.45),0_2px_8px_-2px_rgba(15,23,42,0.12)]",
+        "border border-primary/20",
         "flex items-center justify-center",
         "transition-all duration-200 ease-out",
-        "active:scale-90 hover:shadow-2xl hover:shadow-primary/40",
+        "active:scale-90 hover:shadow-[0_12px_32px_-4px_rgba(37,99,235,0.55)]",
         // Focus accessible
         "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/30"
       )}

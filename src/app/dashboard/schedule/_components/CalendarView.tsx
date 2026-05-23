@@ -1,14 +1,17 @@
 'use client'
 
 import React, { useState } from "react";
-import { Clock, Loader2, ChevronDown, ChevronUp, Plane } from "lucide-react";
+import { Clock, Loader2, ChevronDown, ChevronUp, Plane, ShieldCheck, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { addDays, endOfDay, format, isSameDay, startOfDay } from "date-fns";
 import ScheduleCard from "./ScheduleCard";
 import DirectorTimeline from "./DirectorTimeline";
+import ResourcesManagerDashboard from "./ResourcesManagerDashboard";
+import LeaveApprovalDashboard from "./LeaveApprovalDashboard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface CalendarViewProps {
@@ -16,24 +19,30 @@ interface CalendarViewProps {
   filterType: 'all' | 'bgd' | 'dept';
   setFilterType: (v: 'all' | 'bgd' | 'dept') => void;
   schedules: any[];
+  vehicles: any[];
+  rooms: any[];
   selectedDate: Date;
   profile: any;
   allProfiles: any[];
   isTCTH: boolean;
+  canApproveLeavePermission: boolean;
+  pendingVehicleCount: number;
+  pendingLeavesCount: number;
   timelineContainerRef: React.RefObject<HTMLDivElement | null>;
   isTodaySelected: boolean;
   currentTimePercent: number;
   startLimit: number;
   duration: number;
   onSelectSchedule: (s: any) => void;
-  onStatusUpdate: (id: string, status: string) => void;
+  onStatusUpdate: (id: string, status: string) => Promise<void>;
 }
 
 export default function CalendarView(props: CalendarViewProps) {
   const {
-    loading, filterType, setFilterType, schedules, selectedDate, profile,
-    allProfiles, isTCTH, timelineContainerRef,
-    isTodaySelected, currentTimePercent, startLimit, duration,
+    loading, filterType, setFilterType, schedules, vehicles, rooms,
+    selectedDate, profile, allProfiles, isTCTH,
+    canApproveLeavePermission, pendingVehicleCount, pendingLeavesCount,
+    timelineContainerRef, isTodaySelected, currentTimePercent, startLimit, duration,
     onSelectSchedule, onStatusUpdate
   } = props;
 
@@ -102,14 +111,70 @@ export default function CalendarView(props: CalendarViewProps) {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      {/* Bộ lọc nhanh */}
+      {/* Tablist phạm vi xem — gộp luôn chức năng điều phối/duyệt vào từng phạm vi tương ứng */}
       <Tabs value={filterType} onValueChange={(value) => setFilterType(value as 'all' | 'bgd' | 'dept')} className="w-full">
         <TabsList className="grid grid-cols-3 min-h-9">
-          <TabsTrigger value="all" className="rounded-lg px-2 text-[12px] font-medium md:text-[14px]">Toàn chi nhánh</TabsTrigger>
-          <TabsTrigger value="bgd" className="rounded-lg px-2 text-[12px] font-medium md:text-[14px]">Ban giám đốc</TabsTrigger>
-          <TabsTrigger value="dept" className="rounded-lg px-2 text-[12px] font-medium md:text-[14px]">Phòng của tôi</TabsTrigger>
+          <TabsTrigger value="all" className="rounded-lg px-2 text-[12px] font-medium md:text-[14px] relative">
+            <span className="truncate">Toàn chi nhánh</span>
+            {isTCTH && pendingVehicleCount > 0 && (
+              <Badge className="ml-1.5 h-5 min-w-5 shrink-0 justify-center rounded-full border-none bg-amber-600 px-1.5 text-[10px] font-bold leading-none text-white tabular-nums">
+                {pendingVehicleCount > 9 ? "9+" : pendingVehicleCount}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="bgd" className="rounded-lg px-2 text-[12px] font-medium md:text-[14px]">
+            <span className="truncate">Ban giám đốc</span>
+          </TabsTrigger>
+          <TabsTrigger value="dept" className="rounded-lg px-2 text-[12px] font-medium md:text-[14px] relative">
+            <span className="truncate">Phòng của tôi</span>
+            {canApproveLeavePermission && pendingLeavesCount > 0 && (
+              <Badge className="ml-1.5 h-5 min-w-5 shrink-0 justify-center rounded-full border-none bg-slate-900 px-1.5 text-[10px] font-bold leading-none text-white tabular-nums">
+                {pendingLeavesCount > 9 ? "9+" : pendingLeavesCount}
+              </Badge>
+            )}
+          </TabsTrigger>
         </TabsList>
       </Tabs>
+
+      {/* TAB: Toàn chi nhánh — nhúng điều phối tài nguyên nếu user có quyền */}
+      {filterType === 'all' && isTCTH && (
+        <section className="space-y-4">
+          <h3 className="text-[13px] font-medium text-slate-500 flex items-center gap-2 px-2">
+            <ShieldCheck className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+            Điều phối tài nguyên
+            {pendingVehicleCount > 0 && (
+              <Badge className="ml-auto h-5 rounded-full border border-amber-100 bg-amber-50 px-2.5 text-[10px] font-bold text-amber-700">
+                {pendingVehicleCount} lịch cần xe
+              </Badge>
+            )}
+          </h3>
+          <ResourcesManagerDashboard
+            schedules={schedules}
+            vehicles={vehicles}
+            rooms={rooms}
+            selectedDate={selectedDate}
+            onSelectSchedule={onSelectSchedule}
+          />
+        </section>
+      )}
+
+      {/* TAB: Phòng của tôi — nhúng đơn nghỉ phép cần duyệt */}
+      {filterType === 'dept' && canApproveLeavePermission && pendingLeavesCount > 0 && (
+        <section className="space-y-4">
+          <h3 className="text-[13px] font-medium text-slate-500 flex items-center gap-2 px-2">
+            <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+            Đơn nghỉ phép chờ duyệt
+            <Badge className="ml-auto h-5 rounded-full border border-amber-100 bg-amber-50 px-2.5 text-[10px] font-bold text-amber-700">
+              {pendingLeavesCount} đơn
+            </Badge>
+          </h3>
+          <LeaveApprovalDashboard
+            schedules={schedules}
+            profile={profile}
+            onStatusUpdate={onStatusUpdate}
+          />
+        </section>
+      )}
 
       {/* Danh sách lịch */}
       <div className="space-y-4">

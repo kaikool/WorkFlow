@@ -15,31 +15,73 @@ interface Props {
   pathname: string;
 }
 
+// Mobile tab bar theo phong cách iOS 26 "Liquid Glass":
+//   - Floating bar (cách 2 cạnh trái/phải bằng mx-3), không edge-to-edge
+//   - Frosted glass: backdrop-blur-2xl + saturate cho nền trong suốt sống động
+//   - Active state KHÔNG dùng background pill (đúng iOS) — chỉ tint màu primary,
+//     icon tăng nét (strokeWidth 2.6), label đậm hơn
+//   - Inactive: slate-500, strokeWidth 2
+//   - Icon size 26px (chuẩn iOS tab bar), label 11px (caption)
+//   - Truncate-safe: container full width của nav, không max-w cố định
 export default function MobileBottomNav({ navItems, pathname }: Props) {
   return (
-    <nav className="lg:hidden fixed inset-x-0 bottom-0 z-50 border-t border-slate-200/50 bg-white/80 px-2 pb-[max(env(safe-area-inset-bottom),34px)] pt-2 shadow-[0_-12px_30px_-20px_rgba(15,23,42,0.35)] backdrop-blur-2xl">
+    <nav
+      aria-label="Điều hướng chính"
+      className="lg:hidden fixed inset-x-0 z-50 flex justify-center pointer-events-none bottom-safe"
+    >
       <div
-        className="grid gap-1"
-        style={{ gridTemplateColumns: `repeat(${Math.min(navItems.length, 5)}, minmax(0, 1fr))` }}
+        className={cn(
+          "pointer-events-auto",
+          // Container full width trừ margin 2 cạnh
+          // mx-2 thay vì mx-3 để có thêm ~8px ngang, đủ chỗ cho "Lịch trình" 10 ký tự
+          "mx-2 w-full",
+          // Liquid glass surface
+          "rounded-[28px] border border-white/40",
+          "bg-white/65 backdrop-blur-2xl backdrop-saturate-150",
+          "shadow-[0_8px_32px_-8px_rgba(15,23,42,0.18),0_2px_8px_-2px_rgba(15,23,42,0.08)]",
+          // Padding nội bộ vừa đủ
+          "px-1 py-1.5"
+        )}
       >
-        {navItems.slice(0, 5).map((item) => {
-          const isActive = pathname === item.href;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              aria-current={isActive ? "page" : undefined}
-              aria-label={item.name}
-              className={cn(
-                "flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl px-1 text-[11px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30",
-                isActive ? "bg-primary/10 text-primary" : "text-slate-500 hover:bg-slate-100 hover:text-slate-900"
-              )}
-            >
-              <item.icon className="h-5 w-5 shrink-0" />
-              <span className="max-w-full truncate">{item.name}</span>
-            </Link>
-          );
-        })}
+        <div
+          className="grid gap-0"
+          style={{ gridTemplateColumns: `repeat(${Math.min(navItems.length, 5)}, minmax(0, 1fr))` }}
+        >
+          {navItems.slice(0, 5).map((item) => {
+            const isActive = pathname === item.href;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                aria-current={isActive ? "page" : undefined}
+                aria-label={item.name}
+                className={cn(
+                  "flex h-14 flex-col items-center justify-center gap-1 rounded-2xl px-0.5",
+                  "transition-all duration-150 ease-out",
+                  "active:scale-95",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30",
+                  isActive ? "text-primary" : "text-slate-500"
+                )}
+              >
+                <item.icon
+                  className={cn(
+                    "h-[26px] w-[26px] shrink-0 transition-transform",
+                    isActive && "scale-[1.04]"
+                  )}
+                  strokeWidth={isActive ? 2.6 : 2}
+                />
+                <span
+                  className={cn(
+                    "max-w-full truncate leading-none text-[11px]",
+                    isActive ? "font-bold" : "font-medium"
+                  )}
+                >
+                  {item.name}
+                </span>
+              </Link>
+            );
+          })}
+        </div>
       </div>
     </nav>
   );
