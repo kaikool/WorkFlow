@@ -110,14 +110,14 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
           <Plus className="w-5 h-5 mr-2" /> Đăng ký lịch mới
         </Button>
       </DialogTrigger>
-      <DialogContent 
-        className="top-auto bottom-0 translate-y-0 flex flex-col overflow-hidden border-none p-0 shadow-2xl bg-white w-full max-h-[calc(100dvh-env(safe-area-inset-top)-1.5rem)] max-w-none rounded-t-[32px] rounded-b-none sm:top-[50%] sm:bottom-auto sm:translate-y-[-50%] sm:h-auto sm:max-h-[calc(100dvh-6rem)] sm:w-[calc(100dvw-2rem)] sm:max-w-lg sm:rounded-[24px]"
+      <DialogContent
+        className="app-dialog-sheet app-dialog-sheet--lg shadow-2xl"
       >
-        <DialogHeader className="shrink-0 px-[var(--app-page-x)] pt-6">
+        <DialogHeader className="app-dialog-sheet-header">
           <DialogTitle className="text-[17px] font-semibold text-slate-900">Thiết lập lịch trình mới</DialogTitle>
           <DialogDescription className="sr-only">Thiết lập chi tiết thời gian và thành phần tham gia cho lịch trình mới</DialogDescription>
         </DialogHeader>
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+        <div className="app-dialog-sheet-body">
         <div className="space-y-5 px-[var(--app-page-x)] py-4">
 
           {/* 1. Thời gian */}
@@ -396,7 +396,7 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
           )}
         </div>
         </div>
-        <DialogFooter className="shrink-0 border-t border-slate-100 bg-background/95 px-[var(--app-page-x)] py-4 pb-safe">
+        <DialogFooter className="app-dialog-sheet-footer flex flex-row justify-end gap-2 sm:gap-3">
           <Button
             onClick={onSubmit}
             className={cn(

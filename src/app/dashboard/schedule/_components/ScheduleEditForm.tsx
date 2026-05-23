@@ -40,31 +40,30 @@ export default function ScheduleEditForm({
 }: ScheduleEditFormProps) {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="top-auto bottom-0 translate-y-0 flex flex-col overflow-hidden border-none p-0 shadow-2xl bg-white w-full max-h-[calc(100dvh-env(safe-area-inset-top)-1.5rem)] max-w-none rounded-t-[32px] rounded-b-none sm:top-[50%] sm:bottom-auto sm:translate-y-[-50%] sm:h-auto sm:max-h-[calc(100dvh-6rem)] sm:w-[calc(100dvw-2rem)] sm:max-w-2xl sm:rounded-[24px]">
+      <DialogContent className="app-dialog-sheet app-dialog-sheet--2xl shadow-2xl">
         <DialogHeader className="sr-only">
           <DialogDescription>Chỉnh sửa thông tin lịch trình, thời gian, địa điểm và thành phần tham gia.</DialogDescription>
           <DialogTitle>Sửa lịch trình</DialogTitle>
         </DialogHeader>
 
-        <div className="flex max-h-[calc(100dvh-2rem)] flex-col overflow-hidden">
-          {/* Thanh tiêu đề chế độ sửa */}
-          <div className="px-[var(--app-page-x)] py-4 sm:p-5 border-b border-slate-100 bg-slate-50/50 flex items-center gap-3 shrink-0">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-11 w-11 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100 active:scale-95 transition-all shrink-0"
-              onClick={() => detail.setIsEditingSchedule(false)}
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-            <div className="min-w-0">
-              <p className="text-[15px] font-bold text-slate-900 truncate">Sửa lịch trình</p>
-              <p className="text-[12px] text-slate-500 font-medium truncate">{schedule.title}</p>
-            </div>
+        {/* Thanh tiêu đề chế độ sửa */}
+        <div className="px-[var(--app-page-x)] py-4 sm:p-5 border-b border-slate-100 bg-slate-50/50 flex items-center gap-3 shrink-0">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-11 w-11 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100 active:scale-95 transition-all shrink-0"
+            onClick={() => detail.setIsEditingSchedule(false)}
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+          <div className="min-w-0">
+            <p className="text-[15px] font-bold text-slate-900 truncate">Sửa lịch trình</p>
+            <p className="text-[12px] text-slate-500 font-medium truncate">{schedule.title}</p>
           </div>
+        </div>
 
-          {/* Nội dung form sửa */}
-          <ScrollArea className="min-h-0 flex-1">
+        {/* Nội dung form sửa */}
+        <ScrollArea className="app-dialog-sheet-body">
           <div className="space-y-5 p-[var(--app-page-x)]">
             {/* Tiêu đề */}
             <div className="space-y-3">
@@ -275,7 +274,7 @@ export default function ScheduleEditForm({
           </ScrollArea>
 
           {/* Footer chế độ sửa */}
-          <div className="shrink-0 px-[var(--app-page-x)] py-4 pb-safe border-t border-slate-100 bg-slate-50/50 flex items-center justify-between gap-3">
+          <div className="app-dialog-sheet-footer flex items-center justify-between gap-3">
             <Button
               variant="ghost"
               className="min-h-11 px-4 rounded-xl font-medium text-slate-500 text-[13px] hover:bg-slate-200 active:scale-95 transition-all whitespace-nowrap"
@@ -295,7 +294,6 @@ export default function ScheduleEditForm({
               {detail.editData.type !== 'leave' && detail.conflicts.length > 0 ? 'Vẫn tiếp tục lưu?' : 'Lưu lịch trình'}
             </Button>
           </div>
-        </div>
       </DialogContent>
     </Dialog>
   );

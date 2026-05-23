@@ -128,7 +128,7 @@ export default function GoalsPage() {
  <Plus className="w-5 h-5 mr-2" /> Giao chỉ tiêu mới
  </Button>
  </DialogTrigger>
- <DialogContent className="top-auto bottom-0 translate-y-0 flex flex-col overflow-hidden border-none p-0 shadow-2xl bg-white w-full max-h-[calc(100dvh-env(safe-area-inset-top)-1.5rem)] max-w-none rounded-t-[32px] rounded-b-none sm:top-[50%] sm:bottom-auto sm:translate-y-[-50%] sm:h-auto sm:max-h-[calc(100dvh-6rem)] sm:w-[calc(100dvw-2rem)] sm:max-w-2xl sm:rounded-[24px]">
+ <DialogContent className="app-dialog-sheet app-dialog-sheet--2xl shadow-2xl">
  {!isSuccess ? (
  <>
  <div className="px-[var(--app-page-x)] py-6 sm:p-8 border-b border-slate-50 shrink-0">
@@ -137,7 +137,7 @@ export default function GoalsPage() {
 
  <form onSubmit={handleCreateGoal} className="flex flex-col min-h-0 flex-1">
  <ScrollArea className="min-h-0 flex-1">
- <div className="space-y-6 p-[var(--app-page-x)] pb-safe sm:space-y-10 sm:pb-8">
+ <div className="space-y-6 p-[var(--app-page-x)] sm:space-y-10 sm:pb-8">
  <div className="space-y-4 px-1">
  <Label className="text-[13px] font-medium text-slate-500">1. Nhóm nghiệp vụ</Label>
  <Tabs value={selectedCategory} onValueChange={(value) => {

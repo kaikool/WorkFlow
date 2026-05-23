@@ -182,17 +182,16 @@ export default function ScheduleDetailDialog({
   // =====================================================
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="top-auto bottom-0 translate-y-0 flex flex-col overflow-hidden border-none p-0 shadow-2xl bg-white w-full max-h-[calc(100dvh-env(safe-area-inset-top)-1.5rem)] max-w-none rounded-t-[32px] rounded-b-none sm:top-[50%] sm:bottom-auto sm:translate-y-[-50%] sm:h-auto sm:max-h-[calc(100dvh-6rem)] sm:w-[calc(100dvw-2rem)] sm:max-w-xl sm:rounded-[24px]">
+      <DialogContent className="app-dialog-sheet app-dialog-sheet--xl shadow-2xl">
         <DialogHeader className="sr-only">
           <DialogDescription>Thông tin chi tiết, thành phần tham gia, phương tiện và các thao tác cập nhật lịch trình.</DialogDescription>
           <DialogTitle>Chi tiết lịch trình</DialogTitle>
         </DialogHeader>
-        <div className="flex max-h-[calc(100dvh-2rem)] flex-col overflow-hidden">
-          {/* Header */}
-          <DetailHeader schedule={safeSchedule} badgeColor={detail.badgeColor} headerBg={detail.headerBg} isAllowedToView={isAllowedToView} />
+        {/* Header */}
+        <DetailHeader schedule={safeSchedule} badgeColor={detail.badgeColor} headerBg={detail.headerBg} isAllowedToView={isAllowedToView} />
 
-          {/* Body */}
-          <ScrollArea className="min-h-0 flex-1">
+        {/* Body */}
+        <ScrollArea className="app-dialog-sheet-body">
           <div className="space-y-5 p-[var(--app-page-x)]">
             {/* Nội dung mô tả */}
             {safeSchedule.description && isAllowedToView && (
@@ -362,7 +361,7 @@ export default function ScheduleDetailDialog({
           </ScrollArea>
 
           {/* Footer */}
-          <DialogFooter className="shrink-0 px-[var(--app-page-x)] py-4 pb-safe border-t border-slate-100 bg-slate-50/50 flex flex-row flex-wrap justify-between items-center gap-3">
+          <DialogFooter className="app-dialog-sheet-footer flex flex-row flex-wrap justify-between items-center gap-3">
             <Button variant="ghost" className="min-h-11 px-4 rounded-xl font-medium text-slate-600 text-[13px] hover:bg-slate-200 active:scale-95 transition-all whitespace-nowrap" onClick={() => setIsOpen(false)}>Đóng cửa sổ</Button>
             {isTCTH && schedule.vehicle_id && (
               <Button
@@ -374,7 +373,6 @@ export default function ScheduleDetailDialog({
               </Button>
             )}
           </DialogFooter>
-        </div>
       </DialogContent>
     </Dialog>
   );

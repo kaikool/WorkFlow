@@ -416,6 +416,23 @@ textarea,
   font-size: var(--app-font-callout) !important;
 }
 
+/* ==============================================================
+   iOS SAFARI ZOOM FIX — Form control bắt buộc font-size ≥ 16px
+   trên mobile, nếu không Safari mobile sẽ tự phóng to viewport
+   khi user focus vào input (làm vỡ layout).
+   Specificity (0,1,1) > .text-[14px]/.text-sm (0,1,0) — thắng
+   mọi utility text-* nhỏ hơn 16px khi áp lên form control.
+   Tham khảo: Apple HIG — Form Inputs & Mobile Web.
+   ============================================================== */
+@media (max-width: 640px) {
+  input[class],
+  textarea[class],
+  select[class],
+  [role="combobox"][class] {
+    font-size: 16px !important;
+  }
+}
+
 main > div[class*="max-w-6xl"][class*="mx-auto"],
 main > div[class*="max-w-7xl"][class*="mx-auto"],
 main > div[class*="max-w-5xl"][class*="mx-auto"] {
@@ -587,6 +604,84 @@ main > div[class*="max-w-5xl"][class*="mx-auto"] {
 
 .pb-safe {
   padding-bottom: max(env(safe-area-inset-bottom), 1rem);
+}
+
+/* ==============================================================
+   APP DIALOG SHEET — Popup chuẩn theo Apple HIG
+   Tôn trọng safe-area-top (notch / Dynamic Island) và safe-area-bottom
+   (home indicator). Mobile: floating sheet bám đáy với khoảng cách
+   safe-area-bottom, có 4 góc bo. Desktop (≥640px): centered modal.
+   Mọi popup form/detail dùng class này thay vì tự viết inline calc.
+   Sử dụng các biến --app-* thay vì hardcode số.
+   ============================================================== */
+.app-dialog-sheet {
+  /* Reset Radix default centered positioning */
+  top: auto !important;
+  /* Mobile: floating sheet — cách đáy theo safe-area-bottom, hai bên 12px */
+  left: 0.75rem !important;
+  right: 0.75rem !important;
+  bottom: max(env(safe-area-inset-bottom), 0.75rem) !important;
+  transform: none !important;
+
+  display: flex !important;
+  flex-direction: column;
+
+  width: auto !important;
+  max-width: none !important;
+  /* Giới hạn chiều cao để chừa safe-area-top + breathing space ở cả 2 đầu */
+  max-height: calc(
+    100dvh
+    - max(env(safe-area-inset-top), 1.25rem)
+    - max(env(safe-area-inset-bottom), 0.75rem)
+    - 1.5rem
+  ) !important;
+
+  overflow: hidden !important;
+  border: none !important;
+  padding: 0 !important;
+  background-color: hsl(var(--background));
+  /* 4 góc bo đều theo TECHNICAL_RULES §2.C */
+  border-radius: 24px !important;
+}
+
+@media (min-width: 640px) {
+  .app-dialog-sheet {
+    /* Desktop: centered modal */
+    top: 50% !important;
+    left: 50% !important;
+    right: auto !important;
+    bottom: auto !important;
+    transform: translate(-50%, -50%) !important;
+
+    width: calc(100dvw - 2rem) !important;
+    max-height: calc(100dvh - 6rem) !important;
+  }
+
+  /* Variants for desktop max-width */
+  .app-dialog-sheet--lg  { max-width: 32rem !important; } /* tương đương max-w-lg */
+  .app-dialog-sheet--xl  { max-width: 36rem !important; } /* tương đương max-w-xl */
+  .app-dialog-sheet--2xl { max-width: 42rem !important; } /* tương đương max-w-2xl */
+}
+
+/* Header & footer subcomponent của sheet — gắn flush mép trên/dưới của popup.
+   Không cần pt-safe/pb-safe ở đây vì sheet đã offset bằng safe-area ở mức container. */
+.app-dialog-sheet-header {
+  flex-shrink: 0;
+  padding: 1.25rem var(--app-page-x);
+}
+
+.app-dialog-sheet-body {
+  flex: 1 1 0%;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.app-dialog-sheet-footer {
+  flex-shrink: 0;
+  padding: 0.875rem var(--app-page-x);
+  border-top: 1px solid hsl(var(--border));
+  background-color: hsl(var(--background));
 }
 
 /* ==============================================================
