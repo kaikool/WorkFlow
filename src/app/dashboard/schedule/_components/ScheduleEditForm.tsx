@@ -40,7 +40,7 @@ export default function ScheduleEditForm({
 }: ScheduleEditFormProps) {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="w-[calc(100dvw-2rem)] max-w-2xl max-h-[calc(100dvh-2rem)] rounded-3xl border-none shadow-2xl p-0 overflow-hidden bg-white">
+      <DialogContent className="top-auto bottom-0 translate-y-0 flex flex-col overflow-hidden border-none p-0 shadow-2xl bg-white w-full max-h-[calc(100dvh-env(safe-area-inset-top)-1.5rem)] max-w-none rounded-t-[32px] rounded-b-none sm:top-[50%] sm:bottom-auto sm:translate-y-[-50%] sm:h-auto sm:max-h-[calc(100dvh-6rem)] sm:w-[calc(100dvw-2rem)] sm:max-w-2xl sm:rounded-[24px]">
         <DialogHeader className="sr-only">
           <DialogDescription>Chỉnh sửa thông tin lịch trình, thời gian, địa điểm và thành phần tham gia.</DialogDescription>
           <DialogTitle>Sửa lịch trình</DialogTitle>
@@ -48,7 +48,7 @@ export default function ScheduleEditForm({
 
         <div className="flex max-h-[calc(100dvh-2rem)] flex-col overflow-hidden">
           {/* Thanh tiêu đề chế độ sửa */}
-          <div className="p-4 sm:p-5 border-b border-slate-100 bg-slate-50/50 flex items-center gap-3 shrink-0">
+          <div className="px-[var(--app-page-x)] py-4 sm:p-5 border-b border-slate-100 bg-slate-50/50 flex items-center gap-3 shrink-0">
             <Button
               variant="ghost"
               size="icon"
@@ -65,7 +65,7 @@ export default function ScheduleEditForm({
 
           {/* Nội dung form sửa */}
           <ScrollArea className="min-h-0 flex-1">
-          <div className="space-y-5 p-5 sm:p-6">
+          <div className="space-y-5 p-[var(--app-page-x)]">
             {/* Tiêu đề */}
             <div className="space-y-3">
               <Label className="text-[12px] font-medium text-slate-500 pl-0.5">Tiêu đề lịch trình</Label>
@@ -275,7 +275,7 @@ export default function ScheduleEditForm({
           </ScrollArea>
 
           {/* Footer chế độ sửa */}
-          <div className="shrink-0 px-5 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between gap-3">
+          <div className="shrink-0 px-[var(--app-page-x)] py-4 pb-safe border-t border-slate-100 bg-slate-50/50 flex items-center justify-between gap-3">
             <Button
               variant="ghost"
               className="min-h-11 px-4 rounded-xl font-medium text-slate-500 text-[13px] hover:bg-slate-200 active:scale-95 transition-all whitespace-nowrap"

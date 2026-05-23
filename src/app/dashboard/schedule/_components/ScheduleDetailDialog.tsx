@@ -77,7 +77,7 @@ function DetailHeader({ schedule, badgeColor, headerBg, isAllowedToView }: {
   schedule: any; badgeColor: string; headerBg: string; isAllowedToView: boolean;
 }) {
   return (
-    <div className={cn("p-5 sm:p-6 relative overflow-hidden backdrop-blur-xl border-b border-slate-100", headerBg)}>
+    <div className={cn("px-[var(--app-page-x)] py-5 sm:p-6 relative overflow-hidden backdrop-blur-xl border-b border-slate-100", headerBg)}>
       <div className="relative z-10 space-y-3">
         <Badge className={cn("bg-white/60 backdrop-blur-md shadow-sm font-bold text-[10px] px-3 py-1 whitespace-nowrap", badgeColor)}>
           {typeLabels[schedule.type]?.label}
@@ -182,7 +182,7 @@ export default function ScheduleDetailDialog({
   // =====================================================
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="w-[calc(100dvw-2rem)] max-w-xl max-h-[calc(100dvh-2rem)] rounded-3xl border-none shadow-2xl p-0 overflow-hidden bg-white">
+      <DialogContent className="top-auto bottom-0 translate-y-0 flex flex-col overflow-hidden border-none p-0 shadow-2xl bg-white w-full max-h-[calc(100dvh-env(safe-area-inset-top)-1.5rem)] max-w-none rounded-t-[32px] rounded-b-none sm:top-[50%] sm:bottom-auto sm:translate-y-[-50%] sm:h-auto sm:max-h-[calc(100dvh-6rem)] sm:w-[calc(100dvw-2rem)] sm:max-w-xl sm:rounded-[24px]">
         <DialogHeader className="sr-only">
           <DialogDescription>Thông tin chi tiết, thành phần tham gia, phương tiện và các thao tác cập nhật lịch trình.</DialogDescription>
           <DialogTitle>Chi tiết lịch trình</DialogTitle>
@@ -193,7 +193,7 @@ export default function ScheduleDetailDialog({
 
           {/* Body */}
           <ScrollArea className="min-h-0 flex-1">
-          <div className="space-y-5 p-5 sm:p-6">
+          <div className="space-y-5 p-[var(--app-page-x)]">
             {/* Nội dung mô tả */}
             {safeSchedule.description && isAllowedToView && (
               <div className="space-y-2">
@@ -362,7 +362,7 @@ export default function ScheduleDetailDialog({
           </ScrollArea>
 
           {/* Footer */}
-          <DialogFooter className="shrink-0 px-5 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/50 flex flex-row flex-wrap justify-between items-center gap-3">
+          <DialogFooter className="shrink-0 px-[var(--app-page-x)] py-4 pb-safe border-t border-slate-100 bg-slate-50/50 flex flex-row flex-wrap justify-between items-center gap-3">
             <Button variant="ghost" className="min-h-11 px-4 rounded-xl font-medium text-slate-600 text-[13px] hover:bg-slate-200 active:scale-95 transition-all whitespace-nowrap" onClick={() => setIsOpen(false)}>Đóng cửa sổ</Button>
             {isTCTH && schedule.vehicle_id && (
               <Button
