@@ -13,6 +13,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface CalendarViewProps {
   loading: boolean;
@@ -136,44 +137,69 @@ export default function CalendarView(props: CalendarViewProps) {
         </TabsList>
       </Tabs>
 
-      {/* TAB: Toàn chi nhánh — nhúng điều phối tài nguyên nếu user có quyền */}
+      {/* TAB: Toàn chi nhánh — nhúng điều phối tài nguyên nếu user có quyền.
+          Mặc định ĐÓNG để ưu tiên lịch trình. Click vào header để mở rộng. */}
       {filterType === 'all' && isTCTH && (
-        <section className="space-y-4">
-          <h3 className="text-[13px] font-medium text-slate-500 flex items-center gap-2 px-2">
+        <Collapsible defaultOpen={false} className="space-y-3">
+          <CollapsibleTrigger
+            className={cn(
+              "group w-full flex items-center gap-2 px-2 py-2 rounded-xl",
+              "text-[13px] font-medium text-slate-500",
+              "transition-colors hover:bg-slate-50",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20"
+            )}
+          >
             <ShieldCheck className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-            Điều phối tài nguyên
+            <span>Điều phối tài nguyên</span>
             {pendingVehicleCount > 0 && (
-              <Badge className="ml-auto h-5 rounded-full border border-amber-100 bg-amber-50 px-2.5 text-[10px] font-bold text-amber-700">
+              <Badge className="h-5 rounded-full border border-amber-100 bg-amber-50 px-2.5 text-[10px] font-bold text-amber-700">
                 {pendingVehicleCount} lịch cần xe
               </Badge>
             )}
-          </h3>
-          <ResourcesManagerDashboard
-            schedules={schedules}
-            vehicles={vehicles}
-            rooms={rooms}
-            selectedDate={selectedDate}
-            onSelectSchedule={onSelectSchedule}
-          />
-        </section>
+            <ChevronDown
+              className="ml-auto w-4 h-4 text-slate-400 transition-transform duration-200 group-data-[state=open]:rotate-180 shrink-0"
+            />
+          </CollapsibleTrigger>
+          <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
+            <ResourcesManagerDashboard
+              schedules={schedules}
+              vehicles={vehicles}
+              rooms={rooms}
+              selectedDate={selectedDate}
+              onSelectSchedule={onSelectSchedule}
+            />
+          </CollapsibleContent>
+        </Collapsible>
       )}
 
-      {/* TAB: Phòng của tôi — nhúng đơn nghỉ phép cần duyệt */}
+      {/* TAB: Phòng của tôi — nhúng đơn nghỉ phép cần duyệt (luôn mở nếu có pending vì quan trọng) */}
       {filterType === 'dept' && canApproveLeavePermission && pendingLeavesCount > 0 && (
-        <section className="space-y-4">
-          <h3 className="text-[13px] font-medium text-slate-500 flex items-center gap-2 px-2">
+        <Collapsible defaultOpen={true} className="space-y-3">
+          <CollapsibleTrigger
+            className={cn(
+              "group w-full flex items-center gap-2 px-2 py-2 rounded-xl",
+              "text-[13px] font-medium text-slate-500",
+              "transition-colors hover:bg-slate-50",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20"
+            )}
+          >
             <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-            Đơn nghỉ phép chờ duyệt
-            <Badge className="ml-auto h-5 rounded-full border border-amber-100 bg-amber-50 px-2.5 text-[10px] font-bold text-amber-700">
+            <span>Đơn nghỉ phép chờ duyệt</span>
+            <Badge className="h-5 rounded-full border border-amber-100 bg-amber-50 px-2.5 text-[10px] font-bold text-amber-700">
               {pendingLeavesCount} đơn
             </Badge>
-          </h3>
-          <LeaveApprovalDashboard
-            schedules={schedules}
-            profile={profile}
-            onStatusUpdate={onStatusUpdate}
-          />
-        </section>
+            <ChevronDown
+              className="ml-auto w-4 h-4 text-slate-400 transition-transform duration-200 group-data-[state=open]:rotate-180 shrink-0"
+            />
+          </CollapsibleTrigger>
+          <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
+            <LeaveApprovalDashboard
+              schedules={schedules}
+              profile={profile}
+              onStatusUpdate={onStatusUpdate}
+            />
+          </CollapsibleContent>
+        </Collapsible>
       )}
 
       {/* Danh sách lịch */}

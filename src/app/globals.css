@@ -570,6 +570,21 @@ main > div[class*="max-w-5xl"][class*="mx-auto"] {
   }
 }
 
+/* Safe-area TOP — để header/banner không bị notch/dynamic island che */
+.pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+
+/* Top sticky position tôn trọng safe-area (header sticky bám đỉnh nhưng dưới notch) */
+.top-safe {
+  top: env(safe-area-inset-top);
+}
+
+/* Margin-top cho element sticky chạy ngay dưới notch */
+.mt-safe {
+  margin-top: env(safe-area-inset-top);
+}
+
 /* ==============================================================
    ĐỒNG BỘ AVATAR — Snap mọi kích thước về 3 tier (32 / 40 / 44).
    Quy ước: tất cả Avatar shadcn (rounded-full + class h-X w-X)

@@ -106,20 +106,20 @@ function TopNavActionsContent() {
           />
         </div>
         
-        {/* Bộ lọc trạng thái — icon-only trigger */}
+        {/* Bộ lọc trạng thái — icon-only trigger, đồng bộ style với Bell/Avatar (rounded-full) */}
         {config.hasStatusFilter && (
           <Select value={status} onValueChange={handleStatusFilter}>
           <SelectTrigger
             className={cn(
-              "relative flex h-11 w-11 items-center justify-center rounded-xl border-none bg-transparent shadow-none hover:bg-accent focus:ring-0 shrink-0 [&>svg.lucide-chevron-down]:hidden",
-              isFiltering && "bg-amber-50 text-amber-700 ring-1 ring-amber-200 hover:bg-amber-100"
+              "relative flex h-11 w-11 items-center justify-center rounded-full border-none bg-transparent shadow-none hover:bg-slate-100 focus:ring-0 shrink-0 transition-all [&>svg.lucide-chevron-down]:hidden",
+              isFiltering && "bg-amber-50 hover:bg-amber-100"
             )}
             aria-label={isFiltering ? "Bộ lọc đang được áp dụng" : "Mở bộ lọc"}
             title={isFiltering ? "Đang áp dụng bộ lọc" : "Mở bộ lọc"}
           >
-            <SlidersHorizontal className={cn("w-5 h-5", isFiltering ? "text-amber-700" : "text-muted-foreground")} />
+            <SlidersHorizontal className={cn("h-5 w-5", isFiltering ? "text-amber-700" : "text-slate-600")} />
             {isFiltering && (
-              <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-amber-500 ring-2 ring-white" />
+              <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-amber-500 ring-2 ring-white" />
             )}
           </SelectTrigger>
           <SelectContent className="rounded-xl border border-slate-100 shadow-premium">
@@ -138,26 +138,26 @@ function TopNavActionsContent() {
         <Button
           variant="ghost"
           size="icon"
-          className="h-11 w-11 rounded-xl shrink-0"
+          className="h-11 w-11 rounded-full shrink-0 hover:bg-slate-100 transition-all"
           onClick={() => setIsMobileSearchOpen(true)}
           aria-label="Mở tìm kiếm"
         >
-          <Search className="w-5 h-5 text-slate-600" />
+          <Search className="h-5 w-5 text-slate-600" />
         </Button>
 
         {config.hasStatusFilter && (
           <Select value={status} onValueChange={handleStatusFilter}>
             <SelectTrigger
               className={cn(
-                "relative flex h-11 w-11 items-center justify-center rounded-xl border-none bg-transparent shadow-none hover:bg-accent focus:ring-0 shrink-0 [&>svg.lucide-chevron-down]:hidden",
-                isFiltering && "bg-amber-50 text-amber-700 ring-1 ring-amber-200 hover:bg-amber-100"
+                "relative flex h-11 w-11 items-center justify-center rounded-full border-none bg-transparent shadow-none hover:bg-slate-100 focus:ring-0 shrink-0 transition-all [&>svg.lucide-chevron-down]:hidden",
+                isFiltering && "bg-amber-50 hover:bg-amber-100"
               )}
               aria-label={isFiltering ? "Bộ lọc đang được áp dụng" : "Mở bộ lọc"}
               title={isFiltering ? "Đang áp dụng bộ lọc" : "Mở bộ lọc"}
             >
-              <SlidersHorizontal className={cn("w-5 h-5", isFiltering ? "text-amber-700" : "text-slate-600")} />
+              <SlidersHorizontal className={cn("h-5 w-5", isFiltering ? "text-amber-700" : "text-slate-600")} />
               {isFiltering && (
-                <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-amber-500 ring-2 ring-white" />
+                <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-amber-500 ring-2 ring-white" />
               )}
             </SelectTrigger>
             <SelectContent className="rounded-xl border border-slate-100 shadow-premium">
@@ -188,15 +188,15 @@ function TopNavActionsContent() {
             <Select value={status} onValueChange={handleStatusFilter}>
             <SelectTrigger
               className={cn(
-                "relative flex h-11 w-11 items-center justify-center rounded-xl border-none bg-transparent shadow-none focus:ring-0 shrink-0 [&>svg.lucide-chevron-down]:hidden",
-                isFiltering && "bg-amber-50 text-amber-700 ring-1 ring-amber-200"
+                "relative flex h-11 w-11 items-center justify-center rounded-full border-none bg-transparent shadow-none hover:bg-slate-100 focus:ring-0 shrink-0 transition-all [&>svg.lucide-chevron-down]:hidden",
+                isFiltering && "bg-amber-50 hover:bg-amber-100"
               )}
               aria-label={isFiltering ? "Bộ lọc đang được áp dụng" : "Mở bộ lọc"}
               title={isFiltering ? "Đang áp dụng bộ lọc" : "Mở bộ lọc"}
             >
-              <SlidersHorizontal className={cn("w-5 h-5", isFiltering ? "text-amber-700" : "text-muted-foreground")} />
+              <SlidersHorizontal className={cn("h-5 w-5", isFiltering ? "text-amber-700" : "text-slate-600")} />
               {isFiltering && (
-                <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-amber-500 ring-2 ring-white" />
+                <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-amber-500 ring-2 ring-white" />
               )}
             </SelectTrigger>
             <SelectContent className="rounded-xl border border-slate-100 shadow-premium">
@@ -334,7 +334,7 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
 
  <div className="flex-1 flex flex-col min-w-0">
  <header className={cn(
-    "h-[60px] lg:h-16 bg-white/80 backdrop-blur-md border border-slate-100 sticky top-0 lg:top-4 z-40 flex items-center px-3 lg:px-8 mx-0 lg:mx-8 mt-0 lg:mt-4 rounded-none lg:rounded-2xl shadow-sm lg:border-x lg:border-t border-x-0 border-t-0 transition-transform duration-300 ease-in-out gap-4",
+    "h-[60px] lg:h-16 bg-white/80 backdrop-blur-md border border-slate-100 sticky top-safe lg:top-4 z-40 flex items-center px-3 lg:px-8 mx-0 lg:mx-8 mt-safe lg:mt-4 rounded-none lg:rounded-2xl shadow-sm lg:border-x lg:border-t border-x-0 border-t-0 transition-transform duration-300 ease-in-out gap-4",
     isScrolledDown ? "-translate-y-full lg:translate-y-0" : "translate-y-0"
   )}>
     {/* Left + Middle: Search & Filter (full width, không còn lặp tiêu đề trang) */}
