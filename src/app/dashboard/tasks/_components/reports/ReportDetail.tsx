@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { useToast } from "@/hooks/use-toast"
+import { notifyError, notifySuccess } from "@/lib/notify"
 import { cn, compareProfilesByHierarchy, sortProfilesByHierarchy } from "@/lib/utils"
 import { createClient } from "@/utils/supabase/client"
 import Link from "next/link"
@@ -19,7 +19,6 @@ import { DeadlineProgress } from "../DeadlineProgress"
 
 export function ReportDetail({ id }: { id: string }) {
   const router = useRouter()
-  const { toast } = useToast()
   const supabase = createClient()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -57,7 +56,7 @@ export function ReportDetail({ id }: { id: string }) {
         const taskDeptId = data.department_id || data.creator?.department_id
         const isSameDept = taskDeptId === p?.department_id
         if (p?.role !== "admin" && !isOwner && !isAssignee && !isSameDept) {
-          toast({ variant: "destructive", title: "Truy cập bị từ chối", description: "Bạn không có quyền xem báo cáo này." })
+          notifyError(null, "Bạn không có quyền xem báo cáo này.")
           router.push("/dashboard/tasks"); return
         }
         setTask(data)
@@ -96,26 +95,26 @@ export function ReportDetail({ id }: { id: string }) {
   }
 
   const handleSendReminder = async (sibId: string, assigneeId: string, deptName: string) => {
-    if (!assigneeId) { toast({ variant: "destructive", title: "Không thể nhắc nhở", description: `Phòng ${deptName} chưa có cán bộ tiếp nhận.` }); return }
+    if (!assigneeId) { notifyError(null, `Phòng ${deptName} chưa có cán bộ tiếp nhận.`); return }
     setRemindingId(sibId)
     try {
       await supabase.from("notifications").insert({ user_id: assigneeId, title: "Nhắc hoàn thành báo cáo [Hỏa tốc]", content: `${profile?.full_name} nhắc hoàn thành báo cáo "${task.title}" của phòng ${deptName}`, link: `/dashboard/tasks/${sibId}` })
-      toast({ title: "Đã gửi nhắc nhở", description: `Gửi thông báo thành công tới phòng ${deptName}!` })
-    } catch (err: any) { toast({ variant: "destructive", title: "Lỗi", description: err.message }) }
+      notifySuccess("Đã gửi nhắc nhở", `Đã gửi thông báo tới phòng ${deptName}.`)
+    } catch (err) { notifyError(err, "Không gửi được nhắc nhở") }
     finally { setRemindingId(null) }
   }
 
   const handleSendReminderAll = async () => {
     const uncompleted = siblingReports.filter(r => r.status !== "done")
-    if (uncompleted.length === 0) { toast({ title: "Tất cả đã hoàn thành!" }); return }
+    if (uncompleted.length === 0) { notifySuccess("Tất cả phòng đã hoàn thành báo cáo"); return }
     const assigned = uncompleted.filter(r => r.assignee_id)
     const unassigned = uncompleted.filter(r => !r.assignee_id).map(r => r.departments?.name || "Phòng chuyên môn")
-    if (assigned.length === 0) { toast({ variant: "destructive", title: "Không thể nhắc nhở", description: "Các phòng chưa có cán bộ tiếp nhận." }); return }
+    if (assigned.length === 0) { notifyError(null, "Các phòng chưa có cán bộ tiếp nhận."); return }
     setIsRemindingAll(true)
     try {
       await supabase.from("notifications").insert(assigned.map(r => ({ user_id: r.assignee_id, title: "Nhắc hoàn thành báo cáo [Hỏa tốc]", content: `Khẩn trương hoàn thành báo cáo "${task.title}".`, link: `/dashboard/tasks/${r.id}` })))
-      toast({ title: "Đã đôn đốc hỏa tốc!", description: `Đã gửi tới ${assigned.length} phòng.${unassigned.length>0?` Không gửi được: ${unassigned.join(", ")}` : ""}` })
-    } catch (err: any) { toast({ variant: "destructive", title: "Lỗi", description: err.message }) }
+      notifySuccess("Đã đôn đốc hoả tốc!", `Đã gửi tới ${assigned.length} phòng.${unassigned.length>0?` Không gửi được: ${unassigned.join(", ")}` : ""}`)
+    } catch (err) { notifyError(err, "Không đôn đốc được") }
     finally { setIsRemindingAll(false) }
   }
 
@@ -135,8 +134,8 @@ export function ReportDetail({ id }: { id: string }) {
       setTask((prev: any) => prev ? { ...prev, status: parentStatus, progress: overallProg } : null)
       const sib = updated.find(s => s.id === sibId)
       if (sib?.assignee_id) await supabase.from("notifications").insert({ user_id: sib.assignee_id, title: ns==="done"?"Báo cáo được ghi nhận":"Hủy ghi nhận báo cáo", content: ns==="done"?`Lãnh đạo đã xác nhận báo cáo "${task.title}" của đơn vị bạn.`:`Lãnh đạo đã hủy xác nhận báo cáo "${task.title}".`, link: `/dashboard/tasks/${sibId}` })
-      toast({ title: "Cập nhật thành công" })
-    } catch (err: any) { toast({ variant: "destructive", title: "Lỗi", description: err.message }) }
+      notifySuccess("Đã cập nhật báo cáo")
+    } catch (err) { notifyError(err, "Không cập nhật được báo cáo") }
   }
 
   const handleDelegate = async () => {
@@ -146,11 +145,11 @@ export function ReportDetail({ id }: { id: string }) {
         await supabase.from("task_assignees").insert({ task_id: id, user_id: selectedDelegate })
         await supabase.from("tasks").update({ assignee_id: selectedDelegate }).eq("id", id)
         await supabase.from("notifications").insert({ user_id: selectedDelegate, title: "Báo cáo được phân công", content: `${profile?.full_name} đã phân công: ${task.title}`, link: `/dashboard/tasks/${id}` })
-        toast({ title: "Đã phân công" }); setDelegationOpen(false)
+        notifySuccess("Đã phân công cán bộ"); setDelegationOpen(false)
         const sel = deptProfiles.find(x => x.id === selectedDelegate)
         if (sel) setAssignees([...assignees, { user_id: selectedDelegate, profile: sel }].sort((a: any, b: any) => compareProfilesByHierarchy(a.profile, b.profile)))
-      } else { toast({ title: "Cán bộ đã có trong danh sách." }) }
-    } catch (err: any) { toast({ variant: "destructive", title: "Lỗi", description: err.message }) }
+      } else { notifySuccess("Cán bộ đã có trong danh sách") }
+    } catch (err) { notifyError(err, "Không phân công được") }
     finally { setSaving(false) }
   }
 
@@ -164,7 +163,7 @@ export function ReportDetail({ id }: { id: string }) {
       ids.delete(profile?.id)
       if (ids.size > 0) await supabase.from("notifications").insert(Array.from(ids).map(uid => ({ user_id: uid, title: `Thảo luận: ${task.title}`, content: `${profile.full_name}: "${newComment.substring(0,60)}${newComment.length>60?"...":""}\"`, link: `/dashboard/tasks/${id}` })))
       setNewComment(""); await refreshComments()
-    } catch (err: any) { toast({ variant: "destructive", title: "Lỗi", description: err.message }) }
+    } catch (err) { notifyError(err, "Không gửi được bình luận") }
     finally { setPosting(false) }
   }
 
@@ -173,8 +172,8 @@ export function ReportDetail({ id }: { id: string }) {
     try {
       await supabase.from("tasks").update({ title: editData.title, description: editData.description }).eq("id", id)
       setTask({ ...task, title: editData.title, description: editData.description }); setIsEditingTask(false)
-      toast({ title: "Đã cập nhật" })
-    } catch (err: any) { toast({ variant: "destructive", title: "Lỗi", description: err.message }) }
+      notifySuccess("Đã cập nhật báo cáo")
+    } catch (err) { notifyError(err, "Không cập nhật được báo cáo") }
     finally { setSaving(false) }
   }
 
@@ -304,7 +303,7 @@ export function ReportDetail({ id }: { id: string }) {
             </div>
           ) : (
             <div className="flex items-center justify-center p-2">
-              <Button disabled={!canEdit||saving} onClick={async()=>{ try { const val=(task.progress||0)>=100?0:100; const ns=val>=100?"done":"todo"; await supabase.from("tasks").update({progress:val,status:ns}).eq("id",id); if(task.created_by&&task.created_by!==profile?.id) await supabase.from("notifications").insert({user_id:task.created_by,title:`Tiến độ mới: ${task.title}`,content:`${profile?.full_name} đã ${val>=100?"xác nhận nộp":"hủy nộp"} báo cáo.`,link:`/dashboard/tasks/${id}`}); setTask({...task,progress:val,status:ns}) } catch(err:any){toast({variant:"destructive",title:"Lỗi",description:err.message})} }}
+              <Button disabled={!canEdit||saving} onClick={async()=>{ try { const val=(task.progress||0)>=100?0:100; const ns=val>=100?"done":"todo"; await supabase.from("tasks").update({progress:val,status:ns}).eq("id",id); if(task.created_by&&task.created_by!==profile?.id) await supabase.from("notifications").insert({user_id:task.created_by,title:`Tiến độ mới: ${task.title}`,content:`${profile?.full_name} đã ${val>=100?"xác nhận nộp":"hủy nộp"} báo cáo.`,link:`/dashboard/tasks/${id}`}); setTask({...task,progress:val,status:ns}) } catch(err){notifyError(err, "Không cập nhật được trạng thái")} }}
                 className={cn("w-full sm:max-w-[300px] min-h-12 rounded-xl font-bold transition-all shadow-sm flex items-center justify-center gap-2 text-sm active:scale-95",(task.progress||0)>=100?"bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/50":"bg-primary text-white hover:bg-primary/90")}>
                 <CheckCircle2 className="w-5 h-5"/>{(task.progress||0)>=100?"Đã nộp báo cáo (Hủy)":"Xác nhận nộp báo cáo"}
               </Button>

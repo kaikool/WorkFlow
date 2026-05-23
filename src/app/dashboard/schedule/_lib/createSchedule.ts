@@ -4,10 +4,11 @@
 import { canCoordinateSharedResources } from "@/lib/permissions";
 import { resolveParticipantIds } from "./utils";
 import { confirmDialog } from "@/components/ui/confirm-dialog";
+import { notifyError, notifySuccess, notifyValidation } from "@/lib/notify";
 
 interface CreateScheduleParams {
   supabase: any;
-  toast: any;
+  toast: any;                                                     // legacy — không dùng nội bộ, giữ để không phá signature
   profile: any;
   allProfiles: any[];
   newSchedule: any;
@@ -32,7 +33,7 @@ interface CreateScheduleParams {
 
 export async function createSchedule(p: CreateScheduleParams) {
   const {
-    supabase, toast, profile, allProfiles, newSchedule,
+    supabase, profile, allProfiles, newSchedule,
     startDate, endDate, startTime, endTime,
     conflicts, resourceConflicts,
     selectedParticipants, bgdMode, selectedBGD, deptMode, filterDepts, participantMode,
@@ -41,7 +42,7 @@ export async function createSchedule(p: CreateScheduleParams) {
   } = p;
 
   if (!newSchedule.title || !startDate || !endDate) {
-    toast({ variant: "destructive", title: "Lỗi", description: "Vui lòng điền đầy đủ thông tin bắt buộc." });
+    notifyValidation("Vui lòng điền đầy đủ thông tin bắt buộc.");
     return;
   }
   const start = new Date(startDate);
@@ -54,20 +55,20 @@ export async function createSchedule(p: CreateScheduleParams) {
   const isLeave = newSchedule.type === 'leave';
 
   if (end <= start) {
-    toast({ variant: "destructive", title: "Lỗi thời gian", description: "Thời gian kết thúc phải sau thời gian bắt đầu." });
+    notifyValidation("Thời gian kết thúc phải sau thời gian bắt đầu.", "Lỗi thời gian");
     return;
   }
   if (!isLeave && newSchedule.location === 'Chi nhánh' && (!newSchedule.room_id || newSchedule.room_id === 'none')) {
-    toast({ variant: "destructive", title: "Thiếu phòng họp", description: "Vui lòng chọn phòng họp tại chi nhánh." });
+    notifyValidation("Vui lòng chọn phòng họp tại chi nhánh.", "Thiếu phòng họp");
     return;
   }
   if (!isLeave && newSchedule.location !== 'Chi nhánh' && !newSchedule.location.trim()) {
-    toast({ variant: "destructive", title: "Thiếu địa điểm", description: "Vui lòng nhập địa điểm hoặc lộ trình cụ thể." });
+    notifyValidation("Vui lòng nhập địa điểm hoặc lộ trình cụ thể.", "Thiếu địa điểm");
     return;
   }
 
   if (!isLeave && resourceConflicts.length > 0) {
-    toast({ variant: "destructive", title: "Tài nguyên đang bận", description: resourceConflicts[0] });
+    notifyValidation(resourceConflicts[0], "Tài nguyên đang bận");
     return;
   }
   if (!isLeave && conflicts.length > 0) {
@@ -190,10 +191,13 @@ export async function createSchedule(p: CreateScheduleParams) {
       );
     }
 
-    toast({ title: "Thành công", description: isLeave ? "Đơn nghỉ phép đã được gửi." : "Lịch trình đã được đăng ký." });
+    notifySuccess(
+      isLeave ? "Đã gửi đơn nghỉ phép" : "Đã đăng ký lịch trình",
+      isLeave ? "Đợi cấp trên phê duyệt." : undefined
+    );
     resetForm();
     fetchData();
-  } catch (error: any) {
-    toast({ variant: "destructive", title: "Lỗi", description: error.message });
+  } catch (error) {
+    notifyError(error, "Không tạo được lịch trình");
   }
 }

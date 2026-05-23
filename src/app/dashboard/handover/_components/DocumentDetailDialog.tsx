@@ -22,7 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { useToast } from "@/hooks/use-toast";
+import { notifyError, notifySuccess } from "@/lib/notify";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 import { DOCUMENT_STATUS_META } from "../_lib/constants";
@@ -54,7 +54,6 @@ export default function DocumentDetailDialog({
   allProfiles,
   onChanged,
 }: Props) {
-  const { toast } = useToast();
   const [doc, setDoc] = React.useState<DocumentRow | null>(null);
   const [loading, setLoading] = React.useState(false);
   const [isTransferOpen, setIsTransferOpen] = React.useState(false);
@@ -92,10 +91,10 @@ export default function DocumentDetailDialog({
     if (!pendingHandover) return;
     const res = await acknowledgeDocument(pendingHandover.id);
     if (!res.ok) {
-      toast({ variant: "destructive", title: "Không xác nhận được", description: res.error });
+      notifyError(res.error, "Không xác nhận được hồ sơ");
       return;
     }
-    toast({ title: "Đã nhận hồ sơ", description: "SLA bắt đầu đếm từ giây phút này." });
+    notifySuccess("Đã nhận hồ sơ", "Hệ thống bắt đầu đếm SLA từ giây phút này.");
     await refetch();
     onChanged();
   };
@@ -104,10 +103,10 @@ export default function DocumentDetailDialog({
     if (!doc) return;
     const res = await completeDocument(doc.id);
     if (!res.ok) {
-      toast({ variant: "destructive", title: "Không hoàn thành được", description: res.error });
+      notifyError(res.error, "Không hoàn thành được hồ sơ");
       return;
     }
-    toast({ title: "Đã hoàn thành", description: "Luồng luân chuyển hồ sơ đã đóng." });
+    notifySuccess("Đã hoàn thành", "Luồng luân chuyển hồ sơ đã đóng.");
     await refetch();
     onChanged();
   };
@@ -121,7 +120,7 @@ export default function DocumentDetailDialog({
       .update({ attached_image_urls: newUrls })
       .eq("id", doc.id);
     if (error) {
-      toast({ variant: "destructive", title: "Lỗi lưu ảnh", description: error.message });
+      notifyError(error, "Không lưu được ảnh đính kèm");
       return;
     }
     await refetch();

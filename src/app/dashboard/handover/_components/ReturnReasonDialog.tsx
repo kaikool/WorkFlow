@@ -13,7 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/hooks/use-toast";
+import { notifyError, notifySuccess, notifyValidation } from "@/lib/notify";
 import { rejectDocument } from "../_lib/transferActions";
 
 interface Props {
@@ -25,7 +25,6 @@ interface Props {
 }
 
 export default function ReturnReasonDialog({ isOpen, setIsOpen, handoverId, documentShortCode, onSuccess }: Props) {
-  const { toast } = useToast();
   const [reason, setReason] = React.useState("");
   const [submitting, setSubmitting] = React.useState(false);
 
@@ -35,17 +34,17 @@ export default function ReturnReasonDialog({ isOpen, setIsOpen, handoverId, docu
 
   const handleSubmit = async () => {
     if (!reason.trim()) {
-      toast({ variant: "destructive", title: "Vui lòng nhập lý do trả về" });
+      notifyValidation("Vui lòng nhập lý do trả về");
       return;
     }
     setSubmitting(true);
     const res = await rejectDocument(handoverId, reason.trim());
     setSubmitting(false);
     if (!res.ok) {
-      toast({ variant: "destructive", title: "Không trả về được", description: res.error });
+      notifyError(res.error, "Không trả về được hồ sơ");
       return;
     }
-    toast({ title: "Đã trả về", description: "Hồ sơ quay về bàn người gửi kèm lý do." });
+    notifySuccess("Đã trả về hồ sơ", "Hồ sơ quay về bàn người gửi kèm lý do.");
     onSuccess();
     setIsOpen(false);
   };

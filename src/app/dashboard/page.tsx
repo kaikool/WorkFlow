@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { createClient } from "@/utils/supabase/client";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
+import { notifyError, notifySuccess } from "@/lib/notify";
 import { addDays, endOfDay, endOfWeek, isSameDay, startOfWeek } from "date-fns";
 import { canCoordinateSharedResources, canUseDriverWorkspace, canUseHumanResourcesWorkspace } from "@/lib/permissions";
 import QuickStats from "./_components/QuickStats";
@@ -326,10 +327,10 @@ export default function DashboardPage() {
     try {
       const { error } = await supabase.from('schedules').update({ end_time: new Date(newEndTimeStr).toISOString() }).eq('id', id);
       if (error) throw error;
-      toast({ title: "Thành công", description: "Đã cập nhật thời gian kết thúc." });
+      notifySuccess("Đã cập nhật thời gian kết thúc");
       fetchDashboardData();
-    } catch (error: any) {
-      toast({ variant: "destructive", title: "Lỗi", description: error.message });
+    } catch (error) {
+      notifyError(error, "Không cập nhật được thời gian kết thúc");
     }
   };
 
@@ -352,11 +353,11 @@ export default function DashboardPage() {
         }
       }
 
-      toast({ title: "Thành công", description: "Đã cập nhật lịch trình." });
+      notifySuccess("Đã cập nhật lịch trình");
       setIsDetailOpen(false);
       fetchDashboardData();
-    } catch (error: any) {
-      toast({ variant: "destructive", title: "Lỗi", description: error.message });
+    } catch (error) {
+      notifyError(error, "Không cập nhật được lịch trình");
     }
   };
 
@@ -379,11 +380,11 @@ export default function DashboardPage() {
         }]);
       }
 
-      toast({ title: "Thành công", description: vehicleId ? "Đã gán xe và tài xế." : "Đã hủy gán xe." });
+      notifySuccess(vehicleId ? "Đã gán xe và tài xế" : "Đã huỷ gán xe");
       setIsDetailOpen(false);
       fetchDashboardData();
-    } catch (error: any) {
-      toast({ variant: "destructive", title: "Lỗi", description: error.message });
+    } catch (error) {
+      notifyError(error, "Không gán được xe");
     }
   };
 

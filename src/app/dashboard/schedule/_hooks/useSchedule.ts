@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { notifyError, notifySuccess, notifyValidation } from "@/lib/notify";
 import { addDays, endOfDay, isSameDay, startOfWeek, endOfWeek, eachDayOfInterval } from "date-fns";
 import { resolveParticipantIds, checkConflicts, checkResourceConflicts } from "../_lib/utils";
 import { canApproveLeave, canCoordinateSharedResources, canUseDriverWorkspace } from "@/lib/permissions";
@@ -122,11 +123,7 @@ export function useSchedule() {
     const { error } = await supabase.from('notifications').insert(uniqueRows);
     if (error) {
       console.error('Notification insert failed:', error);
-      toast({
-        variant: "destructive",
-        title: "Chưa gửi được thông báo",
-        description: "Bảng notifications đang thiếu quyền INSERT. Cần chạy cập nhật RLS trong schema.sql."
-      });
+      notifyError(error, "Không gửi được thông báo cho người tham gia");
     }
   };
 
@@ -237,8 +234,8 @@ export function useSchedule() {
       setRooms(result.rooms);
       setAllProfiles(result.allProfiles);
       setDepartments(result.departments);
-    } catch (error: any) {
-      toast({ variant: "destructive", title: "Lỗi", description: error.message });
+    } catch (error) {
+      notifyError(error, "Không tải được dữ liệu lịch trình");
     } finally {
       setLoading(false);
     }
@@ -301,7 +298,10 @@ export function useSchedule() {
     try {
       const schedule = schedules.find(s => s.id === id);
       if (status === 'approved' && schedule?.use_vehicle && !schedule?.vehicle_id) {
-        toast({ variant: "destructive", title: "Cần gán xe trước", description: "Lịch trình có yêu cầu xe phải được điều phối xe trước khi duyệt." });
+        notifyValidation(
+          "Lịch trình có yêu cầu xe phải được điều phối xe trước khi duyệt.",
+          "Cần gán xe trước"
+        );
         return;
       }
 
@@ -317,10 +317,12 @@ export function useSchedule() {
           link: "/dashboard/schedule"
         }]);
       }
-      toast({ title: "Thành công", description: `Đã ${status === 'approved' ? 'xác nhận' : 'từ chối'} lịch trình.` });
+      notifySuccess(
+        status === 'approved' ? "Đã duyệt lịch trình" : "Đã từ chối lịch trình"
+      );
       fetchData();
-    } catch (error: any) {
-      toast({ variant: "destructive", title: "Lỗi", description: error.message });
+    } catch (error) {
+      notifyError(error, "Không cập nhật được trạng thái lịch trình");
     }
   };
 
@@ -337,7 +339,7 @@ export function useSchedule() {
 
       // CHẶN cứng khi xe đã được gán cho lịch khác trùng giờ — không cho phép vượt
       if (vehicleConflicts.length > 0) {
-        toast({ variant: "destructive", title: "Xe đã có lịch trùng giờ", description: vehicleConflicts[0] });
+        notifyValidation(vehicleConflicts[0], "Xe đã có lịch trùng giờ");
         return;
       }
 
@@ -354,7 +356,7 @@ export function useSchedule() {
           link: "/dashboard/schedule"
         }]);
       }
-      // Loại trừ driver khỏi thông báo cập nhật lịch chung (quy tắc §5.E.2)
+      // Loại trừ driver khỏi thông báo cập nhật lịch chung (quy tắc §5.D.2)
       const participantIds = (schedule?.participants || [])
         .filter((p: any) => p.profile?.role !== 'driver')
         .map((p: any) => p.profile?.id)
@@ -369,18 +371,21 @@ export function useSchedule() {
           }))
         );
       }
-      toast({ title: "Thành công", description: vehicleId ? "Đã gán xe cho lịch trình." : "Đã hủy gán xe." });
+      notifySuccess(vehicleId ? "Đã gán xe cho lịch trình" : "Đã huỷ gán xe");
       if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
       setIsDetailOpen(false);
       fetchData();
-    } catch (error: any) {
-      toast({ variant: "destructive", title: "Lỗi", description: error.message });
+    } catch (error) {
+      notifyError(error, "Không gán được xe");
     }
   };
   const handleDeleteSchedule = async (id: string) => {
     const schedule = schedules.find(s => s.id === id);
     if (schedule?.status === 'in_progress') {
-      toast({ variant: 'destructive', title: 'Không thể xóa', description: 'Lịch trình đang diễn ra. Vui lòng kết thúc trước khi xóa.' });
+      notifyValidation(
+        "Lịch trình đang diễn ra. Vui lòng kết thúc trước khi xoá.",
+        "Không thể xoá"
+      );
       return;
     }
     const ok = await confirmDialog({
@@ -393,11 +398,11 @@ export function useSchedule() {
     try {
       const { error } = await supabase.from('schedules').delete().eq('id', id);
       if (error) throw error;
-      toast({ title: 'Thành công', description: 'Đã xóa lịch trình.' });
+      notifySuccess("Đã xoá lịch trình");
       setIsDetailOpen(false);
       fetchData();
-    } catch (error: any) {
-      toast({ variant: 'destructive', title: 'Lỗi', description: error.message });
+    } catch (error) {
+      notifyError(error, "Không xoá được lịch trình");
     }
   };
 
@@ -432,10 +437,10 @@ export function useSchedule() {
         }
       }
 
-      toast({ title: "Thành công", description: "Đã cập nhật thời gian kết thúc." });
+      notifySuccess("Đã cập nhật thời gian kết thúc");
       fetchData();
-    } catch (error: any) {
-      toast({ variant: "destructive", title: "Lỗi", description: error.message });
+    } catch (error) {
+      notifyError(error, "Không cập nhật được thời gian kết thúc");
     }
   };
 
@@ -464,7 +469,7 @@ export function useSchedule() {
 
   const handleCreateSchedule = async () => {
     if (!startDate || !endDate) {
-      toast({ variant: "destructive", title: "Lỗi", description: "Vui lòng điền đầy đủ thông tin bắt buộc." });
+      notifyValidation("Vui lòng chọn đầy đủ ngày bắt đầu và ngày kết thúc.");
       return;
     }
     await createScheduleHelper({

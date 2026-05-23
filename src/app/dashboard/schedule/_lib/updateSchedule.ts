@@ -1,10 +1,12 @@
 // Helper cập nhật lịch trình hiện có — tách khỏi useSchedule để giữ file gốc dưới 500 dòng.
 
 import { checkResourceConflicts } from "./utils";
+import { notifyError, notifySuccess, notifyValidation } from "@/lib/notify";
+import { toast } from "@/hooks/use-toast";
 
 interface UpdateScheduleParams {
   supabase: any;
-  toast: any;
+  toast: any;                                                     // legacy — giữ signature, không dùng nội bộ
   profile: any;
   allProfiles: any[];
   schedules: any[];
@@ -18,7 +20,7 @@ interface UpdateScheduleParams {
 
 export async function updateScheduleAction(p: UpdateScheduleParams) {
   const {
-    supabase, toast, profile, allProfiles, schedules, id, updates,
+    supabase, profile, allProfiles, schedules, id, updates,
     findParticipantConflicts, sendNotifications, setIsDetailOpen, fetchData,
   } = p;
 
@@ -29,7 +31,7 @@ export async function updateScheduleAction(p: UpdateScheduleParams) {
     const nextStart = updates.start_time ? new Date(updates.start_time) : new Date(schedule.start_time);
     const nextEnd = updates.end_time ? new Date(updates.end_time) : new Date(schedule.end_time);
     if (nextEnd <= nextStart) {
-      toast({ variant: "destructive", title: "Lỗi thời gian", description: "Thời gian kết thúc phải sau thời gian bắt đầu." });
+      notifyValidation("Thời gian kết thúc phải sau thời gian bắt đầu.", "Lỗi thời gian");
       return;
     }
 
@@ -45,7 +47,7 @@ export async function updateScheduleAction(p: UpdateScheduleParams) {
     });
 
     if (resourceErrors.length > 0) {
-      toast({ variant: "destructive", title: "Tài nguyên đang bận", description: resourceErrors[0] });
+      notifyValidation(resourceErrors[0], "Tài nguyên đang bận");
       return;
     }
 
@@ -105,14 +107,15 @@ export async function updateScheduleAction(p: UpdateScheduleParams) {
     }
 
     if (participantConflicts.length > 0) {
+      // Cảnh báo (không phải lỗi) — vẫn dùng toast trực tiếp vì không có helper "warning"
       toast({ title: "Cảnh báo trùng lịch", description: participantConflicts[0] });
     } else {
-      toast({ title: "Thành công", description: "Đã cập nhật lịch trình." });
+      notifySuccess("Đã cập nhật lịch trình");
     }
     if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
     setIsDetailOpen(false);
     fetchData();
-  } catch (error: any) {
-    toast({ variant: "destructive", title: "Lỗi", description: error.message });
+  } catch (error) {
+    notifyError(error, "Không cập nhật được lịch trình");
   }
 }

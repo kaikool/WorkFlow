@@ -1,14 +1,13 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useToast } from "@/hooks/use-toast";
 import { createClient } from "@/utils/supabase/client";
 import { sortProfilesByHierarchy } from "@/lib/utils";
+import { notifyError, notifySuccess, notifyValidation } from "@/lib/notify";
 
 export function useAdmin() {
- const { toast } = useToast();
  const router = useRouter();
  const supabase = createClient();
- 
+
  const [loading, setLoading] = useState(true);
  const [userProfile, setUserProfile] = useState<any>(null);
  const [users, setUsers] = useState<any[]>([]);
@@ -45,18 +44,18 @@ export function useAdmin() {
  .select('*, departments(name)')
  .eq('id', user.id)
  .single();
- 
+
  setUserProfile(profile);
 
  // Chỉ ADMIN hoặc SECRETARY mới được vào trang này
  if (profile?.role !== 'admin' && profile?.role !== 'secretary') {
- toast({ variant: "destructive", title: "Từ chối truy cập", description: "Khu vực này chỉ dành cho Quản trị viên và Lễ tân." });
+ notifyError(null, "Khu vực này chỉ dành cho Quản trị viên và Lễ tân.");
  router.push('/dashboard/schedule');
  return;
  }
 
  await fetchData();
- } catch (error: any) {
+ } catch (error) {
  console.error(error);
  } finally {
  setLoading(false);
@@ -73,14 +72,14 @@ export function useAdmin() {
  const { data: roomList } = await supabase.from('rooms').select('*').order('name');
  const { data: vehicleList } = await supabase.from('vehicles').select('*, driver:profiles!vehicles_driver_id_fkey(id, full_name, phone)').order('name');
  const { data: driverList } = await supabase.from('profiles').select('id, full_name, phone').eq('role', 'driver');
- 
+
  setStats({ tasks: 0, goals: 0, members: memberCount || 0 });
  setUsers(sortProfilesByHierarchy(userList || []));
  setRooms(roomList || []);
  setVehicles(vehicleList || []);
  setDrivers(driverList || []);
- } catch (error: any) {
- toast({ variant: "destructive", title: "Lỗi tải dữ liệu", description: error.message });
+ } catch (error) {
+ notifyError(error, "Không tải được dữ liệu quản trị");
  }
  };
 
@@ -89,9 +88,9 @@ export function useAdmin() {
  const { error } = await supabase.from('profiles').update({ role: newRole }).eq('id', userId);
  if (error) throw error;
  setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u));
- toast({ title: "Thành công", description: "Đã cập nhật quyền hạn cán bộ." });
- } catch (error: any) {
- toast({ variant: "destructive", title: "Lỗi", description: error.message });
+ notifySuccess("Đã cập nhật quyền hạn cán bộ");
+ } catch (error) {
+ notifyError(error, "Không cập nhật được quyền");
  }
  };
 
@@ -102,10 +101,19 @@ export function useAdmin() {
  setRooms([...rooms, data[0]]);
  setIsRoomOpen(false);
  setNewRoom({ name: "", capacity: 10, location: "" });
- toast({ title: "Thành công", description: "Đã thêm phòng họp mới." });
- } catch (error: any) {
- toast({ variant: "destructive", title: "Lỗi", description: error.message });
+ notifySuccess("Đã thêm phòng họp mới");
+ } catch (error) {
+ notifyError(error, "Không thêm được phòng họp");
  }
+ };
+
+ // Phân biệt lỗi biển số trùng để đưa ra thông báo cụ thể
+ const isDuplicatePlateError = (err: any): boolean => {
+   return err?.code === '23505'
+     || err?.code === '409'
+     || err?.status === 409
+     || err?.message?.includes('vehicles_plate_number_key')
+     || err?.message?.toLowerCase().includes('duplicate');
  };
 
  const handleCreateVehicle = async () => {
@@ -117,13 +125,13 @@ export function useAdmin() {
  setVehicles([...vehicles, data[0]]);
  setIsVehicleOpen(false);
  setNewVehicle({ name: "", plate_number: "", type: "4 chỗ", driver_id: "none" });
- toast({ title: "Thành công", description: "Đã thêm xe mới." });
+ notifySuccess("Đã thêm xe mới");
  } catch (error: any) {
- if (error.code === '23505' || error.code === '409' || error.status === 409 || error.message?.includes('vehicles_plate_number_key') || error.message?.toLowerCase().includes('duplicate')) {
-    toast({ variant: "destructive", title: "Biển số trùng lặp", description: "Biển số xe này đã tồn tại trong hệ thống. Vui lòng kiểm tra lại." });
-  } else {
-    toast({ variant: "destructive", title: "Lỗi", description: error.message || "Đã xảy ra lỗi không xác định." });
-  }
+ if (isDuplicatePlateError(error)) {
+   notifyValidation("Biển số xe này đã tồn tại trong hệ thống.", "Biển số trùng lặp");
+ } else {
+   notifyError(error, "Không thêm được xe");
+ }
  }
  };
 
@@ -138,9 +146,9 @@ export function useAdmin() {
    setRooms(rooms.map(r => r.id === editingRoom.id ? editingRoom : r));
    setIsEditRoomOpen(false);
    setEditingRoom(null);
-   toast({ title: "Thành công", description: "Đã cập nhật phòng họp." });
-  } catch (error: any) {
-   toast({ variant: "destructive", title: "Lỗi", description: error.message });
+   notifySuccess("Đã cập nhật phòng họp");
+  } catch (error) {
+   notifyError(error, "Không cập nhật được phòng họp");
   }
  };
 
@@ -156,12 +164,12 @@ export function useAdmin() {
    setVehicles(vehicles.map(v => v.id === editingVehicle.id ? data[0] : v));
    setIsEditVehicleOpen(false);
    setEditingVehicle(null);
-   toast({ title: "Thành công", description: "Đã cập nhật xe." });
+   notifySuccess("Đã cập nhật thông tin xe");
   } catch (error: any) {
-   if (error.code === '23505' || error.code === '409' || error.status === 409 || error.message?.includes('vehicles_plate_number_key') || error.message?.toLowerCase().includes('duplicate')) {
-     toast({ variant: "destructive", title: "Biển số trùng lặp", description: "Biển số xe này đã tồn tại trong hệ thống. Vui lòng kiểm tra lại." });
+   if (isDuplicatePlateError(error)) {
+     notifyValidation("Biển số xe này đã tồn tại trong hệ thống.", "Biển số trùng lặp");
    } else {
-     toast({ variant: "destructive", title: "Lỗi", description: error.message || "Đã xảy ra lỗi không xác định." });
+     notifyError(error, "Không cập nhật được xe");
    }
   }
  };
@@ -183,11 +191,10 @@ export function useAdmin() {
    const detail = inProgressCount > 0
      ? `có ${inProgressCount} lịch đang diễn ra`
      : `đang có ${futureCount} lịch trình trong tương lai`;
-   toast({
-     variant: "destructive",
-     title: "Không thể xóa",
-     description: `Phòng "${room.name}" ${detail}. Vui lòng hủy hoặc kết thúc các lịch trước khi xóa.`
-   });
+   notifyValidation(
+     `Phòng "${room.name}" ${detail}. Vui lòng huỷ hoặc kết thúc các lịch trước khi xoá.`,
+     "Không thể xoá phòng"
+   );
    return;
  }
 
@@ -195,9 +202,9 @@ export function useAdmin() {
  if (error) throw error;
 
  setRooms(rooms.filter(r => r.id !== room.id));
- toast({ title: "Thành công", description: `Đã xóa phòng "${room.name}".` });
- } catch (error: any) {
- toast({ variant: "destructive", title: "Lỗi", description: error.message });
+ notifySuccess(`Đã xoá phòng "${room.name}"`);
+ } catch (error) {
+ notifyError(error, "Không xoá được phòng họp");
  }
  };
 
@@ -217,11 +224,10 @@ export function useAdmin() {
    const detail = inProgressCount > 0
      ? `đang được sử dụng cho chuyến đang diễn ra`
      : `có ${futureCount} lịch trình trong tương lai`;
-   toast({
-     variant: "destructive",
-     title: "Không thể xóa",
-     description: `Xe "${vehicle.plate_number}" ${detail}. Vui lòng hủy gán xe hoặc kết thúc chuyến trước khi xóa.`
-   });
+   notifyValidation(
+     `Xe "${vehicle.plate_number}" ${detail}. Vui lòng huỷ gán xe hoặc kết thúc chuyến trước khi xoá.`,
+     "Không thể xoá xe"
+   );
    return;
  }
 
@@ -229,9 +235,9 @@ export function useAdmin() {
  if (error) throw error;
 
  setVehicles(vehicles.filter(v => v.id !== vehicle.id));
- toast({ title: "Thành công", description: `Đã xóa xe "${vehicle.plate_number}".` });
- } catch (error: any) {
- toast({ variant: "destructive", title: "Lỗi", description: error.message });
+ notifySuccess(`Đã xoá xe "${vehicle.plate_number}"`);
+ } catch (error) {
+ notifyError(error, "Không xoá được xe");
  }
  };
 

@@ -4,7 +4,7 @@ import React from "react";
 import { Camera, Loader2, X, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useToast } from "@/hooks/use-toast";
+import { notifyError, notifyValidation } from "@/lib/notify";
 import { createClient } from "@/utils/supabase/client";
 import { MAX_IMAGES_PER_DOCUMENT } from "../_lib/constants";
 import { compressDocumentImage } from "../_lib/compressImage";
@@ -19,7 +19,6 @@ interface Props {
 
 // Upload + thumbnail grid. Mobile: input có capture="environment" → mở camera native.
 export default function ImageUploader({ documentId, imageUrls, onChange, onClickImage, readOnly }: Props) {
-  const { toast } = useToast();
   const supabase = React.useMemo(() => createClient(), []);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = React.useState(false);
@@ -29,11 +28,10 @@ export default function ImageUploader({ documentId, imageUrls, onChange, onClick
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
     if (imageUrls.length + files.length > MAX_IMAGES_PER_DOCUMENT) {
-      toast({
-        variant: "destructive",
-        title: "Vượt giới hạn ảnh",
-        description: `Mỗi hồ sơ chỉ đính kèm tối đa ${MAX_IMAGES_PER_DOCUMENT} ảnh.`,
-      });
+      notifyValidation(
+        `Mỗi hồ sơ chỉ đính kèm tối đa ${MAX_IMAGES_PER_DOCUMENT} ảnh.`,
+        "Vượt giới hạn ảnh"
+      );
       e.target.value = "";
       return;
     }
@@ -57,8 +55,8 @@ export default function ImageUploader({ documentId, imageUrls, onChange, onClick
         setProgress({ done: i + 1, total: files.length });
       }
       onChange([...imageUrls, ...newUrls]);
-    } catch (err: any) {
-      toast({ variant: "destructive", title: "Lỗi upload ảnh", description: err.message });
+    } catch (err) {
+      notifyError(err, "Không upload được ảnh");
     } finally {
       setUploading(false);
       setProgress(null);

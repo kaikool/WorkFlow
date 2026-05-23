@@ -11,7 +11,7 @@ import { Slider } from "@/components/ui/slider"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { useToast } from "@/hooks/use-toast"
+import { notifyError, notifySuccess } from "@/lib/notify"
 import { cn, compareProfilesByHierarchy, getProfileDisplayTitle, sortProfilesByHierarchy } from "@/lib/utils"
 import { createClient } from "@/utils/supabase/client"
 import Link from "next/link"
@@ -25,7 +25,6 @@ const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> =
 
 export function TodoDetailInner({ id }: { id: string }) {
   const router = useRouter()
-  const { toast } = useToast()
   const supabase = createClient()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -60,7 +59,7 @@ export function TodoDetailInner({ id }: { id: string }) {
         const taskDeptId = data.department_id || data.creator?.department_id
         const isSameDept = taskDeptId === p?.department_id
         if (p?.role !== "admin" && !isOwner && !isAssignee && !isSameDept) {
-          toast({ variant: "destructive", title: "Truy cập bị từ chối", description: "Bạn không có quyền xem công việc này." })
+          notifyError(null, "Bạn không có quyền xem công việc này.")
           router.push("/dashboard/tasks"); return
         }
         setTask(data)
@@ -89,11 +88,11 @@ export function TodoDetailInner({ id }: { id: string }) {
         await supabase.from("task_assignees").insert({ task_id: id, user_id: selectedDelegate })
         await supabase.from("tasks").update({ assignee_id: selectedDelegate }).eq("id", id)
         await supabase.from("notifications").insert({ user_id: selectedDelegate, title: "Công việc được phân công", content: `${profile?.full_name} đã phân công: ${task.title}`, link: `/dashboard/tasks/${id}` })
-        toast({ title: "Đã phân công công việc" }); setDelegationOpen(false)
+        notifySuccess("Đã phân công công việc"); setDelegationOpen(false)
         const sel = deptProfiles.find(x => x.id === selectedDelegate)
         if (sel) setAssignees([...assignees, { user_id: selectedDelegate, profile: sel }].sort((a: any, b: any) => compareProfilesByHierarchy(a.profile, b.profile)))
-      } else { toast({ title: "Cán bộ này đã có trong danh sách." }) }
-    } catch (err: any) { toast({ variant: "destructive", title: "Lỗi", description: err.message }) }
+      } else { notifySuccess("Cán bộ này đã có trong danh sách") }
+    } catch (err) { notifyError(err, "Không phân công được") }
     finally { setSaving(false) }
   }
 
@@ -102,8 +101,8 @@ export function TodoDetailInner({ id }: { id: string }) {
     try {
       await supabase.from("tasks").update({ title: editData.title, description: editData.description }).eq("id", id)
       setTask({ ...task, title: editData.title, description: editData.description }); setIsEditingTask(false)
-      toast({ title: "Đã cập nhật thông tin" })
-    } catch (err: any) { toast({ variant: "destructive", title: "Lỗi", description: err.message }) }
+      notifySuccess("Đã cập nhật thông tin công việc")
+    } catch (err) { notifyError(err, "Không cập nhật được thông tin") }
     finally { setSaving(false) }
   }
 
@@ -116,7 +115,7 @@ export function TodoDetailInner({ id }: { id: string }) {
       setNewComment("")
       const { data: cmts } = await supabase.from("task_comments").select("*, user:profiles(full_name,avatar_url)").eq("task_id", id).order("created_at", { ascending: true })
       setComments(cmts || [])
-    } catch (err: any) { toast({ variant: "destructive", title: "Lỗi", description: err.message }) }
+    } catch (err) { notifyError(err, "Không gửi được bình luận") }
     finally { setPosting(false) }
   }
 
@@ -128,8 +127,8 @@ export function TodoDetailInner({ id }: { id: string }) {
       if (task.created_by !== profile?.id) await supabase.from("notifications").insert({ user_id: task.created_by, title: t1, content: c1, link: `/dashboard/tasks/${id}` })
       const notifyA = assignees.filter(a => a.user_id !== profile?.id).map(a => ({ user_id: a.user_id, title: t1, content: c1, link: `/dashboard/tasks/${id}` }))
       if (notifyA.length > 0) await supabase.from("notifications").insert(notifyA)
-      setTask({ ...task, progress: val, status: ns }); toast({ title: `Cập nhật: ${val}%` })
-    } catch (err: any) { toast({ variant: "destructive", title: "Lỗi", description: err.message }) }
+      setTask({ ...task, progress: val, status: ns }); notifySuccess(`Đã cập nhật tiến độ ${val}%`)
+    } catch (err) { notifyError(err, "Không cập nhật được tiến độ") }
   }
 
   const handleUpdateStatus = async (ns: string) => {
@@ -141,8 +140,8 @@ export function TodoDetailInner({ id }: { id: string }) {
       if (task.created_by !== profile?.id) await supabase.from("notifications").insert({ user_id: task.created_by, title: t1, content: c1, link: `/dashboard/tasks/${id}` })
       const notifyA = assignees.filter(a => a.user_id !== profile?.id).map(a => ({ user_id: a.user_id, title: t1, content: c1, link: `/dashboard/tasks/${id}` }))
       if (notifyA.length > 0) await supabase.from("notifications").insert(notifyA)
-      setTask({ ...task, status: ns }); toast({ title: "Đã cập nhật trạng thái" })
-    } catch (err: any) { toast({ variant: "destructive", title: "Lỗi", description: err.message }) }
+      setTask({ ...task, status: ns }); notifySuccess("Đã cập nhật trạng thái")
+    } catch (err) { notifyError(err, "Không cập nhật được trạng thái") }
     finally { setSaving(false) }
   }
 

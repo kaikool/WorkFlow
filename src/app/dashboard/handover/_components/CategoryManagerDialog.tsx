@@ -16,7 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/hooks/use-toast";
+import { notifyError, notifySuccess, notifyValidation } from "@/lib/notify";
 import { createClient } from "@/utils/supabase/client";
 import { confirmDialog } from "@/components/ui/confirm-dialog";
 import type { DocumentCategory } from "../_lib/types";
@@ -38,7 +38,6 @@ const COLOR_OPTIONS: Array<{ value: DocumentCategory["color"]; label: string; ch
 
 export default function CategoryManagerDialog({ isOpen, setIsOpen, categories, onChanged }: Props) {
   const supabase = React.useMemo(() => createClient(), []);
-  const { toast } = useToast();
 
   // Form thêm mới
   const [newName, setNewName] = React.useState("");
@@ -66,21 +65,21 @@ export default function CategoryManagerDialog({ isOpen, setIsOpen, categories, o
     const name = newName.trim();
     const sla = parseInt(newSla, 10);
     if (!name) {
-      toast({ variant: "destructive", title: "Thiếu tên nhóm" });
+      notifyValidation("Vui lòng nhập tên nhóm hồ sơ");
       return;
     }
     if (!Number.isFinite(sla) || sla <= 0) {
-      toast({ variant: "destructive", title: "SLA không hợp lệ", description: "Số giờ phải > 0" });
+      notifyValidation("Số giờ SLA phải lớn hơn 0", "SLA không hợp lệ");
       return;
     }
     const { error } = await supabase
       .from("document_categories")
       .insert({ name, sla_hours: sla, color: newColor });
     if (error) {
-      toast({ variant: "destructive", title: "Không tạo được", description: error.message });
+      notifyError(error, "Không tạo được nhóm hồ sơ");
       return;
     }
-    toast({ title: "Đã thêm nhóm hồ sơ" });
+    notifySuccess("Đã thêm nhóm hồ sơ");
     setNewName("");
     setNewSla("24");
     setNewColor("slate");
@@ -96,11 +95,11 @@ export default function CategoryManagerDialog({ isOpen, setIsOpen, categories, o
     const name = editDraft.name.trim();
     const sla = parseInt(editDraft.sla_hours, 10);
     if (!name) {
-      toast({ variant: "destructive", title: "Tên nhóm không được trống" });
+      notifyValidation("Tên nhóm không được để trống");
       return;
     }
     if (!Number.isFinite(sla) || sla <= 0) {
-      toast({ variant: "destructive", title: "SLA không hợp lệ" });
+      notifyValidation("Số giờ SLA phải lớn hơn 0", "SLA không hợp lệ");
       return;
     }
     const { error } = await supabase
@@ -108,10 +107,10 @@ export default function CategoryManagerDialog({ isOpen, setIsOpen, categories, o
       .update({ name, sla_hours: sla, color: editDraft.color })
       .eq("id", id);
     if (error) {
-      toast({ variant: "destructive", title: "Lưu thất bại", description: error.message });
+      notifyError(error, "Không lưu được thay đổi");
       return;
     }
-    toast({ title: "Đã cập nhật nhóm hồ sơ" });
+    notifySuccess("Đã cập nhật nhóm hồ sơ");
     setEditingId(null);
     onChanged();
   };
@@ -126,10 +125,10 @@ export default function CategoryManagerDialog({ isOpen, setIsOpen, categories, o
     if (!ok) return;
     const { error } = await supabase.from("document_categories").delete().eq("id", c.id);
     if (error) {
-      toast({ variant: "destructive", title: "Xoá thất bại", description: error.message });
+      notifyError(error, "Không xoá được nhóm hồ sơ");
       return;
     }
-    toast({ title: "Đã xoá nhóm hồ sơ" });
+    notifySuccess("Đã xoá nhóm hồ sơ");
     onChanged();
   };
 

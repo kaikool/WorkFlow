@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
+import { notifyError, notifySuccess, notifyValidation } from "@/lib/notify";
 import { createClient } from "@/utils/supabase/client";
 import type { DocumentCategory } from "../_lib/types";
 import ImageUploader from "./ImageUploader";
@@ -29,7 +29,6 @@ interface Props {
 
 export default function CreateDocumentDialog({ isOpen, setIsOpen, categories, profile, onCreated }: Props) {
   const supabase = React.useMemo(() => createClient(), []);
-  const { toast } = useToast();
   const [title, setTitle] = React.useState("");
   const [customerName, setCustomerName] = React.useState("");
   const [categoryId, setCategoryId] = React.useState<string>("");
@@ -50,11 +49,11 @@ export default function CreateDocumentDialog({ isOpen, setIsOpen, categories, pr
 
   const handleSubmit = async () => {
     if (!title.trim()) {
-      toast({ variant: "destructive", title: "Thiếu thông tin", description: "Vui lòng nhập tiêu đề hồ sơ" });
+      notifyValidation("Vui lòng nhập tiêu đề hồ sơ");
       return;
     }
     if (!categoryId) {
-      toast({ variant: "destructive", title: "Thiếu nhóm hồ sơ", description: "Vui lòng chọn nhóm hồ sơ" });
+      notifyValidation("Vui lòng chọn nhóm hồ sơ");
       return;
     }
     setSubmitting(true);
@@ -74,14 +73,14 @@ export default function CreateDocumentDialog({ isOpen, setIsOpen, categories, pr
         .select("short_code")
         .single();
       if (error) throw error;
-      toast({
-        title: "Tạo hồ sơ thành công",
-        description: `Mã ngắn: ${data?.short_code}. Ghi tay mã này lên bìa hồ sơ.`,
-      });
+      notifySuccess(
+        "Đã tạo hồ sơ mới",
+        `Mã ${data?.short_code} — hãy ghi tay mã này lên bìa hồ sơ.`
+      );
       onCreated();
       setIsOpen(false);
-    } catch (err: any) {
-      toast({ variant: "destructive", title: "Lỗi tạo hồ sơ", description: err.message });
+    } catch (err) {
+      notifyError(err, "Không tạo được hồ sơ");
     } finally {
       setSubmitting(false);
     }

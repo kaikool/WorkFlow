@@ -17,7 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { useToast } from "@/hooks/use-toast";
+import { notifyError, notifySuccess, notifyValidation } from "@/lib/notify";
 import { transferDocument } from "../_lib/transferActions";
 import type { DocumentRow } from "../_lib/types";
 
@@ -31,7 +31,6 @@ interface Props {
 }
 
 export default function TransferDialog({ isOpen, setIsOpen, document, allProfiles, currentProfileId, onSuccess }: Props) {
-  const { toast } = useToast();
   const [query, setQuery] = React.useState("");
   const [receiverId, setReceiverId] = React.useState<string | null>(null);
   const [note, setNote] = React.useState("");
@@ -65,17 +64,17 @@ export default function TransferDialog({ isOpen, setIsOpen, document, allProfile
 
   const handleSubmit = async () => {
     if (!receiverId) {
-      toast({ variant: "destructive", title: "Chưa chọn người nhận" });
+      notifyValidation("Vui lòng chọn người nhận");
       return;
     }
     setSubmitting(true);
     const res = await transferDocument(document.id, receiverId, note.trim() || null);
     setSubmitting(false);
     if (!res.ok) {
-      toast({ variant: "destructive", title: "Không chuyển được", description: res.error });
+      notifyError(res.error, "Không chuyển được hồ sơ");
       return;
     }
-    toast({ title: "Đã chuyển hồ sơ", description: "Đợi người nhận xác nhận \"Đã nhận\"." });
+    notifySuccess("Đã chuyển hồ sơ", "Đợi người nhận xác nhận \"Đã nhận\".");
     onSuccess();
     setIsOpen(false);
   };
