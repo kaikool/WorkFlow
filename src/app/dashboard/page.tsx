@@ -1,66 +1,59 @@
-'use client'
+'use client';
 
-export const dynamic = 'force-dynamic';
+// Dashboard page — chỉ là dispatcher 4 view:
+//   - DriverDashboardView (lái xe)
+//   - HRDashboardView (nhân sự)
+//   - TCTHDashboardView (TCTH manager — không phải admin/director)
+//   - DefaultDashboardView (admin/director/manager/staff thường — 90% người dùng)
+// Default view gọi RPC dashboard_summary() qua hook nội bộ.
+// Legacy schedule data chỉ fetch khi role thực sự cần — KHÔNG còn chạy cho default user.
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { addDays, endOfDay, endOfWeek, isSameDay, startOfWeek } from 'date-fns';
+import { createClient } from '@/utils/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { notifyError, notifySuccess } from '@/lib/notify';
 import {
-  Loader2,
-  ArrowRight,
-  Sparkles
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { createClient } from "@/utils/supabase/client";
-import Link from "next/link";
-import { useToast } from "@/hooks/use-toast";
-import { notifyError, notifySuccess } from "@/lib/notify";
-import { addDays, endOfDay, endOfWeek, isSameDay, startOfWeek } from "date-fns";
-import { canCoordinateSharedResources, canUseDriverWorkspace, canUseHumanResourcesWorkspace } from "@/lib/permissions";
-import QuickStats from "./_components/QuickStats";
-import TaskOverview from "./_components/TaskOverview";
-import DriverDashboardView from "./_components/DriverDashboardView";
-import HRDashboardView from "./_components/HRDashboardView";
-import TCTHDashboardView from "./_components/TCTHDashboardView";
-import { StatsSkeleton, ListSkeleton } from "@/components/ui/list-skeleton";
+  canCoordinateSharedResources,
+  canUseDriverWorkspace,
+  canUseHumanResourcesWorkspace,
+} from '@/lib/permissions';
+import { fetchCurrentProfile } from '@/lib/fetch-profile';
+import DriverDashboardView from './_components/DriverDashboardView';
+import HRDashboardView from './_components/HRDashboardView';
+import TCTHDashboardView from './_components/TCTHDashboardView';
+import DefaultDashboardView from './_components/DefaultDashboardView';
+import { StatsSkeleton, ListSkeleton } from '@/components/ui/list-skeleton';
 
-const INSPIRATIONAL_QUOTES = [
-  "Hôm nay là cơ hội để bạn bứt phá chỉ tiêu kinh doanh.",
-  "Kiên trì nỗ lực, gặt hái kết quả xứng tầm.",
-  "Làm việc chuyên nghiệp, kiến tạo giá trị bền vững.",
-  "Mỗi con số đều minh chứng cho sự nỗ lực không ngừng.",
-  "Chinh phục kế hoạch, khẳng định vị thế cán bộ.",
-  "Năng lượng mới cho những thành công mới hôm nay.",
-  "Tập trung tối đa để mang lại giá trị tốt nhất cho khách hàng."
-];
+interface LegacyScheduleState {
+  schedules: any[];
+  vehicles: any[];
+  rooms: any[];
+  allProfiles: any[];
+  departments: any[];
+}
+
+const EMPTY_SCHEDULE: LegacyScheduleState = {
+  schedules: [],
+  vehicles: [],
+  rooms: [],
+  allProfiles: [],
+  departments: [],
+};
 
 export default function DashboardPage() {
-  const [loading, setLoading] = useState(true);
+  const supabase = useMemo(() => createClient(), []);
+  const { toast } = useToast();
+
   const [profile, setProfile] = useState<any>(null);
-  const [quote, setQuote] = useState("");
-  const [showAllActivities, setShowAllActivities] = useState(false);
-  const [stats, setStats] = useState({
-    productivity: 0,
-    productivityChange: 0,
-    activeTasks: 0,
-    urgentTasks: 0,
-    completedTasks: 0,
-    pendingDocuments: [] as any[],
-    recentTasks: [] as any[],
-    totalAssigned: 0,
-    totalCompleted: 0,
-    totalLate: 0
-  });
-  const [scheduleData, setScheduleData] = useState({
-    schedules: [] as any[],
-    vehicles: [] as any[],
-    rooms: [] as any[],
-    allProfiles: [] as any[],
-    departments: [] as any[]
-  });
+  const [profileLoading, setProfileLoading] = useState(true);
+
+  // Legacy state — chỉ dùng cho Driver/HR/TCTH.
+  const [scheduleData, setScheduleData] = useState<LegacyScheduleState>(EMPTY_SCHEDULE);
+  const [legacyLoading, setLegacyLoading] = useState(false);
   const [selectedSchedule, setSelectedSchedule] = useState<any>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
 
-  const supabase = createClient();
-  const { toast } = useToast();
   const timelineContainerRef = useRef<HTMLDivElement>(null);
   const selectedDate = new Date();
   const isTodaySelected = isSameDay(selectedDate, new Date());
@@ -69,58 +62,35 @@ export default function DashboardPage() {
   const endLimit = 17 * 60;
   const duration = endLimit - startLimit;
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
-  const currentTimePercent = currentMinutes >= startLimit && currentMinutes <= endLimit
-    ? ((currentMinutes - startLimit) / duration) * 100
-    : -1;
+  const currentTimePercent =
+    currentMinutes >= startLimit && currentMinutes <= endLimit
+      ? ((currentMinutes - startLimit) / duration) * 100
+      : -1;
 
+  const needsLegacySchedule = profile
+    ? canUseDriverWorkspace(profile)
+      || canUseHumanResourcesWorkspace(profile)
+      || (canCoordinateSharedResources(profile) && profile.role !== 'admin' && profile.role !== 'director')
+    : false;
+
+  // Step 1: fetch profile mỏng.
   useEffect(() => {
-    fetchDashboardData();
-    setQuote(INSPIRATIONAL_QUOTES[Math.floor(Math.random() * INSPIRATIONAL_QUOTES.length)]);
+    let active = true;
+    (async () => {
+      const p = await fetchCurrentProfile(supabase);
+      if (!active) return;
+      setProfile(p);
+      setProfileLoading(false);
+    })();
+    return () => { active = false; };
+  }, [supabase]);
 
-    // Real-time có debounce để tránh refetch ồ ạt
-    let refetchTimer: any = null;
-    const scheduleRefetch = () => {
-      if (refetchTimer) clearTimeout(refetchTimer);
-      refetchTimer = setTimeout(() => { fetchDashboardData(); }, 600);
-    };
-    const channel = supabase
-      .channel('dashboard_sync')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, scheduleRefetch)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'recognitions' }, scheduleRefetch)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'task_comments' }, scheduleRefetch)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'schedules' }, scheduleRefetch)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'schedule_participants' }, scheduleRefetch)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'vehicles' }, scheduleRefetch)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms' }, scheduleRefetch)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'documents' }, scheduleRefetch)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'document_handovers' }, scheduleRefetch)
-      .subscribe();
-
-    return () => {
-      if (refetchTimer) clearTimeout(refetchTimer);
-      supabase.removeChannel(channel);
-    };
-  }, []);
-
-  const sendNotifications = async (rows: any[]) => {
-    const uniqueRows = rows.filter((row, index, arr) =>
-      row?.user_id && arr.findIndex(item =>
-        item.user_id === row.user_id &&
-        item.title === row.title &&
-        item.content === row.content &&
-        item.link === row.link
-      ) === index
-    );
-    if (uniqueRows.length === 0) return;
-    const { error } = await supabase.from('notifications').insert(uniqueRows);
-    if (error) console.error('Notification insert failed:', error);
-  };
-
+  // Step 2: legacy schedule fetch — chỉ chạy khi profile yêu cầu.
   const fetchScheduleDashboardData = async (currentProfile: any) => {
     const start = startOfWeek(selectedDate, { weekStartsOn: 1 });
     const end = new Date(Math.max(
       endOfWeek(selectedDate, { weekStartsOn: 1 }).getTime(),
-      endOfDay(addDays(selectedDate, 3)).getTime()
+      endOfDay(addDays(selectedDate, 3)).getTime(),
     ));
     const canSeePendingQueue = canCoordinateSharedResources(currentProfile);
 
@@ -133,10 +103,10 @@ export default function DashboardPage() {
 
     const pendingQueueQuery = canSeePendingQueue
       ? supabase
-        .from('schedules')
-        .select(`*, creator:profiles!schedules_created_by_fkey(full_name, title, avatar_url, department_id, role, is_department_head, departments(name)), room:rooms(name), vehicle:vehicles(name, plate_number), driver:profiles!schedules_driver_id_fkey(id, full_name, title, phone, avatar_url), participants:schedule_participants(profile:profiles(id, full_name, title, avatar_url, role, is_department_head, departments(name)))`)
-        .or('status.eq.pending,and(use_vehicle.eq.true,vehicle_id.is.null)')
-        .order('start_time')
+          .from('schedules')
+          .select(`*, creator:profiles!schedules_created_by_fkey(full_name, title, avatar_url, department_id, role, is_department_head, departments(name)), room:rooms(name), vehicle:vehicles(name, plate_number), driver:profiles!schedules_driver_id_fkey(id, full_name, title, phone, avatar_url), participants:schedule_participants(profile:profiles(id, full_name, title, avatar_url, role, is_department_head, departments(name)))`)
+          .or('status.eq.pending,and(use_vehicle.eq.true,vehicle_id.is.null)')
+          .order('start_time')
       : Promise.resolve({ data: [] as any[], error: null });
 
     const [
@@ -145,14 +115,14 @@ export default function DashboardPage() {
       { data: vehicles },
       { data: rooms },
       { data: allProfiles },
-      { data: departments }
+      { data: departments },
     ] = await Promise.all([
       schedulesQuery,
       pendingQueueQuery,
       supabase.from('vehicles').select('*, default_driver:profiles!vehicles_driver_id_fkey(id, full_name, phone)'),
       supabase.from('rooms').select('*'),
       supabase.from('profiles').select('id, full_name, title, avatar_url, role, department_id, is_department_head, departments(name, code)'),
-      supabase.from('departments').select('*')
+      supabase.from('departments').select('*'),
     ]);
 
     if (scheduleError) throw scheduleError;
@@ -160,162 +130,74 @@ export default function DashboardPage() {
 
     setScheduleData({
       schedules: [...(scheds || []), ...(pendingQueue || [])].filter((item, index, arr) => (
-        arr.findIndex(x => x.id === item.id) === index
+        arr.findIndex((x: any) => x.id === item.id) === index
       )),
       vehicles: vehicles || [],
       rooms: rooms || [],
       allProfiles: allProfiles || [],
-      departments: departments || []
+      departments: departments || [],
     });
   };
 
-  const fetchDashboardData = async () => {
-    setLoading(true);
+  useEffect(() => {
+    if (!profile || !needsLegacySchedule) return;
+    let active = true;
+    (async () => {
+      setLegacyLoading(true);
+      try {
+        await fetchScheduleDashboardData(profile);
+      } catch (e) {
+        console.error('legacy schedule fetch error:', e);
+      } finally {
+        if (active) setLegacyLoading(false);
+      }
+    })();
+
+    // Realtime hẹp cho legacy view — chỉ subscribe các bảng liên quan schedule.
+    let refetchTimer: any = null;
+    const scheduleRefetch = () => {
+      if (refetchTimer) clearTimeout(refetchTimer);
+      refetchTimer = setTimeout(() => {
+        if (active) fetchScheduleDashboardData(profile);
+      }, 600);
+    };
+    const channel = supabase
+      .channel('dashboard_legacy_schedule_sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'schedules' }, scheduleRefetch)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'schedule_participants' }, scheduleRefetch)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'vehicles' }, scheduleRefetch)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms' }, scheduleRefetch)
+      .subscribe();
+
+    return () => {
+      active = false;
+      if (refetchTimer) clearTimeout(refetchTimer);
+      supabase.removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile, needsLegacySchedule, supabase]);
+
+  const refetchLegacy = async () => {
+    if (!profile) return;
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: currentProfile } = await supabase.from('profiles').select('*, departments(name, code)').eq('id', user.id).single();
-      setProfile(currentProfile);
-
-      const isHrDashboard = canUseHumanResourcesWorkspace(currentProfile);
-      const isTcthDashboard = canCoordinateSharedResources(currentProfile) && currentProfile?.role !== 'admin' && currentProfile?.role !== 'director';
-      if (canUseDriverWorkspace(currentProfile) || isTcthDashboard || isHrDashboard) {
-        await fetchScheduleDashboardData(currentProfile);
-        setLoading(false);
-        return;
-      }
-
-      const isPowerUser = currentProfile?.role === 'admin' || currentProfile?.role === 'director';
-
-      let activeQuery = supabase.from('tasks').select('*', { count: 'exact', head: true }).neq('status', 'done');
-      let urgentQuery = supabase.from('tasks').select('*', { count: 'exact', head: true }).neq('status', 'done').eq('priority', 'high');
-      let completedQuery = supabase.from('tasks').select('*', { count: 'exact', head: true }).eq('status', 'done');
-
-      const now = new Date();
-      const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
-      const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000).toISOString();
-
-      let thisWeekQuery = supabase.from('tasks').select('*', { count: 'exact', head: true }).eq('status', 'done').gte('created_at', sevenDaysAgo);
-      let lastWeekQuery = supabase.from('tasks').select('*', { count: 'exact', head: true }).eq('status', 'done').gte('created_at', fourteenDaysAgo).lt('created_at', sevenDaysAgo);
-
-      let recentTasksQuery = supabase.from('tasks').select('*').order('created_at', { ascending: false });
-      let recsQuery = supabase.from('recognitions').select(`*, sender:profiles!recognitions_sender_id_fkey(full_name, avatar_url), receiver:profiles!recognitions_receiver_id_fkey(full_name, avatar_url)`).order('created_at', { ascending: false });
-      let commentsQuery = supabase.from('task_comments').select(`*, user:profiles(full_name, avatar_url), task:tasks(title)`).order('created_at', { ascending: false });
-      let assignedCountQuery = supabase.from('tasks').select('id', { count: 'exact', head: true });
-      let completedVisibleQuery = supabase.from('tasks').select('id', { count: 'exact', head: true }).eq('status', 'done');
-      let lateVisibleQuery = supabase
-        .from('tasks')
-        .select('id', { count: 'exact', head: true })
-        .or(`status.eq.late,and(status.neq.done,due_date.lt.${now.toISOString()})`);
-
-      if (!isPowerUser && currentProfile?.department_id) {
-        const filterStr = `department_id.eq.${currentProfile.department_id},created_by.eq.${user.id},assignee_id.eq.${user.id}`;
-        activeQuery = activeQuery.or(filterStr);
-        urgentQuery = urgentQuery.or(filterStr);
-        completedQuery = completedQuery.or(filterStr);
-        thisWeekQuery = thisWeekQuery.or(filterStr);
-        lastWeekQuery = lastWeekQuery.or(filterStr);
-        recentTasksQuery = recentTasksQuery.or(filterStr);
-        recsQuery = recsQuery.or(`department_id.eq.${currentProfile.department_id},sender_id.eq.${user.id},receiver_id.eq.${user.id}`);
-        assignedCountQuery = assignedCountQuery.or(filterStr);
-        completedVisibleQuery = completedVisibleQuery.or(filterStr);
-        lateVisibleQuery = lateVisibleQuery.or(filterStr);
-      }
-
-      // Hồ sơ vật lý đang chờ tôi nhận hoặc đang ở bàn tôi — hiển thị widget bên phải
-      const pendingDocsQuery = supabase
-        .from('documents')
-        .select(`
-          id, short_code, title, status, created_at, updated_at, category_id,
-          category:document_categories(id, name, sla_hours, color),
-          current_assignee_id, creator_id,
-          handovers:document_handovers(id, document_id, sender_id, receiver_id, status, sent_at, received_at)
-        `)
-        .or(`current_assignee_id.eq.${user.id},and(status.eq.PENDING_RECEIPT)`)
-        .neq('status', 'COMPLETED')
-        .order('updated_at', { ascending: false })
-        .limit(5);
-
-      const [
-        { count: activeCount },
-        { count: urgentCount },
-        { count: completedCount },
-        { data: pendingDocsRaw },
-        { count: thisWeekCount },
-        { count: lastWeekCount },
-        { data: recentTasksList },
-        { data: recs },
-        { count: assignedCount },
-        { count: completedVisibleCount },
-        { count: lateVisibleCount }
-      ] = await Promise.all([
-        activeQuery,
-        urgentQuery,
-        completedQuery,
-        pendingDocsQuery,
-        thisWeekQuery,
-        lastWeekQuery,
-        recentTasksQuery.limit(5),
-        recsQuery.limit(5),
-        assignedCountQuery,
-        completedVisibleQuery,
-        lateVisibleQuery
-      ]);
-
-      let finalComments: any[] = [];
-      if (!isPowerUser && currentProfile?.department_id) {
-        const { data: deptTasks } = await supabase.from('tasks').select('id').or(`department_id.eq.${currentProfile.department_id},created_by.eq.${user.id},assignee_id.eq.${user.id}`);
-        const deptTaskIds = deptTasks?.map((t: any) => t.id) || [];
-        if (deptTaskIds.length > 0) {
-          commentsQuery = commentsQuery.in('task_id', deptTaskIds);
-          const { data: cmts } = await commentsQuery.limit(5);
-          finalComments = cmts || [];
-        }
-      } else {
-        const { data: cmts } = await commentsQuery.limit(5);
-        finalComments = cmts || [];
-      }
-
-      const filteredPendingDocs = (pendingDocsRaw || []).filter((d: any) => {
-        if (d.current_assignee_id === user.id) return true;
-        // Đang chờ tôi nhận
-        return (d.handovers || []).some(
-          (h: any) => h.receiver_id === user.id && h.status === 'PENDING'
-        );
-      });
-
-      let change = 0;
-      if (lastWeekCount && lastWeekCount > 0) {
-        change = Math.round((((thisWeekCount || 0) - lastWeekCount) / lastWeekCount) * 100);
-      } else if (thisWeekCount && thisWeekCount > 0) {
-        change = 100;
-      }
-
-      const activityFeed = [
-        ...(recentTasksList?.map((t: any) => ({ ...t, type: 'task' })) || []),
-        ...(recs?.map((r: any) => ({ ...r, type: 'recognition', rec_type: r.type })) || []),
-        ...(finalComments?.map((c: any) => ({ ...c, type: 'comment' })) || [])
-      ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 8);
-
-      setStats({
-        productivity: thisWeekCount || 0,
-        productivityChange: change,
-        activeTasks: activeCount || 0,
-        urgentTasks: urgentCount || 0,
-        completedTasks: completedCount || 0,
-        pendingDocuments: filteredPendingDocs,
-        recentTasks: activityFeed,
-        totalAssigned: assignedCount || 0,
-        totalCompleted: completedVisibleCount || 0,
-        totalLate: lateVisibleCount || 0
-      });
-
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
+      await fetchScheduleDashboardData(profile);
+    } catch (e) {
+      console.error(e);
     }
+  };
+
+  const sendNotifications = async (rows: any[]) => {
+    const uniqueRows = rows.filter((row, index, arr) =>
+      row?.user_id && arr.findIndex(item =>
+        item.user_id === row.user_id
+        && item.title === row.title
+        && item.content === row.content
+        && item.link === row.link,
+      ) === index,
+    );
+    if (uniqueRows.length === 0) return;
+    const { error } = await supabase.from('notifications').insert(uniqueRows);
+    if (error) console.error('Notification insert failed:', error);
   };
 
   const handleSelectSchedule = (schedule: any) => {
@@ -325,12 +207,15 @@ export default function DashboardPage() {
 
   const handleUpdateEndTime = async (id: string, newEndTimeStr: string) => {
     try {
-      const { error } = await supabase.from('schedules').update({ end_time: new Date(newEndTimeStr).toISOString() }).eq('id', id);
+      const { error } = await supabase
+        .from('schedules')
+        .update({ end_time: new Date(newEndTimeStr).toISOString() })
+        .eq('id', id);
       if (error) throw error;
-      notifySuccess("Đã cập nhật thời gian kết thúc");
-      fetchDashboardData();
+      notifySuccess('Đã cập nhật thời gian kết thúc');
+      refetchLegacy();
     } catch (error) {
-      notifyError(error, "Không cập nhật được thời gian kết thúc");
+      notifyError(error, 'Không cập nhật được thời gian kết thúc');
     }
   };
 
@@ -342,22 +227,27 @@ export default function DashboardPage() {
 
       if (Array.isArray(participant_ids)) {
         const schedule = scheduleData.schedules.find(s => s.id === id);
-        const finalParticipantIds = Array.from(new Set([schedule?.created_by, ...participant_ids].filter(Boolean)));
-        const { error: deleteError } = await supabase.from('schedule_participants').delete().eq('schedule_id', id);
+        const finalParticipantIds = Array.from(
+          new Set([schedule?.created_by, ...participant_ids].filter(Boolean)),
+        );
+        const { error: deleteError } = await supabase
+          .from('schedule_participants')
+          .delete()
+          .eq('schedule_id', id);
         if (deleteError) throw deleteError;
         if (finalParticipantIds.length > 0) {
           const { error: insertError } = await supabase.from('schedule_participants').insert(
-            finalParticipantIds.map((uid: string) => ({ schedule_id: id, profile_id: uid }))
+            finalParticipantIds.map((uid: string) => ({ schedule_id: id, profile_id: uid })),
           );
           if (insertError) throw insertError;
         }
       }
 
-      notifySuccess("Đã cập nhật lịch trình");
+      notifySuccess('Đã cập nhật lịch trình');
       setIsDetailOpen(false);
-      fetchDashboardData();
+      refetchLegacy();
     } catch (error) {
-      notifyError(error, "Không cập nhật được lịch trình");
+      notifyError(error, 'Không cập nhật được lịch trình');
     }
   };
 
@@ -374,41 +264,58 @@ export default function DashboardPage() {
         const vehicle = scheduleData.vehicles.find(v => v.id === vehicleId);
         await sendNotifications([{
           user_id: driverId,
-          title: "Bạn được phân công lịch chạy xe",
+          title: 'Bạn được phân công lịch chạy xe',
           content: `Bạn được phân công điều khiển xe ${vehicle?.name || ''} (${vehicle?.plate_number || ''}) cho chuyến: "${schedule.title}".`,
-          link: "/dashboard/schedule"
+          link: '/dashboard/schedule',
         }]);
       }
 
-      notifySuccess(vehicleId ? "Đã gán xe và tài xế" : "Đã huỷ gán xe");
+      notifySuccess(vehicleId ? 'Đã gán xe và tài xế' : 'Đã huỷ gán xe');
       setIsDetailOpen(false);
-      fetchDashboardData();
+      refetchLegacy();
     } catch (error) {
-      notifyError(error, "Không gán được xe");
+      notifyError(error, 'Không gán được xe');
     }
   };
 
-  if (loading) {
+  // Render: chờ profile xong rồi mới quyết định view.
+  if (profileLoading) {
     return (
-      <div className="page-container space-y-8 py-6">
-        <StatsSkeleton count={4} />
+      <div className="page-container section-stack py-6">
+        <StatsSkeleton count={3} />
         <ListSkeleton variant="card" rows={3} />
       </div>
     );
   }
 
   if (canUseDriverWorkspace(profile)) {
+    if (legacyLoading) {
+      return (
+        <div className="page-container section-stack py-6">
+          <StatsSkeleton count={3} />
+          <ListSkeleton variant="card" rows={3} />
+        </div>
+      );
+    }
     return (
       <DriverDashboardView
         profile={profile}
         schedules={scheduleData.schedules}
-        fetchData={fetchDashboardData}
+        fetchData={refetchLegacy}
         toast={toast}
       />
     );
   }
 
   if (canUseHumanResourcesWorkspace(profile)) {
+    if (legacyLoading) {
+      return (
+        <div className="page-container section-stack py-6">
+          <StatsSkeleton count={3} />
+          <ListSkeleton variant="card" rows={3} />
+        </div>
+      );
+    }
     return (
       <HRDashboardView
         schedules={scheduleData.schedules}
@@ -417,8 +324,19 @@ export default function DashboardPage() {
     );
   }
 
-  const isResourcesManagerDashboard = canCoordinateSharedResources(profile) && profile?.role !== 'admin' && profile?.role !== 'director';
+  const isResourcesManagerDashboard =
+    canCoordinateSharedResources(profile)
+    && profile?.role !== 'admin'
+    && profile?.role !== 'director';
   if (isResourcesManagerDashboard) {
+    if (legacyLoading) {
+      return (
+        <div className="page-container section-stack py-6">
+          <StatsSkeleton count={3} />
+          <ListSkeleton variant="card" rows={3} />
+        </div>
+      );
+    }
     return (
       <TCTHDashboardView
         profile={profile}
@@ -444,29 +362,6 @@ export default function DashboardPage() {
     );
   }
 
-  return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-6 md:space-y-10 animate-fade-in-up pb-20">
-      <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pt-4 sm:pt-0">
-        <div className="space-y-1">
-          <h1 className="text-2xl md:text-3xl font-bold text-slate-900 tabular-nums">Xin chào, {profile?.full_name?.split(' ').pop()}!</h1>
-          <div className="flex items-center gap-2 text-slate-500">
-            <Sparkles className="w-4 h-4 text-amber-400 animate-float" />
-            <p className="text-[13px] font-semibold italic">{quote}</p>
-          </div>
-        </div>
-        <Button asChild className="bg-primary hover:bg-primary/90 text-primary-foreground min-h-11 px-5 rounded-2xl font-medium text-sm shadow-primary-glow active:scale-95 transition-all">
-          <Link href="/dashboard/tasks">
-            Bắt đầu công việc <ArrowRight className="ml-2 w-4 h-4" />
-          </Link>
-        </Button>
-      </header>
-
-      <QuickStats stats={stats} />
-      <TaskOverview
-        stats={stats}
-        showAllActivities={showAllActivities}
-        setShowAllActivities={setShowAllActivities}
-      />
-    </div>
-  );
+  // Default view cho admin/director/manager/staff thường — KHÔNG fetch legacy schedule.
+  return <DefaultDashboardView profile={profile} />;
 }

@@ -10,8 +10,6 @@ import { Label } from '@/components/ui/label'
 import { notifyError, notifySuccess } from '@/lib/notify'
 import { Workflow, Loader2, Lock, Mail, User, ShieldCheck } from 'lucide-react'
 
-export const dynamic = 'force-dynamic';
-
 function RegisterContent() {
  const [email, setEmail] = useState('')
  const [password, setPassword] = useState('')

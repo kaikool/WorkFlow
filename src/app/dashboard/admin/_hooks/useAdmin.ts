@@ -67,7 +67,7 @@ export function useAdmin() {
 
  const fetchData = async () => {
  try {
- const { count: memberCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
+ const { count: memberCount } = await supabase.from('profiles').select('*', { count: 'estimated', head: true });
  const { data: userList } = await supabase.from('profiles').select('*, departments (name)').order('full_name');
  const { data: roomList } = await supabase.from('rooms').select('*').order('name');
  const { data: vehicleList } = await supabase.from('vehicles').select('*, driver:profiles!vehicles_driver_id_fkey(id, full_name, phone)').order('name');
