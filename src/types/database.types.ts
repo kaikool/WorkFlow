@@ -121,6 +121,8 @@ export interface Database {
           due_date: Timestamp | null;
           metadata: Record<string, Json>;
           is_archived: boolean;
+          requires_approval: boolean;
+          batch_id: Uuid | null;
           created_at: Timestamp;
           updated_at: Timestamp;
         };
@@ -137,6 +139,8 @@ export interface Database {
           due_date?: Timestamp | null;
           metadata?: Record<string, Json>;
           is_archived?: boolean;
+          requires_approval?: boolean;
+          batch_id?: Uuid | null;
           created_at?: Timestamp;
           updated_at?: Timestamp;
         };
@@ -185,6 +189,64 @@ export interface Database {
           created_at?: Timestamp;
         };
         Update: Partial<Database["public"]["Tables"]["task_extension_requests"]["Insert"]>;
+      };
+
+      task_attachments: {
+        Row: {
+          id: Uuid;
+          task_id: Uuid;
+          comment_id: Uuid | null;
+          uploaded_by: Uuid | null;
+          storage_path: string;
+          filename: string;
+          mime_type: string | null;
+          size_bytes: number | null;
+          is_deleted: boolean;
+          created_at: Timestamp;
+        };
+        Insert: {
+          id?: Uuid;
+          task_id: Uuid;
+          comment_id?: Uuid | null;
+          uploaded_by?: Uuid | null;
+          storage_path: string;
+          filename: string;
+          mime_type?: string | null;
+          size_bytes?: number | null;
+          is_deleted?: boolean;
+          created_at?: Timestamp;
+        };
+        Update: Partial<Database["public"]["Tables"]["task_attachments"]["Insert"]>;
+      };
+
+      task_recurring_templates: {
+        Row: {
+          id: Uuid;
+          title: string;
+          description: string | null;
+          task_type: "task" | "report";
+          priority: TaskPriority;
+          target_department_ids: Uuid[];
+          target_user_ids: Uuid[];
+          schedule_kind: "weekly" | "monthly";
+          weekly_dow: number | null;
+          weekly_time: string | null;
+          monthly_dom: number | null;
+          monthly_time: string | null;
+          timezone: string;
+          due_days_after_fire: number;
+          created_by: Uuid | null;
+          is_active: boolean;
+          last_fired_at: Timestamp | null;
+          next_run_at: Timestamp | null;
+          created_at: Timestamp;
+          updated_at: Timestamp;
+        };
+        Insert: Partial<Database["public"]["Tables"]["task_recurring_templates"]["Row"]> & {
+          title: string;
+          schedule_kind: "weekly" | "monthly";
+        };
+        Update: Partial<Database["public"]["Tables"]["task_recurring_templates"]["Insert"]>;
       };
 
       task_comments: {
@@ -536,7 +598,12 @@ export interface Database {
         Returns: boolean;
       };
       tasks_dashboard: {
-        Args: { p_scope?: "mine" | "dept" | "branch"; p_filter?: Record<string, Json> };
+        Args: {
+          p_scope?: "mine" | "dept" | "branch";
+          p_filter?: Record<string, Json>;
+          p_limit?: number;
+          p_offset?: number;
+        };
         Returns: {
           counts: {
             todo: number;
@@ -547,6 +614,7 @@ export interface Database {
             overdue: number;
             awaiting_approval: number;
             extensions_pending: number;
+            total_visible: number;
           };
           lists: Array<{
             id: Uuid;
@@ -563,6 +631,8 @@ export interface Database {
             updated_at: Timestamp;
             metadata: Record<string, Json>;
             is_archived: boolean;
+            requires_approval: boolean;
+            batch_id: Uuid | null;
             is_overdue: boolean;
             department: { id: Uuid; name: string } | null;
             creator: { id: Uuid; full_name: string | null; avatar_url: string | null } | null;
@@ -577,6 +647,9 @@ export interface Database {
           }>;
           scope: "mine" | "dept" | "branch";
           role: UserRole;
+          limit: number;
+          offset: number;
+          has_more: boolean;
         };
       };
       task_create: {
@@ -589,6 +662,8 @@ export interface Database {
           p_dept_id?: Uuid | null;
           p_assignee_ids: Uuid[] | null;
           p_metadata?: Record<string, Json>;
+          p_requires_approval?: boolean;
+          p_batch_id?: Uuid | null;
         };
         Returns: Uuid;
       };
@@ -619,6 +694,81 @@ export interface Database {
       task_archive: {
         Args: { p_task_id: Uuid; p_archive?: boolean };
         Returns: void;
+      };
+      task_attachment_register: {
+        Args: {
+          p_task_id: Uuid;
+          p_storage_path: string;
+          p_filename: string;
+          p_mime_type?: string | null;
+          p_size_bytes?: number | null;
+          p_comment_id?: Uuid | null;
+        };
+        Returns: Uuid;
+      };
+      task_attachment_remove: {
+        Args: { p_attachment_id: Uuid };
+        Returns: void;
+      };
+      recurring_template_upsert: {
+        Args: {
+          p_id?: Uuid | null;
+          p_title: string;
+          p_description?: string | null;
+          p_task_type: string;
+          p_priority?: TaskPriority | null;
+          p_target_department_ids?: Uuid[];
+          p_target_user_ids?: Uuid[];
+          p_schedule_kind: string;
+          p_weekly_dow?: number | null;
+          p_weekly_time?: string | null;
+          p_monthly_dom?: number | null;
+          p_monthly_time?: string | null;
+          p_timezone?: string;
+          p_due_days_after_fire?: number;
+          p_is_active?: boolean;
+        };
+        Returns: Uuid;
+      };
+      recurring_template_delete: {
+        Args: { p_id: Uuid };
+        Returns: void;
+      };
+      recurring_template_toggle: {
+        Args: { p_id: Uuid; p_active: boolean };
+        Returns: void;
+      };
+      recurring_fire_due: {
+        Args: Record<string, never>;
+        Returns: number;
+      };
+      tasks_analytics: {
+        Args: { p_from: DateString; p_to: DateString; p_dept_id?: Uuid | null };
+        Returns: {
+          totals: {
+            completed: number;
+            overdue: number;
+            submitted_pending: number;
+            extensions_pending: number;
+            total: number;
+            canceled: number;
+          };
+          daily_completed: Array<{ date: string; count: number }>;
+          by_department: Array<{
+            dept_id: Uuid; dept_name: string;
+            active: number; overdue: number; completed: number;
+          }>;
+          top_people: Array<{
+            user_id: Uuid; full_name: string | null; avatar_url: string | null;
+            department_name: string | null;
+            active: number; overdue: number; completed: number;
+          }>;
+          recurring_active: number;
+          role: UserRole;
+          scope_dept: Uuid | null;
+          from: string;
+          to: string;
+        };
       };
     };
 

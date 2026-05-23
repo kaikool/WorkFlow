@@ -10,9 +10,11 @@ import {
 import { Button } from '@/components/ui/button';
 import { Loader2, Users } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
+import { fetchCurrentProfile } from '@/lib/fetch-profile';
 import { notifyError, notifySuccess, notifyValidation } from '@/lib/notify';
 import { delegateTask } from '../_lib/taskActions';
 import { fetchAssignableProfiles } from '../_lib/fetchTasks';
+import { getProfileDepartmentCode } from '@/lib/permissions';
 import { PeoplePicker } from '@/components/ui/people-picker';
 
 interface ProfileItem {
@@ -44,19 +46,19 @@ export function TaskDelegateDialog({ task, currentAssigneeIds, onClose, onChange
   useEffect(() => {
     (async () => {
       setFetching(true);
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { setFetching(false); return; }
-      const { data: p } = await supabase
-        .from('profiles')
-        .select('id, role, department_id, departments(name, code)')
-        .eq('id', user.id)
-        .single();
+      const p = await fetchCurrentProfile(supabase);
+      if (!p) { setFetching(false); return; }
       setCurrentProfile(p);
 
-      if (p && task.department_id) {
+      if (task.department_id) {
         const list = await fetchAssignableProfiles({
           context: 'delegate',
-          caller: { id: p.id, role: p.role, department_id: p.department_id },
+          caller: {
+            id: p.id,
+            role: p.role,
+            department_id: p.department_id,
+            department_code: getProfileDepartmentCode(p),
+          },
           taskDepartmentId: task.department_id,
         });
         setProfiles(list as ProfileItem[]);

@@ -22,7 +22,7 @@ import {
   PRIORITY_BADGE_CLASS,
   TASK_TYPE_LABEL,
 } from '../_lib/constants';
-import { canApproveReport, canDelegateTask } from '@/lib/permissions';
+import { canApproveReport, canDelegateTask, canReturnTask } from '@/lib/permissions';
 import { updateTaskStatus, archiveTask } from '../_lib/taskActions';
 import { TaskDelegateDialog } from './TaskDelegateDialog';
 import { TaskRequestExtensionDialog } from './TaskRequestExtensionDialog';
@@ -31,6 +31,7 @@ import { TaskReturnDialog } from './TaskReturnDialog';
 import { TaskCancelDialog } from './TaskCancelDialog';
 import { TaskCommentList } from './TaskCommentList';
 import { TaskTimeline } from './TaskTimeline';
+import { TaskAttachmentManager } from './TaskAttachmentManager';
 import { SelectionPill } from '@/components/ui/people-picker';
 import type { TaskDetail } from '../_lib/types';
 
@@ -80,15 +81,29 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, showArchive =
   };
 
   const canStart = (isAssignee || isManagerOfTask) && task.status === 'todo';
-  const canMarkDone = !isReport && (isAssignee || isManagerOfTask)
+
+  // TP/PP tự nộp báo cáo của chính mình → tự ghi nhận luôn (có audit comment ở RPC)
+  const isReportSelfApprove = isReport && isAssignee && isManagerOfTask;
+
+  const canMarkDoneTask = !isReport && (isAssignee || isManagerOfTask)
     && (task.status === 'todo' || task.status === 'doing');
-  const canSubmit = isReport && isAssignee && task.status === 'doing';
+  const canMarkDoneReport = isReport && isAssignee
+    && (task.status === 'todo' || task.status === 'doing')
+    && (!task.requires_approval || isReportSelfApprove);
+  const canMarkDone = canMarkDoneTask || canMarkDoneReport;
+
+  const canSubmit = isReport && isAssignee
+    && task.status === 'doing'
+    && task.requires_approval
+    && !isReportSelfApprove;
+
   const canApproveSubmission = isReport && isManagerApprove && task.status === 'submitted';
+  const canReturn = canReturnTask(currentProfile, task);
   const canRequestExtension = isAssignee && task.status !== 'done' && task.status !== 'canceled';
   const canDelegate = isManagerOfTask && task.status !== 'done' && task.status !== 'canceled';
   const canCancel = (isCreator || isAssignee || isManagerOfTask)
     && task.status !== 'done' && task.status !== 'canceled';
-  const isReadOnly = task.is_archived || ['done', 'canceled'].includes(task.status);
+  const isReadOnly = task.is_archived || task.status === 'canceled';
 
   return (
     <div className="group-stack">
@@ -194,9 +209,19 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, showArchive =
               Chưa phân công — chờ Trưởng phòng phân công cán bộ
             </p>
           )}
+          {isReportSelfApprove && task.requires_approval && task.status === 'doing' && (
+            <p className="text-subtitle text-amber-700 font-medium italic flex items-center gap-2">
+              <AlertTriangle className="icon-sm" />
+              Bạn là người duyệt báo cáo của chính mình — bấm "Hoàn thành" sẽ tự ghi nhận có audit log.
+            </p>
+          )}
+          {task.requires_approval && (
+            <p className="text-meta italic">
+              Báo cáo này cần Trưởng phòng duyệt sau khi nộp.
+            </p>
+          )}
         </div>
       </div>
-
       {!isReadOnly && (
         <TooltipProvider delayDuration={200}>
           <div className="flex flex-wrap gap-2 items-center">
@@ -239,7 +264,16 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, showArchive =
 
             {canApproveSubmission && (
               <IconCTA
-                tooltip="Trả về"
+                tooltip="Trả về sửa lại"
+                tone="outline"
+                onClick={() => setOpenReturn(true)}
+                disabled={busy !== null}
+                icon={<Undo2 className="icon-md" />}
+              />
+            )}
+            {!canApproveSubmission && canReturn && (
+              <IconCTA
+                tooltip={task.status === 'done' ? 'Trả lại báo cáo đã hoàn thành' : 'Trả lại'}
                 tone="outline"
                 onClick={() => setOpenReturn(true)}
                 disabled={busy !== null}
@@ -285,6 +319,14 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, showArchive =
         </div>
       )}
 
+      <div className="pt-2 item-stack">
+        <h3 className="heading-card">File đính kèm</h3>
+        <TaskAttachmentManager
+          taskId={task.id}
+          canUpload={!isReadOnly && (isAssignee || isCreator || isManagerOfTask)}
+        />
+      </div>
+
       <div className="pt-2">
         <TaskCommentList
           taskId={task.id}
@@ -317,7 +359,7 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, showArchive =
       )}
       {openReturn && (
         <TaskReturnDialog
-          task={{ id: task.id, title: task.title }}
+          task={{ id: task.id, title: task.title, status: task.status }}
           onClose={() => setOpenReturn(false)}
           onChanged={() => { setOpenReturn(false); onChanged(); }}
         />

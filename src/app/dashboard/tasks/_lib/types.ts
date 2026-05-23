@@ -21,11 +21,12 @@ export interface TaskListItem {
   updated_at: string;
   metadata: Record<string, Json>;
   is_archived: boolean;
+  requires_approval: boolean;
+  batch_id: string | null;
   is_overdue: boolean;
   department: { id: string; name: string } | null;
   creator: { id: string; full_name: string | null; avatar_url: string | null } | null;
   assignees: Array<{ id: string; full_name: string | null; avatar_url: string | null }> | null;
-  // Optimistic-only flag (không có trong DB)
   _pending?: boolean;
 }
 
@@ -79,3 +80,8 @@ export interface TaskDetail extends TaskRow {
 export type ActionResult<T = void> =
   | { ok: true; data?: T }
   | { ok: false; error: string };
+
+// Hiển thị list: hoặc 1 task đơn lẻ, hoặc 1 group batch
+export type TaskListEntry =
+  | { kind: 'single'; task: TaskListItem }
+  | { kind: 'batch'; batchId: string; children: TaskListItem[]; representative: TaskListItem };

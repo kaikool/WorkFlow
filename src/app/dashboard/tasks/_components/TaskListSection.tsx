@@ -1,16 +1,16 @@
 'use client';
 
-// TaskListSection — group tasks theo nhóm thời gian (Quá hạn / Hôm nay / Tuần này / Sau / Không hạn).
-// Render heading + list TaskCard.
-
 import React, { useMemo } from 'react';
 import { TaskCard } from './TaskCard';
+import { BatchTaskCard } from './BatchTaskCard';
+import { groupByBatch } from '../_lib/batchHelpers';
 import type { TaskListItem } from '../_lib/types';
 import { DATE_GROUP_LABEL, type DateGroup } from '../_lib/constants';
 
 interface Props {
   items: TaskListItem[];
   onOpen?: (taskId: string) => void;
+  onOpenBatch?: (batchId: string) => void;
   onSwipeDone?: (taskId: string) => void;
   canSwipeDone?: boolean;
 }
@@ -30,16 +30,19 @@ function classifyTask(item: TaskListItem): DateGroup {
 
 const GROUP_ORDER: DateGroup[] = ['overdue', 'today', 'this_week', 'later', 'no_deadline'];
 
-export function TaskListSection({ items, onOpen, onSwipeDone, canSwipeDone }: Props) {
+export function TaskListSection({ items, onOpen, onOpenBatch, onSwipeDone, canSwipeDone }: Props) {
+  const entries = useMemo(() => groupByBatch(items), [items]);
+
   const grouped = useMemo(() => {
-    const map = new Map<DateGroup, TaskListItem[]>();
+    const map = new Map<DateGroup, typeof entries>();
     for (const g of GROUP_ORDER) map.set(g, []);
-    for (const item of items) {
-      const g = classifyTask(item);
-      map.get(g)!.push(item);
+    for (const entry of entries) {
+      const ref = entry.kind === 'batch' ? entry.representative : entry.task;
+      const g = classifyTask(ref);
+      map.get(g)!.push(entry);
     }
     return map;
-  }, [items]);
+  }, [entries]);
 
   return (
     <div className="space-y-6">
@@ -48,14 +51,21 @@ export function TaskListSection({ items, onOpen, onSwipeDone, canSwipeDone }: Pr
         if (list.length === 0) return null;
         return (
           <section key={group} className="space-y-2">
-            <h3 className="text-[12px] font-bold uppercase tracking-wide text-slate-500 px-1">
+            <h3 className="text-meta font-bold uppercase tracking-wide px-1">
               {DATE_GROUP_LABEL[group]} ({list.length})
             </h3>
             <div className="space-y-2">
-              {list.map(item => (
+              {list.map(entry => entry.kind === 'batch' ? (
+                <BatchTaskCard
+                  key={entry.batchId}
+                  representative={entry.representative}
+                  children={entry.children}
+                  onOpen={(id) => onOpenBatch?.(id)}
+                />
+              ) : (
                 <TaskCard
-                  key={item.id}
-                  task={item}
+                  key={entry.task.id}
+                  task={entry.task}
                   onOpen={onOpen}
                   onSwipeDone={onSwipeDone}
                   canSwipeDone={canSwipeDone}

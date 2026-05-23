@@ -15,6 +15,8 @@ export async function createTask(input: {
   dept_id?: string | null;
   assignee_ids: string[] | null;
   metadata?: Record<string, unknown>;
+  requires_approval?: boolean;
+  batch_id?: string | null;
 }): Promise<ActionResult<string>> {
   const { data, error } = await supabase.rpc('task_create', {
     p_title: input.title,
@@ -25,6 +27,8 @@ export async function createTask(input: {
     p_dept_id: input.dept_id ?? null,
     p_assignee_ids: input.assignee_ids,
     p_metadata: (input.metadata ?? {}) as any,
+    p_requires_approval: input.requires_approval ?? false,
+    p_batch_id: input.batch_id ?? null,
   } as any);
   if (error) return { ok: false, error: error.message };
   return { ok: true, data: data as string };

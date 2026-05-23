@@ -292,37 +292,49 @@ Trang đích sau login. **Hiển thị view khác nhau theo role**:
 
 ### 3.3 Module Công việc (Tasks)
 
-> URL: `/dashboard/tasks` · Detail: `/dashboard/tasks/[id]` · Create: `/dashboard/tasks/new` · Code: [`src/app/dashboard/tasks/`](src/app/dashboard/tasks/)
+> URL: `/dashboard/tasks` · Detail popup: `?id=<taskId>` · Create popup: `?create=1`
+> Analytics: `/dashboard/tasks/analytics` · Recurring: `/dashboard/tasks/recurring`
+> Code: [`src/app/dashboard/tasks/`](src/app/dashboard/tasks/)
 
-#### 3.3.1 Hai loại bản ghi
+#### 3.3.1 Hai luồng nghiệp vụ
 
-Cùng bảng `tasks` nhưng phân biệt qua `task_type`:
+Cùng bảng `tasks`, phân biệt qua `task_type`:
 
-| `task_type` | Tên hiển thị | Đặc trưng | Folder |
-|-------------|--------------|-----------|--------|
-| `'task'` | **Công việc** | Có deadline, assignee, status `todo`/`doing`/`done`/`late`/`closed` | `_components/todos/` (NewTodoForm, TodoList, TodoDetail) |
-| `'report'` | **Báo cáo** | Có chỉ tiêu định lượng (`target_value`, `current_value`, `unit`, `progress` %) — dùng để theo dõi KPI nội bộ phòng | `_components/reports/` (NewReportForm, ReportList, ReportDetail) |
+| `task_type` | Luồng | Đặc trưng |
+|-------------|-------|-----------|
+| `'task'` | **A — Giao việc** | Director/Manager giao đích danh. Multi-assignee. Vòng đời: `todo → doing → done` (+ `canceled`). |
+| `'report'` | **B — Yêu cầu báo cáo** | Có thể giao cả phòng (assignee NULL → TP phân công) hoặc cá nhân. Vòng đời: `todo → doing → submitted → done` (+ `canceled`, trả về `submitted → doing` kèm comment). |
 
-#### 3.3.2 Tính năng đặc trưng
+**Status enum** (`task_status`): `todo`, `doing`, `submitted`, `done`, `canceled`. Hai value cũ `late`/`closed` đã deprecated (migrate sang `doing`/`done+is_archived`).
 
-- **Multi-assignee qua `metadata.assigned_line`** — mảng UUID profile dạng "dây chuyền". RLS đọc trực tiếp:
-  ```sql
-  OR (metadata->>'assigned_line' IS NOT NULL
-      AND auth.uid()::text = ANY(...))
-  ```
-  → mọi người trong line nhìn thấy task chung mà không cần bảng N-N riêng.
-- **Comment** — bảng `task_comments`, public read, mỗi user post được comment riêng.
-- **Auto-archive**: cron daily 8:00 ICT gọi RPC `auto_archive_and_cleanup()`:
-  - Task `done`/`closed` quá 60 ngày → `is_archived = true`.
-  - Notifications quá 30 ngày → DELETE.
-- **Báo task quá hạn**: cron quét `due_date < now AND status NOT IN ('done', 'closed', 'late')` → insert notifications "Task quá hạn".
+#### 3.3.2 Tính năng cốt lõi
+
+- **Multi-assignee qua bảng N-N `task_assignees`** (junction `task_id × user_id`). RLS check qua `user_can_see_task(p_task_id)` SECURITY DEFINER.
+- **Comment** — bảng `task_comments`, RLS đi qua `user_can_see_task`.
+- **File đính kèm** — bảng `task_attachments`, bucket Storage `task-attachments` (private + signed URL), tối đa 20MB/file, mime allowlist (PDF/Word/Excel/jpg/png). Dùng được cả luồng A và B.
+- **Xin gia hạn** — bảng `task_extension_requests`. NV submit `new_due_date` + reason, TP duyệt popup → cập `tasks.due_date`.
+- **Phân công (Delegate)** ở luồng B — TP nhận report cấp phòng → bấm "Phân công" chọn NV trong phòng.
+- **Recurring** — bảng `task_recurring_templates`. Director/Manager đặt lịch (weekly thứ X giờ, hoặc monthly ngày X giờ). RPC `recurring_fire_due()` sinh task khi `next_run_at <= now`. pg_cron 15p (nếu enabled), fallback Vercel cron daily 8h.
+- **Analytics** — RPC `tasks_analytics(p_from, p_to, p_dept_id)` trả counts + daily + by_department + top_people + recurring_active. Trang `/analytics` có export CSV (UTF-8 BOM cho Excel).
+- **Hủy** — bảng status `canceled`. Cả creator/assignee/manager đều bấm được. NV không có quyền Delete.
+- **Optimistic UI** — swipe Done trên TaskCard (mobile). State patch local + rollback nếu RPC fail.
+- **Auto-archive**: cron daily 8:00 ICT gọi `auto_archive_and_cleanup()` — done/canceled quá 60 ngày → `is_archived = true`.
 
 #### 3.3.3 Phân quyền tầm nhìn
 
 - `admin`/`director`: thấy mọi task.
-- `manager`: thấy task của phòng (`department_id`).
-- `staff`: thấy task được giao (`assignee_id`) + tạo (`created_by`) + có trong `metadata.assigned_line`.
-- Sidebar ẩn module này với `driver` / `secretary` / `hr_officer`.
+- `manager`: thấy task của phòng (`department_id = manager.department_id`).
+- `staff`: thấy task được giao (`assignee_id` hoặc có trong `task_assignees`) + task tự tạo (`created_by`).
+- Sidebar ẩn module với `driver` + `secretary` (lễ tân). `hr_officer` được MỞ.
+
+#### 3.3.4 Action UI
+
+Detail panel hiển thị 5 nút icon-only đồng bộ (h-11 w-11 rounded-full + Tooltip):
+- Primary CTA (filled): Bắt đầu / Hoàn thành / Nộp báo cáo / Duyệt báo cáo (tone amber-600 cho moment cao trào).
+- Secondary (outline): Trả về / Phân công / Xin gia hạn.
+- Destructive (ghost red): Huỷ (`X` icon, ml-auto).
+
+Mọi assignee picker dùng `<PeoplePicker>` shared (`src/components/ui/people-picker.tsx`) với grouping qua `groupProfilesByDepartment` từ `@/lib/profile-grouping`. AvatarStack hiển thị nhiều người chọn — không bao giờ chip-name hàng loạt.
 
 ---
 

@@ -127,10 +127,11 @@ function TopNavActionsContent() {
             <DropdownMenuContent align="end" className="w-48 rounded-xl border border-slate-100 shadow-premium">
               <DropdownMenuRadioGroup value={status} onValueChange={handleStatusFilter}>
                 <DropdownMenuRadioItem value="all" className="rounded-lg font-medium">Tất cả trạng thái</DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="todo" className="rounded-lg font-medium">Đang chờ</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="overdue" className="rounded-lg font-medium">Quá hạn</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="todo" className="rounded-lg font-medium">Chưa làm</DropdownMenuRadioItem>
                 <DropdownMenuRadioItem value="doing" className="rounded-lg font-medium">Đang làm</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="submitted" className="rounded-lg font-medium">Đã nộp</DropdownMenuRadioItem>
                 <DropdownMenuRadioItem value="done" className="rounded-lg font-medium">Hoàn thành</DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="late" className="rounded-lg font-medium">Trễ hạn</DropdownMenuRadioItem>
               </DropdownMenuRadioGroup>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -167,10 +168,11 @@ function TopNavActionsContent() {
             <DropdownMenuContent align="end" className="w-48 rounded-xl border border-slate-100 shadow-premium">
               <DropdownMenuRadioGroup value={status} onValueChange={handleStatusFilter}>
                 <DropdownMenuRadioItem value="all" className="rounded-lg font-medium">Tất cả trạng thái</DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="todo" className="rounded-lg font-medium">Đang chờ</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="overdue" className="rounded-lg font-medium">Quá hạn</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="todo" className="rounded-lg font-medium">Chưa làm</DropdownMenuRadioItem>
                 <DropdownMenuRadioItem value="doing" className="rounded-lg font-medium">Đang làm</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="submitted" className="rounded-lg font-medium">Đã nộp</DropdownMenuRadioItem>
                 <DropdownMenuRadioItem value="done" className="rounded-lg font-medium">Hoàn thành</DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="late" className="rounded-lg font-medium">Trễ hạn</DropdownMenuRadioItem>
               </DropdownMenuRadioGroup>
             </DropdownMenuContent>
           </DropdownMenu>

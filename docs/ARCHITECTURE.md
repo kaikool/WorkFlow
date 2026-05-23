@@ -950,6 +950,30 @@ Mục này theo dõi các điểm lệch chuẩn của codebase. Trạng thái c
 
 ---
 
+## 9.1 Shared component đã chuẩn hoá (bắt buộc dùng lại)
+
+Các pattern UI sau đã trích vào `src/components/ui/` — **mọi module mới phải dùng lại**, không tự viết:
+
+| Component | Vai trò | Path |
+|---|---|---|
+| `<PeoplePicker>` | Chọn người (single/multi) với Accordion grouping theo phòng ban | `src/components/ui/people-picker.tsx` |
+| `<AvatarStack>` | Hiển thị stack avatar overlap + "+N" khi nhiều người | cùng file |
+| `<SelectionPill>` | Pill h-10 hiển thị tóm tắt selection (avatar stack + count + X) — `onClear` optional cho mode display | cùng file |
+| `<DepartmentPicker>` | Chọn phòng ban (Collapsible + "Chọn tất cả") | `src/components/ui/department-picker.tsx` |
+
+**Helper**:
+- `src/lib/profile-grouping.ts` → `groupProfilesByDepartment(profiles, opts)` — gom BGĐ → Phòng tôi → Phòng khác theo code.
+- `src/lib/utils.ts` → `compareProfilesByHierarchy / sortProfilesByHierarchy` — sort TP→PP→NV→alphabet.
+
+**Cấm**:
+- Tự render flat `<DropdownMenuCheckboxItem>` cho list profiles → dùng PeoplePicker.
+- Tự render `flex -space-x-2 ...` cho avatar overlap → dùng AvatarStack.
+- Chip name hàng loạt khi selected > 3 người → dùng SelectionPill.
+
+**Pattern phân quyền fetch**: `src/app/dashboard/tasks/_lib/fetchTasks.ts` → `fetchAssignableProfiles({ context, caller, taskDepartmentId? })` filter ở DB theo role (staff=self, manager=own-dept, admin/director=branch, exclude admin/director/driver). Module khác cần "fetch người có thể giao việc" → reuse hoặc viết tương tự ở `_lib/`.
+
+---
+
 ## 10. CRITICAL FILES — ĐỌC TRƯỚC KHI CODE
 
 | File | Vai trò |

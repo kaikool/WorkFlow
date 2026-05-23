@@ -7,7 +7,7 @@
 import React, { Suspense, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { Plus, Inbox, Building2, Globe, BarChart3, CalendarClock } from 'lucide-react';
+import { Plus, Inbox, Building2, Globe, BarChart3, CalendarClock, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import PageHeader from '@/components/layout/PageHeader';
@@ -15,12 +15,14 @@ import { ListSkeleton } from '@/components/ui/list-skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 
 import { createClient } from '@/utils/supabase/client';
+import { fetchCurrentProfile } from '@/lib/fetch-profile';
 import { useTasksDashboard } from './_hooks/useTasksDashboard';
 import { useOptimisticAction } from './_hooks/useOptimisticAction';
 import { TaskListSection } from './_components/TaskListSection';
 import { ResourceView } from './_components/ResourceView';
 import { ManagerInboxView } from './_components/ManagerInboxView';
 import { TaskDetailDialog } from './_components/TaskDetailDialog';
+import { BatchTaskDetailDialog } from './_components/BatchTaskDetailDialog';
 import { CreateTaskDialog } from './_components/CreateTaskDialog';
 import { updateTaskStatus } from './_lib/taskActions';
 import { canViewTaskAnalytics, canCreateRecurringTemplate } from '@/lib/permissions';
@@ -40,24 +42,21 @@ function TasksContent() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const searchQuery = (searchParams.get('q') ?? '').toLowerCase().trim();
+  const statusFilter = searchParams.get('status') ?? 'all';
   const openId = searchParams.get('id');
   const createOpen = searchParams.get('create') === '1';
 
   const [profile, setProfile] = useState<any>(null);
   const [tab, setTab] = useState<TabValue>('mine');
+  const [openBatchId, setOpenBatchId] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data: p } = await supabase
-        .from('profiles')
-        .select('*, departments(name, code)')
-        .eq('id', user.id)
-        .single();
+      const p = await fetchCurrentProfile(supabase);
+      if (!p) return;
       setProfile(p);
-      if (p?.role === 'admin' || p?.role === 'director') setTab('branch');
-      else if (p?.role === 'manager') setTab('inbox');
+      if (p.role === 'admin' || p.role === 'director') setTab('branch');
+      else if (p.role === 'manager') setTab('inbox');
       else setTab('mine');
     })();
   }, [supabase]);
@@ -88,13 +87,23 @@ function TasksContent() {
   const handleCloseCreate = () => setUrlParam('create', null);
 
   const filteredItems = useMemo(() => {
-    if (!searchQuery) return dash.items;
-    return dash.items.filter(t =>
-      t.title.toLowerCase().includes(searchQuery)
-      || (t.description ?? '').toLowerCase().includes(searchQuery)
-      || (t.creator?.full_name ?? '').toLowerCase().includes(searchQuery),
-    );
-  }, [dash.items, searchQuery]);
+    let list = dash.items;
+    if (statusFilter !== 'all') {
+      if (statusFilter === 'overdue') {
+        list = list.filter(t => t.is_overdue);
+      } else {
+        list = list.filter(t => t.status === statusFilter);
+      }
+    }
+    if (searchQuery) {
+      list = list.filter(t =>
+        t.title.toLowerCase().includes(searchQuery)
+        || (t.description ?? '').toLowerCase().includes(searchQuery)
+        || (t.creator?.full_name ?? '').toLowerCase().includes(searchQuery),
+      );
+    }
+    return list;
+  }, [dash.items, searchQuery, statusFilter]);
 
   const isManagerPlus = ['admin', 'director', 'manager'].includes(profile?.role);
   const isAdminOrDirector = ['admin', 'director'].includes(profile?.role);
@@ -109,16 +118,18 @@ function TasksContent() {
         action={
           <div className="flex items-center gap-2">
             {showRecurringLink && (
-              <Button variant="outline" asChild className="min-h-11 rounded-xl font-medium hidden sm:inline-flex">
+              <Button variant="outline" asChild className="min-h-11 rounded-xl font-medium">
                 <Link href="/dashboard/tasks/recurring">
-                  <CalendarClock className="icon-sm mr-1.5" /> Định kỳ
+                  <CalendarClock className="icon-sm" />
+                  <span className="hidden sm:inline ml-1.5">Định kỳ</span>
                 </Link>
               </Button>
             )}
             {showAnalyticsLink && (
-              <Button variant="outline" asChild className="min-h-11 rounded-xl font-medium hidden sm:inline-flex">
+              <Button variant="outline" asChild className="min-h-11 rounded-xl font-medium">
                 <Link href="/dashboard/tasks/analytics">
-                  <BarChart3 className="icon-sm mr-1.5" /> Báo cáo
+                  <BarChart3 className="icon-sm" />
+                  <span className="hidden sm:inline ml-1.5">Báo cáo</span>
                 </Link>
               </Button>
             )}
@@ -131,6 +142,26 @@ function TasksContent() {
           </div>
         }
       />
+
+      {/* Mobile entry — PageHeader.action ẩn trên mobile, render strip riêng */}
+      {(showRecurringLink || showAnalyticsLink) && (
+        <div className="flex gap-2 sm:hidden">
+          {showRecurringLink && (
+            <Button variant="outline" asChild className="flex-1 min-h-11 rounded-xl font-medium">
+              <Link href="/dashboard/tasks/recurring">
+                <CalendarClock className="icon-sm mr-1.5" /> Định kỳ
+              </Link>
+            </Button>
+          )}
+          {showAnalyticsLink && (
+            <Button variant="outline" asChild className="flex-1 min-h-11 rounded-xl font-medium">
+              <Link href="/dashboard/tasks/analytics">
+                <BarChart3 className="icon-sm mr-1.5" /> Báo cáo
+              </Link>
+            </Button>
+          )}
+        </div>
+      )}
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as TabValue)} className="w-full">
         <TabsList className={`min-h-11 ${isManagerPlus ? 'grid grid-cols-3' : ''}`}>
@@ -168,18 +199,37 @@ function TasksContent() {
           description={searchQuery ? 'Thử tìm với từ khoá khác.' : 'Bấm "Tạo mới" để thêm công việc đầu tiên.'}
         />
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div className="lg:col-span-8">
-            <TaskListSection
-              items={filteredItems}
-              onOpen={handleOpenTask}
-              onSwipeDone={handleSwipeDone}
-              canSwipeDone
-            />
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div className="lg:col-span-8">
+              <TaskListSection
+                items={filteredItems}
+                onOpen={handleOpenTask}
+                onOpenBatch={setOpenBatchId}
+                onSwipeDone={handleSwipeDone}
+                canSwipeDone
+              />
+            </div>
+            {isManagerPlus && (tab === 'dept' || tab === 'branch') && dash.resourceView.length > 0 && (
+              <div className="lg:col-span-4">
+                <ResourceView data={dash.resourceView} />
+              </div>
+            )}
           </div>
-          {isManagerPlus && (tab === 'dept' || tab === 'branch') && dash.resourceView.length > 0 && (
-            <div className="lg:col-span-4">
-              <ResourceView data={dash.resourceView} />
+          {dash.hasMore && (
+            <div className="flex justify-center pt-2">
+              <Button
+                variant="outline"
+                onClick={dash.loadMore}
+                disabled={dash.loadingMore}
+                className="min-h-11 px-6 rounded-xl font-medium"
+              >
+                {dash.loadingMore ? (
+                  <><Loader2 className="icon-sm mr-1.5 animate-spin" /> Đang tải...</>
+                ) : (
+                  <>Tải thêm</>
+                )}
+              </Button>
             </div>
           )}
         </div>
@@ -199,6 +249,14 @@ function TasksContent() {
         isOpen={createOpen}
         setIsOpen={(open) => { if (!open) handleCloseCreate(); else handleOpenCreate(); }}
         onCreated={dash.refetch}
+      />
+
+      <BatchTaskDetailDialog
+        isOpen={!!openBatchId}
+        setIsOpen={(o) => { if (!o) setOpenBatchId(null); }}
+        batchId={openBatchId}
+        children={openBatchId ? dash.items.filter(t => t.batch_id === openBatchId) : []}
+        onOpenTask={handleOpenTask}
       />
     </div>
   );

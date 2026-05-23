@@ -46,14 +46,17 @@ export function groupProfilesByDepartment<T extends ProfileLike>(
     if (!matchSearch(p)) continue;
     if (p.role === 'director') { bgd.push(p); continue; }
 
+    const depts = p.departments;
+    const first = Array.isArray(depts) ? depts[0] : depts;
+
     if (opts.myDepartmentId && p.department_id === opts.myDepartmentId) {
       myDept.push(p);
       continue;
     }
 
     const key = p.department_id ?? 'no-dept';
-    const name = p.departments?.name ?? 'Không có phòng ban';
-    const code = p.departments?.code ?? 'zzz';
+    const name = first?.name ?? 'Không có phòng ban';
+    const code = first?.code ?? 'zzz';
     if (!otherByDept.has(key)) otherByDept.set(key, { name, code, members: [] });
     otherByDept.get(key)!.members.push(p);
   }

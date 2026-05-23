@@ -30,6 +30,13 @@ export async function GET(request: Request) {
       console.error('Auto-archive error:', cleanupErr);
     }
 
+    // 0.5. Fallback recurring fire (nếu pg_cron chưa enable)
+    try {
+      await supabase.rpc('recurring_fire_due');
+    } catch (recurringErr) {
+      console.error('Recurring fire error:', recurringErr);
+    }
+
     // 1. CHECK OVERDUE TASKS — chỉ notify, KHÔNG mark status='late' (late là derived)
     const { data: overdueTasks } = await supabase
       .from('tasks')

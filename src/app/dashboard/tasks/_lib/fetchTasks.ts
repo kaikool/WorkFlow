@@ -58,6 +58,8 @@ interface CallerProfile {
   id: string;
   role: string | null;
   department_id: string | null;
+  // Code phòng để check phòng đầu mối — bắt buộc để fetch đúng scope
+  department_code?: string | null;
 }
 
 export type AssignContext = 'create-task' | 'create-report' | 'delegate';
@@ -65,32 +67,51 @@ export type AssignContext = 'create-task' | 'create-report' | 'delegate';
 interface AssignOpts {
   context: AssignContext;
   caller: CallerProfile;
-  // Bắt buộc với context = 'delegate' — phòng của task đang được phân công
   taskDepartmentId?: string | null;
 }
 
+const HUB_DEPT_CODES = new Set(['13618', '13602', '13605', '13609', '13603']);
+
+function isHubCaller(caller: CallerProfile): boolean {
+  return !!caller.department_code && HUB_DEPT_CODES.has(caller.department_code);
+}
+
 /**
- * Fetch profiles có thể được giao việc, đã filter sẵn ở DB theo phân quyền:
+ * Fetch profiles có thể giao việc / yêu cầu báo cáo, filter sẵn ở DB:
  *
- *   - Staff: chỉ thấy chính mình (cho mục tự ghi chú).
- *   - Manager: chỉ thấy người TRONG phòng mình, loại admin/director.
- *   - Admin/Director: toàn nhánh, loại admin/director khác + chính mình.
- *   - Delegate context: luôn scope theo phòng của task, loại admin/director.
+ *   create-task (Luồng A):
+ *     - Staff (any, kể cả hub): chỉ chính mình.
+ *     - Manager (any): chỉ phòng mình.
+ *     - Admin/Director: toàn nhánh.
  *
- * Sort sẵn ở DB: Trưởng phòng → Phó phòng → Cán bộ → alphabet.
- * Trả về list KHÔ — KHÔNG fetch toàn bộ profiles rồi filter client.
+ *   create-report (Luồng B):
+ *     - Staff non-hub: empty (UI ẩn tab).
+ *     - Staff hub / Manager hub: toàn nhánh.
+ *     - Manager non-hub: chỉ phòng mình.
+ *     - Admin/Director: toàn nhánh.
+ *
+ *   delegate: theo task.department_id.
+ *
+ * Tất cả: loại admin/director/driver khỏi candidate list.
+ * Sort: TP → PP → Cán bộ → alphabet.
  */
 export async function fetchAssignableProfiles(opts: AssignOpts) {
   const { context, caller, taskDepartmentId } = opts;
+  const isHub = isHubCaller(caller);
 
-  // Staff: tự giao mình
-  if (caller.role === 'staff' && context === 'create-task') {
+  // Staff (any) tạo task: chỉ tự ghi chú
+  if (context === 'create-task' && caller.role === 'staff') {
     const { data } = await supabase
       .from('profiles')
       .select('id, full_name, avatar_url, role, title, department_id, is_department_head, is_active, departments(name, code)')
       .eq('id', caller.id)
       .single();
     return data ? [data] : [];
+  }
+
+  // Staff non-hub không được tạo report
+  if (context === 'create-report' && caller.role === 'staff' && !isHub) {
+    return [];
   }
 
   let q = supabase
@@ -102,14 +123,17 @@ export async function fetchAssignableProfiles(opts: AssignOpts) {
   if (context === 'delegate') {
     if (!taskDepartmentId) return [];
     q = q.eq('department_id', taskDepartmentId);
-  } else if (caller.role === 'manager') {
-    // Manager chỉ giao việc cho phòng mình
+  } else if (context === 'create-task' && caller.role === 'manager') {
+    // Manager (kể cả hub) chỉ giao task trong phòng mình
+    if (!caller.department_id) return [];
+    q = q.eq('department_id', caller.department_id);
+  } else if (context === 'create-report' && caller.role === 'manager' && !isHub) {
+    // Manager non-hub: chỉ yêu cầu báo cáo trong phòng mình
     if (!caller.department_id) return [];
     q = q.eq('department_id', caller.department_id);
   }
-  // admin/director: không thêm filter dept (toàn nhánh)
+  // Còn lại: admin/director hoặc hub → toàn nhánh
 
-  // Sort: TP (head=true) → PP (manager) → NV (staff) → alphabet
   q = q
     .order('is_department_head', { ascending: false, nullsFirst: false })
     .order('role', { ascending: true })

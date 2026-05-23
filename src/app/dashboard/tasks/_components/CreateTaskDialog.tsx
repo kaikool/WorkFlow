@@ -14,6 +14,7 @@ import { Calendar as CalendarPicker } from '@/components/ui/calendar';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import {
   Calendar, Flag, Loader2, Building2, User as UserIcon,
 } from 'lucide-react';
@@ -21,8 +22,9 @@ import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/utils/supabase/client';
+import { fetchCurrentProfile } from '@/lib/fetch-profile';
 import { notifyError, notifyValidation, notifySuccess } from '@/lib/notify';
-import { canAssignTaskToOthers } from '@/lib/permissions';
+import { canAssignTaskToOthers, canRequestReport, getProfileDepartmentCode, isHubDepartment } from '@/lib/permissions';
 import { createTask } from '../_lib/taskActions';
 import { fetchAssignableProfiles, fetchDepartments } from '../_lib/fetchTasks';
 import { PeoplePicker } from '@/components/ui/people-picker';
@@ -64,6 +66,7 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
   const [reportTarget, setReportTarget] = useState<'profile' | 'department'>('department');
   const [selectedAssignees, setSelectedAssignees] = useState<string[]>([]);
   const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
+  const [requiresApproval, setRequiresApproval] = useState(false);
 
   const [loading, setLoading] = useState(false);
 
@@ -71,22 +74,22 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
     if (!isOpen) return;
     setFetching(true);
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { setFetching(false); return; }
-      const { data: p } = await supabase
-        .from('profiles')
-        .select('id, role, department_id, full_name, departments(name, code)')
-        .eq('id', user.id)
-        .single();
+      const p = await fetchCurrentProfile(supabase);
+      if (!p) { setFetching(false); return; }
       setProfile(p);
 
       const list = await fetchAssignableProfiles({
         context: formType === 'task' ? 'create-task' : 'create-report',
-        caller: { id: p?.id, role: p?.role, department_id: p?.department_id },
+        caller: {
+          id: p.id,
+          role: p.role,
+          department_id: p.department_id,
+          department_code: getProfileDepartmentCode(p),
+        },
       });
       setProfiles(list as ProfileItem[]);
 
-      if (p?.role === 'staff') setSelectedAssignees([p.id]);
+      if (p.role === 'staff') setSelectedAssignees([p.id]);
 
       const depts = await fetchDepartments();
       setDepartments(depts);
@@ -95,15 +98,31 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
   }, [isOpen, supabase, formType]);
 
   const isStaff = profile?.role === 'staff';
-  const canAssign = canAssignTaskToOthers(profile);
+  const isHub = isHubDepartment(profile);
+  // Staff (kể cả hub) khoá tự-ghi-chú khi giao "task". Tab Báo cáo mới mở rộng cho hub.
+  const isLockedToSelf = isStaff;
+  const canAssignTask = canAssignTaskToOthers(profile);
+  const canMakeReport = canRequestReport(profile);
+  // Hiện tab "Giao việc": admin/director/manager. Hiện tab "Báo cáo": + staff hub.
+  const showTaskTab = canAssignTask || isStaff; // staff vẫn thấy tab task (self-assign)
+  const showReportTab = canMakeReport;
 
   const resetForm = () => {
     setTitle(''); setDescription('');
-    setSelectedAssignees(isStaff && profile ? [profile.id] : []);
+    setSelectedAssignees(isLockedToSelf && profile ? [profile.id] : []);
     setSelectedDepartments([]);
     setDueDate(new Date());
     setPriority('medium');
+    setRequiresApproval(false);
   };
+
+  // Khi user là staff hub, mở dialog default sang tab "report"
+  useEffect(() => {
+    if (!profile) return;
+    if (isStaff && isHub && formType === 'task' && canMakeReport) {
+      setFormType('report');
+    }
+  }, [profile, isStaff, isHub, formType, canMakeReport]);
 
   const handleClose = () => {
     if (loading) return;
@@ -140,6 +159,7 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
           notifyValidation('Vui lòng chọn ít nhất một phòng ban');
           setLoading(false); return;
         }
+        const batchId = selectedDepartments.length > 1 ? crypto.randomUUID() : null;
         for (const deptId of selectedDepartments) {
           const res = await createTask({
             title: title.trim(),
@@ -149,6 +169,8 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
             due_date: dueDate.toISOString(),
             dept_id: deptId,
             assignee_ids: null,
+            requires_approval: requiresApproval,
+            batch_id: batchId,
           });
           if (!res.ok) { notifyError(res.error, 'Không tạo được báo cáo'); setLoading(false); return; }
         }
@@ -158,6 +180,7 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
           notifyValidation('Vui lòng chọn người nhận');
           setLoading(false); return;
         }
+        const batchId = selectedAssignees.length > 1 ? crypto.randomUUID() : null;
         for (const userId of selectedAssignees) {
           const assignee = profiles.find(x => x.id === userId);
           const deptId = assignee?.department_id ?? profile?.department_id ?? null;
@@ -169,6 +192,8 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
             due_date: dueDate.toISOString(),
             dept_id: deptId,
             assignee_ids: [userId],
+            requires_approval: requiresApproval,
+            batch_id: batchId,
           });
           if (!res.ok) { notifyError(res.error, 'Không tạo được báo cáo'); setLoading(false); return; }
         }
@@ -183,8 +208,6 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
       setLoading(false);
     }
   };
-
-  const showReportTab = !isStaff;
 
   return (
     <Dialog open={isOpen} onOpenChange={(o) => !o && handleClose()}>
@@ -202,7 +225,8 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
 
         <div className="app-dialog-sheet-body">
           <div className="px-[var(--app-page-x)] py-4 group-stack">
-            {showReportTab && (
+            {/* Tabs A/B — chỉ hiện khi có cả 2 lựa chọn */}
+            {showTaskTab && showReportTab && (
               <Tabs value={formType} onValueChange={(v) => setFormType(v as TaskType)}>
                 <TabsList className="grid grid-cols-2 min-h-11">
                   <TabsTrigger value="task" className="rounded-lg font-semibold data-[state=active]:bg-white data-[state=active]:shadow-sm">
@@ -243,7 +267,7 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
             <div className="group-stack">
               <Label className="text-label">{formType === 'task' ? 'Người nhận' : 'Đối tượng nhận'}</Label>
 
-              {formType === 'report' && canAssign && (
+              {formType === 'report' && canMakeReport && (
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
@@ -284,7 +308,7 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
                 <div className="flex items-center justify-center py-6">
                   <Loader2 className="icon-md animate-spin text-slate-400" />
                 </div>
-              ) : isStaff && formType === 'task' ? (
+              ) : isLockedToSelf && formType === 'task' ? (
                 <p className="text-subtitle italic px-1 py-2 bg-slate-50 rounded-xl">
                   Bạn đang tự ghi chú việc cho chính mình.
                 </p>
@@ -351,6 +375,22 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
                 </Select>
               </div>
             </div>
+
+            {formType === 'report' && (
+              <label className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 cursor-pointer">
+                <Switch
+                  checked={requiresApproval}
+                  onCheckedChange={setRequiresApproval}
+                  className="mt-0.5 shrink-0"
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="text-subtitle font-semibold text-slate-900">Cần Trưởng phòng duyệt</p>
+                  <p className="text-meta">
+                    Mặc định tắt — nộp xong là ghi nhận hoàn thành luôn. Bật khi cần kiểm soát chặt.
+                  </p>
+                </div>
+              </label>
+            )}
           </div>
         </div>
 
@@ -369,7 +409,7 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
             className="min-h-11 px-5 rounded-xl font-semibold bg-primary hover:bg-primary/90 text-white"
           >
             {loading ? <Loader2 className="icon-sm animate-spin" /> : (
-              isStaff && formType === 'task' ? 'Tạo công việc' :
+              isLockedToSelf && formType === 'task' ? 'Tạo công việc' :
                 formType === 'task' ? 'Giao việc' : 'Gửi yêu cầu'
             )}
           </Button>

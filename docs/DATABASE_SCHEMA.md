@@ -255,6 +255,8 @@ CREATE TABLE document_handovers (
 
 ### 4.4 Module Công việc
 
+> ⚠️ Đã được redesign trong `migration_tasks_revamp.sql` (drop KPI columns, add status `submitted`/`canceled`). Schema ở đây phản ánh trạng thái sau migration.
+
 #### `tasks`
 
 ```sql
@@ -262,29 +264,44 @@ CREATE TABLE tasks (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     title           TEXT NOT NULL,
     description     TEXT,
-    status          task_status DEFAULT 'todo',
-    priority        task_priority DEFAULT 'medium',
-    task_type       TEXT DEFAULT 'task',         -- 'task' | 'report'
-    progress        INTEGER DEFAULT 0,
-    assignee_id     UUID REFERENCES profiles(id),
+    status          task_status DEFAULT 'todo',     -- todo|doing|submitted|done|canceled
+    priority        task_priority DEFAULT 'medium', -- low|medium|high
+    task_type       TEXT DEFAULT 'task',            -- 'task' | 'report'
+    assignee_id     UUID REFERENCES profiles(id),   -- "primary" assignee (denormalized)
     created_by      UUID REFERENCES profiles(id),
     department_id   UUID REFERENCES departments(id),
     due_date        TIMESTAMPTZ,
-    target_value    BIGINT,
-    current_value   BIGINT DEFAULT 0,
-    unit            TEXT,
-    metadata        JSONB DEFAULT '{}'::jsonb,   -- xem §10
+    metadata        JSONB DEFAULT '{}'::jsonb,
     is_archived     BOOLEAN DEFAULT FALSE,
-    created_at      TIMESTAMPTZ DEFAULT NOW()
+    created_at      TIMESTAMPTZ DEFAULT NOW(),
+    updated_at      TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Constraint (đã drop ở migration_drop_kpi_module.sql):
--- ALTER TABLE tasks ADD CONSTRAINT tasks_task_type_not_kpi
---   CHECK (task_type IS NULL OR task_type <> 'kpi');
+-- Indexes:
+-- idx_tasks_status_due (status, due_date)
+-- idx_tasks_dept_status (department_id, status)
+-- idx_tasks_assignee (assignee_id)
+-- idx_tasks_created_by (created_by)
+-- idx_tasks_updated (updated_at DESC) WHERE is_archived = FALSE
 ```
 
-- **`metadata.assigned_line`** (JSONB array UUID) — multi-assignee theo "dây chuyền". RLS đọc trực tiếp (xem §11).
-- **Trigger `guard_tasks_update`** — chặn `staff` đổi `created_by`, `assignee_id`, `title`, `due_date`, ... (xem §7).
+**LƯU Ý**:
+- 4 cột KPI cũ (`target_value`, `current_value`, `unit`, `progress`) đã **DROP**.
+- Status `late`/`closed` legacy vẫn tồn tại trong enum (Postgres không cho drop value) nhưng UI map về `doing`/`done+archived`.
+- RLS: DENY direct INSERT/UPDATE/DELETE — buộc qua RPC SECURITY DEFINER.
+
+#### `task_assignees` (junction multi-assignee)
+
+```sql
+CREATE TABLE task_assignees (
+    task_id     UUID NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+    user_id     UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+    assigned_at TIMESTAMPTZ DEFAULT NOW(),
+    PRIMARY KEY (task_id, user_id)
+);
+```
+
+Trigger `_auto_cancel_orphaned_task`: khi assignee cuối bị xoá (do user bị xoá → CASCADE) và task chưa done/canceled → tự `canceled`.
 
 #### `task_comments`
 
@@ -292,11 +309,86 @@ CREATE TABLE tasks (
 CREATE TABLE task_comments (
     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     task_id     UUID REFERENCES tasks(id) ON DELETE CASCADE,
-    user_id     UUID REFERENCES profiles(id),
+    user_id     UUID REFERENCES profiles(id) ON DELETE CASCADE,
     content     TEXT NOT NULL,
     created_at  TIMESTAMPTZ DEFAULT NOW()
 );
 ```
+
+Comment có prefix `[Hệ thống]` được render ở Timeline (không phải Comments list).
+
+#### `task_extension_requests` (xin gia hạn deadline)
+
+```sql
+CREATE TABLE task_extension_requests (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    task_id         UUID NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+    requested_by    UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+    reason          TEXT,
+    old_due_date    TIMESTAMPTZ,
+    new_due_date    TIMESTAMPTZ NOT NULL,
+    status          TEXT DEFAULT 'pending' CHECK (status IN ('pending','approved','rejected')),
+    reviewed_by     UUID REFERENCES profiles(id) ON DELETE SET NULL,
+    review_comment  TEXT,
+    decided_at      TIMESTAMPTZ,
+    created_at      TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+#### `task_attachments`
+
+```sql
+CREATE TABLE task_attachments (
+    id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    task_id       UUID NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+    comment_id    UUID REFERENCES task_comments(id) ON DELETE SET NULL,
+    uploaded_by   UUID REFERENCES profiles(id) ON DELETE SET NULL,
+    storage_path  TEXT NOT NULL,
+    filename      TEXT NOT NULL,
+    mime_type     TEXT,
+    size_bytes    INTEGER,
+    is_deleted    BOOLEAN DEFAULT FALSE,
+    created_at    TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+Storage bucket `task-attachments` (PRIVATE) — download qua `createSignedUrl(path, 3600)`. Tối đa 20MB, mime allowlist: `xlsx/xls/docx/doc/pdf/jpg/png`.
+
+#### `task_recurring_templates`
+
+```sql
+CREATE TABLE task_recurring_templates (
+    id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title                 TEXT NOT NULL,
+    description           TEXT,
+    task_type             TEXT NOT NULL DEFAULT 'report',
+    priority              task_priority DEFAULT 'medium',
+    target_department_ids UUID[] DEFAULT '{}',
+    target_user_ids       UUID[] DEFAULT '{}',
+    schedule_kind         TEXT CHECK (schedule_kind IN ('weekly','monthly')),
+    weekly_dow            SMALLINT,        -- 0=Sunday..6=Saturday
+    weekly_time           TIME,
+    monthly_dom           SMALLINT,        -- 1..31
+    monthly_time          TIME,
+    timezone              TEXT DEFAULT 'Asia/Ho_Chi_Minh',
+    due_days_after_fire   INT DEFAULT 7,
+    created_by            UUID REFERENCES profiles(id),
+    is_active             BOOLEAN DEFAULT TRUE,
+    last_fired_at         TIMESTAMPTZ,
+    next_run_at           TIMESTAMPTZ,
+    created_at            TIMESTAMPTZ DEFAULT NOW(),
+    updated_at            TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+Engine fire: `recurring_fire_due()` quét `WHERE is_active AND next_run_at <= now()` → sinh task + cập `next_run_at`. Schedule qua **pg_cron** (`*/15 * * * *`) nếu enabled, fallback Vercel cron `/api/cron/notifications` daily 8h ICT.
+
+#### Vòng đời migration Tasks
+
+1. `migration_tasks_revamp.sql` — schema cốt lõi + 9 RPC (P0).
+2. `migration_tasks_attachments.sql` — bảng attachments + RPC + Storage policies (P2).
+3. `migration_tasks_recurring.sql` — recurring + pg_cron schedule (P3).
+4. `migration_tasks_analytics.sql` — RPC `tasks_analytics` (P4).
 
 ### 4.5 Module Lịch trình
 

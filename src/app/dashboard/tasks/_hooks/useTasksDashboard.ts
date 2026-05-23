@@ -1,5 +1,3 @@
-// Hook chính module Tasks — gọi RPC tasks_dashboard 1 lần, subscribe realtime, debounce refetch.
-// Pattern theo handover/_hooks/useHandover.ts + schedule/_hooks/useSchedule.ts.
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -17,15 +15,10 @@ export interface UseTasksDashboardOptions {
   enabled?: boolean;
 }
 
+const PAGE_SIZE = 50;
 const EMPTY_COUNTS: DashboardCounts = {
-  todo: 0,
-  doing: 0,
-  submitted: 0,
-  done: 0,
-  canceled: 0,
-  overdue: 0,
-  awaiting_approval: 0,
-  extensions_pending: 0,
+  todo: 0, doing: 0, submitted: 0, done: 0, canceled: 0,
+  overdue: 0, awaiting_approval: 0, extensions_pending: 0,
 };
 
 export function useTasksDashboard(opts: UseTasksDashboardOptions = {}) {
@@ -34,50 +27,71 @@ export function useTasksDashboard(opts: UseTasksDashboardOptions = {}) {
   const enabled = opts.enabled ?? true;
 
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [counts, setCounts] = useState<DashboardCounts>(EMPTY_COUNTS);
   const [items, setItems] = useState<TaskListItem[]>([]);
   const [resourceView, setResourceView] = useState<ResourceViewItem[]>([]);
   const [role, setRole] = useState<string>('staff');
+  const [hasMore, setHasMore] = useState(false);
 
   const refetchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const offsetRef = useRef(0);
 
-  const refetch = useCallback(async () => {
+  const fetchPage = useCallback(async (reset: boolean) => {
     if (!enabled) return;
+    const offset = reset ? 0 : offsetRef.current;
     const { data, error } = await supabase.rpc('tasks_dashboard', {
       p_scope: scope,
       p_filter: {} as any,
+      p_limit: PAGE_SIZE,
+      p_offset: offset,
     } as any);
-    if (error) {
-      console.error('tasks_dashboard error:', error);
-      return;
-    }
-    const res = data as unknown as TasksDashboardResult;
+    if (error) { console.error('tasks_dashboard error:', error); return; }
+    const res = data as unknown as TasksDashboardResult & { has_more: boolean };
     setCounts(res?.counts ?? EMPTY_COUNTS);
-    setItems((res?.lists ?? []) as TaskListItem[]);
+    const newItems = (res?.lists ?? []) as TaskListItem[];
+    if (reset) {
+      setItems(newItems);
+    } else {
+      setItems(prev => {
+        const seen = new Set(prev.map(p => p.id));
+        return [...prev, ...newItems.filter(n => !seen.has(n.id))];
+      });
+    }
     setResourceView((res?.resource_view ?? []) as ResourceViewItem[]);
     setRole(res?.role ?? 'staff');
+    setHasMore(!!res?.has_more);
+    offsetRef.current = offset + PAGE_SIZE;
   }, [supabase, scope, enabled]);
+
+  const refetch = useCallback(async () => {
+    await fetchPage(true);
+  }, [fetchPage]);
+
+  const loadMore = useCallback(async () => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    await fetchPage(false);
+    setLoadingMore(false);
+  }, [fetchPage, loadingMore, hasMore]);
 
   const scheduleRefetch = useCallback(() => {
     if (refetchTimer.current) clearTimeout(refetchTimer.current);
     refetchTimer.current = setTimeout(refetch, 300);
   }, [refetch]);
 
-  // Initial load
   useEffect(() => {
     if (!enabled) return;
     let active = true;
     (async () => {
       setLoading(true);
-      await refetch();
+      offsetRef.current = 0;
+      await fetchPage(true);
       if (active) setLoading(false);
     })();
-    return () => {
-      active = false;
-    };
-  }, [refetch, enabled]);
+    return () => { active = false; };
+  }, [fetchPage, enabled]);
 
-  // Realtime subscribe — channel chuẩn `tasks_realtime_sync`
   useEffect(() => {
     if (!enabled) return;
     const channel = supabase
@@ -95,12 +109,15 @@ export function useTasksDashboard(opts: UseTasksDashboardOptions = {}) {
 
   return {
     loading,
+    loadingMore,
     counts,
     items,
     setItems,
     resourceView,
     role,
     refetch,
+    loadMore,
+    hasMore,
     scope,
   };
 }
