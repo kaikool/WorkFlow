@@ -543,3 +543,82 @@ main > div[class*="max-w-5xl"][class*="mx-auto"] {
   padding-right: var(--app-page-x);
   padding-bottom: 5rem;
 }
+
+/* ==============================================================
+   ĐỒNG BỘ AVATAR — Snap mọi kích thước về 3 tier (32 / 40 / 44).
+   Quy ước: tất cả Avatar shadcn (rounded-full + class h-X w-X)
+   sẽ bị ép về 1 trong 3 size duy nhất, dù code cũ pass h-5/h-7/h-9...
+   ============================================================== */
+.rounded-full.h-5,  .rounded-full.h-6,  .rounded-full.h-7,  .rounded-full.h-8 { height: 32px !important; }
+.rounded-full.w-5,  .rounded-full.w-6,  .rounded-full.w-7,  .rounded-full.w-8 { width: 32px !important; }
+
+.rounded-full.h-9,  .rounded-full.h-10                                         { height: 40px !important; }
+.rounded-full.w-9,  .rounded-full.w-10                                         { width: 40px !important; }
+
+.rounded-full.h-11, .rounded-full.h-12, .rounded-full.h-14, .rounded-full.h-16 { height: 44px !important; }
+.rounded-full.w-11, .rounded-full.w-12, .rounded-full.w-14, .rounded-full.w-16 { width: 44px !important; }
+
+/* Class tokens cũng cùng giá trị */
+.avatar-sm { width: 32px !important; height: 32px !important; }
+.avatar-md { width: 40px !important; height: 40px !important; }
+.avatar-lg { width: 44px !important; height: 44px !important; }
+
+/* ==============================================================
+   ĐỒNG BỘ ICON LUCIDE — Snap mọi kích thước về 3 tier (14 / 16 / 20).
+   Lucide SVG có class "lucide" → target trực tiếp.
+   Quy ước: h-3/h-3.5 → 14px, h-4 → 16px, h-5/h-6 → 20px.
+   Các icon vượt cỡ (h-8+) là minh hoạ/decoration, giữ nguyên.
+   ============================================================== */
+svg.lucide.h-3,
+svg.lucide.h-3\.5  { height: 14px !important; width: 14px !important; }
+svg.lucide.w-3,
+svg.lucide.w-3\.5  { width: 14px !important; height: 14px !important; }
+
+svg.lucide.h-4     { height: 16px !important; width: 16px !important; }
+svg.lucide.w-4     { width: 16px !important; height: 16px !important; }
+
+svg.lucide.h-5,
+svg.lucide.h-6     { height: 20px !important; width: 20px !important; }
+svg.lucide.w-5,
+svg.lucide.w-6     { width: 20px !important; height: 20px !important; }
+
+/* ==============================================================
+   ĐỒNG BỘ STATUS COLOR — Tập trung 5 palette duy nhất
+   Mã color rời rạc (bg-emerald-50/red-50/amber-50/blue-50/slate-50)
+   được "khoá" về cùng giá trị HSL để các trạng thái cùng ý nghĩa
+   không lệch tông giữa các trang.
+   ============================================================== */
+
+/* SUCCESS — emerald (done, approved, completed) */
+.bg-emerald-50  { background-color: hsl(var(--color-success-bg)) !important; }
+.text-emerald-600,
+.text-emerald-700 { color: hsl(var(--color-success-text)) !important; }
+.border-emerald-100,
+.border-emerald-200 { border-color: hsl(152 55% 88%) !important; }
+
+/* WARNING — amber (pending, focal KPI, sự cố nhẹ) */
+.bg-amber-50    { background-color: hsl(var(--color-warning-bg)) !important; }
+.text-amber-600,
+.text-amber-700 { color: hsl(var(--color-warning-text)) !important; }
+.border-amber-100,
+.border-amber-200 { border-color: hsl(48 96% 82%) !important; }
+
+/* DANGER — red (rejected, late, sự cố nặng, destructive) */
+.bg-red-50      { background-color: hsl(var(--color-danger-bg)) !important; }
+.text-red-600,
+.text-red-700 { color: hsl(var(--color-danger-text)) !important; }
+.border-red-100,
+.border-red-200 { border-color: hsl(4 86% 88%) !important; }
+
+/* INFO — blue (doing, in_progress, neutral primary) */
+.bg-blue-50     { background-color: hsl(var(--color-info-bg)) !important; }
+.text-blue-600,
+.text-blue-700 { color: hsl(var(--color-info-text)) !important; }
+.border-blue-100,
+.border-blue-200 { border-color: hsl(221 83% 88%) !important; }
+
+/* NEUTRAL — slate (todo, default, archive) */
+.bg-slate-50    { background-color: rgb(248 250 252) !important; }
+.text-slate-600 { color: hsl(var(--color-neutral-text)) !important; }
+.border-slate-100,
+.border-slate-200 { border-color: rgb(226 232 240) !important; }
