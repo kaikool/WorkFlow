@@ -65,3 +65,21 @@ export function canApproveLeave(profile: any, leave?: any): boolean {
 
   return false;
 }
+
+// Module Luân chuyển & Truy vết Hồ sơ vật lý ---------------------------------
+
+// Chỉ admin được tạo/sửa/xoá nhóm hồ sơ (đi kèm cấu hình SLA)
+export function canManageDocumentCategories(profile: any): boolean {
+  return profile?.role === 'admin';
+}
+
+// BGĐ + admin được xem toàn bộ hồ sơ chi nhánh (read-only truy vết)
+export function canViewAllDocuments(profile: any): boolean {
+  return profile?.role === 'admin' || profile?.role === 'director';
+}
+
+// Lái xe có workspace riêng, không tham gia luồng hồ sơ giấy
+export function canCreateDocument(profile: any): boolean {
+  if (!profile) return false;
+  return profile.role !== 'driver';
+}

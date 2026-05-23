@@ -10,6 +10,7 @@ import {
  Target,
  LogOut,
  CalendarDays,
+ FolderOpen,
  Search
 } from "lucide-react";
 import { cn, getProfileDisplayTitle } from "@/lib/utils";
@@ -69,6 +70,7 @@ function TopNavActionsContent() {
     '/dashboard/team': { placeholder: 'Tìm kiếm cán bộ, phòng ban...' },
     '/dashboard/tasks': { placeholder: 'Tìm kiếm công việc, báo cáo...', hasStatusFilter: true },
     '/dashboard/kpi': { placeholder: 'Tìm kiếm kế hoạch, mục tiêu...' },
+    '/dashboard/handover': { placeholder: 'Tìm mã hồ sơ, tiêu đề, khách hàng...', hasStatusFilter: true },
     '/dashboard/admin': { placeholder: 'Tìm kiếm tài khoản, dữ liệu...' },
     '/dashboard/settings/users': { placeholder: 'Tìm kiếm người dùng...' },
   };
@@ -299,6 +301,7 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
    { name: 'Công việc', href: '/dashboard/tasks', icon: ListTodo, hideFor: ['driver', 'secretary', 'hr_officer'] },
    { name: 'Kế hoạch', href: '/dashboard/kpi', icon: Target, hideFor: ['driver', 'hr_officer', 'secretary'] },
    { name: 'Lịch trình', href: '/dashboard/schedule', icon: CalendarDays },
+   { name: 'Hồ sơ', href: '/dashboard/handover', icon: FolderOpen, hideFor: ['driver'] },
    { name: 'Cán bộ', href: '/dashboard/team', icon: Users, hideFor: ['driver', 'secretary', 'staff'] },
   ].filter(item => !(item.hideFor || []).includes(profile?.role));
 

@@ -1,0 +1,901 @@
+# TÀI LIỆU QUY CHUẨN KIẾN TRÚC & CODE (ARCHITECTURE.md)
+
+> **Mục đích:** Tài liệu này là **Single Source of Truth** cho mọi developer và AI khi phát triển tính năng mới trong dự án **projectFlow — WorkFlow Portal**. Mọi quy chuẩn về kiến trúc, cấu trúc thư mục, đặt tên, fetch dữ liệu, xử lý lỗi, và quy trình thêm module mới đều quy định ở đây.
+>
+> **Quan hệ với tài liệu khác:**
+> - `docs/TECHNICAL_RULES.md` — quy tắc **UI/UX (Apple HIG)**, **RLS database**, **business logic**. Đọc trước.
+> - `ARCHITECTURE.md` (file này) — quy chuẩn **code, kiến trúc, naming, workflow**. Bắt buộc tuân thủ song song.
+>
+> **Nguyên tắc tối thượng:** Tính đồng bộ > tính sáng tạo cá nhân. Khi không chắc, copy pattern từ module mẫu **`/dashboard/schedule`** và **`/dashboard/handover`** — đây là 2 module được xây đúng chuẩn nhất.
+
+---
+
+## 1. TỔNG QUAN KIẾN TRÚC (ARCHITECTURE OVERVIEW)
+
+### 1.1 Tech stack
+
+| Layer | Công nghệ | Phiên bản | Ghi chú |
+|------|-----------|----------|---------|
+| Framework | **Next.js** | 15.5.9 | **App Router**, không dùng Pages Router |
+| Language | TypeScript | strict mode | Không dùng `any` ở public API |
+| UI lib | **shadcn/ui** (Radix primitives) | — | 38 primitive trong `src/components/ui/` |
+| Styling | Tailwind CSS + custom utilities | v3 | Config: `tailwind.config.ts` (file `tailwing.config.ts` là **typo cũ — bỏ qua**) |
+| Icons | `lucide-react` | — | Chuẩn duy nhất, cấm Material/FontAwesome |
+| Date | `date-fns` | + locale `vi` | Cấm dayjs/moment |
+| Form | `react-hook-form` + `zod` | — | **Có sẵn nhưng module hiện tại chưa dùng**. Khuyến nghị áp dụng cho form > 4 trường (xem §5.4) |
+| State | React `useState` / `useReducer` | — | **Không** dùng zustand/jotai/redux. Global state qua RSC props + Realtime |
+| HTTP | Supabase JS client | `@supabase/ssr` + `@supabase/supabase-js` | **Không** dùng axios/fetch/swr/tanstack-query |
+| Image | `browser-image-compression` | 2.0.2 | Client-side compress trước khi upload |
+| Charts | `recharts` (qua shadcn chart) | — | |
+| Backend | **Supabase** | Postgres + Auth + Storage + Edge Functions | |
+| Deploy | Vercel | — | API route `/api/cron/notifications` chạy daily 8:00 |
+
+### 1.2 Luồng dữ liệu cơ bản
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  Browser (Client)                                                   │
+│  ┌──────────────────────────────────────────────────────────────┐   │
+│  │ React Server Component (RSC)                                 │   │
+│  │  └─ src/app/dashboard/layout.tsx                             │   │
+│  │     └─ getProfile() ─────► createClient(cookies) ──► Supabase│   │
+│  │                                                         (SSR)│   │
+│  │  └─ Pass `profile` props to:                                 │   │
+│  └────────┬─────────────────────────────────────────────────────┘   │
+│           ▼                                                          │
+│  ┌──────────────────────────────────────────────────────────────┐   │
+│  │ Client Component ('use client')                              │   │
+│  │  └─ useXxx() hook (state + realtime)                         │   │
+│  │     └─ createClient() ───► browser client (singleton)        │   │
+│  │     │                                                         │   │
+│  │     ├─ .from(...).select(...) ───────► Supabase REST + RLS   │   │
+│  │     ├─ .rpc(...) ────────────────────► Supabase PL/pgSQL     │   │
+│  │     └─ .channel(...).subscribe() ────► Supabase Realtime (WS)│   │
+│  └──────────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────┐
+│  Middleware (src/middleware.ts)                                     │
+│   ├─ Refresh session                                                │
+│   ├─ Redirect chưa login → /login                                   │
+│   └─ Redirect is_active=false → /login?pending=1                    │
+└─────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────┐
+│  Edge Functions (Deno) — chỉ cho job nặng/định kỳ                   │
+│   ├─ push-notification (trigger qua DB webhook)                     │
+│   └─ cleanup-document-images (cron daily 02:00 ICT)                 │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+**3 quy tắc luồng dữ liệu:**
+
+1. **Chỉ RSC (Server Component) mới fetch session/profile ban đầu.** Sau đó pass props xuống client. Lý do: tránh flicker, tránh duplicate session check.
+2. **Mọi mutation đi từ Client Component qua Supabase JS client.** Không dùng Server Actions. Validation phía DB qua RLS + RPC `SECURITY DEFINER`.
+3. **Realtime là kênh đồng bộ chính.** Mỗi page module subscribe channel của riêng nó, refetch toàn bộ list khi có event (debounced 250–600ms).
+
+---
+
+## 2. CẤU TRÚC THƯ MỤC (FOLDER STRUCTURE)
+
+```
+WorkFlow/
+├── docs/                                 # Tài liệu (TECHNICAL_RULES, ARCHITECTURE)
+├── public/                               # Static assets (logo, icons, manifest)
+├── supabase/
+│   ├── config.toml                       # Local dev config
+│   ├── migration_*.sql                   # Migration flat-files, KHÔNG dùng folder `migrations/`
+│   └── functions/                        # Deno edge functions
+│       ├── push-notification/
+│       └── cleanup-document-images/
+├── design-system/                        # Mockup, reference (không build vào app)
+├── src/
+│   ├── middleware.ts                     # Session + guard + redirect
+│   ├── app/                              # Next.js App Router
+│   │   ├── layout.tsx                    # Root: metadata, Toaster, PWAHandler
+│   │   ├── globals.css                   # 765 dòng — design tokens + utilities (xem §2.5)
+│   │   ├── page.tsx                      # Redirect '/' → '/login'
+│   │   ├── not-found.tsx
+│   │   ├── manifest.ts                   # PWA manifest
+│   │   ├── icon.png
+│   │   ├── login/                        # Public — không guard
+│   │   ├── register/
+│   │   ├── auth/                         # OAuth callback bounce
+│   │   ├── api/
+│   │   │   └── cron/notifications/       # Vercel cron daily 8h
+│   │   └── dashboard/                    # Protected (qua middleware + dashboard/layout)
+│   │       ├── layout.tsx                # RSC: getProfile() + DashboardLayout wrap
+│   │       ├── page.tsx                  # Trang dashboard chính
+│   │       ├── _components/              # Component dùng chung dashboard root
+│   │       ├── tasks/                    # MODULE
+│   │       ├── kpi/
+│   │       ├── schedule/                 # ⭐ MẪU CHUẨN
+│   │       ├── handover/                 # ⭐ MẪU CHUẨN
+│   │       ├── team/
+│   │       ├── profile/
+│   │       ├── admin/
+│   │       └── settings/
+│   ├── components/
+│   │   ├── ui/                           # ⛔ KHÔNG SỬA — shadcn primitives (38 file)
+│   │   ├── layout/                       # Layout shell: sidebar, bottom-nav, PageHeader
+│   │   ├── notifications-dropdown.tsx    # Shared component
+│   │   ├── pwa-notification-handler.tsx
+│   │   └── ...                           # Shared component dùng > 1 module
+│   ├── hooks/                            # Hook dùng toàn cục
+│   │   ├── use-toast.ts
+│   │   ├── use-mobile.tsx
+│   │   └── use-push-subscription.ts
+│   ├── lib/                              # Pure helper, không phụ thuộc React
+│   │   ├── utils.ts                      # cn(), sortProfilesByHierarchy(), ...
+│   │   ├── permissions.ts                # canXxx() helpers (xem §6.4)
+│   │   └── auth-utils.ts                 # getProfile() — RSC only
+│   └── utils/
+│       └── supabase/
+│           ├── client.ts                 # Browser client (singleton)
+│           └── server.ts                 # Server client (RSC + middleware)
+├── tailwind.config.ts                    # ⭐ CHUẨN — chỉ sửa file này
+├── tailwing.config.ts                    # ⛔ FILE TYPO CŨ — không động vào, sẽ dọn sau
+├── tsconfig.json
+├── next.config.ts
+├── package.json
+├── schema.sql                            # Snapshot toàn bộ DB (truth source)
+└── vercel.json                           # Cron config
+```
+
+### 2.1 Quy định nội dung từng thư mục
+
+| Folder | Được chứa | Cấm chứa |
+|--------|-----------|----------|
+| `src/app/[route]/page.tsx` | Trang route (mặc định Server Component, thêm `'use client'` nếu cần interactive) | Logic nghiệp vụ phức tạp (>200 dòng) — tách ra `_components` + `_hooks` |
+| `src/app/[route]/layout.tsx` | Server Component bọc route, fetch session ban đầu | UI lớn — chuyển sang `src/components/layout/` |
+| `src/app/dashboard/[module]/_components/` | Component chỉ dùng trong module này | Component dùng chéo module — đưa lên `src/components/` |
+| `src/app/dashboard/[module]/_hooks/` | Hook `useXxx` tập trung state của module | Hook utility chung (toast, mobile…) — đặt ở `src/hooks/` |
+| `src/app/dashboard/[module]/_lib/` | Pure function: fetch, action, constants, types, helpers | Component, hook |
+| `src/components/ui/` | shadcn primitives, **không sửa** trừ khi thêm primitive shadcn mới | Component nghiệp vụ |
+| `src/components/layout/` | Sidebar, BottomNav, PageHeader, AppShell | Component không liên quan layout |
+| `src/components/` (root) | Component dùng chéo ≥2 module | Component chỉ dùng 1 module — đẩy vào module |
+| `src/hooks/` | Hook dùng toàn cục (useToast, useMobile, ...) | Hook chỉ phục vụ 1 module |
+| `src/lib/` | Pure JS/TS helper (không import React, không có hook) | Component, hook, side-effect |
+| `src/utils/supabase/` | Chỉ 2 file — `client.ts` và `server.ts` | Không thêm file khác vào đây |
+| `supabase/` | Migration `.sql` flat-file, edge functions | Code app, generated types |
+
+### 2.2 Tiền tố `_` trong App Router
+
+**Quy ước Next.js:** folder bắt đầu bằng `_` (như `_components`, `_hooks`, `_lib`) được Next.js coi là **private folder**, không tạo route. Đây là cách dự án **gom code module-scoped** vào cùng route folder mà không "rò rỉ" thành URL.
+
+### 2.3 Quy tắc giới hạn
+
+- **Mỗi file `.tsx` hoặc `.ts` ≤ 500 dòng vật lý.** Vượt → tách subcomponent (xem `_components` con).
+- **Mỗi component file = 1 export default + tối đa 2 sub-component nội bộ.** Sub-component dùng > 1 chỗ → tách file riêng.
+
+### 2.4 Bất đồng bộ hiện tại & chuẩn duy nhất
+
+| Module | Có `_components` | Có `_hooks` | Có `_lib` | Trạng thái |
+|--------|:---:|:---:|:---:|---|
+| `schedule` | ✅ | ✅ | ✅ | ⭐ Chuẩn mẫu |
+| `handover` | ✅ | ✅ | ✅ | ⭐ Chuẩn mẫu |
+| `tasks` | ✅ | ❌ | ❌ | Đang lệch — sẽ refactor khi đụng |
+| `kpi` | ❌ | ✅ | ❌ | Đang lệch — `page.tsx` 468 dòng quá to |
+| `team` | ❌ | ❌ | ❌ | Single-file module, chấp nhận nếu < 300 dòng |
+| `admin` | ❌ | ✅ | ❌ | Đang lệch |
+
+**Chuẩn duy nhất từ nay:** Mọi module mới **bắt buộc** có đủ 3 folder `_components`, `_hooks`, `_lib` ngay từ đầu, **kể cả khi ban đầu chỉ có 1-2 file**. Code tăng trưởng sẽ luôn có chỗ đặt đúng.
+
+### 2.5 `globals.css` — design tokens (765 dòng)
+
+**Bắt buộc dùng các utility/token sau thay vì hardcode:**
+
+| Nhóm token | Class / Variable | Dùng cho |
+|-----------|------------------|----------|
+| Font scale | `--app-font-{large-title,title-1,title-2,title-3,headline,body,callout,subhead,footnote,caption}` | Cỡ chữ responsive |
+| Page margin | `--app-page-x` (16px mobile / 24px tablet / 24px desktop) | `className="px-[var(--app-page-x)]"` |
+| Touch target | `--app-touch-target` (44px) | min-height button/input |
+| Card padding | `--app-card-padding` | Padding card chuẩn |
+| Radius | `--app-control-radius` (12px), `--app-card-radius` (16-18px), `24px` cho Dialog | |
+| Heading | `.heading-page` / `.heading-section` / `.heading-card` | Thay `text-2xl font-bold` thủ công |
+| Text | `.text-subtitle` / `.text-label` / `.text-meta` | |
+| Stack | `.section-stack` (32px) / `.group-stack` (24px) / `.item-stack` (12px) / `.tight-stack` (8px) | Gap dọc |
+| Icon size | `.icon-sm` (14px) / `.icon-md` (16px) / `.icon-lg` (20px) | |
+| Avatar size | `.avatar-sm` (32px) / `.avatar-md` (40px) / `.avatar-lg` (44px) | |
+| Card | `.premium-card` / `.glass-card` / `.card-base` | |
+| Status badge | `.status-{success,warning,danger,info,neutral,focal}-bg` | Tô màu theo nghĩa nghiệp vụ |
+| Status badge (legacy) | `.badge-{success,warning,danger,info,neutral,kpi,award}` | |
+| Safe area | `.pt-safe` / `.pb-safe` / `.top-safe` / `.bottom-safe` / `.bottom-safe-fab` / `.pb-mobile-nav` | iOS notch + home indicator |
+| Dialog sheet | `.app-dialog-sheet` + variant `--lg`/`--xl`/`--2xl` + `app-dialog-sheet-{header,body,footer}` | Tất cả popup form/detail |
+| Page wrapper | `.page-container` | Wrap mọi dashboard page |
+
+**Cấm hardcode:** `text-2xl font-bold`, `p-6` cho card, `rounded-[24px]` cho dialog, `pt-12` cho safe area, `bg-emerald-50` cho status — dùng token tương ứng ở trên.
+
+---
+
+## 3. QUY CHUẨN ĐẶT TÊN (NAMING CONVENTIONS)
+
+### 3.1 File & Folder
+
+| Loại | Convention | Ví dụ |
+|------|-----------|-------|
+| Folder route (App Router) | `kebab-case` | `dashboard/handover/`, `tasks/[id]/` |
+| Folder private (`_xxx`) | `_kebab-case` | `_components/`, `_hooks/`, `_lib/` |
+| Component file | `PascalCase.tsx` | `CreateScheduleDialog.tsx`, `DocumentCard.tsx` |
+| Hook file | `camelCase.ts` bắt đầu `use` | `useSchedule.ts`, `useHandover.ts` |
+| Helper / action / fetch file | `camelCase.ts` | `fetchHandover.ts`, `transferActions.ts`, `compressImage.ts` |
+| Constants file | `constants.ts` (lowercase) | `_lib/constants.ts` |
+| Types file | `types.ts` (lowercase) | `_lib/types.ts` |
+| Test file | `*.test.ts` / `*.test.tsx` | (dự án chưa có test) |
+| SQL migration | `migration_<feature>.sql` | `migration_handover_module.sql` |
+| shadcn primitive (ngoại lệ) | `kebab-case.tsx` | `confirm-dialog.tsx`, `alert-dialog.tsx` |
+
+> **Ngoại lệ shadcn:** Folder `src/components/ui/` giữ nguyên `kebab-case` theo convention shadcn-cli. **Không đổi**.
+
+### 3.2 Identifier (code)
+
+| Loại | Convention | Ví dụ |
+|------|-----------|-------|
+| Component (function/class) | `PascalCase` | `function CreateScheduleDialog() {}` |
+| Hook | `camelCase` bắt đầu `use` | `useHandover()`, `useToast()` |
+| Function thường | `camelCase` | `fetchAllDocuments()`, `compressDocumentImage()` |
+| Permission helper | `camelCase` bắt đầu `can` | `canApproveLeave()`, `canViewAllDocuments()` |
+| Variable | `camelCase` | `selectedDocId`, `isCreateOpen` |
+| Boolean | `camelCase` bắt đầu `is/has/can/should` | `isLoading`, `hasPermission`, `canEdit` |
+| Constants (top-level, không đổi runtime) | `UPPER_SNAKE_CASE` | `MAX_IMAGES_PER_DOCUMENT`, `SLA_WARN_THRESHOLD` |
+| Enum-like object (status meta) | `UPPER_SNAKE_CASE` cho object, **string literal value** cho key | `DOCUMENT_STATUS_META.PENDING_RECEIPT` |
+| Interface / Type alias | `PascalCase`, không dùng prefix `I` | `interface DocumentRow {}`, `type DeskTab = ...` |
+| Generic | 1 chữ in hoa hoặc `PascalCase` mô tả | `<T>`, `<TPayload>` |
+| RPC / SQL function | `snake_case` (matching Postgres) | `transfer_document()`, `acknowledge_document()` |
+| Bảng + cột Postgres | `snake_case` | `document_handovers`, `current_assignee_id` |
+| Enum DB | `snake_case` enum type, **UPPER_CASE** value | `document_status: 'PENDING_RECEIPT'` |
+
+### 3.3 Quy ước đặt tên ngữ nghĩa
+
+- **Dialog/Popup component**: tên kết thúc `Dialog` → `CreateScheduleDialog`, `TransferDialog`.
+- **Card / list item**: kết thúc `Card` → `DocumentCard`, `ScheduleCard`.
+- **Hook tập trung state module**: `use<ModuleName>` (singular) → `useSchedule`, `useHandover`.
+- **Hook detail/sub-state**: `use<Entity>Detail` → `useScheduleDetail`, `useDocumentDetail`.
+- **Fetch helper**: bắt đầu `fetch` → `fetchScheduleData`, `fetchAllDocuments`.
+- **Action helper** (gọi RPC): bắt đầu động từ → `transferDocument`, `acknowledgeDocument`, `completeDocument`.
+- **Realtime channel name**: `<module>_realtime_sync` cho list page, `<entity>_<id>` cho detail page.
+
+### 3.4 Comment & message ngôn ngữ
+
+- **Toàn bộ comment trong code: Tiếng Việt rõ nghĩa.** Cấm tiếng Anh.
+- **Toast / error message hiển thị user: Tiếng Việt.** Không tiếng Anh kể cả message từ error.
+- **Tên biến / function: Tiếng Anh** (vì lý do tooling, syntax highlight, autocomplete).
+
+---
+
+## 4. QUY TẮC PHÁT TRIỂN COMPONENT (NEXT.JS / REACT)
+
+### 4.1 Server Component vs Client Component
+
+**Quy tắc duy nhất:** Mặc định **Server Component**. Chỉ thêm `'use client'` khi cần một trong:
+- React hook (`useState`, `useEffect`, `useMemo`, `useRef`, ...)
+- Event handler (`onClick`, `onChange`, `onSubmit`)
+- Browser API (`window`, `document`, `localStorage`)
+- Subscribe Realtime
+- Form interactive
+
+**Phân bố hiện tại của dự án** (xác nhận qua khảo sát):
+- **19 Server Component** — chủ yếu `layout.tsx`, `not-found.tsx`, `page.tsx` đơn giản
+- **98 Client Component** — pages có interaction, mọi component trong `_components/`
+
+**Server Component mẫu** — `src/app/dashboard/layout.tsx`:
+```tsx
+// Không có 'use client'
+import { redirect } from 'next/navigation'
+import { getProfile } from '@/lib/auth-utils'
+import { DashboardLayout } from '@/components/layout/dashboard-layout'
+
+export default async function Layout({ children }: { children: React.ReactNode }) {
+  const profile = await getProfile()
+  if (!profile) redirect('/login')
+  return <DashboardLayout profile={profile}>{children}</DashboardLayout>
+}
+```
+
+**Client Component mẫu** — `src/app/dashboard/handover/page.tsx`:
+```tsx
+"use client";
+import { useHandover } from "./_hooks/useHandover";
+
+export default function HandoverPage() {
+  const state = useHandover();
+  // ...
+}
+```
+
+### 4.2 Smart vs Dumb Component
+
+| Loại | Trách nhiệm | Đặt ở đâu | Có `'use client'` |
+|------|-------------|-----------|---|
+| **Smart** (container) | Quản state, gọi action, subscribe realtime | `page.tsx`, `_hooks/use*.ts` | Yes |
+| **Dumb** (presentational) | Render UI thuần dựa trên props | `_components/<Name>.tsx`, `src/components/` | Yes nếu có handler/animation |
+
+**Quy tắc:** Smart component **giữ state** + **truyền callback xuống**. Dumb component **không tự fetch**, không tự subscribe realtime, chỉ nhận props + emit event.
+
+Ví dụ chuẩn — `handover/page.tsx` (smart) + `_components/DocumentCard.tsx` (dumb):
+
+```tsx
+// Smart: page.tsx
+const { documents, setSelectedDocId } = useHandover();
+return documents.map(doc => (
+  <DocumentCard
+    key={doc.id}
+    document={doc}
+    onClick={() => setSelectedDocId(doc.id)}
+  />
+));
+
+// Dumb: DocumentCard.tsx — nhận props, emit onClick
+export default function DocumentCard({ document, onClick }: Props) {
+  return <button onClick={onClick}>...</button>;
+}
+```
+
+### 4.3 Tái sử dụng UI component
+
+**Cây quyết định khi cần component mới:**
+
+```
+Component này có là shadcn primitive cần thiết?
+├─ YES → cài qua shadcn CLI vào `src/components/ui/`. Không tự viết.
+└─ NO →
+   Component dùng ở > 1 module dashboard?
+   ├─ YES → đặt ở `src/components/<group>/<Name>.tsx`
+   └─ NO → đặt trong module: `src/app/dashboard/<module>/_components/<Name>.tsx`
+```
+
+**Đặc biệt:** PageHeader (`src/components/layout/PageHeader.tsx`) là **chuẩn duy nhất** cho header mọi trang dashboard:
+
+```tsx
+<PageHeader
+  title="Hồ sơ vật lý"
+  description="Sổ giao nhận điện tử — theo dõi luồng luân chuyển hồ sơ bản cứng"
+  action={<Button onClick={...}><Plus className="w-5 h-5 mr-2" /> Tạo hồ sơ</Button>}
+/>
+```
+
+**Cấm tự viết heading + description thủ công** — luôn qua `PageHeader`.
+
+### 4.4 Popup / Dialog — chuẩn duy nhất
+
+**Mọi popup form/detail toàn màn hình bắt buộc dùng pattern `app-dialog-sheet`** (định nghĩa trong `globals.css`):
+
+```tsx
+<Dialog open={isOpen} onOpenChange={setIsOpen}>
+  <DialogContent className="app-dialog-sheet app-dialog-sheet--lg shadow-2xl">
+    <DialogHeader className="app-dialog-sheet-header">
+      <DialogTitle>...</DialogTitle>
+      <DialogDescription>...</DialogDescription>
+    </DialogHeader>
+
+    <div className="app-dialog-sheet-body">
+      <div className="space-y-5 px-[var(--app-page-x)] py-4">
+        {/* nội dung form */}
+      </div>
+    </div>
+
+    <DialogFooter className="app-dialog-sheet-footer flex flex-row justify-end gap-2">
+      <Button variant="ghost">Huỷ</Button>
+      <Button>Xác nhận</Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
+```
+
+Variant: `--lg` (32rem), `--xl` (36rem), `--2xl` (42rem). **Cấm tự viết className inline với `calc(100dvh-...)`** — đã centralize trong `globals.css`.
+
+---
+
+## 5. GIAO TIẾP DỮ LIỆU & TRẠNG THÁI (DATA FETCHING & STATE)
+
+### 5.1 Khi nào gọi Supabase ở đâu
+
+| Tình huống | Gọi ở | Client | Lý do |
+|-----------|-------|--------|-------|
+| Lấy session/profile ban đầu khi page load | RSC (`layout.tsx`) | server (`@/utils/supabase/server`) | Tránh flicker, sẵn cookie |
+| Fetch list cho trang dashboard | Client hook `useXxx` | browser (`@/utils/supabase/client`) | Cần subscribe realtime cùng nguồn |
+| Mutation (insert/update/delete) | Action helper trong `_lib/*Actions.ts` | browser | RLS + RPC server validate |
+| Job định kỳ / batch nặng | Edge Function (Deno) | service-role | Bypass RLS hợp pháp |
+| Cron daily | Vercel cron `api/cron/*` | server | Đã có sẵn pattern |
+
+**KHÔNG dùng Server Actions** (`'use server'`) trong dự án này — pattern chuẩn là **Client Component + Supabase JS client + RPC**.
+
+### 5.2 Pattern fetch trong `_lib/fetchXxx.ts`
+
+**Quy chuẩn từ `_lib/fetchHandover.ts`:**
+
+```ts
+import { createClient } from "@/utils/supabase/client";
+import type { DocumentRow } from "./types";
+
+const supabase = createClient();
+
+// Khai báo SELECT string riêng — dùng được nhiều nơi (list + detail)
+const FULL_SELECT = `
+  *,
+  category:document_categories ( id, name, sla_hours, color ),
+  creator:profiles!documents_creator_id_fkey ( id, full_name, avatar_url, ... ),
+  handovers:document_handovers ( ..., sender:profiles!...(...), receiver:profiles!...(...) )
+`;
+
+export async function fetchAllDocuments(): Promise<DocumentRow[]> {
+  const { data, error } = await supabase
+    .from("documents")
+    .select(FULL_SELECT)
+    .order("updated_at", { ascending: false });
+  if (error) {
+    console.error("fetchAllDocuments error:", error);
+    return [];
+  }
+  return (data || []) as unknown as DocumentRow[];
+}
+```
+
+**5 nguyên tắc fetch:**
+
+1. **1 query lấy đầy đủ join** thay vì N+1 — dùng `.select('*, foo:foreign_table(...)')` với foreign key hint khi có nhiều FK trỏ cùng bảng (như `creator:profiles!documents_creator_id_fkey`).
+2. **`Promise.all([…])`** khi 2+ query độc lập (xem `useSchedule.ts:58-65`).
+3. **Return mảng rỗng khi lỗi**, log `console.error`. Không throw từ fetch helper — để UI tự render empty state, không vỡ trang.
+4. **Type assertion `as unknown as DocumentRow[]`** vì Supabase JS không tự suy luận nested join (chưa gen `database.types.ts`).
+5. **Khai báo `FULL_SELECT` ở top file**, không inline trong function — tái sử dụng giữa list + detail.
+
+### 5.3 Pattern hook tập trung `useXxx`
+
+**Quy chuẩn từ `_hooks/useHandover.ts` + `_hooks/useSchedule.ts`:**
+
+```ts
+"use client";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { createClient } from "@/utils/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+
+export function useHandover() {
+  const supabase = useMemo(() => createClient(), []);   // ⭐ memoize 1 lần
+  const { toast } = useToast();
+  const searchParams = useSearchParams();
+
+  // 1. State (gom liên quan thành object nếu > 4 field)
+  const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState<any>(null);
+  const [documents, setDocuments] = useState<DocumentRow[]>([]);
+
+  // 2. Debounced refetch
+  const refetchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const refetch = useCallback(async () => {
+    const docs = await fetchAllDocuments();
+    setDocuments(docs);
+  }, []);
+  const scheduleRefetch = useCallback(() => {
+    if (refetchTimer.current) clearTimeout(refetchTimer.current);
+    refetchTimer.current = setTimeout(refetch, 250);
+  }, [refetch]);
+
+  // 3. Initial load — Promise.all song song
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      setLoading(true);
+      const [profileRes, docs] = await Promise.all([
+        supabase.from("profiles").select("*, departments(...)").eq("id", userId).single(),
+        fetchAllDocuments(),
+      ]);
+      if (!active) return;
+      setProfile(profileRes.data);
+      setDocuments(docs);
+      setLoading(false);
+    })();
+    return () => { active = false };
+  }, [supabase]);
+
+  // 4. Realtime subscribe (xem §6.5 cho channel naming)
+  useEffect(() => {
+    if (!profile) return;
+    const channel = supabase
+      .channel("handover_realtime_sync")
+      .on("postgres_changes", { event: "*", schema: "public", table: "documents" }, scheduleRefetch)
+      .subscribe();
+    return () => {
+      if (refetchTimer.current) clearTimeout(refetchTimer.current);
+      supabase.removeChannel(channel);
+    };
+  }, [supabase, profile, scheduleRefetch]);
+
+  // 5. Computed derive — useMemo
+  const inboxDocs = useMemo(() => documents.filter(...), [documents, profile]);
+
+  return { loading, profile, documents, inboxDocs, refetch /* ... */ };
+}
+```
+
+**5 nguyên tắc:**
+
+1. **`useMemo(() => createClient(), [])`** — tránh tạo client mới mỗi render.
+2. **`active = false` flag** trong cleanup để chặn `setState` sau unmount.
+3. **Debounce realtime** 250–600ms để gộp event burst (insert + update đồng thời).
+4. **Computed list dùng `useMemo`**, không tính lại mỗi render.
+5. **Return object đặt tên rõ ràng**, không return array vị trí. Caller destructure theo tên.
+
+### 5.4 Form state pattern
+
+**Hiện tại:** dự án dùng `useState` riêng lẻ + validate inline. Có `react-hook-form` + `zod` trong `package.json` nhưng chưa dùng (cơ hội nâng cấp).
+
+**Chuẩn duy nhất từ nay:**
+
+| Trường hợp | Pattern |
+|-----------|---------|
+| Form ≤ 4 field, đơn giản | `useState` riêng + validate inline trước submit (như `CreateDocumentDialog.tsx`) |
+| Form > 4 field hoặc có validation phức tạp | `react-hook-form` + `zod` schema |
+
+**Mẫu form đơn giản:**
+```tsx
+const [title, setTitle] = useState("");
+const [categoryId, setCategoryId] = useState("");
+
+const handleSubmit = async () => {
+  if (!title.trim()) {
+    toast({ variant: "destructive", title: "Thiếu thông tin", description: "Vui lòng nhập tiêu đề" });
+    return;
+  }
+  // submit...
+};
+```
+
+### 5.5 Loading state & Error state
+
+| State | Hiển thị | Component |
+|-------|---------|-----------|
+| Loading initial | `<ListSkeleton variant="card" rows={6} />` | `@/components/ui/list-skeleton` |
+| Loading inline (button đang submit) | Button disabled + text "Đang xử lý..." | inline |
+| Empty | `<EmptyState icon={...} title="..." description="..." />` | `@/components/ui/empty-state` |
+| Error fetch | Return mảng rỗng → render Empty + log console | (không hiện full-page error) |
+| Error mutation | `toast({ variant: "destructive", title, description })` | `useToast` |
+
+**Cấm hiển thị page-level error UI cho lỗi fetch list** — luôn fallback về empty state. Lý do: lỗi fetch tạm thời thường tự khỏi qua realtime.
+
+---
+
+## 6. QUY CHUẨN TÍCH HỢP SUPABASE
+
+### 6.1 Hai client — không bao giờ trộn
+
+**Browser client** (`src/utils/supabase/client.ts`):
+```ts
+import { createClient } from "@/utils/supabase/client";
+const supabase = createClient();   // singleton trong tab browser
+```
+Dùng trong **Client Component** + hook.
+
+**Server client** (`src/utils/supabase/server.ts`):
+```ts
+import { createClient } from "@/utils/supabase/server";
+import { cookies } from "next/headers";
+
+const cookieStore = await cookies();
+const supabase = createClient(cookieStore);
+```
+Dùng trong **RSC** + **`middleware.ts`**.
+
+**Cấm:**
+- ❌ Import `@/utils/supabase/server` từ Client Component.
+- ❌ Import `@/utils/supabase/client` từ RSC.
+- ❌ Dùng service-role key ở client. Service role chỉ tồn tại trong Edge Function (đọc từ `Deno.env`).
+
+### 6.2 Đặt tên bảng/cột
+
+- **Bảng**: `snake_case` số nhiều — `documents`, `document_handovers`, `schedule_participants`.
+- **Cột**: `snake_case` — `current_assignee_id`, `attached_image_urls`, `created_at`, `updated_at`.
+- **FK**: tên cột = `<table_singular>_id` — `category_id`, `creator_id`, `receiver_id`.
+- **Timestamp**: luôn dùng `TIMESTAMPTZ` (with timezone), `DEFAULT NOW()`.
+- **Enum**: tên `snake_case`, value `UPPER_CASE` — `document_status: 'PENDING_RECEIPT' | 'IN_REVIEW' | ...`.
+- **Index**: `idx_<table>_<column(s)>` — `idx_documents_current_assignee`.
+- **Trigger function**: động từ tiếng Anh + `_<entity>` — `generate_document_short_code()`, `touch_documents_updated_at()`.
+
+### 6.3 RPC pattern (PL/pgSQL)
+
+**Khi nào dùng RPC `SECURITY DEFINER` thay vì update trực tiếp:**
+
+- Cần validate trạng thái phức tạp trước khi update (ví dụ: chỉ cho transfer khi status IN (...))
+- Cần update **nhiều bảng** atomically (insert handover + update document + insert notification)
+- Cần bypass RLS hợp pháp (ví dụ: insert notification cho người khác)
+
+**Mẫu chuẩn** từ `migration_handover_module.sql`:
+```sql
+CREATE OR REPLACE FUNCTION transfer_document(
+    p_document_id UUID,
+    p_receiver_id UUID,
+    p_note TEXT DEFAULT NULL
+)
+RETURNS UUID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    v_doc documents%ROWTYPE;
+BEGIN
+    -- 1. Check auth
+    IF auth.uid() IS NULL THEN
+        RAISE EXCEPTION 'Phiên đăng nhập đã hết hạn';
+    END IF;
+
+    -- 2. Lock + validate
+    SELECT * INTO v_doc FROM documents WHERE id = p_document_id FOR UPDATE;
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Không tìm thấy hồ sơ';
+    END IF;
+    -- ... business validation ...
+
+    -- 3. Multi-table update
+    INSERT INTO document_handovers (...) VALUES (...);
+    UPDATE documents SET status = 'PENDING_RECEIPT' WHERE id = p_document_id;
+    INSERT INTO notifications (...) VALUES (...);
+
+    RETURN v_handover_id;
+END;
+$$;
+```
+
+**5 nguyên tắc RPC:**
+
+1. **Tên RPC: `snake_case` động từ** — `transfer_document`, `acknowledge_document`.
+2. **Tham số có prefix `p_`** — `p_document_id`, `p_receiver_id`. Tránh nhầm với column.
+3. **Luôn `SECURITY DEFINER` + `SET search_path = public`** — chặn search_path injection.
+4. **Lock row bằng `FOR UPDATE`** trong nghiệp vụ tranh chấp.
+5. **Throw exception tiếng Việt** — `RAISE EXCEPTION 'Bạn không có quyền chuyển hồ sơ này'`. Client sẽ nhận về `error.message` tiếng Việt.
+
+**Gọi RPC từ client** (wrapper trong `_lib/<action>Actions.ts`):
+```ts
+export async function transferDocument(documentId: string, receiverId: string, note: string | null) {
+  const { data, error } = await supabase.rpc("transfer_document", {
+    p_document_id: documentId,
+    p_receiver_id: receiverId,
+    p_note: note,
+  });
+  if (error) return { ok: false as const, error: error.message };
+  return { ok: true as const, handoverId: data as string };
+}
+```
+
+**Convention: return `{ ok: true, … } | { ok: false, error }`** — caller `if (!res.ok) toast(...)`. Tuyệt đối không throw từ wrapper.
+
+### 6.4 Permission helper
+
+**Định nghĩa tập trung** tại `src/lib/permissions.ts`. Mọi check role/department phải đi qua helper, **cấm inline `profile.role === 'admin'` trong component**.
+
+```ts
+// ✅ Đúng
+import { canViewAllDocuments } from "@/lib/permissions";
+const showAllTab = canViewAllDocuments(profile);
+
+// ❌ Sai
+const showAllTab = profile?.role === "admin" || profile?.role === "director";
+```
+
+**Helper hiện có** (xem `src/lib/permissions.ts`):
+- `isTcthDepartment(profile)` — phòng Tổ chức Tổng hợp (code `'13602'`)
+- `canCoordinateSharedResources(profile)` — điều phối phòng họp/xe
+- `canManageResourceCatalog(profile)` — admin/secretary
+- `canUseDriverWorkspace(profile)` — `driver` role
+- `canUseHumanResourcesWorkspace(profile)` — `hr_officer`
+- `canAccessPeopleDirectory(profile)` — xem danh bạ
+- `canApproveLeave(profile, leave?)` — duyệt đơn nghỉ
+- `canManageDocumentCategories(profile)` — admin manage nhóm hồ sơ
+- `canViewAllDocuments(profile)` — admin/director xem toàn chi nhánh
+- `canCreateDocument(profile)` — không phải driver
+
+**Khi thêm module mới**: thêm helper `can<Action><Entity>()` vào `permissions.ts` cùng comment tiếng Việt giải thích quy tắc.
+
+### 6.5 Realtime channel — naming convention
+
+Khảo sát cho thấy 4 pattern đang dùng:
+
+| Mục đích | Pattern channel name | Ví dụ |
+|---------|---------------------|-------|
+| List page (subscribe nhiều bảng) | `<module>_realtime_sync` | `schedule_realtime_sync`, `handover_realtime_sync` |
+| List page (legacy, vẫn chấp nhận) | `<module>_sync` | `dashboard_sync` |
+| Detail page 1 entity | `<entity>_<id>` | `task_${id}`, `report_${id}` |
+| Per-user inbox | `<scope>_realtime_<userId>` | `notifications_realtime_${user.id}` |
+
+**Chuẩn duy nhất từ nay** cho module mới:
+- List page → **`<module>_realtime_sync`**
+- Detail page → **`<entity>_<id>`**
+
+**Cleanup bắt buộc:**
+```ts
+return () => {
+  if (refetchTimer.current) clearTimeout(refetchTimer.current);
+  supabase.removeChannel(channel);
+};
+```
+
+### 6.6 Storage
+
+- Bucket name: `snake_case_plural` — `avatars`, `documents`.
+- Path convention: `{owner_or_parent_id}/{timestamp}-{n}.{ext}` — ví dụ `${documentId}/${ts}-${i}.jpg`.
+- Trước upload: **nén client-side** qua `browser-image-compression` (xem `_lib/compressImage.ts`).
+- Sau upload: `getPublicUrl(path)` → lưu URL đầy đủ vào DB.
+- Cleanup file: dùng Edge Function chạy theo lịch (xem `cleanup-document-images`).
+
+---
+
+## 7. XỬ LÝ LỖI & GHI LOG (ERROR HANDLING & LOGGING)
+
+### 7.1 Phân loại lỗi
+
+| Loại lỗi | Hành động |
+|---------|-----------|
+| Lỗi fetch list (Supabase select) | `console.error` + return `[]` → UI render empty state |
+| Lỗi mutation (insert/update/RPC) | `toast({ variant: "destructive", title, description: error.message })` |
+| Validation phía client | `toast({ variant: "destructive", title: "Thiếu thông tin", description: "..." })` — không submit |
+| Lỗi unexpected (parse, network) | `console.error` + toast generic "Có lỗi xảy ra, vui lòng thử lại" |
+| Lỗi auth (session hết hạn) | Middleware tự redirect `/login` — không cần xử lý ở component |
+
+### 7.2 Format chuẩn lời nhắn
+
+| Tình huống | Title | Description |
+|-----------|-------|-------------|
+| Validation thiếu field | `"Thiếu thông tin"` | "Vui lòng nhập <tên field>" |
+| Validation sai định dạng | `"Giá trị không hợp lệ"` | mô tả cụ thể |
+| RPC reject | `"Không <hành động> được"` | `error.message` (đã tiếng Việt từ RPC) |
+| Upload fail | `"Lỗi upload ảnh"` | `error.message` |
+| Mutation thành công | `"Đã <hành động>"` | mô tả ngắn ("Đợi người nhận xác nhận") |
+
+**3 mẫu chuẩn:**
+
+```ts
+// Thành công
+toast({ title: "Đã chuyển hồ sơ", description: "Đợi người nhận xác nhận \"Đã nhận\"." });
+
+// Lỗi nghiệp vụ (từ RPC)
+toast({ variant: "destructive", title: "Không chuyển được", description: res.error });
+
+// Validation
+toast({ variant: "destructive", title: "Thiếu thông tin", description: "Vui lòng nhập tiêu đề hồ sơ" });
+```
+
+### 7.3 Confirm dialog (thay confirm() native)
+
+```ts
+import { confirmDialog } from "@/components/ui/confirm-dialog";
+
+const ok = await confirmDialog({
+  title: "Xoá nhóm hồ sơ?",
+  description: `Nhóm "${c.name}" sẽ bị xoá.`,
+  confirmText: "Xoá",
+  danger: true,   // ⚠️ field tên là `danger`, không phải `destructive`
+});
+if (!ok) return;
+```
+
+**Cấm dùng `window.confirm()` native** — luôn qua `confirmDialog`.
+
+### 7.4 Logging
+
+- **Client**: `console.error` cho dev debug. Không gửi log lên service ngoài (chưa setup Sentry).
+- **Server (RPC)**: `RAISE EXCEPTION` tiếng Việt — sẽ hiện cho user.
+- **Edge Function**: `console.log`/`console.error` → xem qua Supabase Dashboard → Edge Functions → Logs.
+
+---
+
+## 8. HƯỚNG DẪN THÊM TÍNH NĂNG MỚI (FEATURE WORKFLOW)
+
+Checklist **bắt buộc** theo thứ tự. Áp dụng cho mọi module mới (ví dụ minh hoạ: module **"Quản lý hợp đồng"**).
+
+### Phase 1 — Database
+
+- [ ] Tạo file `supabase/migration_<feature>_module.sql`.
+- [ ] Định nghĩa enum nếu cần — `DO $$ BEGIN CREATE TYPE ... AS ENUM (...); EXCEPTION WHEN duplicate_object THEN NULL; END $$;`.
+- [ ] Tạo bảng theo §6.2: tên `snake_case` plural, `id UUID PRIMARY KEY DEFAULT gen_random_uuid()`, `created_at`/`updated_at TIMESTAMPTZ DEFAULT NOW()`.
+- [ ] Thêm index cho cột thường query (`creator_id`, `assignee_id`, `status`).
+- [ ] Trigger `BEFORE UPDATE` set `updated_at = NOW()`.
+- [ ] Viết RPC `SECURITY DEFINER` cho mọi mutation phức tạp (§6.3).
+- [ ] **RLS**: SELECT theo quan hệ + role; INSERT/UPDATE deny direct, qua RPC (xem `migration_handover_module.sql`).
+- [ ] Seed dữ liệu mặc định nếu cần.
+- [ ] Chạy migration trên Supabase Dashboard → SQL Editor → verify.
+
+### Phase 2 — Permission
+
+- [ ] Thêm helper `canXxxYyy()` vào `src/lib/permissions.ts` với comment tiếng Việt.
+- [ ] Verify role hiện tại: `admin | director | manager | staff | secretary | hr_officer | driver`.
+
+### Phase 3 — Module skeleton
+
+- [ ] Tạo folder `src/app/dashboard/<module-kebab>/` với đủ 3 subfolder `_components/`, `_hooks/`, `_lib/`.
+- [ ] Tạo file `_lib/constants.ts` — status meta, labels, color map theo §2.5 status tokens.
+- [ ] Tạo file `_lib/types.ts` — interface DB row, tránh `any`.
+- [ ] Tạo file `_lib/fetch<Module>.ts` — `FULL_SELECT` const + 1-2 fetch function.
+- [ ] Tạo file `_lib/<action>Actions.ts` — wrapper RPC, return `{ ok, ... } | { ok: false, error }`.
+- [ ] Tạo file `_hooks/use<Module>.ts` — theo pattern §5.3 (memoize client, debounce, realtime, Promise.all, computed memo).
+- [ ] Tạo `page.tsx` — Client Component, dùng `<PageHeader>`, dùng `<Tabs>` nếu có nhiều view.
+
+### Phase 4 — Navigation
+
+- [ ] Thêm icon Lucide phù hợp (xem palette: `LayoutDashboard | ListTodo | Target | CalendarDays | FolderOpen | Users | ...`).
+- [ ] Sửa `src/components/layout/dashboard-layout.tsx` → mảng `navItems` thêm `{ name, href, icon, hideFor }`.
+- [ ] Nếu page có search → thêm vào `configMap` cùng file để hiện search bar trên top nav.
+
+### Phase 5 — Components
+
+- [ ] List item: `_components/<Entity>Card.tsx` (dumb, nhận `onClick` callback).
+- [ ] Empty state: dùng `<EmptyState>` từ `@/components/ui/empty-state`.
+- [ ] Dialog tạo mới: `_components/Create<Entity>Dialog.tsx`, dùng pattern `app-dialog-sheet` (§4.4).
+- [ ] Dialog chi tiết: `_components/<Entity>DetailDialog.tsx`, dùng pattern `app-dialog-sheet` size `--xl`.
+- [ ] Mọi popup form/detail bắt buộc dùng class `app-dialog-sheet`. Không hardcode max-h/safe-area.
+
+### Phase 6 — Realtime
+
+- [ ] Channel name: `<module>_realtime_sync` cho list, `<entity>_<id>` cho detail (§6.5).
+- [ ] Subscribe trong `useEffect` của hook chính, cleanup `removeChannel` + `clearTimeout`.
+- [ ] Trigger toast riêng nếu event quan trọng cá nhân (inbox mới).
+
+### Phase 7 — Notifications
+
+- [ ] Insert row `notifications (user_id, title, content, type, link)` từ trong RPC `SECURITY DEFINER`.
+- [ ] Webhook đã setup sẵn cho table `notifications` → push-notification edge function tự fire.
+- [ ] **Cấm gọi push từ client** — luôn qua DB.
+- [ ] **Loại trừ tài xế** khỏi thông báo nghiệp vụ thông thường (TECHNICAL_RULES §5.E.2).
+
+### Phase 8 — Verify
+
+- [ ] `npx tsc --noEmit` pass — không error TypeScript.
+- [ ] `npx next build` compile thành công, route mới xuất hiện trong build output.
+- [ ] Mỗi file `.tsx`/`.ts` mới ≤ 500 dòng.
+- [ ] Tuân thủ palette: không có `indigo|purple|pink` trong className mới.
+- [ ] Touch target ≥ 44px trên mobile (xem TECHNICAL_RULES §2.C).
+- [ ] Comment trong code: tiếng Việt rõ nghĩa.
+- [ ] Toast message: tiếng Việt, format chuẩn §7.2.
+- [ ] Test thủ công trên mobile real device hoặc DevTools mobile mode — input không bị iOS zoom (đã fix global).
+- [ ] Thêm route mới vào CREATE_ACTIONS của src/components/layout/MobileCreateFab.tsx nếu module có dialog "Tạo mới".
+
+### Phase 9 — Documentation
+
+- [ ] Cập nhật `schema.sql` (snapshot) nếu thêm bảng — chỉ thêm phần CREATE TABLE + RLS, không ghi đè bảng cũ.
+- [ ] Nếu introduce pattern mới chưa có trong tài liệu này → bổ sung mục tương ứng vào `ARCHITECTURE.md`.
+
+---
+
+## 9. BẤT ĐỒNG BỘ ĐÃ BIẾT — DỌN DẦN
+
+Các điểm code hiện tại lệch chuẩn đã định ở trên. **Không sửa hàng loạt** — dọn từng module khi đụng vào để tránh PR quá lớn.
+
+| Khu vực | Vấn đề | Chuẩn áp dụng |
+|--------|--------|---------------|
+| `tailwing.config.ts` | File typo tên cũ, song song `tailwind.config.ts` | Sẽ xoá khi xác nhận không dùng |
+| Modules `tasks/kpi/team/admin` | Không đủ `_components/_hooks/_lib` | Khi đụng → tách dần |
+| `kpi/page.tsx` 468 dòng | Quá to | Tách thành dialog/card subcomponent |
+| `useKPI.ts` không có realtime | Lệch chuẩn | Subscribe `kpi_realtime_sync` |
+| Type `profile: any` khắp nơi | Mất type safety | Khi đụng → tạo `src/types/profile.ts` (file mới) + dần migrate |
+| `database.types.ts` chưa gen từ Supabase | | Khuyến nghị chạy `supabase gen types typescript` định kỳ |
+| Form chưa dùng `react-hook-form` + `zod` | Đã có dep nhưng chưa dùng | Form > 4 field tới đây dùng pattern này |
+| Error handling toast inline 95 chỗ | Lặp pattern | Có thể centralize thành helper `notifyError(error, fallback)` — đề xuất |
+| `confirmDialog` field `danger` (không phải `destructive`) | Đặc thù lib nội bộ | Tài liệu hoá rõ ở §7.3 |
+
+---
+
+## 10. CRITICAL FILES — ĐỌC TRƯỚC KHI CODE
+
+| File | Vai trò |
+|------|---------|
+| `docs/TECHNICAL_RULES.md` | Quy tắc UI/UX/RLS/business — đọc song song |
+| `docs/ARCHITECTURE.md` | File này |
+| `schema.sql` | Snapshot DB hiện tại |
+| `src/app/globals.css` | Design tokens + utility classes |
+| `src/app/dashboard/layout.tsx` | RSC pattern + DashboardLayout mount |
+| `src/middleware.ts` | Session guard logic |
+| `src/lib/permissions.ts` | Tất cả role helper |
+| `src/lib/utils.ts` | `cn()`, profile sort, leave permissions |
+| `src/lib/auth-utils.ts` | `getProfile()` server-side |
+| `src/utils/supabase/client.ts` + `server.ts` | 2 client patterns |
+| `src/app/dashboard/schedule/_hooks/useSchedule.ts` | ⭐ Mẫu hook chuẩn (realtime + Promise.all) |
+| `src/app/dashboard/handover/_hooks/useHandover.ts` | ⭐ Mẫu hook gọn (state object + memoized client) |
+| `src/app/dashboard/handover/_lib/fetchHandover.ts` | ⭐ Mẫu fetch + FULL_SELECT |
+| `src/app/dashboard/handover/_lib/transferActions.ts` | ⭐ Mẫu RPC wrapper |
+| `supabase/migration_handover_module.sql` | ⭐ Mẫu migration + RLS + RPC SECURITY DEFINER |
+| `supabase/functions/cleanup-document-images/index.ts` | ⭐ Mẫu Edge Function |
+
+---
+
+**Phiên bản:** 1.0 — 2026-05-23
+**Người duyệt:** Tech Lead
+**Tần suất cập nhật:** Mỗi quý hoặc khi có pattern kiến trúc mới được chấp nhận.

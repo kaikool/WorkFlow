@@ -19,6 +19,7 @@ const CREATE_ACTIONS: Record<string, CreateAction> = {
   '/dashboard/kpi':      { kind: 'param', param: 'create' },
   '/dashboard/schedule': { kind: 'param', param: 'create' },
   '/dashboard/team':     { kind: 'param', param: 'create' },
+  '/dashboard/handover': { kind: 'param', param: 'create' },
 };
 
 export default function MobileCreateFab() {

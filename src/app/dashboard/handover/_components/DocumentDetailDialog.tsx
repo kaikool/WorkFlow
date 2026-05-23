@@ -1,0 +1,322 @@
+"use client";
+
+import React from "react";
+import {
+  ArrowRight,
+  Check,
+  CheckCircle2,
+  FileText,
+  Undo2,
+  User,
+  Building2,
+} from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+import { format } from "date-fns";
+import { vi } from "date-fns/locale";
+import { DOCUMENT_STATUS_META } from "../_lib/constants";
+import { fetchDocumentById } from "../_lib/fetchHandover";
+import { acknowledgeDocument, completeDocument } from "../_lib/transferActions";
+import { canViewAllDocuments } from "@/lib/permissions";
+import type { DocumentRow, HandoverRow } from "../_lib/types";
+import HandoverTimeline from "./HandoverTimeline";
+import SLABadge from "./SLABadge";
+import TransferDialog from "./TransferDialog";
+import ReturnReasonDialog from "./ReturnReasonDialog";
+import ImageUploader from "./ImageUploader";
+import ImageLightbox from "./ImageLightbox";
+
+interface Props {
+  documentId: string | null;
+  isOpen: boolean;
+  setIsOpen: (v: boolean) => void;
+  profile: any;
+  allProfiles: any[];
+  onChanged: () => void;
+}
+
+export default function DocumentDetailDialog({
+  documentId,
+  isOpen,
+  setIsOpen,
+  profile,
+  allProfiles,
+  onChanged,
+}: Props) {
+  const { toast } = useToast();
+  const [doc, setDoc] = React.useState<DocumentRow | null>(null);
+  const [loading, setLoading] = React.useState(false);
+  const [isTransferOpen, setIsTransferOpen] = React.useState(false);
+  const [isReturnOpen, setIsReturnOpen] = React.useState(false);
+  const [lightboxIndex, setLightboxIndex] = React.useState<number | null>(null);
+
+  const refetch = React.useCallback(async () => {
+    if (!documentId) return;
+    setLoading(true);
+    const fresh = await fetchDocumentById(documentId);
+    setDoc(fresh);
+    setLoading(false);
+  }, [documentId]);
+
+  React.useEffect(() => {
+    if (isOpen && documentId) refetch();
+    if (!isOpen) setDoc(null);
+  }, [isOpen, documentId, refetch]);
+
+  if (!isOpen || !documentId) return null;
+
+  const meta = doc && DOCUMENT_STATUS_META[doc.status];
+  const StatusIcon = meta?.icon;
+
+  const isCreator = doc?.creator_id === profile?.id;
+  const isHolder = doc?.current_assignee_id === profile?.id;
+  const isReadOnly = !isHolder && !isCreator && !canViewAllDocuments(profile);
+
+  // Tìm handover PENDING gần nhất với receiver = me → để show "Đã nhận" / "Trả về"
+  const pendingHandover: HandoverRow | undefined = doc?.handovers?.find(
+    (h) => h.status === "PENDING" && h.receiver_id === profile?.id
+  );
+
+  const handleAcknowledge = async () => {
+    if (!pendingHandover) return;
+    const res = await acknowledgeDocument(pendingHandover.id);
+    if (!res.ok) {
+      toast({ variant: "destructive", title: "Không xác nhận được", description: res.error });
+      return;
+    }
+    toast({ title: "Đã nhận hồ sơ", description: "SLA bắt đầu đếm từ giây phút này." });
+    await refetch();
+    onChanged();
+  };
+
+  const handleComplete = async () => {
+    if (!doc) return;
+    const res = await completeDocument(doc.id);
+    if (!res.ok) {
+      toast({ variant: "destructive", title: "Không hoàn thành được", description: res.error });
+      return;
+    }
+    toast({ title: "Đã hoàn thành", description: "Luồng luân chuyển hồ sơ đã đóng." });
+    await refetch();
+    onChanged();
+  };
+
+  const handleImagesChange = async (newUrls: string[]) => {
+    if (!doc) return;
+    const { createClient } = await import("@/utils/supabase/client");
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("documents")
+      .update({ attached_image_urls: newUrls })
+      .eq("id", doc.id);
+    if (error) {
+      toast({ variant: "destructive", title: "Lỗi lưu ảnh", description: error.message });
+      return;
+    }
+    await refetch();
+    onChanged();
+  };
+
+  return (
+    <>
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <DialogContent className="app-dialog-sheet app-dialog-sheet--xl shadow-2xl">
+          <DialogHeader className="app-dialog-sheet-header">
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className="font-mono text-[12px] font-semibold text-slate-500 tabular-nums">
+                {doc?.short_code || "—"}
+              </p>
+              {meta && StatusIcon && (
+                <Badge className={cn("font-semibold text-[11px]", meta.badgeClass)}>
+                  <StatusIcon className="w-3 h-3 mr-1" />
+                  {meta.label}
+                </Badge>
+              )}
+              {doc && <SLABadge document={doc} />}
+            </div>
+            <DialogTitle className="text-[18px] font-bold text-slate-900 leading-tight">
+              {doc?.title || "Đang tải..."}
+            </DialogTitle>
+            <DialogDescription className="sr-only">
+              Chi tiết hồ sơ, timeline luân chuyển và các thao tác chuyển/nhận.
+            </DialogDescription>
+          </DialogHeader>
+
+          <ScrollArea className="app-dialog-sheet-body">
+            <div className="space-y-6 px-[var(--app-page-x)] py-4">
+              {loading && !doc && (
+                <p className="text-[13px] text-slate-400 font-medium">Đang tải dữ liệu...</p>
+              )}
+
+              {doc && (
+                <>
+                  {/* Thông tin cơ bản */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {doc.customer_name && (
+                      <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
+                        <div className="p-2 bg-white rounded-lg shadow-sm">
+                          <User className="w-4 h-4 text-slate-500" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[11px] text-slate-400 font-medium">Khách hàng</p>
+                          <p className="text-[14px] font-semibold text-slate-700 truncate">
+                            {doc.customer_name}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    {doc.category && (
+                      <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
+                        <div className="p-2 bg-white rounded-lg shadow-sm">
+                          <FileText className="w-4 h-4 text-slate-500" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[11px] text-slate-400 font-medium">Nhóm hồ sơ</p>
+                          <p className="text-[14px] font-semibold text-slate-700 truncate">
+                            {doc.category.name} · SLA {doc.category.sla_hours}h
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    {doc.current_assignee && (
+                      <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl sm:col-span-2">
+                        <div className="p-2 bg-white rounded-lg shadow-sm">
+                          <Building2 className="w-4 h-4 text-slate-500" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[11px] text-slate-400 font-medium">Đang ở bàn</p>
+                          <p className="text-[14px] font-semibold text-slate-700 truncate">
+                            {doc.current_assignee.full_name}
+                            <span className="text-slate-400 font-medium">
+                              {" "}· {doc.current_assignee.departments?.name || "—"}
+                            </span>
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Ảnh đính kèm */}
+                  {(doc.attached_image_urls.length > 0 || isHolder || isCreator) && (
+                    <div className="space-y-2">
+                      <p className="text-[12px] font-medium text-slate-400">
+                        Ảnh bìa / tờ trình ({doc.attached_image_urls.length})
+                      </p>
+                      <ImageUploader
+                        documentId={doc.id}
+                        imageUrls={doc.attached_image_urls}
+                        onChange={handleImagesChange}
+                        onClickImage={(idx) => setLightboxIndex(idx)}
+                        readOnly={isReadOnly || doc.status === "COMPLETED"}
+                      />
+                    </div>
+                  )}
+
+                  {/* Timeline */}
+                  <div className="space-y-2">
+                    <p className="text-[12px] font-medium text-slate-400">Truy vết luân chuyển</p>
+                    <HandoverTimeline document={doc} />
+                  </div>
+                </>
+              )}
+            </div>
+          </ScrollArea>
+
+          <DialogFooter className="app-dialog-sheet-footer flex flex-row flex-wrap items-center justify-between gap-2">
+            <Button
+              variant="ghost"
+              onClick={() => setIsOpen(false)}
+              className="min-h-11 px-4 rounded-xl font-medium text-slate-500 text-[13px]"
+            >
+              Đóng
+            </Button>
+
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Người nhận đang chờ → "Đã nhận" / "Trả về" */}
+              {pendingHandover && doc && (
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsReturnOpen(true)}
+                    className="min-h-11 px-4 rounded-xl font-medium text-[13px] border-red-200 text-red-600 hover:bg-red-50"
+                  >
+                    <Undo2 className="w-4 h-4 mr-1" /> Trả về
+                  </Button>
+                  <Button
+                    onClick={handleAcknowledge}
+                    className="min-h-11 px-4 rounded-xl font-semibold bg-emerald-600 hover:bg-emerald-700 text-white"
+                  >
+                    <Check className="w-4 h-4 mr-1" /> Đã nhận
+                  </Button>
+                </>
+              )}
+
+              {/* Người đang giữ (đã accept) → "Chuyển tiếp" / "Hoàn thành" */}
+              {!pendingHandover && isHolder && doc && doc.status !== "COMPLETED" && (
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={handleComplete}
+                    className="min-h-11 px-4 rounded-xl font-medium text-[13px] border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+                  >
+                    <CheckCircle2 className="w-4 h-4 mr-1" /> Hoàn thành
+                  </Button>
+                  <Button
+                    onClick={() => setIsTransferOpen(true)}
+                    className="min-h-11 px-4 rounded-xl font-semibold bg-primary hover:bg-primary/90 text-white"
+                  >
+                    Chuyển tiếp <ArrowRight className="w-4 h-4 ml-1" />
+                  </Button>
+                </>
+              )}
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {doc && (
+        <>
+          <TransferDialog
+            isOpen={isTransferOpen}
+            setIsOpen={setIsTransferOpen}
+            document={doc}
+            allProfiles={allProfiles}
+            currentProfileId={profile.id}
+            onSuccess={async () => {
+              await refetch();
+              onChanged();
+            }}
+          />
+          {pendingHandover && (
+            <ReturnReasonDialog
+              isOpen={isReturnOpen}
+              setIsOpen={setIsReturnOpen}
+              handoverId={pendingHandover.id}
+              documentShortCode={doc.short_code}
+              onSuccess={async () => {
+                await refetch();
+                onChanged();
+              }}
+            />
+          )}
+          <ImageLightbox
+            images={doc.attached_image_urls}
+            startIndex={lightboxIndex}
+            onClose={() => setLightboxIndex(null)}
+          />
+        </>
+      )}
+    </>
+  );
+}
