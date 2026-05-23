@@ -11,7 +11,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import PageHeader from '@/components/layout/PageHeader';
 import { createClient } from '@/utils/supabase/client';
 import { fetchCurrentProfile } from '@/lib/fetch-profile';
-import { canViewTaskAnalytics } from '@/lib/permissions';
+import { canViewTaskAnalytics, canViewBranchAnalytics } from '@/lib/permissions';
 import { useTaskAnalytics } from '../_hooks/useTaskAnalytics';
 import { AnalyticsKpiCards } from '../_components/analytics/AnalyticsKpiCards';
 import { OverdueByDeptChart } from '../_components/analytics/OverdueByDeptChart';
@@ -36,7 +36,7 @@ export default function AnalyticsPage() {
       if (!p) return;
       setProfile(p);
       if (!canViewTaskAnalytics(p)) router.replace('/dashboard/tasks');
-      if (p.role === 'admin' || p.role === 'director') {
+      if (canViewBranchAnalytics(p)) {
         const depts = await fetchDepartments();
         setDepartments(depts);
       }
@@ -54,7 +54,7 @@ export default function AnalyticsPage() {
   const deptId = deptFilter[0] ?? null;
   const { loading, data } = useTaskAnalytics(from, to, deptId, !!profile);
 
-  const isAdminOrDirector = ['admin', 'director'].includes(profile?.role);
+  const canFilterDept = canViewBranchAnalytics(profile);
 
   const handleExport = () => {
     if (!data) return;
@@ -108,7 +108,7 @@ export default function AnalyticsPage() {
             <TabsTrigger value="month" className="rounded-lg font-semibold px-5">Tháng này</TabsTrigger>
           </TabsList>
         </Tabs>
-        {isAdminOrDirector && departments.length > 0 && (
+        {canFilterDept && departments.length > 0 && (
           <div className="flex-1 min-w-[240px] max-w-md">
             <DepartmentPicker
               items={departments}

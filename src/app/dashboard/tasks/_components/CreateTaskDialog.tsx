@@ -116,14 +116,6 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
     setRequiresApproval(false);
   };
 
-  // Khi user là staff hub, mở dialog default sang tab "report"
-  useEffect(() => {
-    if (!profile) return;
-    if (isStaff && isHub && formType === 'task' && canMakeReport) {
-      setFormType('report');
-    }
-  }, [profile, isStaff, isHub, formType, canMakeReport]);
-
   const handleClose = () => {
     if (loading) return;
     resetForm();

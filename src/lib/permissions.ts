@@ -168,9 +168,21 @@ export function canCreateRecurringTemplate(profile: any): boolean {
   return profile.role === 'staff' && isHubDepartment(profile);
 }
 
-// Xem Analytics module Tasks — admin/BGĐ/TP. Staff/HR officer redirect.
+// Xem Analytics module Tasks.
+//   • Admin/Director: toàn nhánh.
+//   • Manager (any): vào được, scope toàn nhánh nếu TCTH, phòng mình nếu khác.
+//   • Staff TCTH (13602): toàn nhánh.
+//   • Staff khác: KHÔNG xem được.
 export function canViewTaskAnalytics(profile: any): boolean {
   if (!profile) return false;
   if (['admin', 'director', 'manager'].includes(profile.role)) return true;
-  return profile.role === 'staff' && isHubDepartment(profile);
+  return profile.role === 'staff' && isTcthDepartment(profile);
+}
+
+// Xem Analytics ở phạm vi TOÀN NHÁNH (cho filter dept dropdown).
+// Manager non-TCTH bị giới hạn phòng mình.
+export function canViewBranchAnalytics(profile: any): boolean {
+  if (!profile) return false;
+  if (['admin', 'director'].includes(profile.role)) return true;
+  return isTcthDepartment(profile);
 }
