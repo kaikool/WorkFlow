@@ -87,6 +87,19 @@ export default function DocumentDetailDialog({
     (h) => h.status === "PENDING" && h.receiver_id === profile?.id
   );
 
+  // Hồ sơ đang chờ người khác nhận — ẩn nút action của sender, hiển thị info đang chờ ai
+  const outgoingPending: HandoverRow | undefined = doc?.handovers?.find(
+    (h) => h.status === "PENDING" && h.sender_id === profile?.id
+  );
+
+  // Sender chỉ được thao tác (Chuyển/Hoàn thành) khi đang giữ hồ sơ thực sự,
+  // tức không trong trạng thái chờ người khác nhận.
+  const canSenderAct = !!doc
+    && isHolder
+    && !outgoingPending
+    && doc.status !== "PENDING_RECEIPT"
+    && doc.status !== "COMPLETED";
+
   const handleAcknowledge = async () => {
     if (!pendingHandover) return;
     const res = await acknowledgeDocument(pendingHandover.id);
@@ -188,22 +201,36 @@ export default function DocumentDetailDialog({
                         </div>
                       </div>
                     )}
-                    {doc.current_assignee && (
-                      <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl sm:col-span-2">
-                        <div className="p-2 bg-white rounded-lg shadow-sm">
-                          <Building2 className="w-4 h-4 text-slate-500" />
+                    {/* Vị trí hiện tại của hồ sơ — khi PENDING_RECEIPT thì hiển thị người
+                        đang chờ nhận thay vì current_assignee_id (vẫn là sender chưa chuyển ownership) */}
+                    {(() => {
+                      const pendingFromCurrent = doc.handovers?.find(
+                        (h) => h.status === "PENDING" && h.sender_id === doc.current_assignee_id
+                      );
+                      const displayAssignee = doc.status === "PENDING_RECEIPT" && pendingFromCurrent?.receiver
+                        ? pendingFromCurrent.receiver
+                        : doc.current_assignee;
+                      const positionLabel = doc.status === "PENDING_RECEIPT"
+                        ? "Đang chờ nhận"
+                        : "Đang ở bàn";
+                      if (!displayAssignee) return null;
+                      return (
+                        <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl sm:col-span-2">
+                          <div className="p-2 bg-white rounded-lg shadow-sm">
+                            <Building2 className="w-4 h-4 text-slate-500" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-[11px] text-slate-400 font-medium">{positionLabel}</p>
+                            <p className="text-[14px] font-semibold text-slate-700 truncate">
+                              {displayAssignee.full_name}
+                              <span className="text-slate-400 font-medium">
+                                {" "}· {displayAssignee.departments?.name || "—"}
+                              </span>
+                            </p>
+                          </div>
                         </div>
-                        <div className="min-w-0">
-                          <p className="text-[11px] text-slate-400 font-medium">Đang ở bàn</p>
-                          <p className="text-[14px] font-semibold text-slate-700 truncate">
-                            {doc.current_assignee.full_name}
-                            <span className="text-slate-400 font-medium">
-                              {" "}· {doc.current_assignee.departments?.name || "—"}
-                            </span>
-                          </p>
-                        </div>
-                      </div>
-                    )}
+                      );
+                    })()}
                   </div>
 
                   {/* Ảnh đính kèm */}
@@ -217,7 +244,7 @@ export default function DocumentDetailDialog({
                         imageUrls={doc.attached_image_urls}
                         onChange={handleImagesChange}
                         onClickImage={(idx) => setLightboxIndex(idx)}
-                        readOnly={isReadOnly || doc.status === "COMPLETED"}
+                        readOnly={isReadOnly || doc.status === "COMPLETED" || !!outgoingPending}
                       />
                     </div>
                   )}
@@ -262,7 +289,7 @@ export default function DocumentDetailDialog({
               )}
 
               {/* Người đang giữ (đã accept) → "Chuyển tiếp" / "Hoàn thành" */}
-              {!pendingHandover && isHolder && doc && doc.status !== "COMPLETED" && (
+              {canSenderAct && doc && (
                 <>
                   <Button
                     variant="outline"
@@ -291,7 +318,7 @@ export default function DocumentDetailDialog({
             setIsOpen={setIsTransferOpen}
             document={doc}
             allProfiles={allProfiles}
-            currentProfileId={profile.id}
+            currentProfile={profile}
             onSuccess={async () => {
               await refetch();
               onChanged();

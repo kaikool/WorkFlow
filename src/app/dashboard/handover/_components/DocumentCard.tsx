@@ -79,64 +79,77 @@ export default function DocumentCard({ document, onClick, variant = "inbox", cur
         <SLABadge document={document} />
       </div>
 
-      {/* Dòng vị trí hiện tại */}
-      {(document.current_assignee || lastHandover) && (
-        <div className="mt-3 flex items-center gap-2 text-[12px] text-slate-600 border-t border-slate-100 pt-3">
-          {variant === "outbox" && document.current_assignee && (
-            <>
-              <span className="text-slate-400">Đang ở bàn:</span>
-              <span className="inline-flex items-center gap-1.5">
-                <Avatar className="h-5 w-5">
-                  <AvatarImage src={document.current_assignee.avatar_url || undefined} />
-                  <AvatarFallback className="text-[9px] bg-slate-100">
-                    {document.current_assignee.full_name?.[0]}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="font-semibold text-slate-700 truncate">
-                  {document.current_assignee.full_name}
+      {/* Dòng vị trí hiện tại — khi PENDING_RECEIPT thì hiển thị người tiếp theo
+          đang chờ nhận thay vì current_assignee (vẫn là sender chưa chuyển ownership). */}
+      {(document.current_assignee || lastHandover) && (() => {
+        const pendingFromCurrent = (document.handovers || []).find(
+          (h) => h.status === "PENDING" && h.sender_id === document.current_assignee_id
+        );
+        const isPendingTransit = document.status === "PENDING_RECEIPT";
+        const displayPerson = isPendingTransit && pendingFromCurrent?.receiver
+          ? pendingFromCurrent.receiver
+          : document.current_assignee;
+        const outboxLabel = isPendingTransit ? "Đang chờ nhận:" : "Đang ở bàn:";
+        const allLabel    = isPendingTransit ? "Chờ nhận:"     : "Bàn:";
+
+        return (
+          <div className="mt-3 flex items-center gap-2 text-[12px] text-slate-600 border-t border-slate-100 pt-3">
+            {variant === "outbox" && displayPerson && (
+              <>
+                <span className="text-slate-400">{outboxLabel}</span>
+                <span className="inline-flex items-center gap-1.5">
+                  <Avatar className="h-5 w-5">
+                    <AvatarImage src={displayPerson.avatar_url || undefined} />
+                    <AvatarFallback className="text-[9px] bg-slate-100">
+                      {displayPerson.full_name?.[0]}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="font-semibold text-slate-700 truncate">
+                    {displayPerson.full_name}
+                  </span>
                 </span>
-              </span>
-            </>
-          )}
-          {variant === "inbox" && lastHandover?.sender && (
-            <>
-              <span className="text-slate-400">Từ:</span>
-              <span className="inline-flex items-center gap-1.5">
-                <Avatar className="h-5 w-5">
-                  <AvatarImage src={lastHandover.sender.avatar_url || undefined} />
-                  <AvatarFallback className="text-[9px] bg-slate-100">
-                    {lastHandover.sender.full_name?.[0]}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="font-semibold text-slate-700 truncate">
-                  {lastHandover.sender.full_name}
+              </>
+            )}
+            {variant === "inbox" && lastHandover?.sender && (
+              <>
+                <span className="text-slate-400">Từ:</span>
+                <span className="inline-flex items-center gap-1.5">
+                  <Avatar className="h-5 w-5">
+                    <AvatarImage src={lastHandover.sender.avatar_url || undefined} />
+                    <AvatarFallback className="text-[9px] bg-slate-100">
+                      {lastHandover.sender.full_name?.[0]}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="font-semibold text-slate-700 truncate">
+                    {lastHandover.sender.full_name}
+                  </span>
                 </span>
-              </span>
-              <ArrowRight className="w-3 h-3 text-slate-300 shrink-0" />
-              <span className="text-slate-400">Tôi</span>
-            </>
-          )}
-          {variant === "all" && document.current_assignee && (
-            <>
-              <span className="text-slate-400">Bàn:</span>
-              <span className="inline-flex items-center gap-1.5">
-                <Avatar className="h-5 w-5">
-                  <AvatarImage src={document.current_assignee.avatar_url || undefined} />
-                  <AvatarFallback className="text-[9px] bg-slate-100">
-                    {document.current_assignee.full_name?.[0]}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="font-semibold text-slate-700 truncate">
-                  {document.current_assignee.full_name}
+                <ArrowRight className="w-3 h-3 text-slate-300 shrink-0" />
+                <span className="text-slate-400">Tôi</span>
+              </>
+            )}
+            {variant === "all" && displayPerson && (
+              <>
+                <span className="text-slate-400">{allLabel}</span>
+                <span className="inline-flex items-center gap-1.5">
+                  <Avatar className="h-5 w-5">
+                    <AvatarImage src={displayPerson.avatar_url || undefined} />
+                    <AvatarFallback className="text-[9px] bg-slate-100">
+                      {displayPerson.full_name?.[0]}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="font-semibold text-slate-700 truncate">
+                    {displayPerson.full_name}
+                  </span>
                 </span>
-              </span>
-            </>
-          )}
-          <span className="ml-auto text-[11px] text-slate-400 tabular-nums shrink-0">
-            {format(new Date(document.updated_at), "HH:mm dd/MM", { locale: vi })}
-          </span>
-        </div>
-      )}
+              </>
+            )}
+            <span className="ml-auto text-[11px] text-slate-400 tabular-nums shrink-0">
+              {format(new Date(document.updated_at), "HH:mm dd/MM", { locale: vi })}
+            </span>
+          </div>
+        );
+      })()}
     </button>
   );
 }

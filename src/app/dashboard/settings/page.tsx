@@ -21,7 +21,6 @@ export default function SettingsPage() {
   const { subscription, permission, subscribe, unsubscribe } = usePushSubscription();
   const [isSaving, setIsSaving] = useState(false);
   const [notifications, setNotifications] = useState({
-    zalo: true,
     email: true,
     deadline: true
   });

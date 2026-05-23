@@ -861,20 +861,6 @@ Checklist **bắt buộc** theo thứ tự. Áp dụng cho mọi module mới (v
 
 Mục này theo dõi các điểm lệch chuẩn của codebase. Trạng thái cập nhật mỗi đợt cleanup. Mục tiêu: làm sạch dần đến khi bảng dưới đây trống.
 
-### ✅ Đã dọn (commit 2026-05-23)
-
-| Khu vực | Hành động |
-|--------|-----------|
-| `tailwing.config.ts` | Xoá hẳn (file typo cũ, 0 reference) |
-| `dashboard-shell.tsx` | Xoá dead code (không file nào import) |
-| Module KPI lệch (`page.tsx` 468 dòng, không realtime) | Sunset toàn bộ module — xoá khỏi codebase |
-| Thiếu type chung cho Profile | Tạo `src/types/profile.ts` với `Profile`, `ProfileLite`, `Department`, `UserRole` |
-| Toast inline 165 chỗ | Tạo `src/lib/notify.ts` + migrate **158/165** toast call về `notifyError`/`notifySuccess`/`notifyValidation`. 7 chỗ giữ lại: 4 helper definition + 1 shadcn primitive + 2 special-case (realtime callback, warning toast) |
-| `database.types.ts` không tồn tại | Hand-craft đầy đủ types (16 bảng, 7 enum, 7 RPC) dựa trên schema + migrations. Khi có Supabase CLI, replace bằng auto-gen |
-| Module `team/admin/tasks` thiếu `_components/_hooks/_lib` | Đã tạo skeleton folder (gitkeep) — code mới đi đúng chỗ |
-| `confirmDialog` field `danger` | Đã document rõ §7.3 — coi như chuẩn chính thức |
-
-### 🟡 Còn nợ (chấp nhận, không sửa hàng loạt)
 
 | Khu vực | Vấn đề | Hướng giải |
 |--------|--------|------------|

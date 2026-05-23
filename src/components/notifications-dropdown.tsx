@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { createClient } from "@/utils/supabase/client";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
@@ -176,8 +175,8 @@ export function NotificationsDropdown() {
           )}
         </div>
 
-        <ScrollArea className="max-h-[360px]">
-        <div className="space-y-1.5 pr-2">
+        <div className="max-h-[70vh] sm:max-h-[420px] overflow-y-auto overscroll-contain">
+        <div className="space-y-1.5 pr-1">
           {loading ? (
             <div className="py-8 text-center"><Loader2 className="h-5 w-5 animate-spin mx-auto text-primary" /></div>
           ) : notifications.length > 0 ? (
@@ -228,7 +227,7 @@ export function NotificationsDropdown() {
             </div>
           )}
         </div>
-        </ScrollArea>
+        </div>
       </DropdownMenuContent>
     </DropdownMenu>
   );

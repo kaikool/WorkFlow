@@ -157,24 +157,44 @@ export function useHandover(): UseHandoverState {
     };
   }, [supabase, profile, scheduleRefetch, toast]);
 
-  // Phân loại 3 list cho 3 tab
+  // Phân loại 3 list cho 3 tab.
+  // Lưu ý: khi status=PENDING_RECEIPT, doc.current_assignee_id vẫn là sender
+  // (RPC chỉ chuyển ownership khi receiver acknowledge). Vì vậy phải dùng handover
+  // PENDING để xác định ai đang chờ nhận, không dựa thuần vào current_assignee_id.
   const inboxDocs = useMemo(() => {
     if (!profile) return [] as DocumentRow[];
     return documents.filter((d) => {
-      // Hồ sơ đang được gán cho mình (đã accept) HOẶC đang chờ mình nhận
-      if (d.current_assignee_id === profile.id) return true;
-      const pending = (d.handovers || []).some(
+      // Tôi đang chờ nhận từ ai đó
+      const incomingPending = (d.handovers || []).some(
         (h) => h.receiver_id === profile.id && h.status === "PENDING"
       );
-      return pending;
+      if (incomingPending) return true;
+
+      // Tôi đang giữ hồ sơ — nhưng nếu đã chuyển tiếp (có outgoing PENDING) thì
+      // không hiện ở đây, mà thuộc Outbox.
+      if (d.current_assignee_id === profile.id) {
+        const outgoingPending = (d.handovers || []).some(
+          (h) => h.sender_id === profile.id && h.status === "PENDING"
+        );
+        return !outgoingPending;
+      }
+      return false;
     });
   }, [documents, profile]);
 
   const outboxDocs = useMemo(() => {
     if (!profile) return [] as DocumentRow[];
     return documents.filter((d) => {
+      // Đang chờ người khác nhận hồ sơ mình vừa chuyển — luôn ở Outbox
+      const outgoingPending = (d.handovers || []).some(
+        (h) => h.sender_id === profile.id && h.status === "PENDING"
+      );
+      if (outgoingPending) return true;
+
+      // Hồ sơ đang ở bàn mình → đã ở Inbox, không trùng
       if (d.current_assignee_id === profile.id) return false;
-      // Tôi từng gửi (creator hoặc sender trong handover)
+
+      // Tôi từng là creator hoặc sender trong lịch sử → vẫn theo dõi ở Outbox
       if (d.creator_id === profile.id) return true;
       return (d.handovers || []).some((h) => h.sender_id === profile.id);
     });
