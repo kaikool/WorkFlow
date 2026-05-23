@@ -572,7 +572,7 @@ main > div[class*="max-w-5xl"][class*="mx-auto"] {
 
 /* Safe-area TOP — để header/banner không bị notch/dynamic island che */
 .pt-safe {
-  padding-top: env(safe-area-inset-top);
+  padding-top: max(env(safe-area-inset-top), 1.25rem);
 }
 
 /* Top sticky position tôn trọng safe-area (header sticky bám đỉnh nhưng dưới notch) */

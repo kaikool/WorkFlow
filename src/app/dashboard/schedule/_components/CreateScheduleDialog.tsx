@@ -111,10 +111,9 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
         </Button>
       </DialogTrigger>
       <DialogContent 
-        className="flex flex-col overflow-hidden border-none p-0 shadow-2xl w-full max-w-lg !bottom-0 !top-auto !translate-y-0 !rounded-t-[32px] !rounded-b-none sm:!top-[50%] sm:!bottom-auto sm:!-translate-y-1/2 sm:w-[calc(100dvw-2rem)] sm:!rounded-3xl"
-        style={{ maxHeight: 'calc(100dvh - env(safe-area-inset-top))' }}
+        className="flex flex-col overflow-hidden border-none p-0 shadow-2xl w-full h-[100dvh] max-w-none rounded-none sm:h-auto sm:max-h-[calc(100dvh-6rem)] sm:w-[calc(100dvw-2rem)] sm:max-w-lg sm:rounded-[24px]"
       >
-        <DialogHeader className="shrink-0 px-5 pt-5 sm:px-6 sm:pt-6">
+        <DialogHeader className="shrink-0 px-5 pt-safe sm:px-6 sm:pt-6">
           <DialogTitle className="text-[17px] font-semibold text-slate-900">Thiết lập lịch trình mới</DialogTitle>
           <DialogDescription className="sr-only">Thiết lập chi tiết thời gian và thành phần tham gia cho lịch trình mới</DialogDescription>
         </DialogHeader>
