@@ -5,10 +5,10 @@ import { Clock, MapPin, Users, Car, DoorOpen, MoreVertical } from "lucide-react"
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { cn, compareProfilesByHierarchy, canViewLeaveDetails } from "@/lib/utils";
 import { format, isSameDay } from "date-fns";
 import { typeLabels, statusLabels } from "../_lib/constants";
+import { AvatarStack } from "@/components/ui/people-picker";
 
 interface ScheduleCardProps {
   item: any;
@@ -92,19 +92,15 @@ export default function ScheduleCard({ item, isTCTH, profile, onSelect, onStatus
             <div className="flex flex-wrap gap-4 pt-2 border-t border-slate-50">
               <div className="flex items-center gap-2">
                 <Users className="w-3.5 h-3.5 text-slate-500" />
-                <div className="flex -space-x-2 overflow-hidden">
-                  {sortedParticipants.slice(0, 5).map((p: any, idx: number) => (
-                    <Avatar key={idx} className="h-6 w-6 border-2 border-white">
-                      <AvatarImage src={p.profile?.avatar_url} />
-                      <AvatarFallback className="text-xs font-bold">{p.profile?.full_name?.[0]}</AvatarFallback>
-                    </Avatar>
-                  ))}
-                  {sortedParticipants.length > 5 && (
-                    <div className="h-6 w-6 rounded-full bg-slate-100 border-2 border-white flex items-center justify-center text-xs font-bold text-slate-500">
-                      +{sortedParticipants.length - 5}
-                    </div>
-                  )}
-                </div>
+                <AvatarStack
+                  people={sortedParticipants.map((p: any) => ({
+                    id: p.profile?.id ?? '',
+                    full_name: p.profile?.full_name ?? null,
+                    avatar_url: p.profile?.avatar_url ?? null,
+                  }))}
+                  max={5}
+                  size="sm"
+                />
               </div>
               {item.room && (
                 <div className="flex items-center gap-1.5 max-w-[140px]">

@@ -21,8 +21,13 @@ export type UserRole =
   | "hr_officer"
   | "driver";
 
-export type TaskStatus = "todo" | "doing" | "done" | "late" | "closed";
+// Enum sống: 5 giá trị code dùng. 'late'/'closed' còn tồn tại trong DB nhưng deprecated —
+// migration_tasks_revamp.sql migrate late→doing, closed→done+is_archived; không xoá value vì Postgres không cho.
+export type TaskStatus = "todo" | "doing" | "submitted" | "done" | "canceled";
 export type TaskPriority = "low" | "medium" | "high";
+
+export type TaskType = "task" | "report";
+export type ExtensionStatus = "pending" | "approved" | "rejected";
 
 export type ScheduleType = "meeting" | "trip" | "event" | "leave";
 export type ScheduleStatus = "pending" | "approved" | "rejected" | "in_progress" | "completed";
@@ -109,18 +114,15 @@ export interface Database {
           description: string | null;
           status: TaskStatus;
           priority: TaskPriority;
-          task_type: string | null;
-          progress: number;
+          task_type: TaskType | null;
           assignee_id: Uuid | null;
           created_by: Uuid | null;
           department_id: Uuid | null;
           due_date: Timestamp | null;
-          target_value: number | null;
-          current_value: number;
-          unit: string | null;
           metadata: Record<string, Json>;
           is_archived: boolean;
           created_at: Timestamp;
+          updated_at: Timestamp;
         };
         Insert: {
           id?: Uuid;
@@ -128,18 +130,15 @@ export interface Database {
           description?: string | null;
           status?: TaskStatus;
           priority?: TaskPriority;
-          task_type?: string | null;
-          progress?: number;
+          task_type?: TaskType | null;
           assignee_id?: Uuid | null;
           created_by?: Uuid | null;
           department_id?: Uuid | null;
           due_date?: Timestamp | null;
-          target_value?: number | null;
-          current_value?: number;
-          unit?: string | null;
           metadata?: Record<string, Json>;
           is_archived?: boolean;
           created_at?: Timestamp;
+          updated_at?: Timestamp;
         };
         Update: Partial<Database["public"]["Tables"]["tasks"]["Insert"]>;
       };
@@ -148,14 +147,44 @@ export interface Database {
         Row: {
           task_id: Uuid;
           user_id: Uuid;
-          created_at: Timestamp;
+          assigned_at: Timestamp;
         };
         Insert: {
           task_id: Uuid;
           user_id: Uuid;
-          created_at?: Timestamp;
+          assigned_at?: Timestamp;
         };
         Update: Partial<Database["public"]["Tables"]["task_assignees"]["Insert"]>;
+      };
+
+      task_extension_requests: {
+        Row: {
+          id: Uuid;
+          task_id: Uuid;
+          requested_by: Uuid;
+          reason: string | null;
+          old_due_date: Timestamp | null;
+          new_due_date: Timestamp;
+          status: ExtensionStatus;
+          reviewed_by: Uuid | null;
+          review_comment: string | null;
+          decided_at: Timestamp | null;
+          created_at: Timestamp;
+        };
+        Insert: {
+          id?: Uuid;
+          task_id: Uuid;
+          requested_by: Uuid;
+          reason?: string | null;
+          old_due_date?: Timestamp | null;
+          new_due_date: Timestamp;
+          status?: ExtensionStatus;
+          reviewed_by?: Uuid | null;
+          review_comment?: string | null;
+          decided_at?: Timestamp | null;
+          created_at?: Timestamp;
+        };
+        Update: Partial<Database["public"]["Tables"]["task_extension_requests"]["Insert"]>;
       };
 
       task_comments: {
@@ -498,6 +527,97 @@ export interface Database {
       };
       auto_archive_and_cleanup: {
         Args: Record<string, never>;
+        Returns: void;
+      };
+
+      // --- Module Tasks (migration_tasks_revamp.sql) ---
+      user_can_see_task: {
+        Args: { p_task_id: Uuid; p_user_id?: Uuid };
+        Returns: boolean;
+      };
+      tasks_dashboard: {
+        Args: { p_scope?: "mine" | "dept" | "branch"; p_filter?: Record<string, Json> };
+        Returns: {
+          counts: {
+            todo: number;
+            doing: number;
+            submitted: number;
+            done: number;
+            canceled: number;
+            overdue: number;
+            awaiting_approval: number;
+            extensions_pending: number;
+          };
+          lists: Array<{
+            id: Uuid;
+            title: string;
+            description: string | null;
+            status: TaskStatus;
+            priority: TaskPriority;
+            task_type: TaskType | null;
+            assignee_id: Uuid | null;
+            created_by: Uuid | null;
+            department_id: Uuid | null;
+            due_date: Timestamp | null;
+            created_at: Timestamp;
+            updated_at: Timestamp;
+            metadata: Record<string, Json>;
+            is_archived: boolean;
+            is_overdue: boolean;
+            department: { id: Uuid; name: string } | null;
+            creator: { id: Uuid; full_name: string | null; avatar_url: string | null } | null;
+            assignees: Array<{ id: Uuid; full_name: string | null; avatar_url: string | null }> | null;
+          }>;
+          resource_view: Array<{
+            user_id: Uuid;
+            full_name: string | null;
+            avatar_url: string | null;
+            active_count: number;
+            overdue_count: number;
+          }>;
+          scope: "mine" | "dept" | "branch";
+          role: UserRole;
+        };
+      };
+      task_create: {
+        Args: {
+          p_title: string;
+          p_description?: string | null;
+          p_task_type: TaskType;
+          p_priority?: TaskPriority | null;
+          p_due_date: Timestamp;
+          p_dept_id?: Uuid | null;
+          p_assignee_ids: Uuid[] | null;
+          p_metadata?: Record<string, Json>;
+        };
+        Returns: Uuid;
+      };
+      task_update_status: {
+        Args: { p_task_id: Uuid; p_new_status: TaskStatus; p_comment?: string | null };
+        Returns: void;
+      };
+      task_delegate: {
+        Args: { p_task_id: Uuid; p_assignee_ids: Uuid[] };
+        Returns: void;
+      };
+      task_request_extension: {
+        Args: { p_task_id: Uuid; p_new_due_date: Timestamp; p_reason?: string | null };
+        Returns: Uuid;
+      };
+      task_decide_extension: {
+        Args: { p_extension_id: Uuid; p_approve: boolean; p_comment?: string | null };
+        Returns: void;
+      };
+      task_add_comment: {
+        Args: { p_task_id: Uuid; p_body: string; p_attachment_ids?: Uuid[] | null };
+        Returns: Uuid;
+      };
+      task_cancel: {
+        Args: { p_task_id: Uuid; p_reason?: string | null };
+        Returns: void;
+      };
+      task_archive: {
+        Args: { p_task_id: Uuid; p_archive?: boolean };
         Returns: void;
       };
     };

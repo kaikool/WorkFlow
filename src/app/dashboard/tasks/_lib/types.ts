@@ -1,0 +1,81 @@
+// Type chung cho module Công việc. Lấy gốc từ database.types.ts + extend cho UI nhu cầu.
+import type { TaskStatus, TaskPriority, TaskType, ExtensionStatus, Tables } from '@/types/database.types';
+
+export type { TaskStatus, TaskPriority, TaskType, ExtensionStatus };
+
+type Json = string | number | boolean | null | { [k: string]: Json } | Json[];
+
+// Shape của 1 row trong list từ RPC tasks_dashboard
+export interface TaskListItem {
+  id: string;
+  title: string;
+  description: string | null;
+  status: TaskStatus;
+  priority: TaskPriority;
+  task_type: TaskType | null;
+  assignee_id: string | null;
+  created_by: string | null;
+  department_id: string | null;
+  due_date: string | null;
+  created_at: string;
+  updated_at: string;
+  metadata: Record<string, Json>;
+  is_archived: boolean;
+  is_overdue: boolean;
+  department: { id: string; name: string } | null;
+  creator: { id: string; full_name: string | null; avatar_url: string | null } | null;
+  assignees: Array<{ id: string; full_name: string | null; avatar_url: string | null }> | null;
+  // Optimistic-only flag (không có trong DB)
+  _pending?: boolean;
+}
+
+export interface DashboardCounts {
+  todo: number;
+  doing: number;
+  submitted: number;
+  done: number;
+  canceled: number;
+  overdue: number;
+  awaiting_approval: number;
+  extensions_pending: number;
+}
+
+export interface ResourceViewItem {
+  user_id: string;
+  full_name: string | null;
+  avatar_url: string | null;
+  active_count: number;
+  overdue_count: number;
+}
+
+export type TaskScope = 'mine' | 'dept' | 'branch';
+
+export interface TasksDashboardResult {
+  counts: DashboardCounts;
+  lists: TaskListItem[];
+  resource_view: ResourceViewItem[];
+  scope: TaskScope;
+  role: string;
+}
+
+// Detail (page [id]) lấy qua direct query — không qua RPC (cần join phong phú hơn)
+export type TaskRow = Tables<'tasks'>;
+export type TaskCommentRow = Tables<'task_comments'>;
+export type TaskExtensionRow = Tables<'task_extension_requests'>;
+
+export interface TaskDetail extends TaskRow {
+  department: { id: string; name: string } | null;
+  creator: { id: string; full_name: string | null; avatar_url: string | null } | null;
+  assignees: Array<{ id: string; full_name: string | null; avatar_url: string | null }>;
+  comments: Array<TaskCommentRow & {
+    user: { id: string; full_name: string | null; avatar_url: string | null } | null;
+  }>;
+  extension_requests: Array<TaskExtensionRow & {
+    requester: { id: string; full_name: string | null; avatar_url: string | null } | null;
+  }>;
+}
+
+// Result chuẩn của taskActions wrappers
+export type ActionResult<T = void> =
+  | { ok: true; data?: T }
+  | { ok: false; error: string };

@@ -1,33 +1,25 @@
-'use client'
+'use client';
 
-export const dynamic = 'force-dynamic'
+// Backward compat: noti link cũ /dashboard/tasks/[id] → redirect sang /dashboard/tasks?id=
+// Tasks detail giờ là Dialog đồng bộ với pattern Hồ sơ/Schedule.
 
-import { Suspense, useEffect, useState } from 'react'
-import { useParams } from 'next/navigation'
-import { Loader2 } from 'lucide-react'
-import { createClient } from '@/utils/supabase/client'
-import { TodoDetail } from '../_components/todos/TodoDetail'
-import { ReportDetail } from '../_components/reports/ReportDetail'
+import { useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { Loader2 } from 'lucide-react';
 
-function TaskRouter() {
-  const { id } = useParams<{ id: string }>()
-  const [taskType, setTaskType] = useState<string | null>(null)
-  const supabase = createClient()
+export default function TaskDetailRedirectPage() {
+  const params = useParams();
+  const router = useRouter();
+  const id = (params?.id ?? '') as string;
 
   useEffect(() => {
-    supabase.from('tasks').select('task_type').eq('id', id).single()
-      .then(({ data }: any) => setTaskType(data?.task_type ?? 'regular'))
-  }, [id])
+    if (id) router.replace(`/dashboard/tasks?id=${id}`);
+    else router.replace('/dashboard/tasks');
+  }, [id, router]);
 
-  if (!taskType) return <div className="flex h-96 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
-  if (taskType === 'report') return <ReportDetail id={id} />
-  return <TodoDetail id={id} />
-}
-
-export default function TaskDetailPage() {
   return (
-    <Suspense fallback={<div className="flex h-96 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>}>
-      <TaskRouter />
-    </Suspense>
-  )
+    <div className="page-container py-20 flex items-center justify-center">
+      <Loader2 className="icon-lg animate-spin text-slate-400" />
+    </div>
+  );
 }

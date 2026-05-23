@@ -30,23 +30,16 @@ export async function GET(request: Request) {
       console.error('Auto-archive error:', cleanupErr);
     }
 
-    // 1. CHECK OVERDUE TASKS
+    // 1. CHECK OVERDUE TASKS — chỉ notify, KHÔNG mark status='late' (late là derived)
     const { data: overdueTasks } = await supabase
       .from('tasks')
       .select('id, title, assignee_id, created_by, due_date, status, task_type')
       .lt('due_date', now.toISOString())
-      .neq('status', 'done')
-      .neq('status', 'closed')
-      .neq('status', 'late');
+      .not('status', 'in', '(done,canceled,submitted)')
+      .eq('is_archived', false);
 
     if (overdueTasks && overdueTasks.length > 0) {
-      // Mark them as late
-      await supabase
-        .from('tasks')
-        .update({ status: 'late' })
-        .in('id', overdueTasks.map(t => t.id));
-
-      // Create notifications
+      // Create notifications (status giữ nguyên — derived overdue ở UI)
       overdueTasks.forEach(task => {
         // Notify Assignee
         if (task.assignee_id) {
@@ -72,14 +65,14 @@ export async function GET(request: Request) {
     // 2. CHECK APPROACHING DEADLINES (Due in next 24 hours)
     const tomorrow = new Date(now);
     tomorrow.setDate(tomorrow.getDate() + 1);
-    
+
     const { data: upcomingTasks } = await supabase
       .from('tasks')
       .select('id, title, assignee_id')
       .gte('due_date', now.toISOString())
       .lte('due_date', tomorrow.toISOString())
-      .neq('status', 'done')
-      .neq('status', 'closed');
+      .not('status', 'in', '(done,canceled,submitted)')
+      .eq('is_archived', false);
 
     if (upcomingTasks && upcomingTasks.length > 0) {
       upcomingTasks.forEach(task => {

@@ -58,7 +58,7 @@ export default function MemberDetailPage() {
  const [recognitionType, setRecognitionType] = useState("praise");
  const [member, setMember] = useState<any>(null);
  const [memberTasks, setMemberTasks] = useState<any[]>([]);
- const [stats, setStats] = useState({ done: 0, pending: 0, total: 0, avgProgress: 0 });
+ const [stats, setStats] = useState({ done: 0, pending: 0, total: 0, completionRate: 0 });
  const [currentUser, setCurrentUser] = useState<any>(null);
 
  useEffect(() => {
@@ -129,14 +129,13 @@ export default function MemberDetailPage() {
  setMemberTasks(filteredTasks);
 
   const done = filteredTasks.filter((t: any) => t.status === 'done').length;
-  const pending = filteredTasks.filter((t: any) => t.status !== 'done').length;
+  const pending = filteredTasks.filter((t: any) => t.status !== 'done' && t.status !== 'canceled').length;
   const total = filteredTasks.length;
-  const progressSum = filteredTasks.reduce((acc: number, t: any) => acc + (t.progress || 0), 0);
- const avgProgress = total > 0 ? Math.round(progressSum / total) : 0;
- setStats({ done, pending, total, avgProgress });
+  const completionRate = total > 0 ? Math.round((done / total) * 100) : 0;
+ setStats({ done, pending, total, completionRate });
  } else {
  setMemberTasks([]);
- setStats({ done: 0, pending: 0, total: 0, avgProgress: 0 });
+ setStats({ done: 0, pending: 0, total: 0, completionRate: 0 });
  }
  } catch (error) {
  console.error(error);
@@ -198,7 +197,7 @@ export default function MemberDetailPage() {
  if (prog >= 50) return { label: "Tốt", color: "text-primary" };
  return { label: "Cần cải thiện", color: "text-amber-600" };
  };
- const perf = getPerf(stats.avgProgress);
+ const perf = getPerf(stats.completionRate);
 
  return (
  <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-8 animate-fade-in-up pb-20">
@@ -354,9 +353,21 @@ export default function MemberDetailPage() {
  </div>
  </div>
  <div className="flex items-center justify-between sm:justify-end gap-5 shrink-0 w-full sm:w-auto mt-2 sm:mt-0">
- <div className="text-right flex flex-col items-start sm:items-end gap-1.5 w-full sm:w-24">
- <span className="text-sm font-bold text-primary">{t.progress}%</span>
- <Progress value={t.progress} className="h-1.5 w-full sm:w-20 bg-slate-200/60 shadow-inner" />
+ <div className="text-right flex flex-col items-start sm:items-end gap-1.5 w-full sm:w-auto">
+ <Badge variant="outline" className={cn(
+   "px-2 py-1 text-[11px] font-medium",
+   t.status === 'done' ? "bg-emerald-50 text-emerald-700 border-emerald-100" :
+   t.status === 'submitted' ? "bg-blue-50 text-blue-700 border-blue-100" :
+   t.status === 'doing' ? "bg-amber-50 text-amber-700 border-amber-100" :
+   t.status === 'canceled' ? "bg-slate-100 text-slate-500 border-slate-200" :
+   "bg-white text-slate-600 border-slate-200"
+ )}>
+  {t.status === 'done' ? 'Hoàn thành' :
+   t.status === 'submitted' ? 'Đã nộp' :
+   t.status === 'doing' ? 'Đang làm' :
+   t.status === 'canceled' ? 'Đã hủy' :
+   'Chưa làm'}
+ </Badge>
  </div>
  <div className="hidden sm:flex p-2 bg-white rounded-xl shadow-sm border border-slate-100 group-hover:bg-primary group-hover:border-primary transition-all">
  <ArrowUpRight className="w-4 h-4 text-slate-400 group-hover:text-white transition-colors" />
@@ -423,10 +434,10 @@ export default function MemberDetailPage() {
  <div className="space-y-5">
  <div className="space-y-2">
  <div className="flex justify-between text-[12px] font-bold">
- <span className="text-slate-500">Tiến độ bình quân</span>
- <span className="text-primary">{stats.avgProgress}%</span>
+ <span className="text-slate-500">Tỉ lệ hoàn thành</span>
+ <span className="text-primary">{stats.completionRate}%</span>
  </div>
- <Progress value={stats.avgProgress} className="h-2.5 bg-slate-100 shadow-inner" />
+ <Progress value={stats.completionRate} className="h-2.5 bg-slate-100 shadow-inner" />
  </div>
  <div className="grid grid-cols-2 gap-4">
  <div className="space-y-1.5 p-4 bg-emerald-50/50 rounded-2xl border border-emerald-100 text-center">
