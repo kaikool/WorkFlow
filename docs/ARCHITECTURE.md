@@ -100,7 +100,7 @@ WorkFlow/
 │   │   ├── icon.png
 │   │   ├── login/                        # Public — không guard
 │   │   ├── register/
-│   │   ├── auth/                         # OAuth callback bounce
+│   │   ├── auth/                         # OAuth callback bounce → redirect '/'
 │   │   ├── api/
 │   │   │   └── cron/notifications/       # Vercel cron daily 8h
 │   │   └── dashboard/                    # Protected (qua middleware + dashboard/layout)
@@ -127,13 +127,16 @@ WorkFlow/
 │   ├── lib/                              # Pure helper, không phụ thuộc React
 │   │   ├── utils.ts                      # cn(), sortProfilesByHierarchy(), ...
 │   │   ├── permissions.ts                # canXxx() helpers (xem §6.4)
+│   │   ├── notify.ts                     # ⭐ notifyError / notifySuccess / notifyValidation (xem §7.2)
 │   │   └── auth-utils.ts                 # getProfile() — RSC only
+│   ├── types/                            # Type chung dùng xuyên dự án
+│   │   ├── profile.ts                    # Profile, ProfileLite, Department, UserRole
+│   │   └── database.types.ts             # Database<> theo schema Supabase (hand-craft, xem §6.7)
 │   └── utils/
 │       └── supabase/
 │           ├── client.ts                 # Browser client (singleton)
 │           └── server.ts                 # Server client (RSC + middleware)
 ├── tailwind.config.ts                    # ⭐ CHUẨN — chỉ sửa file này
-├── tailwing.config.ts                    # ⛔ FILE TYPO CŨ — không động vào, sẽ dọn sau
 ├── tsconfig.json
 ├── next.config.ts
 ├── package.json
@@ -155,6 +158,7 @@ WorkFlow/
 | `src/components/` (root) | Component dùng chéo ≥2 module | Component chỉ dùng 1 module — đẩy vào module |
 | `src/hooks/` | Hook dùng toàn cục (useToast, useMobile, ...) | Hook chỉ phục vụ 1 module |
 | `src/lib/` | Pure JS/TS helper (không import React, không có hook) | Component, hook, side-effect |
+| `src/types/` | Type/interface dùng chéo ≥2 module (Profile, Database, ...) | Type chỉ phục vụ 1 module — để trong `_lib/types.ts` của module |
 | `src/utils/supabase/` | Chỉ 2 file — `client.ts` và `server.ts` | Không thêm file khác vào đây |
 | `supabase/` | Migration `.sql` flat-file, edge functions | Code app, generated types |
 
@@ -381,6 +385,32 @@ Component này có là shadcn primitive cần thiết?
 ```
 
 Variant: `--lg` (32rem), `--xl` (36rem), `--2xl` (42rem). **Cấm tự viết className inline với `calc(100dvh-...)`** — đã centralize trong `globals.css`.
+
+### 4.5 Anti-pattern: ScrollArea lồng trong DropdownMenu / app-dialog-sheet
+
+**Cấm** dùng `ScrollArea` (Radix) bên trong `DropdownMenuContent` hoặc bên trong `app-dialog-sheet-body`. Lý do:
+
+- `DropdownMenuContent` intercept touch events cho keyboard navigation → ScrollArea bên trong không nhận được swipe trên mobile → scroll bị khóa.
+- `app-dialog-sheet-body` đã có `overflow-y: auto; overscroll-behavior: contain;` → lồng thêm ScrollArea tạo nested scroll → mobile cũng khóa.
+
+**Pattern đúng** — dùng plain div với utility Tailwind:
+
+```tsx
+// Trong DropdownMenu
+<div className="max-h-[70vh] sm:max-h-[420px] overflow-y-auto overscroll-contain">
+  {items.map(...)}
+</div>
+
+// Trong app-dialog-sheet
+<div className="app-dialog-sheet-body">
+  {/* CONTENT TRỰC TIẾP — không cần wrapper scroll */}
+  <div className="space-y-4 px-[var(--app-page-x)] py-4">
+    {items.map(...)}
+  </div>
+</div>
+```
+
+`ScrollArea` chỉ dùng khi cần scroll trong container ĐỘC LẬP (không phải Dialog/Dropdown) và muốn có scrollbar tuỳ chỉnh — ví dụ sidebar nội dung dài, card scroll horizontal.
 
 ---
 
@@ -714,6 +744,56 @@ return () => {
 - Trước upload: **nén client-side** qua `browser-image-compression` (xem `_lib/compressImage.ts`).
 - Sau upload: `getPublicUrl(path)` → lưu URL đầy đủ vào DB.
 - Cleanup file: dùng Edge Function chạy theo lịch (xem `cleanup-document-images`).
+
+### 6.7 Database types
+
+File `src/types/database.types.ts` là **hand-craft** theo schema + migrations hiện tại. Khi nào cài được Supabase CLI, thay bằng auto-gen:
+
+```bash
+npx supabase login                                        # browser auth 1 lần
+npx supabase gen types typescript --project-id <ref> > src/types/database.types.ts
+```
+
+**Cách dùng các shortcut type**:
+
+```ts
+import type { Tables, TablesInsert, TablesUpdate } from "@/types/database.types";
+
+type Document = Tables<"documents">;
+type DocumentInsert = TablesInsert<"documents">;
+// → autocomplete cho mọi cột trong bảng
+```
+
+**Quy tắc bảo trì**: mỗi lần thêm bảng/cột mới vào migration, **bắt buộc** cập nhật `database.types.ts` tương ứng (hoặc chạy lại CLI gen). Để file lệch khỏi schema = mất type safety toàn dự án.
+
+### 6.8 Workflow status với transit state (PENDING_RECEIPT pattern)
+
+Module `handover` (luân chuyển hồ sơ) có **trạng thái trung gian** — bài học từ implementation:
+
+- `transfer_document` RPC chỉ đổi `status = PENDING_RECEIPT`, **KHÔNG** đổi `current_assignee_id` ngay.
+- Ownership chỉ thực sự sang receiver khi họ `acknowledge_document` (status `IN_REVIEW`, current_assignee_id mới được update).
+- Nếu receiver `reject_document` → status `RETURNED`, current_assignee_id revert về sender.
+
+**Hệ quả với UI** — quy tắc bắt buộc cho mọi workflow status có transit state:
+
+1. **Ẩn nút action của sender khi đang chờ receiver**:
+   ```ts
+   const canSenderAct = isHolder
+     && !outgoingPending           // không có handover PENDING từ tôi
+     && doc.status !== "PENDING_RECEIPT"
+     && doc.status !== "COMPLETED";
+   ```
+
+2. **Hiển thị "người đang chờ nhận" thay vì "người đang giữ" khi PENDING_RECEIPT**:
+   ```ts
+   const displayPerson = doc.status === "PENDING_RECEIPT"
+     ? outgoingPending?.receiver       // người tiếp theo
+     : doc.current_assignee;           // người đang giữ thực sự
+   ```
+
+3. **Phân loại Inbox/Outbox theo handover thay vì current_assignee_id**: doc có `outgoing PENDING` từ user → Outbox (dù `current_assignee_id` vẫn là user). Doc có `incoming PENDING` cho user → Inbox.
+
+Áp dụng pattern này cho mọi feature có handover/approval flow trong tương lai.
 
 ---
 
