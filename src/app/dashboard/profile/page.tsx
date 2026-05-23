@@ -36,6 +36,7 @@ import { useToast } from "@/hooks/use-toast";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
 import { getProfileDisplayTitle, getProfileTitleBadgeClass, cn } from "@/lib/utils";
+import ChangePasswordSection from "./_components/ChangePasswordSection";
 
 export default function ProfilePage() {
   const [profile, setProfile] = useState<any>(null);
@@ -391,6 +392,8 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
+
+      <ChangePasswordSection profileId={profile?.id} mustChange={profile?.must_change_password === true} />
     </div>
   );
 }

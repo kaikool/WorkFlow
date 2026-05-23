@@ -337,7 +337,7 @@ function LoginForm() {
                     id="password"
                     type="password"
                     placeholder="••••••••"
-                    minLength={6}
+                    minLength={isSignUp ? 6 : undefined}
                     className="pl-11 min-h-11 bg-slate-50 border-none rounded-xl font-medium text-sm"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
