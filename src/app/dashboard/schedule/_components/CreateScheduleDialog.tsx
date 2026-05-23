@@ -110,7 +110,10 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
           <Plus className="w-5 h-5 mr-2" /> Đăng ký lịch mới
         </Button>
       </DialogTrigger>
-      <DialogContent className="flex w-[calc(100dvw-2rem)] max-w-lg max-h-[calc(100dvh-2rem)] flex-col overflow-hidden rounded-2xl border-none p-0 shadow-2xl">
+      <DialogContent 
+        className="flex flex-col overflow-hidden border-none p-0 shadow-2xl w-full max-w-lg !bottom-0 !top-auto !translate-y-0 !rounded-t-[32px] !rounded-b-none sm:!top-[50%] sm:!bottom-auto sm:!-translate-y-1/2 sm:w-[calc(100dvw-2rem)] sm:!rounded-3xl"
+        style={{ maxHeight: 'calc(100dvh - env(safe-area-inset-top))' }}
+      >
         <DialogHeader className="shrink-0 px-5 pt-5 sm:px-6 sm:pt-6">
           <DialogTitle className="text-[17px] font-semibold text-slate-900">Thiết lập lịch trình mới</DialogTitle>
           <DialogDescription className="sr-only">Thiết lập chi tiết thời gian và thành phần tham gia cho lịch trình mới</DialogDescription>
@@ -394,7 +397,7 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
           )}
         </div>
         </div>
-        <DialogFooter className="shrink-0 border-t border-slate-100 bg-background/95 px-5 py-4 sm:px-6">
+        <DialogFooter className="shrink-0 border-t border-slate-100 bg-background/95 px-5 py-4 sm:px-6 pb-safe">
           <Button
             onClick={onSubmit}
             className={cn(

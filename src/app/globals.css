@@ -585,6 +585,10 @@ main > div[class*="max-w-5xl"][class*="mx-auto"] {
   margin-top: env(safe-area-inset-top);
 }
 
+.pb-safe {
+  padding-bottom: max(env(safe-area-inset-bottom), 1rem);
+}
+
 /* ==============================================================
    ĐỒNG BỘ AVATAR — Snap mọi kích thước về 3 tier (32 / 40 / 44).
    Quy ước: tất cả Avatar shadcn (rounded-full + class h-X w-X)

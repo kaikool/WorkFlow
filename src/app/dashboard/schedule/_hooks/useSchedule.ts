@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { addDays, endOfDay, isSameDay, startOfWeek, endOfWeek, eachDayOfInterval } from "date-fns";
@@ -16,19 +16,32 @@ export function useSchedule() {
   const timelineContainerRef = useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = useState(false);
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
 
   // Auto-open create dialog khi navigated with ?type=leave (e.g. from HR dashboard) hoặc ?create=1 (FAB mobile)
   useEffect(() => {
     const typeParam = searchParams.get('type');
     const createParam = searchParams.get('create');
+    let shouldUpdateUrl = false;
+    const params = new URLSearchParams(searchParams.toString());
+
     if (typeParam === 'leave') {
       setNewSchedule(prev => ({ ...prev, type: 'leave' }));
       setIsCreateOpen(true);
+      params.delete('type');
+      shouldUpdateUrl = true;
     } else if (createParam === '1') {
       setIsCreateOpen(true);
+      params.delete('create');
+      shouldUpdateUrl = true;
+    }
+
+    if (shouldUpdateUrl) {
+      router.replace(`${pathname}?${params.toString()}`);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [searchParams, pathname, router]);
 
   // Dữ liệu chính
   const [schedules, setSchedules] = useState<any[]>([]);
