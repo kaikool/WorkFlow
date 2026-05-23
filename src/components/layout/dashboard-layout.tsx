@@ -23,7 +23,9 @@ import {
  DropdownMenuItem,
  DropdownMenuLabel,
  DropdownMenuSeparator,
- DropdownMenuTrigger
+ DropdownMenuTrigger,
+ DropdownMenuRadioGroup,
+ DropdownMenuRadioItem,
 } from "@/components/ui/dropdown-menu";
 import {
  AlertDialog,
@@ -106,30 +108,32 @@ function TopNavActionsContent() {
           />
         </div>
         
-        {/* Bộ lọc trạng thái — icon-only trigger, đồng bộ style với Bell/Avatar (rounded-full) */}
+        {/* Bộ lọc trạng thái — Button + DropdownMenu để khớp 100% style với Bell */}
         {config.hasStatusFilter && (
-          <Select value={status} onValueChange={handleStatusFilter}>
-          <SelectTrigger
-            className={cn(
-              "relative flex h-11 w-11 items-center justify-center rounded-full border-none bg-transparent shadow-none hover:bg-slate-100 focus:ring-0 shrink-0 transition-all [&>svg.lucide-chevron-down]:hidden",
-              isFiltering && "bg-amber-50 hover:bg-amber-100"
-            )}
-            aria-label={isFiltering ? "Bộ lọc đang được áp dụng" : "Mở bộ lọc"}
-            title={isFiltering ? "Đang áp dụng bộ lọc" : "Mở bộ lọc"}
-          >
-            <SlidersHorizontal className={cn("h-5 w-5", isFiltering ? "text-amber-700" : "text-slate-600")} />
-            {isFiltering && (
-              <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-amber-500 ring-2 ring-white" />
-            )}
-          </SelectTrigger>
-          <SelectContent className="rounded-xl border border-slate-100 shadow-premium">
-            <SelectItem value="all">Tất cả trạng thái</SelectItem>
-            <SelectItem value="todo">Đang chờ</SelectItem>
-            <SelectItem value="doing">Đang làm</SelectItem>
-            <SelectItem value="done">Hoàn thành</SelectItem>
-            <SelectItem value="late">Trễ hạn</SelectItem>
-          </SelectContent>
-        </Select>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="relative h-11 w-11 rounded-full hover:bg-slate-100 transition-all shrink-0"
+                aria-label={isFiltering ? "Bộ lọc đang được áp dụng" : "Mở bộ lọc"}
+              >
+                <SlidersHorizontal className={cn("h-5 w-5", isFiltering ? "text-amber-700" : "text-slate-600")} />
+                {isFiltering && (
+                  <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-amber-500 ring-2 ring-white" />
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48 rounded-xl border border-slate-100 shadow-premium">
+              <DropdownMenuRadioGroup value={status} onValueChange={handleStatusFilter}>
+                <DropdownMenuRadioItem value="all" className="rounded-lg font-medium">Tất cả trạng thái</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="todo" className="rounded-lg font-medium">Đang chờ</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="doing" className="rounded-lg font-medium">Đang làm</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="done" className="rounded-lg font-medium">Hoàn thành</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="late" className="rounded-lg font-medium">Trễ hạn</DropdownMenuRadioItem>
+              </DropdownMenuRadioGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
       </div>
 
@@ -146,28 +150,30 @@ function TopNavActionsContent() {
         </Button>
 
         {config.hasStatusFilter && (
-          <Select value={status} onValueChange={handleStatusFilter}>
-            <SelectTrigger
-              className={cn(
-                "relative flex h-11 w-11 items-center justify-center rounded-full border-none bg-transparent shadow-none hover:bg-slate-100 focus:ring-0 shrink-0 transition-all [&>svg.lucide-chevron-down]:hidden",
-                isFiltering && "bg-amber-50 hover:bg-amber-100"
-              )}
-              aria-label={isFiltering ? "Bộ lọc đang được áp dụng" : "Mở bộ lọc"}
-              title={isFiltering ? "Đang áp dụng bộ lọc" : "Mở bộ lọc"}
-            >
-              <SlidersHorizontal className={cn("h-5 w-5", isFiltering ? "text-amber-700" : "text-slate-600")} />
-              {isFiltering && (
-                <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-amber-500 ring-2 ring-white" />
-              )}
-            </SelectTrigger>
-            <SelectContent className="rounded-xl border border-slate-100 shadow-premium">
-              <SelectItem value="all">Tất cả trạng thái</SelectItem>
-              <SelectItem value="todo">Đang chờ</SelectItem>
-              <SelectItem value="doing">Đang làm</SelectItem>
-              <SelectItem value="done">Hoàn thành</SelectItem>
-              <SelectItem value="late">Trễ hạn</SelectItem>
-            </SelectContent>
-          </Select>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="relative h-11 w-11 rounded-full hover:bg-slate-100 transition-all shrink-0"
+                aria-label={isFiltering ? "Bộ lọc đang được áp dụng" : "Mở bộ lọc"}
+              >
+                <SlidersHorizontal className={cn("h-5 w-5", isFiltering ? "text-amber-700" : "text-slate-600")} />
+                {isFiltering && (
+                  <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-amber-500 ring-2 ring-white" />
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48 rounded-xl border border-slate-100 shadow-premium">
+              <DropdownMenuRadioGroup value={status} onValueChange={handleStatusFilter}>
+                <DropdownMenuRadioItem value="all" className="rounded-lg font-medium">Tất cả trạng thái</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="todo" className="rounded-lg font-medium">Đang chờ</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="doing" className="rounded-lg font-medium">Đang làm</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="done" className="rounded-lg font-medium">Hoàn thành</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="late" className="rounded-lg font-medium">Trễ hạn</DropdownMenuRadioItem>
+              </DropdownMenuRadioGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
       </div>
 
@@ -185,28 +191,30 @@ function TopNavActionsContent() {
             />
           </div>
           {config.hasStatusFilter && (
-            <Select value={status} onValueChange={handleStatusFilter}>
-            <SelectTrigger
-              className={cn(
-                "relative flex h-11 w-11 items-center justify-center rounded-full border-none bg-transparent shadow-none hover:bg-slate-100 focus:ring-0 shrink-0 transition-all [&>svg.lucide-chevron-down]:hidden",
-                isFiltering && "bg-amber-50 hover:bg-amber-100"
-              )}
-              aria-label={isFiltering ? "Bộ lọc đang được áp dụng" : "Mở bộ lọc"}
-              title={isFiltering ? "Đang áp dụng bộ lọc" : "Mở bộ lọc"}
-            >
-              <SlidersHorizontal className={cn("h-5 w-5", isFiltering ? "text-amber-700" : "text-slate-600")} />
-              {isFiltering && (
-                <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-amber-500 ring-2 ring-white" />
-              )}
-            </SelectTrigger>
-            <SelectContent className="rounded-xl border border-slate-100 shadow-premium">
-              <SelectItem value="all">Tất cả trạng thái</SelectItem>
-              <SelectItem value="todo">Đang chờ</SelectItem>
-              <SelectItem value="doing">Đang làm</SelectItem>
-              <SelectItem value="done">Hoàn thành</SelectItem>
-              <SelectItem value="late">Trễ hạn</SelectItem>
-            </SelectContent>
-          </Select>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="relative h-11 w-11 rounded-full hover:bg-slate-100 transition-all shrink-0"
+                  aria-label={isFiltering ? "Bộ lọc đang được áp dụng" : "Mở bộ lọc"}
+                >
+                  <SlidersHorizontal className={cn("h-5 w-5", isFiltering ? "text-amber-700" : "text-slate-600")} />
+                  {isFiltering && (
+                    <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-amber-500 ring-2 ring-white" />
+                  )}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48 rounded-xl border border-slate-100 shadow-premium">
+                <DropdownMenuRadioGroup value={status} onValueChange={handleStatusFilter}>
+                  <DropdownMenuRadioItem value="all" className="rounded-lg font-medium">Tất cả trạng thái</DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="todo" className="rounded-lg font-medium">Đang chờ</DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="doing" className="rounded-lg font-medium">Đang làm</DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="done" className="rounded-lg font-medium">Hoàn thành</DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="late" className="rounded-lg font-medium">Trễ hạn</DropdownMenuRadioItem>
+                </DropdownMenuRadioGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
           <Button variant="ghost" className="shrink-0 text-slate-600 font-medium px-3 rounded-xl h-11" onClick={() => setIsMobileSearchOpen(false)}>
             Huỷ
