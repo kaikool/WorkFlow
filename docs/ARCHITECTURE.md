@@ -107,8 +107,7 @@ WorkFlow/
 │   │       ├── layout.tsx                # RSC: getProfile() + DashboardLayout wrap
 │   │       ├── page.tsx                  # Trang dashboard chính
 │   │       ├── _components/              # Component dùng chung dashboard root
-│   │       ├── tasks/                    # MODULE
-│   │       ├── kpi/
+│   │       ├── tasks/
 │   │       ├── schedule/                 # ⭐ MẪU CHUẨN
 │   │       ├── handover/                 # ⭐ MẪU CHUẨN
 │   │       ├── team/
@@ -175,7 +174,6 @@ WorkFlow/
 | `schedule` | ✅ | ✅ | ✅ | ⭐ Chuẩn mẫu |
 | `handover` | ✅ | ✅ | ✅ | ⭐ Chuẩn mẫu |
 | `tasks` | ✅ | ❌ | ❌ | Đang lệch — sẽ refactor khi đụng |
-| `kpi` | ❌ | ✅ | ❌ | Đang lệch — `page.tsx` 468 dòng quá to |
 | `team` | ❌ | ❌ | ❌ | Single-file module, chấp nhận nếu < 300 dòng |
 | `admin` | ❌ | ✅ | ❌ | Đang lệch |
 
@@ -199,7 +197,7 @@ WorkFlow/
 | Avatar size | `.avatar-sm` (32px) / `.avatar-md` (40px) / `.avatar-lg` (44px) | |
 | Card | `.premium-card` / `.glass-card` / `.card-base` | |
 | Status badge | `.status-{success,warning,danger,info,neutral,focal}-bg` | Tô màu theo nghĩa nghiệp vụ |
-| Status badge (legacy) | `.badge-{success,warning,danger,info,neutral,kpi,award}` | |
+| Status badge (legacy) | `.badge-{success,warning,danger,info,neutral,award}` | |
 | Safe area | `.pt-safe` / `.pb-safe` / `.top-safe` / `.bottom-safe` / `.bottom-safe-fab` / `.pb-mobile-nav` | iOS notch + home indicator |
 | Dialog sheet | `.app-dialog-sheet` + variant `--lg`/`--xl`/`--2xl` + `app-dialog-sheet-{header,body,footer}` | Tất cả popup form/detail |
 | Page wrapper | `.page-container` | Wrap mọi dashboard page |
@@ -834,7 +832,7 @@ Checklist **bắt buộc** theo thứ tự. Áp dụng cho mọi module mới (v
 - [ ] Insert row `notifications (user_id, title, content, type, link)` từ trong RPC `SECURITY DEFINER`.
 - [ ] Webhook đã setup sẵn cho table `notifications` → push-notification edge function tự fire.
 - [ ] **Cấm gọi push từ client** — luôn qua DB.
-- [ ] **Loại trừ tài xế** khỏi thông báo nghiệp vụ thông thường (TECHNICAL_RULES §5.E.2).
+- [ ] **Loại trừ tài xế** khỏi thông báo nghiệp vụ thông thường (TECHNICAL_RULES §5.D.2).
 
 ### Phase 8 — Verify
 
@@ -862,9 +860,7 @@ Các điểm code hiện tại lệch chuẩn đã định ở trên. **Không s
 | Khu vực | Vấn đề | Chuẩn áp dụng |
 |--------|--------|---------------|
 | `tailwing.config.ts` | File typo tên cũ, song song `tailwind.config.ts` | Sẽ xoá khi xác nhận không dùng |
-| Modules `tasks/kpi/team/admin` | Không đủ `_components/_hooks/_lib` | Khi đụng → tách dần |
-| `kpi/page.tsx` 468 dòng | Quá to | Tách thành dialog/card subcomponent |
-| `useKPI.ts` không có realtime | Lệch chuẩn | Subscribe `kpi_realtime_sync` |
+| Modules `tasks/team/admin` | Không đủ `_components/_hooks/_lib` | Khi đụng → tách dần |
 | Type `profile: any` khắp nơi | Mất type safety | Khi đụng → tạo `src/types/profile.ts` (file mới) + dần migrate |
 | `database.types.ts` chưa gen từ Supabase | | Khuyến nghị chạy `supabase gen types typescript` định kỳ |
 | Form chưa dùng `react-hook-form` + `zod` | Đã có dep nhưng chưa dùng | Form > 4 field tới đây dùng pattern này |

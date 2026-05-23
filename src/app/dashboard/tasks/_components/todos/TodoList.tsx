@@ -49,7 +49,7 @@ export function TodoList({ searchQuery, filterStatus }: TodoListProps) {
       let query = supabase
         .from('tasks')
         .select(`*, creator:profiles!tasks_created_by_fkey(full_name,avatar_url,department_id), department:departments(name), task_assignees(profile:profiles(id,full_name,avatar_url,role,is_department_head))`)
-        // Chỉ lấy công việc (task), không lấy báo cáo hay KPI
+        // Chỉ lấy công việc, loại trừ báo cáo
         .neq('task_type', 'report')
 
       if (user) {
@@ -70,7 +70,6 @@ export function TodoList({ searchQuery, filterStatus }: TodoListProps) {
   }
 
   const displayData = tasks.filter(t => {
-    if (t.task_type === 'kpi') return false
     if (filterStatus === 'all') {
       if (!searchQuery && t.status === 'done') return false
       if (t.is_archived) return false
@@ -180,7 +179,7 @@ export function TodoList({ searchQuery, filterStatus }: TodoListProps) {
                   <TableCell>
                     <div className="flex flex-col gap-2 items-center">
                       <span className="text-sm font-medium text-primary">
-                        {task.task_type === 'kpi' ? `${task.current_value || 0}/${task.target_value || '∞'}` : `${task.progress || 0}%`}
+                        {task.progress || 0}%
                       </span>
                       <Progress value={task.progress} className="h-1 w-16 bg-slate-100 shadow-inner" />
                     </div>

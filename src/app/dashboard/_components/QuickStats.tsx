@@ -1,11 +1,10 @@
 import React from 'react';
-import { TrendingUp, TrendingDown, Clock, Briefcase, Target, Trophy } from 'lucide-react';
+import { TrendingUp, TrendingDown, Clock, Briefcase, Trophy } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Progress } from '@/components/ui/progress';
 
 export default function QuickStats({ stats }: { stats: any }) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
       <div className="premium-card border border-slate-200 bg-white p-4 sm:p-5 min-h-[104px] transition-all hover:shadow-premium-hover">
         <div className="flex items-start justify-between gap-3">
           <p className="text-xs font-bold text-slate-500 truncate">Năng suất tuần</p>
@@ -49,20 +48,6 @@ export default function QuickStats({ stats }: { stats: any }) {
             Trễ {stats.totalLate}
           </span>
         </div>
-      </div>
-
-      <div className="premium-card border border-slate-200 bg-white p-4 sm:p-5 min-h-[104px] transition-all hover:shadow-premium-hover">
-        <div className="flex items-start justify-between gap-3">
-          <p className="text-xs font-bold text-slate-500 truncate">Kế hoạch</p>
-          <Target className="h-5 w-5 shrink-0 text-emerald-700" />
-        </div>
-        <div className="mt-3 flex items-end justify-between gap-3">
-          <p className="text-2xl font-extrabold text-slate-900 tabular-nums">{stats.kpiProgress}%</p>
-          <span className="text-xs font-bold text-blue-700 whitespace-nowrap">
-            {stats.kpiCount} chỉ tiêu
-          </span>
-        </div>
-        <Progress value={Math.min(100, stats.kpiProgress)} className="mt-3 h-1.5 bg-slate-100" />
       </div>
     </div>
   );

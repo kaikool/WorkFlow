@@ -8,13 +8,13 @@
 
 ## 1. TỔNG QUAN DỰ ÁN & MA TRẬN VAI TRÒ (ROLES MATRIX)
 
-Dự án **projectFlow** là cổng thông tin nội bộ của đơn vị tài chính/ngân hàng truyền thống, chịu trách nhiệm quản lý công việc nghiệp vụ, chỉ tiêu KPIs kinh doanh, đặt phòng họp, điều phối xe công và duyệt nghỉ phép.
+Dự án **projectFlow** là cổng thông tin nội bộ của đơn vị tài chính/ngân hàng truyền thống, chịu trách nhiệm quản lý công việc nghiệp vụ, đặt phòng họp, điều phối xe công, duyệt nghỉ phép và luân chuyển hồ sơ vật lý.
 
 Hệ thống được chia thành **7 vai trò cốt lõi** với các đặc quyền và giao diện chuyên biệt:
 *   `admin` (Quản trị hệ thống): Toàn quyền cấu hình, phê duyệt tài khoản, truy cập toàn bộ dữ liệu.
 *   `director` (Ban Giám đốc - BGĐ): Quản lý vĩ mô, theo dõi dòng thời gian (Timeline) của toàn bộ chi nhánh, duyệt đơn nghỉ phép của Trưởng phòng/Lãnh đạo đơn vị.
-*   `manager` (Lãnh đạo đơn vị / Trưởng phòng): Quản lý nhân sự và công việc trong phòng ban mình phụ trách, giao chỉ tiêu KPIs cho cán bộ, duyệt nghỉ phép của cán bộ thuộc phòng.
-*   `staff` (Cán bộ nhân viên): Tiếp nhận công việc, cập nhật số liệu đóng góp KPIs cá nhân, đăng ký lịch họp/lịch công tác, tạo đơn xin nghỉ phép.
+*   `manager` (Lãnh đạo đơn vị / Trưởng phòng): Quản lý nhân sự và công việc trong phòng ban mình phụ trách, duyệt nghỉ phép của cán bộ thuộc phòng.
+*   `staff` (Cán bộ nhân viên): Tiếp nhận công việc, đăng ký lịch họp/lịch công tác, tạo đơn xin nghỉ phép.
 *   `secretary` (Thư ký Tổ chức Tổng hợp - TCTH): Điều phối tài nguyên dùng chung gồm phòng họp và xe công, quản lý danh mục xe/phòng.
 *   `hr_officer` (Cán bộ Nhân sự): Quản lý hồ sơ nhân sự, xem toàn bộ danh bạ đơn vị, phê duyệt nghỉ phép bước cuối (sau khi Trưởng phòng duyệt).
 *   `driver` (Tài xế cơ quan): Sử dụng không gian làm việc chuyên biệt (Driver Workspace) trên di động để nhận chuyến, cập nhật chỉ số Km hành trình và báo cáo sự cố phương tiện.
@@ -91,12 +91,7 @@ Dự án áp dụng an ninh dữ liệu chặt chẽ từ tầng cơ sở dữ l
     *   Manager: Xem và cập nhật các công việc thuộc phòng ban mình phụ trách (`department_id` trùng khớp).
     *   Staff: Chỉ được xem/cập nhật nếu là người được giao (`assignee_id`), người tạo (`created_by`), có tên trong bảng phân công phụ (`task_assignees`), hoặc được chỉ định xử lý trong metadata của công việc (`metadata->'assigned_line'`).
 
-### C. Bảng KPIs (Chỉ tiêu kinh doanh)
-*   `SELECT`: Giới hạn truy cập giống như bảng `tasks`.
-*   `INSERT`: Chỉ cho phép `admin`, `director` hoặc `manager` tạo chỉ tiêu mới cho đơn vị mình phụ trách. Cán bộ thường (`staff`, `driver`) không được phép tạo chỉ tiêu KPIs.
-*   `UPDATE`: Admin, Director, Manager và người tạo hoặc người được giao (`assignee_id`).
-
-### D. Bảng Schedules (Lịch trình & Đăng ký phòng họp/xe công)
+### C. Bảng Schedules (Lịch trình & Đăng ký phòng họp/xe công)
 *   `SELECT`: Cho phép đọc nếu thỏa mãn một trong các điều kiện:
     *   Người dùng là người tạo lịch trình (`created_by = auth.uid()`).
     *   Lịch trình thuộc phòng ban của người dùng (`department_id = user.department_id`).
@@ -109,20 +104,7 @@ Dự án áp dụng an ninh dữ liệu chặt chẽ từ tầng cơ sở dữ l
 
 ## 5. LOGIC NGHIỆP VỤ CHI TIẾT (BUSINESS LOGICS)
 
-### A. Quản Lý KPIs & Chỉ Tiêu Đóng Góp
-1.  **Tách Biệt Hoàn Toàn KPI Với Công Việc:** Chỉ tiêu KPIs kinh doanh được lưu trữ tại bảng riêng `kpis` trên cơ sở dữ liệu. **Tuyệt đối không hiển thị chỉ tiêu KPIs ở giao diện danh sách Công việc Nghiệp vụ thông thường** (`/dashboard/tasks`).
-2.  **Công Thức Tiến Độ:** Tiến độ của một chỉ tiêu KPIs được tính toán tự động dựa trên tổng giá trị thực tế đạt được chia cho giá trị mục tiêu:
-    $$\text{Tiến độ (\%)} = \text{Round}\left(\frac{\text{Tổng giá trị thực tế}}{\text{Mục tiêu}} \times 100\right)$$
-3.  **Cơ Chế Phân Bổ Đóng Góp:**
-    *   **Đối với Cán bộ:** Tự cập nhật đóng góp thực tế cá nhân của mình thông qua giao diện nhập liệu dạng tăng/giảm nhanh (`+`/`-`) ở trang chi tiết KPI. Hệ thống lưu đóng góp của từng người trong trường `metadata.contributions` dạng cặp khóa-trị `{ [user_id]: number }`.
-    *   **Đối với Lãnh đạo (Manager/Director/Admin):**
-        *   Có quyền điều chỉnh trực tiếp đóng góp của từng cán bộ thông qua giao diện nhập số liệu chuyên biệt của lãnh đạo. Khi lưu, hệ thống tự động tính lại tổng và cập nhật trường `current_value`, đồng thời kích hoạt thông báo tự động cho cán bộ có số liệu bị thay đổi.
-        *   **Hiệu chỉnh phòng (General Adjustment):** Lãnh đạo có thể nhập một con số hiệu chỉnh chung cho cả đơn vị (được lưu tại `metadata.general_adjustment`). Số này sẽ được cộng trực tiếp vào tổng thực tế đạt được:
-            $$\text{Tổng giá trị thực tế} = \sum(\text{Đóng góp của các cá nhân}) + \text{Hiệu chỉnh phòng}$$
-4.  **Tự Động Hóa Trạng Thái:** Khi tổng giá trị thực tế đạt hoặc vượt mục tiêu (Tiến độ $\ge 100\%$), hệ thống sẽ tự động chuyển trạng thái chỉ tiêu đó sang `done` (Hoàn thành) và gửi thông báo vinh danh cho người giao chỉ tiêu.
-5.  **Chỉ Tiêu Trọng Tâm (Focal KPI):** Lãnh đạo hoặc người tạo có quyền ghim một chỉ tiêu thành "Kế hoạch trọng tâm" (`metadata.is_focal = true`). Chỉ tiêu này sẽ hiển thị nổi bật với biểu tượng Ngôi sao vàng kim và hiển thị ưu tiên trên dashboard của đơn vị.
-
-### B. Cơ Chế Kiểm Tra & Giải Quyết Xung Đột Tài Nguyên
+### A. Cơ Chế Kiểm Tra & Giải Quyết Xung Đột Tài Nguyên
 1.  **Xung Đột Lịch Trình Cá Nhân (Attendee Conflicts):**
     *   Khi tạo hoặc sửa lịch trình (`type = 'meeting'` hoặc `'trip'`), hệ thống sẽ quét toàn bộ danh sách người tham gia (`finalParticipants`) và kiểm tra xem có bất kỳ ai đang bận lịch khác trong khoảng thời gian $[Start, End]$ được chọn hay không.
     *   Logic loại trừ: Bỏ qua các lịch trình ở trạng thái `rejected` (Đã từ chối). Các lịch ở trạng thái `pending` (Chờ duyệt) vẫn được tính là gây xung đột và hiển thị dưới dạng cảnh báo bận kèm nhãn "(Chờ duyệt)".
@@ -132,7 +114,7 @@ Dự án áp dụng an ninh dữ liệu chặt chẽ từ tầng cơ sở dữ l
     *   **Phòng Họp:** Nếu lịch chọn địa điểm là "Chi nhánh" và yêu cầu sử dụng phòng họp (`use_room = true`), hệ thống bắt buộc kiểm tra xem `room_id` có bị trùng lịch sử dụng nào khác trong cùng khung giờ không. Nếu trùng, hiển thị cảnh báo đỏ và ngăn chặn đăng ký nếu không có quyền ưu tiên.
     *   **Xe Công:** Kiểm tra trùng lắp đối với `vehicle_id` được gán cho chuyến đi. Không cho phép một xe công được duyệt cho hai hành trình trùng thời gian.
 
-### C. Luồng Duyệt Đơn Nghỉ Phép (Leave Workflow)
+### B. Luồng Duyệt Đơn Nghỉ Phép (Leave Workflow)
 1.  **Quy Trình Duyệt Phân Cấp (Hierarchical Approval):**
     *   `admin`: Được quyền duyệt mọi đơn nghỉ phép.
     *   `director` (Ban Giám đốc): Chỉ có thẩm quyền phê duyệt đơn nghỉ phép của Trưởng phòng/Lãnh đạo đơn vị (`manager` hoặc profile có `is_department_head = true`). BGĐ không trực tiếp duyệt đơn của nhân viên thường để giảm tải.
@@ -144,7 +126,7 @@ Dự án áp dụng an ninh dữ liệu chặt chẽ từ tầng cơ sở dữ l
     *   Nội dung lý do nghỉ phép và mô tả chi tiết được bảo mật cực kỳ nghiêm ngặt tại giao diện. Chỉ có người tạo đơn, Admin, Cán bộ Nhân sự (`hr_officer`), Ban Giám đốc và Trưởng phòng trực tiếp có quyền duyệt đơn mới được xem nội dung chi tiết đơn nghỉ phép.
     *   Đối với tất cả cán bộ khác hoặc cán bộ phòng ban khác khi xem lịch, hệ thống sẽ ẩn nội dung và chỉ hiển thị tiêu đề mặc định là **"Nghỉ phép"** để đảm bảo quyền riêng tư của cá nhân.
 
-### D. Hành Trình Tài Xế & Điều Phối Xe Công (Driver Milestones)
+### C. Hành Trình Tài Xế & Điều Phối Xe Công (Driver Milestones)
 1.  **Đồng Bộ Thống Kê Quãng Đường (All-Time Sync):**
     *   Số liệu thống kê tại Driver Dashboard gồm "Tổng chuyến" và "Quãng đường tích lũy" (Km) được truy vấn trực tiếp từ bảng `schedules` trên database thời gian thực đối với các chuyến đi có `type = 'trip'`, `driver_id = profile.id` và `status = 'completed'`.
     *   Quãng đường tích lũy được tính bằng tổng `metadata.actual_distance` của tất cả các chuyến đã hoàn thành, đảm bảo chỉ số Km hiển thị hoàn hảo và cập nhật tức thì ngay sau khi tài xế bấm kết thúc chuyến.
@@ -164,7 +146,7 @@ Dự án áp dụng an ninh dữ liệu chặt chẽ từ tầng cơ sở dữ l
     *   Hệ thống lưu trữ mô tả vào `metadata.vehicle_issue`, đồng thời **tự động chuyển trạng thái của phương tiện đó trong bảng `vehicles` sang `maintenance` (Đang bảo trì)**.
     *   Một thông báo khẩn cấp màu đỏ (Alert) kèm biển số xe và nội dung sự cố lập tức được gửi tới toàn bộ cán bộ phòng Tổ chức Tổng hợp để xử lý kỹ thuật.
 
-### E. Kênh Real-Time Đồng Bộ & Định Tuyến Thông Báo (Notifications Routing)
+### D. Kênh Real-Time Đồng Bộ & Định Tuyến Thông Báo (Notifications Routing)
 1.  **Thời Gian Thực (Real-time Sync):**
     *   Trang lịch trình sử dụng kết nối kênh real-time của Supabase (`schedule_realtime_sync`) lắng nghe tất cả các sự kiện thay đổi dữ liệu (`INSERT`, `UPDATE`, `DELETE`) trên các bảng `schedules`, `schedule_participants`, `vehicles`, `rooms`. Giao diện sẽ tự động cập nhật ngay lập tức mà không cần F5 hoặc tải lại trang.
 2.  **Định Tuyến Thông Báo Lịch Trình Thông Minh:**

@@ -39,9 +39,6 @@
     --color-neutral: 220 10% 50%;
     --color-neutral-bg: 220 12% 95%;
     --color-neutral-text: 220 10% 40%;
-    --color-kpi: 221 83% 53%;
-    --color-kpi-bg: 221 83% 96%;
-    --color-kpi-text: 221 70% 38%;
     --color-award: 43 96% 52%;
     --color-award-bg: 48 100% 94%;
     --color-award-text: 36 100% 30%;
@@ -97,8 +94,6 @@
       --color-info-text: 221 70% 75%;
       --color-neutral-bg: 222 20% 18%;
       --color-neutral-text: 215 16% 70%;
-      --color-kpi-bg: 221 60% 18%;
-      --color-kpi-text: 221 70% 75%;
       --color-award-bg: 36 50% 18%;
       --color-award-text: 43 96% 70%;
     }
@@ -213,7 +208,6 @@
 .badge-danger { background: hsl(var(--color-danger-bg)); color: hsl(var(--color-danger-text)); }
 .badge-info { background: hsl(var(--color-info-bg)); color: hsl(var(--color-info-text)); }
 .badge-neutral { background: hsl(var(--color-neutral-bg)); color: hsl(var(--color-neutral-text)); }
-.badge-kpi { background: hsl(var(--color-kpi-bg)); color: hsl(var(--color-kpi-text)); }
 .badge-award { background: hsl(var(--color-award-bg)); color: hsl(var(--color-award-text)); }
 .dot-success { background: hsl(var(--color-success)); }
 .dot-warning { background: hsl(var(--color-warning)); }
@@ -549,7 +543,7 @@ main > div[class*="max-w-5xl"][class*="mx-auto"] {
 .status-danger-bg  { background-color: rgb(254 226 226); color: rgb(153 27 27); border-color: rgb(252 165 165); }
 .status-info-bg    { background-color: rgb(219 234 254); color: rgb(30 64 175); border-color: rgb(147 197 253); }
 .status-neutral-bg { background-color: rgb(241 245 249); color: rgb(51 65 85); border-color: rgb(226 232 240); }
-.status-focal-bg   { background-color: rgb(254 243 199); color: rgb(146 64 14); border-color: rgb(252 211 77); } /* amber-gold cho KPI trọng tâm */
+.status-focal-bg   { background-color: rgb(254 243 199); color: rgb(146 64 14); border-color: rgb(252 211 77); } /* amber-gold cho item trọng tâm/được ghim */
 
 /* Page container chuẩn — đảm bảo mọi trang có cùng max-width và padding */
 .page-container {
@@ -736,7 +730,7 @@ svg.lucide.w-6     { width: 20px !important; height: 20px !important; }
 .border-emerald-100,
 .border-emerald-200 { border-color: hsl(152 55% 88%) !important; }
 
-/* WARNING — amber (pending, focal KPI, sự cố nhẹ) */
+/* WARNING — amber (pending, focal item, sự cố nhẹ) */
 .bg-amber-50    { background-color: hsl(var(--color-warning-bg)) !important; }
 .text-amber-600,
 .text-amber-700 { color: hsl(var(--color-warning-text)) !important; }

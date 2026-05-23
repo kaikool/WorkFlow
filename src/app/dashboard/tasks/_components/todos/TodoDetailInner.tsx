@@ -2,12 +2,11 @@
 
 import React, { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { ChevronLeft, Loader2, Clock, CheckCircle2, Trash2, Send, Flag, Target, PlayCircle, AlertCircle, TrendingUp, Minus, Plus as PlusIcon, Star, Zap, MessageSquare } from "lucide-react"
+import { ChevronLeft, Loader2, Trash2, Send, Flag, Target, TrendingUp, MessageSquare } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
-import { Progress } from "@/components/ui/progress"
 import { Slider } from "@/components/ui/slider"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
@@ -16,7 +15,6 @@ import { useToast } from "@/hooks/use-toast"
 import { cn, compareProfilesByHierarchy, getProfileDisplayTitle, sortProfilesByHierarchy } from "@/lib/utils"
 import { createClient } from "@/utils/supabase/client"
 import Link from "next/link"
-import { KpiProgressBlock } from "./KpiProgressBlock"
 
 const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> = {
   todo:   { label: "Đang chờ",    color: "text-slate-600",   bg: "bg-slate-100"  },
@@ -25,7 +23,7 @@ const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> =
   late:   { label: "Trễ hạn",     color: "text-red-700",     bg: "bg-red-50"     },
 }
 
-export function TodoDetailInner({ id, tableName = "tasks" }: { id: string, tableName?: string }) {
+export function TodoDetailInner({ id }: { id: string }) {
   const router = useRouter()
   const { toast } = useToast()
   const supabase = createClient()
@@ -37,7 +35,6 @@ export function TodoDetailInner({ id, tableName = "tasks" }: { id: string, table
   const [profile, setProfile] = useState<any>(null)
   const [comments, setComments] = useState<any[]>([])
   const [newComment, setNewComment] = useState("")
-  const [currentValue, setCurrentValue] = useState("")
   const [isEditingTask, setIsEditingTask] = useState(false)
   const [editData, setEditData] = useState<any>({})
   const [deptProfiles, setDeptProfiles] = useState<any[]>([])
@@ -54,8 +51,8 @@ export function TodoDetailInner({ id, tableName = "tasks" }: { id: string, table
           const { data } = await supabase.from("profiles").select("*").eq("id", user.id).single()
           p = data; setProfile(data)
         }
-        const { data, error } = await supabase.from(tableName)
-          .select(`*, creator:profiles!${tableName}_created_by_fkey(full_name,title,avatar_url,department_id,role,is_department_head,departments(name)), assignee:profiles!${tableName}_assignee_id_fkey(id,full_name,title,avatar_url,role,is_department_head)${tableName === "tasks" ? ", task_assignees(user_id,profile:profiles(full_name,title,avatar_url,role,is_department_head))" : ""}`)
+        const { data, error } = await supabase.from("tasks")
+          .select(`*, creator:profiles!tasks_created_by_fkey(full_name,title,avatar_url,department_id,role,is_department_head,departments(name)), assignee:profiles!tasks_assignee_id_fkey(id,full_name,title,avatar_url,role,is_department_head), task_assignees(user_id,profile:profiles(full_name,title,avatar_url,role,is_department_head))`)
           .eq("id", id).single()
         if (error) throw error
         const isOwner = data.created_by === user?.id
@@ -76,24 +73,21 @@ export function TodoDetailInner({ id, tableName = "tasks" }: { id: string, table
       finally { setLoading(false) }
     }
     fetchData()
-    const ch = supabase.channel(`task_${id}`).on("postgres_changes", { event: "UPDATE", schema: "public", table: tableName, filter: `id=eq.${id}` }, (p: any) => setTask(p.new)).subscribe()
+    const ch = supabase.channel(`task_${id}`).on("postgres_changes", { event: "UPDATE", schema: "public", table: "tasks", filter: `id=eq.${id}` }, (p: any) => setTask(p.new)).subscribe()
     return () => { supabase.removeChannel(ch) }
   }, [id])
-
-  useEffect(() => {
-    if (task && profile) setCurrentValue((task.metadata?.contributions?.[profile.id] || 0).toString())
-  }, [task, profile])
 
   useEffect(() => {
     if (profile?.department_id)
       supabase.from("profiles").select("*").eq("department_id", profile.department_id).neq("role", "manager").then(({ data }: any) => setDeptProfiles(sortProfilesByHierarchy(data || [])))
   }, [profile])
+
   const handleDelegate = async () => {
     if (!selectedDelegate) return; setSaving(true)
     try {
       if (!assignees.some(a => a.user_id === selectedDelegate)) {
         await supabase.from("task_assignees").insert({ task_id: id, user_id: selectedDelegate })
-        await supabase.from(tableName).update({ assignee_id: selectedDelegate }).eq("id", id)
+        await supabase.from("tasks").update({ assignee_id: selectedDelegate }).eq("id", id)
         await supabase.from("notifications").insert({ user_id: selectedDelegate, title: "Công việc được phân công", content: `${profile?.full_name} đã phân công: ${task.title}`, link: `/dashboard/tasks/${id}` })
         toast({ title: "Đã phân công công việc" }); setDelegationOpen(false)
         const sel = deptProfiles.find(x => x.id === selectedDelegate)
@@ -106,7 +100,7 @@ export function TodoDetailInner({ id, tableName = "tasks" }: { id: string, table
   const handleUpdateTaskInfo = async () => {
     setSaving(true)
     try {
-      await supabase.from(tableName).update({ title: editData.title, description: editData.description }).eq("id", id)
+      await supabase.from("tasks").update({ title: editData.title, description: editData.description }).eq("id", id)
       setTask({ ...task, title: editData.title, description: editData.description }); setIsEditingTask(false)
       toast({ title: "Đã cập nhật thông tin" })
     } catch (err: any) { toast({ variant: "destructive", title: "Lỗi", description: err.message }) }
@@ -129,7 +123,7 @@ export function TodoDetailInner({ id, tableName = "tasks" }: { id: string, table
   const updateProgress = async (val: number) => {
     try {
       const ns = val === 100 ? "done" : val > 0 ? "doing" : "todo"
-      await supabase.from(tableName).update({ progress: val, status: ns }).eq("id", id)
+      await supabase.from("tasks").update({ progress: val, status: ns }).eq("id", id)
       const t1 = `Tiến độ mới: ${task.title}`; const c1 = `${profile?.full_name} đã cập nhật tiến độ lên ${val}%`
       if (task.created_by !== profile?.id) await supabase.from("notifications").insert({ user_id: task.created_by, title: t1, content: c1, link: `/dashboard/tasks/${id}` })
       const notifyA = assignees.filter(a => a.user_id !== profile?.id).map(a => ({ user_id: a.user_id, title: t1, content: c1, link: `/dashboard/tasks/${id}` }))
@@ -141,7 +135,7 @@ export function TodoDetailInner({ id, tableName = "tasks" }: { id: string, table
   const handleUpdateStatus = async (ns: string) => {
     setSaving(true)
     try {
-      await supabase.from(tableName).update({ status: ns }).eq("id", id)
+      await supabase.from("tasks").update({ status: ns }).eq("id", id)
       const labels: Record<string,string> = { done:"Hoàn thành", late:"Trễ hạn", doing:"Đang thực hiện", todo:"Đang chờ" }
       const t1 = `Trạng thái mới: ${task.title}`; const c1 = `${profile?.full_name} đã chuyển sang: ${labels[ns]||ns}`
       if (task.created_by !== profile?.id) await supabase.from("notifications").insert({ user_id: task.created_by, title: t1, content: c1, link: `/dashboard/tasks/${id}` })
@@ -152,89 +146,12 @@ export function TodoDetailInner({ id, tableName = "tasks" }: { id: string, table
     finally { setSaving(false) }
   }
 
-  const handleLeaderUpdateContribution = async (userId: string, val: number) => {
-    if (!isKpi) return
-    setSaving(true)
-    try {
-      const { data, error } = await supabase.rpc('update_kpi_contribution', {
-        p_kpi_id: id,
-        p_user_id: userId,
-        p_value: val
-      })
-      if (error) throw error
-      const row = Array.isArray(data) ? data[0] : data
-      const nm = { ...task.metadata, contributions: { ...(task.metadata?.contributions||{}), [userId]: val } }
-      if (userId !== profile?.id) {
-        await supabase.from("notifications").insert({ user_id: userId, title: `Cập nhật đóng góp: ${task.title}`, content: `Lãnh đạo điều chỉnh số liệu: ${val} ${task.unit||""}`, link: `/dashboard/tasks/${id}` })
-      }
-      setTask({ ...task, current_value: row?.current_value ?? task.current_value, progress: row?.progress ?? task.progress, status: row?.status ?? task.status, metadata: nm })
-      toast({ title: "Đã điều chỉnh đóng góp" })
-    } catch (err: any) { toast({ variant: "destructive", title: "Lỗi", description: err.message }) }
-    finally { setSaving(false) }
-  }
-
-  const handleGeneralAdjustment = async (delta: number) => {
-    if (!isKpi) return
-    setSaving(true)
-    try {
-      const { data, error } = await supabase.rpc('adjust_kpi_general', {
-        p_kpi_id: id,
-        p_delta: delta
-      })
-      if (error) throw error
-      const row = Array.isArray(data) ? data[0] : data
-      const newAdj = (task.metadata?.general_adjustment||0)+delta
-      const nm = { ...task.metadata, general_adjustment: newAdj }
-      const nu = assignees.filter(a=>a.user_id!==profile?.id).map(a=>({ user_id:a.user_id, title:`Hiệu chỉnh phòng: ${task.title}`, content:`Số liệu điều chỉnh ${delta>0?"+":""}${delta} ${task.unit||""}`, link:`/dashboard/tasks/${id}` }))
-      if (nu.length>0) await supabase.from("notifications").insert(nu)
-      setTask({ ...task, current_value: row?.current_value ?? task.current_value, progress: row?.progress ?? task.progress, status: row?.status ?? task.status, metadata: nm })
-      toast({ title: "Đã điều chỉnh thực tế phòng" })
-    } catch (err: any) { toast({ variant: "destructive", title: "Lỗi", description: err.message }) }
-    finally { setSaving(false) }
-  }
-
-  const handleUpdateAchievement = async () => {
-    if (!isKpi) return
-    setSaving(true); const contrib = parseInt(currentValue)||0
-    try {
-      const { data, error } = await supabase.rpc('update_kpi_contribution', {
-        p_kpi_id: id,
-        p_user_id: profile.id,
-        p_value: contrib
-      })
-      if (error) throw error
-      const row = Array.isArray(data) ? data[0] : data
-      const nm = { ...task.metadata, contributions: { ...(task.metadata?.contributions||{}), [profile.id]: contrib } }
-      if ((row?.progress ?? 0) >= 100 && task.status!=="done" && task.created_by!==profile?.id) {
-        await supabase.from("notifications").insert({ user_id: task.created_by, title: `Đạt mục tiêu: ${task.title}`, content: `${profile?.full_name} đã hoàn thành 100% chỉ tiêu.`, link: `/dashboard/tasks/${id}` })
-      }
-      setTask({ ...task, current_value: row?.current_value ?? task.current_value, progress: row?.progress ?? task.progress, status: row?.status ?? task.status, metadata: nm })
-      toast({ title: "Đã ghi nhận đóng góp", description: `Bạn đóng góp ${contrib} ${task.unit||""}` })
-    } catch (err: any) { toast({ variant: "destructive", title: "Lỗi", description: err.message }) }
-    finally { setSaving(false) }
-  }
-
-  const handleToggleFocal = async () => {
-    if (!canEdit) return; setSaving(true); const nf = !task.metadata?.is_focal
-    try {
-      await supabase.from(tableName).update({ metadata: { ...task.metadata, is_focal: nf } }).eq("id", id)
-      setTask({ ...task, metadata: { ...task.metadata, is_focal: nf } })
-      toast({ title: nf ? "Đã thiết lập Kế hoạch trọng tâm" : "Đã bỏ ghim Kế hoạch" })
-    } catch (err: any) { toast({ variant: "destructive", title: "Lỗi", description: err.message }) }
-    finally { setSaving(false) }
-  }
-
-  const adjustValue = (d: number) => setCurrentValue(p => Math.max(0,(parseInt(p)||0)+d).toString())
-
   const isAdminOrDir = profile?.role==="admin"||profile?.role==="director"
   const isInDept = task?.department_id===profile?.department_id
   const isAssigneeMe = assignees.some(a=>a.user_id===profile?.id)||task?.assignee_id===profile?.id
   const canEdit = isAdminOrDir||(profile?.role==="manager"&&isInDept)||isAssigneeMe||task?.created_by===profile?.id
-  const isKpi = tableName === "kpis"
-  const displayProgress = isKpi ? (task.target_value ? Math.round(((task.current_value||0)/task.target_value)*100) : 0) : (task?.progress||0)
+  const displayProgress = task?.progress || 0
   const curStatus = task ? (STATUS_MAP[task.status]||STATUS_MAP.todo) : STATUS_MAP.todo
-  const isCreatorOrAdmin = task?.created_by===profile?.id||profile?.role==="admin"||profile?.role==="director"
-  const isLeader = profile?.role === "admin" || profile?.role === "director" || profile?.role === "manager"
 
   if (loading) return <div className="flex h-96 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
   if (!task) return <div className="p-20 text-center font-bold text-slate-500">Không tìm thấy dữ liệu.</div>
@@ -243,7 +160,7 @@ export function TodoDetailInner({ id, tableName = "tasks" }: { id: string, table
     <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-6 animate-fade-in-up pb-20">
       <div className="flex items-center justify-between">
         <Button variant="ghost" asChild className="p-0 hover:bg-transparent text-slate-500 hover:text-primary group">
-          <Link href={isKpi ? "/dashboard/kpi" : "/dashboard/tasks"} className="flex items-center gap-2">
+          <Link href="/dashboard/tasks" className="flex items-center gap-2">
             <div className="p-2 rounded-xl group-hover:bg-primary/5"><ChevronLeft className="w-4 h-4" /></div>
             <span className="text-sm font-medium">Quay lại danh sách</span>
           </Link>
@@ -251,7 +168,7 @@ export function TodoDetailInner({ id, tableName = "tasks" }: { id: string, table
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button variant="ghost" className="text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-xl px-4 min-h-11 text-sm font-medium">
-              <Trash2 className="w-4 h-4 mr-2" /> Xóa {isKpi ? "Kế hoạch KPIs" : "Công việc"}
+              <Trash2 className="w-4 h-4 mr-2" /> Xóa công việc
             </Button>
           </AlertDialogTrigger>
           <AlertDialogContent className="rounded-2xl border-none shadow-2xl">
@@ -261,7 +178,7 @@ export function TodoDetailInner({ id, tableName = "tasks" }: { id: string, table
             </AlertDialogHeader>
             <AlertDialogFooter className="mt-4 gap-3">
               <AlertDialogCancel className="rounded-xl min-h-11 font-medium active:scale-95 transition-all">Quay lại</AlertDialogCancel>
-              <AlertDialogAction onClick={async () => { await supabase.from(tableName).delete().eq("id", id); router.push(isKpi ? "/dashboard/kpi" : "/dashboard/tasks") }} className="rounded-xl min-h-11 bg-red-600 font-medium hover:bg-red-700 text-white border-none active:scale-95 transition-all">Xác nhận xóa</AlertDialogAction>
+              <AlertDialogAction onClick={async () => { await supabase.from("tasks").delete().eq("id", id); router.push("/dashboard/tasks") }} className="rounded-xl min-h-11 bg-red-600 font-medium hover:bg-red-700 text-white border-none active:scale-95 transition-all">Xác nhận xóa</AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
@@ -273,8 +190,8 @@ export function TodoDetailInner({ id, tableName = "tasks" }: { id: string, table
           <div className="premium-card p-6 border-none space-y-6 relative overflow-hidden">
             <div className="absolute -top-12 -right-12 opacity-5 pointer-events-none"><Target className="w-48 h-48 rotate-12 text-primary" /></div>
             <div className="flex items-center gap-2 relative z-10 flex-wrap">
-              <Badge className={cn("px-3 py-1 text-xs font-medium rounded-full border-none", isKpi ? "bg-primary text-white" : "bg-slate-100 text-slate-500")}>
-                {isKpi ? "Kế hoạch KPIs" : "Công việc nghiệp vụ"}
+              <Badge className="px-3 py-1 text-xs font-medium rounded-full border-none bg-slate-100 text-slate-500">
+                Công việc nghiệp vụ
               </Badge>
               {task.priority === "high" && <Badge className="bg-red-50 text-red-600 border-none text-xs px-3 py-1 rounded-full">Khẩn cấp</Badge>}
             </div>
@@ -300,47 +217,29 @@ export function TodoDetailInner({ id, tableName = "tasks" }: { id: string, table
             )}
           </div>
 
-          {/* Progress / KPI card */}
+          {/* Progress card */}
           <div className="premium-card p-6 border-none space-y-6">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-medium text-slate-500 flex items-center gap-2 truncate whitespace-nowrap">
-                <TrendingUp className="w-4 h-4 text-primary" />{isKpi ? "Tiến độ kế hoạch" : "Tiến độ thực hiện"}
+                <TrendingUp className="w-4 h-4 text-primary" />Tiến độ thực hiện
               </h3>
               <span className="text-3xl font-bold text-primary tabular-nums">{displayProgress}%</span>
             </div>
-            {isKpi ? (
-              <KpiProgressBlock
-                task={task}
-                profile={profile}
-                assignees={assignees}
-                canEdit={canEdit}
-                isLeader={isLeader}
-                saving={saving}
-                displayProgress={displayProgress}
-                currentValue={currentValue}
-                setCurrentValue={setCurrentValue}
-                adjustValue={adjustValue}
-                handleUpdateAchievement={handleUpdateAchievement}
-                handleLeaderUpdateContribution={handleLeaderUpdateContribution}
-                handleGeneralAdjustment={handleGeneralAdjustment}
+            <div className="space-y-6">
+              <Slider
+                value={[task.progress || 0]}
+                min={0}
+                max={100}
+                step={25}
+                disabled={!canEdit}
+                onValueCommit={([value]) => updateProgress(value)}
               />
-            ) : (
-              <div className="space-y-6">
-                <Slider
-                  value={[task.progress || 0]}
-                  min={0}
-                  max={100}
-                  step={25}
-                  disabled={!canEdit}
-                  onValueCommit={([value]) => updateProgress(value)}
-                />
-                <div className="flex justify-between px-1">
-                  {["Tiếp nhận","Thực hiện","Kiểm soát","Hoàn tất"].map((label,i)=>(
-                    <span key={i} className={cn("text-xs font-medium transition-colors",(task.progress||0)>=(i+1)*25?"text-primary":"text-slate-500")}>{label}</span>
-                  ))}
-                </div>
+              <div className="flex justify-between px-1">
+                {["Tiếp nhận","Thực hiện","Kiểm soát","Hoàn tất"].map((label,i)=>(
+                  <span key={i} className={cn("text-xs font-medium transition-colors",(task.progress||0)>=(i+1)*25?"text-primary":"text-slate-500")}>{label}</span>
+                ))}
               </div>
-            )}
+            </div>
           </div>
 
           {/* Thảo luận */}
@@ -393,14 +292,6 @@ export function TodoDetailInner({ id, tableName = "tasks" }: { id: string, table
                 </SelectContent>
               </Select>
             </div>
-
-            {isKpi&&isCreatorOrAdmin&&(
-              <div className="pt-2">
-                <Button onClick={handleToggleFocal} variant={task.metadata?.is_focal?"default":"outline"} className={cn("w-full min-h-11 rounded-xl font-medium text-sm gap-2",task.metadata?.is_focal?"bg-amber-400 hover:bg-amber-500 text-white border-none shadow-lg shadow-amber-200":"bg-slate-50 border-none text-slate-500 hover:bg-slate-100")}>
-                  <Star className={cn("w-4 h-4",task.metadata?.is_focal&&"fill-current")}/>{task.metadata?.is_focal?"Kế hoạch KPIs trọng tâm":"Ghim làm Kế hoạch trọng tâm"}
-                </Button>
-              </div>
-            )}
 
             <div className="space-y-3">
               <div className="flex items-center justify-between">

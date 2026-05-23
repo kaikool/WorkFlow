@@ -124,7 +124,7 @@ export function NotificationsDropdown() {
         </span>
       );
     }
-    if (t.includes('kpi') || t.includes('chỉ tiêu') || t.includes('khen') || t.includes('hoàn thành')) {
+    if (t.includes('chỉ tiêu') || t.includes('khen') || t.includes('hoàn thành')) {
       return (
         <span className="p-2 bg-emerald-50 text-emerald-600 rounded-xl shrink-0 flex items-center justify-center">
           <CheckCircle2 className="w-3.5 h-3.5" />

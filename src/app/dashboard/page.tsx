@@ -42,9 +42,7 @@ export default function DashboardPage() {
     activeTasks: 0,
     urgentTasks: 0,
     completedTasks: 0,
-    kpiProgress: 0,
-    kpiCount: 0,
-    topKpi: null as any,
+    pendingDocuments: [] as any[],
     recentTasks: [] as any[],
     totalAssigned: 0,
     totalCompleted: 0,
@@ -87,13 +85,14 @@ export default function DashboardPage() {
     const channel = supabase
       .channel('dashboard_sync')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, scheduleRefetch)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'kpis' }, scheduleRefetch)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'recognitions' }, scheduleRefetch)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'task_comments' }, scheduleRefetch)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'schedules' }, scheduleRefetch)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'schedule_participants' }, scheduleRefetch)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'vehicles' }, scheduleRefetch)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms' }, scheduleRefetch)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'documents' }, scheduleRefetch)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'document_handovers' }, scheduleRefetch)
       .subscribe();
 
     return () => {
@@ -223,20 +222,25 @@ export default function DashboardPage() {
         lateVisibleQuery = lateVisibleQuery.or(filterStr);
       }
 
-      let kpiQuery = supabase
-        .from('kpis')
-        .select(`*, creator:profiles!kpis_created_by_fkey(role, department_id), assignee:profiles!kpis_assignee_id_fkey(role, department_id)`)
-        .eq('is_archived', false);
-
-      if (!isPowerUser && currentProfile?.department_id) {
-        kpiQuery = kpiQuery.or(`department_id.eq.${currentProfile.department_id},created_by.eq.${user.id},assignee_id.eq.${user.id}`);
-      }
+      // Hồ sơ vật lý đang chờ tôi nhận hoặc đang ở bàn tôi — hiển thị widget bên phải
+      const pendingDocsQuery = supabase
+        .from('documents')
+        .select(`
+          id, short_code, title, status, created_at, updated_at, category_id,
+          category:document_categories(id, name, sla_hours, color),
+          current_assignee_id, creator_id,
+          handovers:document_handovers(id, document_id, sender_id, receiver_id, status, sent_at, received_at)
+        `)
+        .or(`current_assignee_id.eq.${user.id},and(status.eq.PENDING_RECEIPT)`)
+        .neq('status', 'COMPLETED')
+        .order('updated_at', { ascending: false })
+        .limit(5);
 
       const [
         { count: activeCount },
         { count: urgentCount },
         { count: completedCount },
-        { data: kpis },
+        { data: pendingDocsRaw },
         { count: thisWeekCount },
         { count: lastWeekCount },
         { data: recentTasksList },
@@ -248,7 +252,7 @@ export default function DashboardPage() {
         activeQuery,
         urgentQuery,
         completedQuery,
-        kpiQuery,
+        pendingDocsQuery,
         thisWeekQuery,
         lastWeekQuery,
         recentTasksQuery.limit(5),
@@ -272,18 +276,13 @@ export default function DashboardPage() {
         finalComments = cmts || [];
       }
 
-      const filteredKpis = (kpis || []).filter((k: any) => {
-        const isFromAdminOrDirector = k.creator?.role === 'admin' || k.creator?.role === 'director' || k.assignee?.role === 'admin' || k.assignee?.role === 'director';
-        if (isFromAdminOrDirector) return true;
-        return k.assignee_id === user.id || k.created_by === user.id || (currentProfile?.department_id && k.department_id === currentProfile.department_id);
+      const filteredPendingDocs = (pendingDocsRaw || []).filter((d: any) => {
+        if (d.current_assignee_id === user.id) return true;
+        // Đang chờ tôi nhận
+        return (d.handovers || []).some(
+          (h: any) => h.receiver_id === user.id && h.status === 'PENDING'
+        );
       });
-
-      const kpiProg = filteredKpis.length > 0
-        ? Math.round(filteredKpis.reduce((acc: number, k: any) => {
-          const prog = k.target_value ? Math.round(((k.current_value || 0) / k.target_value) * 100) : (k.progress || 0);
-          return acc + prog;
-        }, 0) / filteredKpis.length)
-        : 0;
 
       let change = 0;
       if (lastWeekCount && lastWeekCount > 0) {
@@ -298,23 +297,13 @@ export default function DashboardPage() {
         ...(finalComments?.map((c: any) => ({ ...c, type: 'comment' })) || [])
       ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 8);
 
-      const topKpi = [...filteredKpis].sort((a, b) => {
-        if (a.metadata?.is_focal && !b.metadata?.is_focal) return -1;
-        if (!a.metadata?.is_focal && b.metadata?.is_focal) return 1;
-        const pMap: any = { high: 0, medium: 1, low: 2 };
-        if (pMap[a.priority] !== pMap[b.priority]) return pMap[a.priority] - pMap[b.priority];
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      })[0] || null;
-
       setStats({
         productivity: thisWeekCount || 0,
         productivityChange: change,
         activeTasks: activeCount || 0,
         urgentTasks: urgentCount || 0,
         completedTasks: completedCount || 0,
-        kpiProgress: kpiProg,
-        kpiCount: filteredKpis.length,
-        topKpi: topKpi,
+        pendingDocuments: filteredPendingDocs,
         recentTasks: activityFeed,
         totalAssigned: assignedCount || 0,
         totalCompleted: completedVisibleCount || 0,

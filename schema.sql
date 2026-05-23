@@ -103,44 +103,17 @@ SECURITY DEFINER
 AS $$
 BEGIN
     -- Đưa công việc/báo cáo đã hoàn thành hoặc đóng trên 60 ngày vào lưu trữ
-    UPDATE tasks 
-    SET is_archived = true 
-    WHERE status IN ('done', 'closed') 
-    AND created_at < NOW() - INTERVAL '60 days' 
-    AND is_archived = false;
-
-    -- Đưa KPIs đã hoàn thành trên 60 ngày vào lưu trữ
-    UPDATE kpis 
-    SET is_archived = true 
-    WHERE status IN ('done', 'closed') 
-    AND created_at < NOW() - INTERVAL '60 days' 
+    UPDATE tasks
+    SET is_archived = true
+    WHERE status IN ('done', 'closed')
+    AND created_at < NOW() - INTERVAL '60 days'
     AND is_archived = false;
 
     -- Xóa thông báo cũ hơn 30 ngày
-    DELETE FROM notifications 
+    DELETE FROM notifications
     WHERE created_at < NOW() - INTERVAL '30 days';
 END;
 $$;
-
--- 4.5. Tạo bảng KPIs (Chỉ tiêu)
-CREATE TABLE IF NOT EXISTS kpis (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    title TEXT NOT NULL,
-    description TEXT,
-    status task_status DEFAULT 'todo',
-    priority task_priority DEFAULT 'medium',
-    progress INTEGER DEFAULT 0,
-    assignee_id UUID REFERENCES profiles(id),
-    created_by UUID REFERENCES profiles(id),
-    department_id UUID REFERENCES departments(id),
-    due_date TIMESTAMPTZ,
-    target_value BIGINT,
-    current_value BIGINT DEFAULT 0,
-    unit TEXT,
-    metadata JSONB DEFAULT '{}'::jsonb,
-    is_archived BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMPTZ DEFAULT NOW()
-);
 
 -- 5. Tạo bảng Task Comments (Bình luận công việc)
 CREATE TABLE IF NOT EXISTS task_comments (
@@ -275,7 +248,6 @@ ON CONFLICT (name) DO NOTHING;
 ALTER TABLE departments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
-ALTER TABLE kpis ENABLE ROW LEVEL SECURITY;
 ALTER TABLE task_comments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE vehicles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE rooms ENABLE ROW LEVEL SECURITY;
@@ -321,41 +293,6 @@ USING (
     OR auth.uid() = assignee_id 
     OR auth.uid() = created_by
     OR (metadata->>'assigned_line' IS NOT NULL AND auth.uid()::text = ANY(ARRAY(SELECT jsonb_array_elements_text(metadata->'assigned_line'))))
-);
-
--- KPI Policies
-DROP POLICY IF EXISTS "KPIs read access" ON kpis;
-CREATE POLICY "KPIs read access" ON kpis FOR SELECT 
-USING (
-    (SELECT role FROM profiles WHERE id = auth.uid()) IN ('admin', 'director')
-    OR (
-        (SELECT role FROM profiles WHERE id = auth.uid()) = 'manager'
-        AND department_id = (SELECT department_id FROM profiles WHERE id = auth.uid())
-    )
-    OR auth.uid() = assignee_id 
-    OR auth.uid() = created_by
-);
-
-DROP POLICY IF EXISTS "KPIs create access" ON kpis;
-CREATE POLICY "KPIs create access" ON kpis FOR INSERT 
-WITH CHECK (
-    (SELECT role FROM profiles WHERE id = auth.uid()) IN ('admin', 'director')
-    OR (
-        (SELECT role FROM profiles WHERE id = auth.uid()) = 'manager'
-        AND department_id = (SELECT department_id FROM profiles WHERE id = auth.uid())
-    )
-);
-
-DROP POLICY IF EXISTS "KPIs update access" ON kpis;
-CREATE POLICY "KPIs update access" ON kpis FOR UPDATE 
-USING (
-    (SELECT role FROM profiles WHERE id = auth.uid()) IN ('admin', 'director')
-    OR (
-        (SELECT role FROM profiles WHERE id = auth.uid()) = 'manager'
-        AND department_id = (SELECT department_id FROM profiles WHERE id = auth.uid())
-    )
-    OR auth.uid() = assignee_id
-    OR auth.uid() = created_by
 );
 
 ALTER TABLE task_comments ENABLE ROW LEVEL SECURITY;

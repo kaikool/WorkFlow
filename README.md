@@ -32,7 +32,7 @@ Hệ thống tuân thủ mô hình phân quyền 3 lớp đối với các tác 
 ## 5. Quy tắc Logic & Hiệu năng
 - **Tối ưu hóa Database:** Hạn chế fetch toàn bộ dữ liệu về Client rồi mới lọc (filter). Các điều kiện phức tạp nên được đưa xuống query của Supabase.
 - **Đảm bảo tính toàn vẹn (Data Integrity):** Chức năng Xóa (Delete) phải luôn được kiểm tra ràng buộc (ví dụ: không cho phép xóa xe/phòng nếu đang có lịch trình sử dụng trong tương lai).
-- **Tính đồng bộ (URD):** Mọi tài nguyên (Phòng họp, Xe, Task, KPI, Lịch trình) phải luôn đảm bảo có đủ vòng đời quản lý: Cập nhật (Update), Đọc (Read), và Xóa (Delete) bên cạnh việc Tạo mới.
+- **Tính đồng bộ (URD):** Mọi tài nguyên (Phòng họp, Xe, Task, Lịch trình, Hồ sơ) phải luôn đảm bảo có đủ vòng đời quản lý: Cập nhật (Update), Đọc (Read), và Xóa (Delete) bên cạnh việc Tạo mới.
 
 ---
 *Tài liệu này đóng vai trò như kim chỉ nam cho cấu trúc mã nguồn. Việc giữ cho mã nguồn sạch, thiết kế đẹp và logic chặt chẽ là ưu tiên hàng đầu.*
