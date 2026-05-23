@@ -35,7 +35,7 @@ import {
 } from '@/components/ui/table'
 import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/utils/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { notifyError, notifySuccess } from "@/lib/notify";
 import { cn, sortProfilesByHierarchy } from "@/lib/utils";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -62,7 +62,6 @@ export default function TeamPage() {
     }
   }, [searchParams]);
 
-  const { toast } = useToast();
   const supabase = createClient();
   const router = useRouter();
 
@@ -82,7 +81,7 @@ export default function TeamPage() {
  }
 
  if (currentProfile && !canAccessPeopleDirectory(currentProfile)) {
-   toast({ variant: "destructive", title: "Từ chối truy cập", description: "Bạn không có quyền truy cập danh bạ cán bộ." });
+   notifyError(null, "Bạn không có quyền truy cập danh bạ cán bộ.");
    router.push('/dashboard');
    return;
  }
@@ -100,8 +99,8 @@ export default function TeamPage() {
   const sortedMembers = sortProfilesByHierarchy(data || []);
 
  setMembers(sortedMembers);
- } catch (error: any) {
- toast({ variant: "destructive", title: "Lỗi", description: error.message });
+ } catch (error) {
+ notifyError(error, "Không tải được danh bạ");
  } finally {
  setLoading(false);
  }
@@ -117,7 +116,7 @@ export default function TeamPage() {
  navigator.clipboard.writeText(inviteUrl);
  setIsCopied(true);
  setTimeout(() => setIsCopied(false), 2000);
- toast({ title: "Đã sao chép Link mời" });
+ notifySuccess("Đã sao chép link mời");
  };
 
  const filteredMembers = members.filter(m =>

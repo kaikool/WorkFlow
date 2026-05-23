@@ -30,6 +30,7 @@ import { cn, sortProfilesByHierarchy } from "@/lib/utils";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 import { timeOptions } from "../_lib/constants";
+import { notifyValidation } from "@/lib/notify";
 import ParticipantSelector from "./ParticipantSelector";
 
 interface CreateScheduleDialogProps {
@@ -185,7 +186,7 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
                     selected={endDate}
                     onSelect={(date) => {
                       if (date && startDate && date < startDate) {
-                        toast({ variant: "destructive", title: "Lỗi", description: "Ngày kết thúc không thể trước ngày bắt đầu." });
+                        notifyValidation("Ngày kết thúc không thể trước ngày bắt đầu.", "Lỗi thời gian");
                         return;
                       }
                       setEndDate(date);

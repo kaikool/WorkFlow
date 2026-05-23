@@ -43,12 +43,11 @@ import {
 import { createClient } from "@/utils/supabase/client";
 import { cn, getProfileDisplayTitle } from "@/lib/utils";
 import Link from "next/link";
-import { useToast } from "@/hooks/use-toast";
+import { notifyError, notifySuccess } from "@/lib/notify";
 
 export default function MemberDetailPage() {
  const { id } = useParams();
  const router = useRouter();
- const { toast } = useToast();
  const supabase = createClient();
  
  const [loading, setLoading] = useState(true);
@@ -93,11 +92,7 @@ export default function MemberDetailPage() {
  const isSelf = profile.id === myProfileData?.id;
 
  if (!isAdmin && !isSameDept && !isSelf) {
- toast({
- variant: "destructive",
- title: "Truy cập bị từ chối",
- description: "Bạn không có quyền xem thông tin cán bộ thuộc đơn vị khác."
- });
+ notifyError(null, "Bạn không có quyền xem thông tin cán bộ thuộc đơn vị khác.");
  router.push('/dashboard/team');
  return;
  }
@@ -188,11 +183,11 @@ export default function MemberDetailPage() {
  await supabase.from('notifications').insert(notifications);
  }
 
- toast({ title: recognitionType === "remind" ? "Đã gửi ý kiến nhắc nhở" : "Đã vinh danh nhân sự" });
+ notifySuccess(recognitionType === "remind" ? "Đã gửi nhắc nhở" : "Đã vinh danh nhân sự");
  setIsRecognizeOpen(false);
  setRecognitionText("");
- } catch (error: any) {
- toast({ variant: "destructive", title: "Lỗi", description: error.message });
+ } catch (error) {
+ notifyError(error, recognitionType === "remind" ? "Không gửi được nhắc nhở" : "Không vinh danh được");
  } finally {
  setRecognizing(false);
  }

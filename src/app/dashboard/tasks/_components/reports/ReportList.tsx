@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/select'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { useToast } from '@/hooks/use-toast'
+import { notifyError, notifySuccess } from '@/lib/notify'
 import { cn, compareProfilesByHierarchy } from '@/lib/utils'
 import { DeadlineProgress } from '../DeadlineProgress'
 
@@ -41,7 +41,6 @@ export function ReportList({ searchQuery, filterStatus }: ReportListProps) {
   const [showAllReports, setShowAllReports] = useState(false)
   const supabase = createClient()
   const router   = useRouter()
-  const { toast } = useToast()
 
   useEffect(() => { fetchReports() }, [])
 
@@ -78,9 +77,9 @@ export function ReportList({ searchQuery, filterStatus }: ReportListProps) {
       const { error } = await supabase.from('tasks').update({ status: newStatus }).eq('id', taskId)
       if (error) throw error
       setTasks(tasks.map(t => t.id === taskId ? { ...t, status: newStatus } : t))
-      toast({ title: 'Cập nhật thành công', description: 'Đã thay đổi trạng thái báo cáo.' })
-    } catch (err: any) {
-      toast({ variant: 'destructive', title: 'Lỗi', description: err.message })
+      notifySuccess('Đã cập nhật trạng thái báo cáo')
+    } catch (err) {
+      notifyError(err, 'Không cập nhật được trạng thái')
     }
   }
 

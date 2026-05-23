@@ -869,8 +869,8 @@ Mục này theo dõi các điểm lệch chuẩn của codebase. Trạng thái c
 | `dashboard-shell.tsx` | Xoá dead code (không file nào import) |
 | Module KPI lệch (`page.tsx` 468 dòng, không realtime) | Sunset toàn bộ module — xoá khỏi codebase |
 | Thiếu type chung cho Profile | Tạo `src/types/profile.ts` với `Profile`, `ProfileLite`, `Department`, `UserRole` |
-| Toast inline 95 chỗ | Tạo `src/lib/notify.ts` với `notifyError`, `notifySuccess`, `notifyValidation` — chuẩn duy nhất từ nay |
-| `database.types.ts` không tồn tại | Tạo stub `src/types/database.types.ts` + hướng dẫn gen qua Supabase CLI |
+| Toast inline 165 chỗ | Tạo `src/lib/notify.ts` + migrate **158/165** toast call về `notifyError`/`notifySuccess`/`notifyValidation`. 7 chỗ giữ lại: 4 helper definition + 1 shadcn primitive + 2 special-case (realtime callback, warning toast) |
+| `database.types.ts` không tồn tại | Hand-craft đầy đủ types (16 bảng, 7 enum, 7 RPC) dựa trên schema + migrations. Khi có Supabase CLI, replace bằng auto-gen |
 | Module `team/admin/tasks` thiếu `_components/_hooks/_lib` | Đã tạo skeleton folder (gitkeep) — code mới đi đúng chỗ |
 | `confirmDialog` field `danger` | Đã document rõ §7.3 — coi như chuẩn chính thức |
 
@@ -878,11 +878,9 @@ Mục này theo dõi các điểm lệch chuẩn của codebase. Trạng thái c
 
 | Khu vực | Vấn đề | Hướng giải |
 |--------|--------|------------|
-| `profile: any` trong code cũ (95 chỗ) | Mất type safety | Từ nay code mới dùng `Profile`/`ProfileLite` từ `@/types/profile`. Code cũ migrate dần khi đụng vào — KHÔNG mass-replace để tránh regression. |
+| `profile: any` trong code cũ | Mất type safety | Từ nay code mới dùng `Profile`/`ProfileLite` từ `@/types/profile`. Code cũ migrate dần khi đụng vào — KHÔNG mass-replace để tránh regression. |
 | Form lớn dùng `useState` thủ công | `react-hook-form` + `zod` đã trong deps nhưng chưa dùng | Form > 4 field từ nay dùng `react-hook-form` + `zod` schema. Form cũ giữ nguyên cho đến khi đụng vào để sửa. |
-| `database.types.ts` còn là stub | Cần Supabase CLI để gen | Khi dev nào cài được Supabase CLI: chạy `supabase gen types typescript --linked > src/types/database.types.ts`. Update định kỳ sau mỗi migration. |
 | `team/[id]/page.tsx` (455 dòng) và `admin/page.tsx` (461 dòng) | Sát giới hạn 500 dòng | Lần đụng vào tiếp theo phải tách subcomponent vào `_components/` (đã có folder sẵn) |
-| Tasks inline `toast({ variant: "destructive", ... })` | Lặp pattern, không qua helper mới | Code mới dùng `notifyError()`. Code cũ migrate dần khi đụng. |
 
 ---
 

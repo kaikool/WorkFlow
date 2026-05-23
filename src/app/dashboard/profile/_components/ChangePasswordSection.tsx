@@ -5,7 +5,7 @@ import { Lock, Loader2, CheckCircle2, AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { useToast } from '@/hooks/use-toast'
+import { notifyError, notifySuccess, notifyValidation } from '@/lib/notify'
 import { createClient } from '@/utils/supabase/client'
 import { useRouter } from 'next/navigation'
 
@@ -23,18 +23,17 @@ export default function ChangePasswordSection({ profileId, mustChange }: Props) 
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [saving, setSaving] = useState(false)
-  const { toast } = useToast()
   const router = useRouter()
   const supabase = createClient()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (newPassword.length < 6) {
-      toast({ variant: 'destructive', title: 'Mật khẩu quá ngắn', description: 'Tối thiểu 6 ký tự.' })
+      notifyValidation('Mật khẩu mới phải có tối thiểu 6 ký tự.', 'Mật khẩu quá ngắn')
       return
     }
     if (newPassword !== confirmPassword) {
-      toast({ variant: 'destructive', title: 'Không khớp', description: 'Mật khẩu xác nhận không khớp.' })
+      notifyValidation('Mật khẩu xác nhận không khớp với mật khẩu mới.', 'Không khớp')
       return
     }
     setSaving(true)
@@ -46,13 +45,13 @@ export default function ChangePasswordSection({ profileId, mustChange }: Props) 
         await supabase.from('profiles').update({ must_change_password: false }).eq('id', profileId)
       }
 
-      toast({ title: 'Thành công', description: 'Đã đổi mật khẩu.' })
+      notifySuccess('Đã đổi mật khẩu')
       setOldPassword('')
       setNewPassword('')
       setConfirmPassword('')
       router.refresh()
-    } catch (err: any) {
-      toast({ variant: 'destructive', title: 'Lỗi', description: err.message })
+    } catch (err) {
+      notifyError(err, 'Không đổi được mật khẩu')
     } finally {
       setSaving(false)
     }

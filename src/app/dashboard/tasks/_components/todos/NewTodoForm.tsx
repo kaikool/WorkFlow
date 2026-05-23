@@ -24,14 +24,13 @@ import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { format } from 'date-fns'
 import { vi } from 'date-fns/locale'
-import { useToast } from '@/hooks/use-toast'
+import { notifyError, notifyValidation } from '@/lib/notify'
 import { createClient } from '@/utils/supabase/client'
 import { cn, sortProfilesByHierarchy } from '@/lib/utils'
 import Link from 'next/link'
 
 export function NewTodoForm() {
   const router  = useRouter()
-  const { toast } = useToast()
   const supabase  = createClient()
 
   const [loading,          setLoading]    = useState(false)
@@ -72,7 +71,7 @@ export function NewTodoForm() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (selectedAssignees.length === 0) {
-      toast({ variant: 'destructive', title: 'Lỗi', description: 'Vui lòng chọn ít nhất một người xử lý.' })
+      notifyValidation('Vui lòng chọn ít nhất một cán bộ tiếp nhận.')
       return
     }
     setLoading(true)
@@ -111,8 +110,8 @@ export function NewTodoForm() {
       )
 
       setIsSuccess(true)
-    } catch (err: any) {
-      toast({ variant: 'destructive', title: 'Lỗi', description: err.message })
+    } catch (err) {
+      notifyError(err, 'Không tạo được công việc')
     } finally {
       setLoading(false)
     }

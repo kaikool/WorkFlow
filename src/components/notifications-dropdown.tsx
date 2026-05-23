@@ -14,10 +14,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { createClient } from "@/utils/supabase/client";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
-import { useToast } from "@/hooks/use-toast";
+import { notifySuccess } from "@/lib/notify";
 
 export function NotificationsDropdown() {
-  const { toast } = useToast();
   const [mounted, setMounted] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -49,10 +48,7 @@ export function NotificationsDropdown() {
         }, (payload: any) => {
           setNotifications(prev => [payload.new, ...prev].slice(0, 10));
           setUnreadCount(prev => prev + 1);
-          toast({
-            title: payload.new.title,
-            description: payload.new.content,
-          });
+          notifySuccess(payload.new.title, payload.new.content);
         });
 
       channel.subscribe();
@@ -66,7 +62,7 @@ export function NotificationsDropdown() {
         supabase.removeChannel(channel);
       }
     };
-  }, [supabase, toast]);
+  }, [supabase]);
 
   const fetchNotifications = async (userId: string) => {
     setLoading(true);

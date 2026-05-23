@@ -26,14 +26,13 @@ import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { format } from 'date-fns'
 import { vi } from 'date-fns/locale'
-import { useToast } from '@/hooks/use-toast'
+import { notifyError, notifyValidation } from '@/lib/notify'
 import { createClient } from '@/utils/supabase/client'
 import { cn, sortProfilesByHierarchy } from '@/lib/utils'
 import Link from 'next/link'
 
 export function NewReportForm() {
   const router  = useRouter()
-  const { toast } = useToast()
   const supabase  = createClient()
 
   const [loading,        setLoading]    = useState(false)
@@ -76,7 +75,7 @@ export function NewReportForm() {
       if (assignType === 'department') {
         // Gửi tới từng phòng ban, tự tìm trưởng phòng làm người tiếp nhận
         if (selectedDepartments.length === 0) {
-          toast({ variant: 'destructive', title: 'Lỗi', description: 'Vui lòng chọn ít nhất một phòng ban nhận báo cáo.' })
+          notifyValidation('Vui lòng chọn ít nhất một phòng ban nhận báo cáo.')
           setLoading(false); return
         }
 
@@ -89,7 +88,7 @@ export function NewReportForm() {
         const missingDepts = selectedDepartments.filter(id => !departmentHeads?.some((m: any) => m.department_id === id))
         if (missingDepts.length > 0) {
           const names = missingDepts.map(id => departments.find(d => d.id === id)?.name).join(', ')
-          toast({ variant: 'destructive', title: 'Lỗi', description: `Các phòng sau chưa có Trưởng phòng: ${names}` })
+          notifyValidation(`Các phòng sau chưa có Trưởng phòng: ${names}`, "Thiếu Trưởng phòng")
           setLoading(false); return
         }
 
@@ -127,7 +126,7 @@ export function NewReportForm() {
       } else {
         // Gửi tới cán bộ cụ thể
         if (selectedAssignees.length === 0) {
-          toast({ variant: 'destructive', title: 'Lỗi', description: 'Vui lòng chọn ít nhất một người nhận.' })
+          notifyValidation('Vui lòng chọn ít nhất một cán bộ tiếp nhận.')
           setLoading(false); return
         }
         
@@ -163,8 +162,8 @@ export function NewReportForm() {
       }
 
       setIsSuccess(true)
-    } catch (err: any) {
-      toast({ variant: 'destructive', title: 'Lỗi', description: err.message })
+    } catch (err) {
+      notifyError(err, 'Không tạo được báo cáo')
     } finally {
       setLoading(false)
     }

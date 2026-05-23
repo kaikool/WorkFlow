@@ -14,11 +14,10 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { useToast } from "@/hooks/use-toast";
+import { notifyError, notifySuccess } from "@/lib/notify";
 import { usePushSubscription } from "@/hooks/use-push-subscription";
 
 export default function SettingsPage() {
-  const { toast } = useToast();
   const { subscription, permission, subscribe, unsubscribe } = usePushSubscription();
   const [isSaving, setIsSaving] = useState(false);
   const [notifications, setNotifications] = useState({
@@ -31,15 +30,15 @@ export default function SettingsPage() {
     setIsSaving(true);
     setTimeout(() => {
       setIsSaving(false);
-      toast({ title: "Đã lưu cài đặt" });
+      notifySuccess("Đã lưu cài đặt");
     }, 1000);
   };
 
   const handleNotImplemented = (featureName: string) => {
-    toast({
-      title: "Chức năng đang phát triển",
-      description: `Tính năng ${featureName} sẽ sớm ra mắt trong bản cập nhật tới.`,
-    });
+    notifySuccess(
+      "Chức năng đang phát triển",
+      `Tính năng ${featureName} sẽ sớm ra mắt trong bản cập nhật tới.`
+    );
   };
 
   return (
@@ -82,17 +81,19 @@ export default function SettingsPage() {
                   if (v) {
                     const sub = await subscribe();
                     if (sub) {
-                      toast({ title: "Đã bật thông báo đẩy", description: "Bạn sẽ nhận được tin nhắn tức thời từ hệ thống." });
+                      notifySuccess(
+                        "Đã bật thông báo đẩy",
+                        "Bạn sẽ nhận được tin nhắn tức thời từ hệ thống."
+                      );
                     } else {
-                      toast({ 
-                        variant: "destructive", 
-                        title: "Không thể bật thông báo", 
-                        description: "Vui lòng đảm bảo bạn đã 'Thêm vào màn hình chính' và cấp quyền thông báo cho ứng dụng." 
-                      });
+                      notifyError(
+                        null,
+                        "Vui lòng đảm bảo bạn đã 'Thêm vào màn hình chính' và cấp quyền thông báo cho ứng dụng."
+                      );
                     }
                   } else {
                     await unsubscribe();
-                    toast({ title: "Đã tắt thông báo đẩy" });
+                    notifySuccess("Đã tắt thông báo đẩy");
                   }
                 }} 
               />

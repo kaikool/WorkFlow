@@ -4,7 +4,7 @@ import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { exchangeZaloCodeForToken, getZaloUserProfile } from "@/app/lib/integrations";
 import { Loader2, ShieldCheck, AlertCircle } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { notifyError, notifySuccess } from "@/lib/notify";
 import { Button } from "@/components/ui/button";
 
 export const dynamic = 'force-dynamic';
@@ -12,13 +12,12 @@ export const dynamic = 'force-dynamic';
 function ZaloCallbackContent() {
  const router = useRouter();
  const searchParams = useSearchParams();
- const { toast } = useToast();
  const [status, setStatus] = useState<"processing" | "success" | "error">("processing");
  const [errorMsg, setErrorMsg] = useState("");
 
  useEffect(() => {
  const code = searchParams.get("code");
- 
+
  if (!code) {
  setStatus("error");
  setErrorMsg("Không tìm thấy mã xác thực từ Zalo.");
@@ -27,20 +26,20 @@ function ZaloCallbackContent() {
 
  const processZaloLogin = async () => {
  const tokenRes = await exchangeZaloCodeForToken(code);
- 
+
  if (!tokenRes.success) {
  setStatus("error");
  setErrorMsg(tokenRes.message);
- toast({ variant: "destructive", title: "Lỗi xác thực", description: tokenRes.message });
+ notifyError(tokenRes.message, "Lỗi xác thực Zalo");
  return;
  }
 
  const profileRes = await getZaloUserProfile(tokenRes.data.access_token);
- 
+
  if (!profileRes.success) {
  setStatus("error");
  setErrorMsg(profileRes.message);
- toast({ variant: "destructive", title: "Lỗi truy vấn Profile", description: profileRes.message });
+ notifyError(profileRes.message, "Không truy vấn được hồ sơ Zalo");
  return;
  }
 
@@ -53,12 +52,12 @@ function ZaloCallbackContent() {
 
  localStorage.setItem('userRole', 'staff');
  localStorage.setItem('currentUser', JSON.stringify(userData));
- 
+
  setStatus("success");
- toast({
- title: "Xác thực thành công",
- description: `Chào mừng cán bộ ${userData.name}.`
- });
+ notifySuccess(
+   "Xác thực thành công",
+   `Chào mừng cán bộ ${userData.name}.`
+ );
 
  setTimeout(() => {
  router.push("/dashboard");
@@ -66,7 +65,7 @@ function ZaloCallbackContent() {
  };
 
  processZaloLogin();
- }, [searchParams, router, toast]);
+ }, [searchParams, router]);
 
  return (
  <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-6 text-center">

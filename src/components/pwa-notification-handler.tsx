@@ -4,7 +4,7 @@ import { useEffect } from 'react'
 import { usePushSubscription } from '@/hooks/use-push-subscription'
 import { Bell, BellOff, Info } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { toast } from '@/hooks/use-toast'
+import { notifyError, notifySuccess } from '@/lib/notify'
 
 export function PWANotificationHandler() {
  const { isSupported, subscription, permission, subscribe } = usePushSubscription()
@@ -26,16 +26,15 @@ export function PWANotificationHandler() {
  const handleEnableNotifications = async () => {
  const sub = await subscribe()
  if (sub) {
- toast({
- title: "Thành công!",
- description: "Bạn đã kích hoạt thông báo đẩy trên thiết bị này.",
- })
+ notifySuccess(
+   "Đã kích hoạt thông báo đẩy",
+   "Bạn sẽ nhận tin nhắn tức thời trên thiết bị này."
+ )
  } else if (Notification.permission === 'denied') {
- toast({
- variant: "destructive",
- title: "Bị từ chối",
- description: "Vui lòng mở cài đặt trình duyệt để cấp quyền thông báo.",
- })
+ notifyError(
+   null,
+   "Vui lòng mở cài đặt trình duyệt để cấp quyền thông báo cho ứng dụng."
+ )
  }
  }
 

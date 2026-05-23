@@ -8,6 +8,7 @@ import {
   MapPin, Gauge
 } from "lucide-react";
 import { canCoordinateSharedResources } from "@/lib/permissions";
+import { notifyError, notifySuccess, notifyValidation } from "@/lib/notify";
 import StartTripDialog from "./driver/StartTripDialog";
 import EndTripDialog from "./driver/EndTripDialog";
 import ReportIssueDialog from "./driver/ReportIssueDialog";
@@ -87,7 +88,7 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
 
   const handleStartTrip = async () => {
     if (!startKm || isNaN(Number(startKm)) || Number(startKm) < 0) {
-      toast({ variant: "destructive", title: "Lỗi", description: "Vui lòng nhập số Km xuất phát hợp lệ." });
+      notifyValidation("Vui lòng nhập số Km xuất phát hợp lệ.");
       return;
     }
     setUpdating(true);
@@ -110,7 +111,7 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
 
       if (error) throw error;
 
-      toast({ title: "Thành công", description: "Chuyến đi đã chính thức bắt đầu!" });
+      notifySuccess("Đã bắt đầu chuyến đi");
       setIsStartOpen(false);
       setStartKm("");
 
@@ -138,8 +139,8 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
       }
 
       fetchData();
-    } catch (e: any) {
-      toast({ variant: "destructive", title: "Lỗi", description: e.message });
+    } catch (e) {
+      notifyError(e, "Không bắt đầu được chuyến");
     } finally {
       setUpdating(false);
     }
@@ -148,11 +149,9 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
   const handleEndTrip = async () => {
     const start_km = selectedEndSchedule?.metadata?.start_km || 0;
     if (!endKm || isNaN(Number(endKm)) || Number(endKm) <= start_km) {
-      toast({
-        variant: "destructive",
-        title: "Lỗi",
-        description: `Vui lòng nhập số Km kết thúc lớn hơn số Km xuất phát (${start_km} km).`
-      });
+      notifyValidation(
+        `Vui lòng nhập số Km kết thúc lớn hơn số Km xuất phát (${start_km} km).`
+      );
       return;
     }
     setUpdating(true);
@@ -192,7 +191,7 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
         );
       }
 
-      toast({ title: "Thành công", description: "Hoàn thành chuyến đi và cập nhật số Km hành trình." });
+      notifySuccess("Đã hoàn thành chuyến đi", "Đã cập nhật số Km hành trình.");
       setIsEndOpen(false);
       setEndKm("");
 
@@ -216,8 +215,8 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
       }
 
       fetchData();
-    } catch (e: any) {
-      toast({ variant: "destructive", title: "Lỗi", description: e.message });
+    } catch (e) {
+      notifyError(e, "Không kết thúc được chuyến");
     } finally {
       setUpdating(false);
     }
@@ -259,12 +258,15 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
         );
       }
 
-      toast({ title: "Thành công", description: "Báo cáo sự cố xe đã được gửi và xe đã chuyển sang trạng thái bảo trì." });
+      notifySuccess(
+        "Đã báo cáo sự cố",
+        "Xe đã chuyển sang trạng thái bảo trì và TCTH đã được thông báo."
+      );
       setIsIssueOpen(false);
       setIssueText("");
       fetchData();
-    } catch (e: any) {
-      toast({ variant: "destructive", title: "Lỗi", description: e.message });
+    } catch (e) {
+      notifyError(e, "Không gửi được báo cáo sự cố");
     } finally {
       setUpdating(false);
     }

@@ -3,6 +3,7 @@
 import React from "react";
 import { createClient } from "@/utils/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { notifyError, notifySuccess } from "@/lib/notify";
 
 import CreateScheduleDialog from "./_components/CreateScheduleDialog";
 import ScheduleDetailDialog from "./_components/ScheduleDetailDialog";
@@ -141,10 +142,10 @@ export default function SchedulePage() {
               }]);
             }
 
-            toast({ title: "Thành công", description: vId ? "Đã gán xe và tài xế thành công" : "Đã hủy gán xe" });
+            notifySuccess(vId ? "Đã gán xe và tài xế" : "Đã huỷ gán xe");
             fetchData();
-          } catch (error: any) {
-            toast({ variant: "destructive", title: "Lỗi", description: error.message });
+          } catch (error) {
+            notifyError(error, "Không gán được xe");
           }
         }}
         onUpdateEndTime={handleUpdateEndTime}

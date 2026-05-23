@@ -32,7 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
+import { notifyError, notifySuccess } from "@/lib/notify";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
 import { getProfileDisplayTitle, getProfileTitleBadgeClass, cn } from "@/lib/utils";
@@ -54,7 +54,6 @@ export default function ProfilePage() {
   const [newBirthday, setNewBirthday] = useState("");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { toast } = useToast();
   const supabase = createClient();
   const router = useRouter();
 
@@ -86,8 +85,8 @@ export default function ProfilePage() {
       setNewRole(data.role || "");
       setNewPhone(data.phone || "");
       setNewBirthday(data.birthday || "");
-    } catch (error: any) {
-      toast({ variant: "destructive", title: "Lỗi", description: error.message });
+    } catch (error) {
+      notifyError(error, "Không tải được hồ sơ");
     } finally {
       setLoading(false);
     }
@@ -136,10 +135,10 @@ export default function ProfilePage() {
       if (updateError) throw updateError;
 
       setProfile({ ...profile, avatar_url: publicUrl });
-      toast({ title: "Đã cập nhật ảnh đại diện" });
+      notifySuccess("Đã cập nhật ảnh đại diện");
       router.refresh();
-    } catch (error: any) {
-      toast({ variant: "destructive", title: "Lỗi tải ảnh", description: error.message });
+    } catch (error) {
+      notifyError(error, "Không tải lên được ảnh");
     } finally {
       setUploading(false);
     }
@@ -168,10 +167,10 @@ export default function ProfilePage() {
       if (error) throw error;
       await fetchProfile();
       setIsUpdateOpen(false);
-      toast({ title: "Đã cập nhật hồ sơ" });
+      notifySuccess("Đã cập nhật hồ sơ");
       router.refresh();
-    } catch (error: any) {
-      toast({ variant: "destructive", title: "Lỗi", description: error.message });
+    } catch (error) {
+      notifyError(error, "Không cập nhật được hồ sơ");
     } finally {
       setUpdating(false);
     }

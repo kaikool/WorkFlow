@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
-import { toast } from '@/hooks/use-toast'
+import { notifyError, notifySuccess } from '@/lib/notify'
 import {
   Loader2,
   Lock,
@@ -142,10 +142,10 @@ function LoginForm() {
         await supabase.auth.signOut()
 
         setIsPendingApproval(true)
-        toast({
-          title: "Đã gửi yêu cầu",
-          description: "Tài khoản đã được tạo. Vui lòng chờ Quản trị viên kích hoạt.",
-        })
+        notifySuccess(
+          "Đã gửi yêu cầu",
+          "Tài khoản đã được tạo. Vui lòng chờ Quản trị viên kích hoạt."
+        )
       } else {
         const { data: signInData, error } = await supabase.auth.signInWithPassword({
           email: finalEmail,
@@ -172,12 +172,8 @@ function LoginForm() {
         router.refresh()
         router.push(redirectTo)
       }
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Lỗi xác thực",
-        description: error.message || "Đã có lỗi xảy ra, vui lòng thử lại.",
-      })
+    } catch (error) {
+      notifyError(error, "Đăng nhập thất bại, vui lòng thử lại.")
     } finally {
       setLoading(false)
     }

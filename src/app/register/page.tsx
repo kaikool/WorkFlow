@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
-import { toast } from '@/hooks/use-toast'
+import { notifyError, notifySuccess } from '@/lib/notify'
 import { Workflow, Loader2, Lock, Mail, User, ShieldCheck } from 'lucide-react'
 
 export const dynamic = 'force-dynamic';
@@ -41,18 +41,14 @@ function RegisterContent() {
  
  if (error) throw error
 
- toast({
- title: "Đăng ký thành công",
- description: "Chào mừng bạn gia nhập đội ngũ WorkFlow!",
- })
- 
+ notifySuccess(
+   "Đăng ký thành công",
+   "Chào mừng bạn gia nhập đội ngũ WorkFlow!"
+ )
+
  router.push('/dashboard')
- } catch (error: any) {
- toast({
- variant: "destructive",
- title: "Lỗi đăng ký",
- description: error.message || "Đã có lỗi xảy ra, vui lòng thử lại.",
- })
+ } catch (error) {
+ notifyError(error, "Đăng ký thất bại, vui lòng thử lại.")
  } finally {
  setLoading(false)
  }

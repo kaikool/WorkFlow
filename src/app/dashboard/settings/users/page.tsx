@@ -31,7 +31,7 @@ import {
  TableRow
 } from '@/components/ui/table'
 import { createClient } from "@/utils/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { notifyError, notifySuccess } from "@/lib/notify";
 import { getProfileDisplayTitle, sortProfilesByHierarchy } from "@/lib/utils";
 import { useSearchParams } from "next/navigation";
 import PageHeader from "@/components/layout/PageHeader";
@@ -45,7 +45,6 @@ export default function UserManagementPage() {
   const searchQuery = searchParams.get('q') || '';
  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
- const { toast } = useToast();
  const supabase = createClient();
 
  useEffect(() => {
@@ -72,8 +71,8 @@ export default function UserManagementPage() {
  if (dError) throw dError;
  setDepartments(depts || []);
 
- } catch (error: any) {
- toast({ variant: "destructive", title: "Lỗi", description: error.message });
+ } catch (error) {
+ notifyError(error, "Không tải được dữ liệu");
  } finally {
  setLoading(false);
  }
@@ -90,9 +89,9 @@ export default function UserManagementPage() {
  if (error) throw error;
 
  setUsers(prev => prev.map(u => u.id === userId ? { ...u, ...updates } : u));
- toast({ title: "Thành công", description: "Đã cập nhật thông tin người dùng." });
- } catch (error: any) {
- toast({ variant: "destructive", title: "Lỗi", description: error.message });
+ notifySuccess("Đã cập nhật thông tin người dùng");
+ } catch (error) {
+ notifyError(error, "Không cập nhật được người dùng");
  } finally {
  setUpdatingId(null);
  }
