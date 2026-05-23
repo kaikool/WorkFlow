@@ -739,18 +739,22 @@ return () => {
 | Upload fail | `"Lỗi upload ảnh"` | `error.message` |
 | Mutation thành công | `"Đã <hành động>"` | mô tả ngắn ("Đợi người nhận xác nhận") |
 
-**3 mẫu chuẩn:**
+**3 mẫu chuẩn — dùng helper `@/lib/notify`** (centralize, không gọi `toast()` inline):
 
 ```ts
+import { notifyError, notifySuccess, notifyValidation } from "@/lib/notify";
+
 // Thành công
-toast({ title: "Đã chuyển hồ sơ", description: "Đợi người nhận xác nhận \"Đã nhận\"." });
+notifySuccess("Đã chuyển hồ sơ", "Đợi người nhận xác nhận \"Đã nhận\".");
 
-// Lỗi nghiệp vụ (từ RPC)
-toast({ variant: "destructive", title: "Không chuyển được", description: res.error });
+// Lỗi nghiệp vụ — tự trích message từ error (PostgrestError, Error, string đều OK)
+notifyError(res.error, "Không chuyển được");
 
-// Validation
-toast({ variant: "destructive", title: "Thiếu thông tin", description: "Vui lòng nhập tiêu đề hồ sơ" });
+// Validation phía client
+notifyValidation("Vui lòng nhập tiêu đề hồ sơ");
 ```
+
+**Chỉ gọi `toast()` trực tiếp** khi cần variant đặc biệt (action button, undo…). Các trường hợp thông thường bắt buộc đi qua helper.
 
 ### 7.3 Confirm dialog (thay confirm() native)
 
@@ -855,17 +859,30 @@ Checklist **bắt buộc** theo thứ tự. Áp dụng cho mọi module mới (v
 
 ## 9. BẤT ĐỒNG BỘ ĐÃ BIẾT — DỌN DẦN
 
-Các điểm code hiện tại lệch chuẩn đã định ở trên. **Không sửa hàng loạt** — dọn từng module khi đụng vào để tránh PR quá lớn.
+Mục này theo dõi các điểm lệch chuẩn của codebase. Trạng thái cập nhật mỗi đợt cleanup. Mục tiêu: làm sạch dần đến khi bảng dưới đây trống.
 
-| Khu vực | Vấn đề | Chuẩn áp dụng |
-|--------|--------|---------------|
-| `tailwing.config.ts` | File typo tên cũ, song song `tailwind.config.ts` | Sẽ xoá khi xác nhận không dùng |
-| Modules `tasks/team/admin` | Không đủ `_components/_hooks/_lib` | Khi đụng → tách dần |
-| Type `profile: any` khắp nơi | Mất type safety | Khi đụng → tạo `src/types/profile.ts` (file mới) + dần migrate |
-| `database.types.ts` chưa gen từ Supabase | | Khuyến nghị chạy `supabase gen types typescript` định kỳ |
-| Form chưa dùng `react-hook-form` + `zod` | Đã có dep nhưng chưa dùng | Form > 4 field tới đây dùng pattern này |
-| Error handling toast inline 95 chỗ | Lặp pattern | Có thể centralize thành helper `notifyError(error, fallback)` — đề xuất |
-| `confirmDialog` field `danger` (không phải `destructive`) | Đặc thù lib nội bộ | Tài liệu hoá rõ ở §7.3 |
+### ✅ Đã dọn (commit 2026-05-23)
+
+| Khu vực | Hành động |
+|--------|-----------|
+| `tailwing.config.ts` | Xoá hẳn (file typo cũ, 0 reference) |
+| `dashboard-shell.tsx` | Xoá dead code (không file nào import) |
+| Module KPI lệch (`page.tsx` 468 dòng, không realtime) | Sunset toàn bộ module — xoá khỏi codebase |
+| Thiếu type chung cho Profile | Tạo `src/types/profile.ts` với `Profile`, `ProfileLite`, `Department`, `UserRole` |
+| Toast inline 95 chỗ | Tạo `src/lib/notify.ts` với `notifyError`, `notifySuccess`, `notifyValidation` — chuẩn duy nhất từ nay |
+| `database.types.ts` không tồn tại | Tạo stub `src/types/database.types.ts` + hướng dẫn gen qua Supabase CLI |
+| Module `team/admin/tasks` thiếu `_components/_hooks/_lib` | Đã tạo skeleton folder (gitkeep) — code mới đi đúng chỗ |
+| `confirmDialog` field `danger` | Đã document rõ §7.3 — coi như chuẩn chính thức |
+
+### 🟡 Còn nợ (chấp nhận, không sửa hàng loạt)
+
+| Khu vực | Vấn đề | Hướng giải |
+|--------|--------|------------|
+| `profile: any` trong code cũ (95 chỗ) | Mất type safety | Từ nay code mới dùng `Profile`/`ProfileLite` từ `@/types/profile`. Code cũ migrate dần khi đụng vào — KHÔNG mass-replace để tránh regression. |
+| Form lớn dùng `useState` thủ công | `react-hook-form` + `zod` đã trong deps nhưng chưa dùng | Form > 4 field từ nay dùng `react-hook-form` + `zod` schema. Form cũ giữ nguyên cho đến khi đụng vào để sửa. |
+| `database.types.ts` còn là stub | Cần Supabase CLI để gen | Khi dev nào cài được Supabase CLI: chạy `supabase gen types typescript --linked > src/types/database.types.ts`. Update định kỳ sau mỗi migration. |
+| `team/[id]/page.tsx` (455 dòng) và `admin/page.tsx` (461 dòng) | Sát giới hạn 500 dòng | Lần đụng vào tiếp theo phải tách subcomponent vào `_components/` (đã có folder sẵn) |
+| Tasks inline `toast({ variant: "destructive", ... })` | Lặp pattern, không qua helper mới | Code mới dùng `notifyError()`. Code cũ migrate dần khi đụng. |
 
 ---
 
@@ -881,7 +898,10 @@ Các điểm code hiện tại lệch chuẩn đã định ở trên. **Không s
 | `src/middleware.ts` | Session guard logic |
 | `src/lib/permissions.ts` | Tất cả role helper |
 | `src/lib/utils.ts` | `cn()`, profile sort, leave permissions |
+| `src/lib/notify.ts` | ⭐ `notifyError` / `notifySuccess` / `notifyValidation` — toast chuẩn |
 | `src/lib/auth-utils.ts` | `getProfile()` server-side |
+| `src/types/profile.ts` | ⭐ `Profile`, `ProfileLite`, `Department`, `UserRole` |
+| `src/types/database.types.ts` | Stub — chờ gen từ Supabase CLI |
 | `src/utils/supabase/client.ts` + `server.ts` | 2 client patterns |
 | `src/app/dashboard/schedule/_hooks/useSchedule.ts` | ⭐ Mẫu hook chuẩn (realtime + Promise.all) |
 | `src/app/dashboard/handover/_hooks/useHandover.ts` | ⭐ Mẫu hook gọn (state object + memoized client) |
@@ -892,6 +912,6 @@ Các điểm code hiện tại lệch chuẩn đã định ở trên. **Không s
 
 ---
 
-**Phiên bản:** 1.0 — 2026-05-23
+**Phiên bản:** 1.1 — 2026-05-23 (cleanup §9)
 **Người duyệt:** Tech Lead
 **Tần suất cập nhật:** Mỗi quý hoặc khi có pattern kiến trúc mới được chấp nhận.
