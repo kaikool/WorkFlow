@@ -40,6 +40,9 @@ import { cn, sortProfilesByHierarchy } from "@/lib/utils";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { canAccessPeopleDirectory } from "@/lib/permissions";
+import PageHeader from "@/components/layout/PageHeader";
+import { ListSkeleton } from "@/components/ui/list-skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export default function TeamPage() {
   const searchParams = useSearchParams();
@@ -120,24 +123,20 @@ export default function TeamPage() {
  director: { label: "Ban giám đốc", color: "bg-primary text-white shadow-primary-glow" },
  manager: { label: "Lãnh đạo đơn vị", color: "bg-amber-50 text-amber-600 border border-amber-200" },
  staff: { label: "Cán bộ", color: "bg-slate-50 text-slate-500 border border-slate-100" },
- secretary: { label: "Lễ tân", color: "bg-sky-50 text-sky-600 border border-sky-200" },
+ secretary: { label: "Lễ tân", color: "bg-amber-50 text-amber-700 border border-amber-200" },
  hr_officer: { label: "Cán bộ Nhân sự", color: "bg-blue-50 text-blue-600 border border-blue-200" },
  driver: { label: "Lái xe cơ quan", color: "bg-emerald-50 text-emerald-600 border border-emerald-200" }
  };
 
- if (loading) return <div className="flex h-96 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
+ if (loading) return <div className="page-container py-10"><ListSkeleton variant="table" rows={6} /></div>;
 
  return (
- <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-10 animate-fade-in-up pb-20">
- <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 pt-4 sm:pt-0">
- <div className="hidden lg:block space-y-1">
- <h1 className="text-2xl font-semibold text-slate-900">
- Nhân sự
- </h1>
- <p className="text-[13px] text-slate-500 font-medium">Danh sách đội ngũ cán bộ</p>
- </div>
-
- {(profile?.role === 'admin' || profile?.role === 'manager') && (
+ <div className="page-container space-y-10 animate-fade-in-up">
+ <PageHeader
+   title="Nhân sự"
+   description="Danh sách đội ngũ cán bộ"
+   action={
+     (profile?.role === 'admin' || profile?.role === 'manager') ? (
  <Dialog open={isInviteOpen} onOpenChange={setIsInviteOpen}>
  <DialogTrigger asChild>
  <Button className="bg-primary hover:bg-primary/90 h-10 px-5 rounded-xl font-medium">
@@ -163,8 +162,9 @@ export default function TeamPage() {
  </div>
  </DialogContent>
  </Dialog>
- )}
- </div>
+ ) : null
+   }
+ />
 
 
 

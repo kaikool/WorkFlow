@@ -40,6 +40,9 @@ export function canApproveLeave(profile: any, leave?: any): boolean {
 
   if (profile.role === 'admin') return true;
 
+  // HR Officer chỉ READ đơn nghỉ phép, không duyệt
+  if (profile.role === 'hr_officer') return false;
+
   if (!leave) {
     return profile.role === 'director' || profile.role === 'manager';
   }

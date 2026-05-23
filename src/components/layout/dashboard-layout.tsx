@@ -1,21 +1,15 @@
 'use client'
 
 import React, { useState, Suspense } from "react";
-import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { 
- LayoutDashboard, 
- Users, 
+import {
+ LayoutDashboard,
+ Users,
  ListTodo,
  SlidersHorizontal,
  Target,
- LogOut, 
- Menu,
- Building2,
+ LogOut,
  CalendarDays,
- ShieldCheck,
- Gift,
- HeartHandshake,
  Search
 } from "lucide-react";
 import { cn, getProfileDisplayTitle } from "@/lib/utils";
@@ -23,13 +17,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { 
- DropdownMenu, 
- DropdownMenuContent, 
- DropdownMenuItem, 
- DropdownMenuLabel, 
- DropdownMenuSeparator, 
- DropdownMenuTrigger 
+import {
+ DropdownMenu,
+ DropdownMenuContent,
+ DropdownMenuItem,
+ DropdownMenuLabel,
+ DropdownMenuSeparator,
+ DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import {
  AlertDialog,
@@ -41,24 +35,13 @@ import {
  AlertDialogHeader,
  AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
- Dialog,
- DialogContent,
- DialogDescription,
- DialogHeader,
- DialogTitle,
-} from "@/components/ui/dialog";
-import {
- Sheet,
- SheetContent,
- SheetDescription,
- SheetHeader,
- SheetTitle,
-} from "@/components/ui/sheet";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { createClient } from "@/utils/supabase/client";
 import { NotificationsDropdown } from "@/components/notifications-dropdown";
 import { canManageResourceCatalog } from "@/lib/permissions";
+import { ConfirmDialogProvider } from "@/components/ui/confirm-dialog";
+import AnniversaryDialog from "./AnniversaryDialog";
+import DesktopSidebar from "./DesktopSidebar";
+import MobileBottomNav from "./MobileBottomNav";
 
 interface DashboardLayoutProps {
  children: React.ReactNode;
@@ -276,24 +259,7 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
 
  React.useEffect(() => {
  setMounted(true);
- const cleanupKey = `workflow-cleanup-${new Date().toISOString().slice(0, 10)}`;
- if (window.localStorage.getItem(cleanupKey)) return;
-
- const runCleanup = async () => {
-   try {
-     await supabase.rpc('auto_archive_and_cleanup');
-     window.localStorage.setItem(cleanupKey, "done");
-   } catch (e) {
-     console.error("Cleanup error:", e);
-   }
- };
-
- const idleCallback = window.requestIdleCallback || ((cb: IdleRequestCallback) => window.setTimeout(cb, 1500));
- const cancelIdleCallback = window.cancelIdleCallback || window.clearTimeout;
- const cleanupId = idleCallback(runCleanup);
-
- return () => cancelIdleCallback(cleanupId);
- }, [supabase]);
+ }, []);
 
  React.useEffect(() => {
    if (!profile?.id || !profile?.branch_join_date) return;
@@ -326,48 +292,16 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
    { name: 'Cán bộ', href: '/dashboard/team', icon: Users, hideFor: ['driver', 'secretary', 'staff'] },
   ].filter(item => !(item.hideFor || []).includes(profile?.role));
 
-  const currentNavItem = navItems.find(item => item.href === pathname) || (pathname === '/dashboard/admin' ? {name: 'Quản trị'} : null);
-  const pageTitle = currentNavItem ? currentNavItem.name : "WorkFlow";
-
  return (
  <div className="flex min-h-screen bg-background">
- {/* Branch anniversary appreciation dialog */}
- <Dialog open={isAnniversaryDialogOpen} onOpenChange={setIsAnniversaryDialogOpen}>
- <DialogContent className="overflow-hidden border-none bg-white p-0 shadow-2xl sm:max-w-md">
- <div className="relative bg-gradient-to-br from-rose-50 via-white to-amber-50 px-6 pb-6 pt-8">
- <div className="absolute right-5 top-5 flex h-11 w-11 items-center justify-center rounded-2xl bg-white/80 shadow-sm ring-1 ring-rose-100">
- <Gift className="h-5 w-5 text-rose-500" />
- </div>
- <DialogHeader className="space-y-3 pr-14">
- <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-500 text-white shadow-lg shadow-rose-200">
- <HeartHandshake className="h-7 w-7" />
- </div>
- <DialogTitle className="text-2xl font-bold leading-tight text-slate-950">
- Cảm ơn {profile?.full_name}
- </DialogTitle>
- <DialogDescription className="text-sm font-medium leading-relaxed text-slate-600">
- Hôm nay là ngày kỷ niệm bạn bắt đầu đồng hành cùng Chi nhánh.
- </DialogDescription>
- </DialogHeader>
- <div className="mt-5 rounded-2xl bg-white/85 p-4 shadow-sm ring-1 ring-rose-100/70">
- <p className="text-[15px] font-semibold leading-relaxed text-slate-800">
- {anniversaryMessage}
- </p>
- {anniversaryYears > 0 && (
- <p className="mt-3 text-xs font-bold text-rose-500">
- {anniversaryYears} năm gắn bó
- </p>
- )}
- </div>
- <Button
- className="mt-5 h-11 w-full rounded-xl bg-slate-950 text-sm font-bold text-white hover:bg-slate-800"
- onClick={() => setIsAnniversaryDialogOpen(false)}
- >
- Tiếp tục làm việc
- </Button>
- </div>
- </DialogContent>
- </Dialog>
+ <ConfirmDialogProvider />
+ <AnniversaryDialog
+   isOpen={isAnniversaryDialogOpen}
+   setIsOpen={setIsAnniversaryDialogOpen}
+   fullName={profile?.full_name}
+   anniversaryYears={anniversaryYears}
+   anniversaryMessage={anniversaryMessage}
+ />
 
  {/* Logout Confirmation Dialog (Shared) */}
  <AlertDialog open={isLogoutDialogOpen} onOpenChange={setIsLogoutDialogOpen}>
@@ -388,100 +322,26 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
  </AlertDialog>
 
  {/* Sidebar Desktop */}
- <aside className="hidden lg:flex flex-col w-[272px] bg-[#f5f5f7]/90 backdrop-blur-xl border-r border-slate-200/70 sticky top-0 h-screen shrink-0 z-50">
- <div className="px-4 py-5 flex items-center gap-3">
-    <div className="flex items-center justify-center shrink-0">
-      <img src="/logo.png" alt="Logo" className="w-9 h-9 object-contain" />
-    </div>
-    <div className="flex flex-col">
-      <span className="text-[15px] font-semibold text-slate-900 leading-none">WorkFlow</span>
-      <span className="text-[11px] text-slate-500 mt-0.5">CN Hoàng Mai</span>
-    </div>
-  </div>
-
- <nav className="flex-1 px-3 space-y-1 mt-3">
- {navItems.map((item) => {
- const isActive = pathname === item.href;
- return (
- <Link
- key={item.name}
- href={item.href}
- aria-current={isActive ? "page" : undefined}
- className={cn(
- "flex min-h-11 items-center gap-3 rounded-xl px-3 text-[13px] font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20",
-              isActive
-                ? "bg-white text-slate-950 shadow-sm ring-1 ring-slate-200/70"
-                : "text-slate-600 hover:bg-white/70 hover:text-slate-950"
- )}
- >
- <item.icon className={cn("w-[18px] h-[18px] shrink-0", isActive ? "text-primary" : "text-slate-500")} />
- {item.name}
- </Link>
- );
- })}
- 
- {canManageSystem && (
- <div className="mt-7 pt-5 border-t border-slate-200/70 space-y-1">
- <p className="px-3 text-[11px] font-medium text-slate-500 mb-1">Hệ thống</p>
- <Link
- href="/dashboard/admin"
- aria-current={pathname === "/dashboard/admin" ? "page" : undefined}
- className={cn(
- "flex min-h-11 items-center gap-3 rounded-xl px-3 text-[13px] font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20",
-                pathname === "/dashboard/admin"
-                  ? "bg-white text-slate-950 shadow-sm ring-1 ring-slate-200/70"
-                  : "text-slate-600 hover:bg-white/70 hover:text-slate-950"
- )}
- >
- <ShieldCheck className={cn("w-[18px] h-[18px] shrink-0", pathname === "/dashboard/admin" ? "text-primary" : "text-slate-500")} />
- Quản trị
- </Link>
- </div>
- )}
- </nav>
-
- <div className="p-4">
- <div className="flex items-center gap-3 px-2 py-2 mb-2">
- <div className="flex items-center gap-3">
- <div className="w-7 h-7 rounded-lg bg-white/80 shadow-sm ring-1 ring-slate-200/70 flex items-center justify-center shrink-0">
- <Building2 className="w-4 h-4 text-slate-500" />
- </div>
- <div className="flex flex-col min-w-0">
- <span className="text-[11px] text-slate-400 truncate">Cơ quan</span>
- <span className="text-[13px] font-medium text-slate-900 truncate leading-tight">
- {(profile?.role === 'director' || profile?.role === 'admin') ? "Quản trị & Điều hành" : (profile?.departments?.name || "Chi nhánh chính")}
- </span>
- </div>
- </div>
- </div>
- <Button 
- variant="ghost" 
- className="w-full justify-start text-red-600 hover:bg-red-50 hover:text-red-700 rounded-xl min-h-11 font-medium text-[13px] px-3 focus-visible:ring-2 focus-visible:ring-red-500/20" 
- onClick={() => setIsLogoutDialogOpen(true)}
- >
- <LogOut className="w-4 h-4 mr-2.5" />
- Đăng xuất
- </Button>
- </div>
- </aside>
+ <DesktopSidebar
+   navItems={navItems}
+   pathname={pathname}
+   canManageSystem={canManageSystem}
+   profile={profile}
+   onLogout={() => setIsLogoutDialogOpen(true)}
+ />
 
  <div className="flex-1 flex flex-col min-w-0">
  <header className={cn(
     "h-[60px] lg:h-16 bg-white/80 backdrop-blur-md border border-slate-100 sticky top-0 lg:top-4 z-40 flex items-center px-3 lg:px-8 mx-0 lg:mx-8 mt-0 lg:mt-4 rounded-none lg:rounded-2xl shadow-sm lg:border-x lg:border-t border-x-0 border-t-0 transition-transform duration-300 ease-in-out gap-4",
     isScrolledDown ? "-translate-y-full lg:translate-y-0" : "translate-y-0"
   )}>
-    {/* Left: Page Title */}
-    <div className="flex items-center lg:flex-1 shrink-0 overflow-hidden">
-       <span className="text-[18px] lg:text-xl font-bold text-slate-900 truncate">{pageTitle}</span>
-    </div>
-
-    {/* Middle: Search & Filter */}
-    <div className="flex items-center justify-end lg:justify-center flex-1 lg:flex-[2] z-20 min-w-0">
+    {/* Left + Middle: Search & Filter (full width, không còn lặp tiêu đề trang) */}
+    <div className="flex items-center flex-1 z-20 min-w-0">
       <TopNavActions />
     </div>
 
     {/* Right: Notifications & Profile */}
-    <div className="flex items-center justify-end gap-3 lg:gap-5 relative z-10 shrink-0 lg:flex-1">
+    <div className="flex items-center justify-end gap-3 lg:gap-5 relative z-10 shrink-0">
   <NotificationsDropdown />
  
  <div className="hidden sm:flex flex-col text-right">
@@ -525,36 +385,12 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
 
  
 
- <main 
+ <main
  className="relative flex-1 max-w-full overflow-x-hidden overscroll-x-none p-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] touch-pan-y lg:p-8"
  >
  {children}
  </main>
- <nav className="lg:hidden fixed inset-x-0 bottom-0 z-50 border-t border-slate-200/50 bg-white/80 px-2 pb-[max(env(safe-area-inset-bottom),34px)] pt-2 shadow-[0_-12px_30px_-20px_rgba(15,23,42,0.35)] backdrop-blur-2xl">
- <div
- className="grid gap-1"
- style={{ gridTemplateColumns: `repeat(${Math.min(navItems.length, 5)}, minmax(0, 1fr))` }}
- >
- {navItems.slice(0, 5).map((item) => {
- const isActive = pathname === item.href;
- return (
- <Link
- key={item.href}
- href={item.href}
- aria-current={isActive ? "page" : undefined}
- aria-label={item.name}
- className={cn(
- "flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl px-1 text-[11px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30",
- isActive ? "bg-primary/10 text-primary" : "text-slate-500 hover:bg-slate-100 hover:text-slate-900"
- )}
- >
- <item.icon className="h-5 w-5 shrink-0" />
- <span className="max-w-full truncate">{item.name}</span>
- </Link>
- );
- })}
- </div>
- </nav>
+ <MobileBottomNav navItems={navItems} pathname={pathname} />
  </div>
  </div>
  );

@@ -5,6 +5,10 @@ import { useToast } from "@/hooks/use-toast";
 import { addDays, endOfDay, isSameDay, startOfWeek, endOfWeek, eachDayOfInterval } from "date-fns";
 import { resolveParticipantIds, checkConflicts, checkResourceConflicts } from "../_lib/utils";
 import { canApproveLeave, canCoordinateSharedResources, canUseDriverWorkspace } from "@/lib/permissions";
+import { confirmDialog } from "@/components/ui/confirm-dialog";
+import { createSchedule as createScheduleHelper } from "../_lib/createSchedule";
+import { updateScheduleAction } from "../_lib/updateSchedule";
+import { fetchScheduleData } from "../_lib/fetchScheduleData";
 
 export function useSchedule() {
   const supabase = createClient();
@@ -179,96 +183,44 @@ export function useSchedule() {
     }
   }, [filterType, loading]);
 
-  // Fetch dữ liệu và kích hoạt Real-time đồng bộ
+  // Fetch dữ liệu và kích hoạt Real-time đồng bộ (có debounce để giảm spam)
   useEffect(() => {
     setMounted(true);
     fetchData();
 
-    // Đăng ký kênh lắng nghe thay đổi PostgreSQL của Supabase
+    let refetchTimer: any = null;
+    const scheduleRefetch = () => {
+      if (refetchTimer) clearTimeout(refetchTimer);
+      refetchTimer = setTimeout(() => { fetchData(); }, 600);
+    };
+
     const channel = supabase
       .channel('schedule_realtime_sync')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'schedules' }, () => {
-        fetchData();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'schedule_participants' }, () => {
-        fetchData();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'vehicles' }, () => {
-        fetchData();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms' }, () => {
-        fetchData();
-      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'schedules' }, scheduleRefetch)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'schedule_participants' }, scheduleRefetch)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'vehicles' }, scheduleRefetch)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms' }, scheduleRefetch)
       .subscribe();
 
     return () => {
+      if (refetchTimer) clearTimeout(refetchTimer);
       supabase.removeChannel(channel);
     };
   }, [selectedDate]);
 
   const fetchData = async () => {
     setLoading(true);
-    let currentProfile: any = profile;
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: p } = await supabase.from('profiles').select('*, departments(name, code)').eq('id', user.id).single();
-        setProfile(p);
-        currentProfile = p;
-        if (p?.department_id && filterDepts.length === 0) setFilterDepts([p.department_id]);
+      const result = await fetchScheduleData(supabase, selectedDate, profile);
+      setProfile(result.profile);
+      if (result.profile?.department_id && filterDepts.length === 0) {
+        setFilterDepts([result.profile.department_id]);
       }
-    } catch (e) { console.error(e); }
-
-    try {
-      const start = startOfWeek(selectedDate, { weekStartsOn: 1 });
-      const end = new Date(Math.max(
-        endOfWeek(selectedDate, { weekStartsOn: 1 }).getTime(),
-        endOfDay(addDays(selectedDate, 3)).getTime()
-      ));
-      // Lấy tất cả lịch có start_time trong tuần Hoặc end_time >= đầu tuần để bắt lịch nhiều ngày chạy qua tuần
-      const schedulesQuery = supabase
-        .from('schedules')
-        .select(`*, creator:profiles!schedules_created_by_fkey(full_name, title, avatar_url, department_id, role, is_department_head), room:rooms(name), vehicle:vehicles(name, plate_number), driver:profiles!schedules_driver_id_fkey(id, full_name, title, phone), participants:schedule_participants(profile:profiles(id, full_name, title, avatar_url, role, is_department_head))`)
-        .gte('end_time', start.toISOString())
-        .lte('start_time', end.toISOString())
-        .order('start_time');
-
-      const canSeePendingQueue = canCoordinateSharedResources(currentProfile);
-      const pendingQueueQuery = canSeePendingQueue
-        ? supabase
-            .from('schedules')
-            .select(`*, creator:profiles!schedules_created_by_fkey(full_name, title, avatar_url, department_id, role, is_department_head), room:rooms(name), vehicle:vehicles(name, plate_number), driver:profiles!schedules_driver_id_fkey(id, full_name, title, phone), participants:schedule_participants(profile:profiles(id, full_name, title, avatar_url, role, is_department_head))`)
-            .or('status.eq.pending,and(use_vehicle.eq.true,vehicle_id.is.null)')
-            .order('start_time')
-        : Promise.resolve({ data: [] as any[], error: null });
-
-      const [
-        { data: scheds, error: sError },
-        { data: pendingQueue, error: pendingError },
-        { data: vData },
-        { data: rData },
-        { data: pData },
-        { data: dData },
-      ] = await Promise.all([
-        schedulesQuery,
-        pendingQueueQuery,
-        supabase.from('vehicles').select('*, default_driver:profiles!vehicles_driver_id_fkey(id, full_name, phone)'),
-        supabase.from('rooms').select('*'),
-        supabase.from('profiles').select('id, full_name, title, role, department_id, is_department_head, departments(name, code)'),
-        supabase.from('departments').select('*'),
-      ]);
-
-      if (sError) throw sError;
-      if (pendingError) throw pendingError;
-
-      setSchedules([...(scheds || []), ...(pendingQueue || [])].filter((item, index, arr) => (
-        arr.findIndex(x => x.id === item.id) === index
-      )));
-
-      setVehicles(vData || []);
-      setRooms(rData || []);
-      setAllProfiles(pData || []);
-      setDepartments(dData || []);
+      setSchedules(result.schedules);
+      setVehicles(result.vehicles);
+      setRooms(result.rooms);
+      setAllProfiles(result.allProfiles);
+      setDepartments(result.departments);
     } catch (error: any) {
       toast({ variant: "destructive", title: "Lỗi", description: error.message });
     } finally {
@@ -339,7 +291,7 @@ export function useSchedule() {
 
       const { error } = await supabase.from('schedules').update({ status }).eq('id', id);
       if (error) throw error;
-      if (schedule?.created_by) {
+      if (schedule?.created_by && schedule.created_by !== profile?.id) {
         await sendNotifications([{
           user_id: schedule.created_by,
           title: status === 'approved' ? "Lịch trình Đã Duyệt" : "Lịch trình Từ Chối",
@@ -367,8 +319,10 @@ export function useSchedule() {
         ignoreScheduleId: scheduleId
       }) : [];
 
+      // CHẶN cứng khi xe đã được gán cho lịch khác trùng giờ — không cho phép vượt
       if (vehicleConflicts.length > 0) {
-        toast({ title: "Cảnh báo trùng lịch xe", description: vehicleConflicts[0] });
+        toast({ variant: "destructive", title: "Xe đã có lịch trùng giờ", description: vehicleConflicts[0] });
+        return;
       }
 
       const { error } = await supabase.from('schedules').update({ vehicle_id: vehicleId, status: vehicleId ? 'approved' : 'pending' }).eq('id', scheduleId);
@@ -384,7 +338,9 @@ export function useSchedule() {
           link: "/dashboard/schedule"
         }]);
       }
+      // Loại trừ driver khỏi thông báo cập nhật lịch chung (quy tắc §5.E.2)
       const participantIds = (schedule?.participants || [])
+        .filter((p: any) => p.profile?.role !== 'driver')
         .map((p: any) => p.profile?.id)
         .filter((uid: string) => uid && uid !== profile?.id && uid !== schedule?.created_by);
       if (vehicleId && participantIds.length > 0) {
@@ -397,7 +353,7 @@ export function useSchedule() {
           }))
         );
       }
-      toast({ title: "Thành công", description: vehicleId ? (vehicleConflicts.length > 0 ? "Đã gán xe (Lưu ý: trùng lịch xe)." : "Đã gán xe cho lịch trình.") : "Đã hủy gán xe." });
+      toast({ title: "Thành công", description: vehicleId ? "Đã gán xe cho lịch trình." : "Đã hủy gán xe." });
       if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
       setIsDetailOpen(false);
       fetchData();
@@ -406,7 +362,18 @@ export function useSchedule() {
     }
   };
   const handleDeleteSchedule = async (id: string) => {
-    if (!confirm('Bạn có chắc chắn muốn xóa lịch trình này?')) return;
+    const schedule = schedules.find(s => s.id === id);
+    if (schedule?.status === 'in_progress') {
+      toast({ variant: 'destructive', title: 'Không thể xóa', description: 'Lịch trình đang diễn ra. Vui lòng kết thúc trước khi xóa.' });
+      return;
+    }
+    const ok = await confirmDialog({
+      title: 'Xóa lịch trình?',
+      description: 'Toàn bộ thông tin liên quan tới lịch trình này sẽ bị gỡ khỏi hệ thống.',
+      confirmText: 'Xóa',
+      danger: true,
+    });
+    if (!ok) return;
     try {
       const { error } = await supabase.from('schedules').delete().eq('id', id);
       if (error) throw error;
@@ -457,279 +424,42 @@ export function useSchedule() {
   };
 
   const handleUpdateSchedule = async (id: string, updates: any) => {
-    try {
-      const schedule = schedules.find(s => s.id === id);
-      if (!schedule) return;
-
-      const nextStart = updates.start_time ? new Date(updates.start_time) : new Date(schedule.start_time);
-      const nextEnd = updates.end_time ? new Date(updates.end_time) : new Date(schedule.end_time);
-      if (nextEnd <= nextStart) {
-        toast({ variant: "destructive", title: "Lỗi thời gian", description: "Thời gian kết thúc phải sau thời gian bắt đầu." });
-        return;
-      }
-
-      const isLeave = (updates.type || schedule.type) === 'leave';
-
-      const resourceErrors = isLeave ? [] : checkResourceConflicts({
-        roomId: updates.room_id,
-        vehicleId: updates.vehicle_id,
-        start: nextStart,
-        end: nextEnd,
-        schedules,
-        ignoreScheduleId: id
-      });
-
-      const allConflicts: string[] = [];
-      if (resourceErrors.length > 0) {
-        allConflicts.push(...resourceErrors);
-      }
-
-      const { participant_ids, ...scheduleUpdates } = updates;
-      const nextParticipantIds = Array.isArray(participant_ids)
-        ? Array.from(new Set([schedule.created_by, ...participant_ids].filter(Boolean)))
-        : (schedule.participants || []).map((p: any) => p.profile?.id).filter(Boolean);
-      const participantConflicts = isLeave ? [] : await findParticipantConflicts({
-        participantIds: nextParticipantIds,
-        start: nextStart,
-        end: nextEnd,
-        ignoreScheduleId: id
-      });
-
-      if (participantConflicts.length > 0) {
-        allConflicts.push(...participantConflicts);
-      }
-
-      const { error } = await supabase.from('schedules').update(scheduleUpdates).eq('id', id);
-      if (error) throw error;
-
-      const oldParticipantIds = (schedule.participants || [])
-        .map((p: any) => p.profile?.id)
-        .filter(Boolean);
-      let finalParticipantIds = oldParticipantIds;
-      let addedParticipantIds: string[] = [];
-
-      if (Array.isArray(participant_ids)) {
-        finalParticipantIds = Array.from(new Set([schedule.created_by, ...participant_ids].filter(Boolean)));
-        addedParticipantIds = finalParticipantIds.filter((uid: string) => !oldParticipantIds.includes(uid));
-
-        const { error: deleteError } = await supabase.from('schedule_participants').delete().eq('schedule_id', id);
-        if (deleteError) throw deleteError;
-
-        if (finalParticipantIds.length > 0) {
-          const { error: insertError } = await supabase.from('schedule_participants').insert(
-            finalParticipantIds.map((uid: string) => ({ schedule_id: id, profile_id: uid }))
-          );
-          if (insertError) throw insertError;
-        }
-      }
-
-      // Loại trừ lái xe: lái xe không nhận thông báo cập nhật lịch chung
-      const notifyTargets = finalParticipantIds.filter((uid: string) => {
-        if (!uid || uid === profile?.id) return false;
-        const targetProfile = allProfiles.find(p => p.id === uid);
-        return targetProfile?.role !== 'driver';
-      });
-
-      if (notifyTargets.length > 0) {
-        await sendNotifications(
-          notifyTargets.map((uid: string) => ({
-            user_id: uid,
-            title: addedParticipantIds.includes(uid) ? "Bạn được thêm vào lịch trình" : `Lịch trình đã được cập nhật`,
-            content: addedParticipantIds.includes(uid)
-              ? `${profile?.full_name || 'Người dùng'} đã thêm bạn vào lịch trình "${scheduleUpdates.title || schedule.title}".`
-              : `${profile?.full_name || 'Người dùng'} vừa cập nhật lịch trình "${scheduleUpdates.title || schedule.title}".`,
-            link: "/dashboard/schedule"
-          }))
-        );
-      }
-
-      if (allConflicts.length > 0) {
-        toast({ title: "Cảnh báo trùng lịch", description: allConflicts[0] });
-      } else {
-        toast({ title: "Thành công", description: "Đã cập nhật lịch trình." });
-      }
-      if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
-      setIsDetailOpen(false);
-      fetchData();
-    } catch (error: any) {
-      toast({ variant: "destructive", title: "Lỗi", description: error.message });
-    }
+    await updateScheduleAction({
+      supabase, toast, profile, allProfiles, schedules, id, updates,
+      findParticipantConflicts, sendNotifications, setIsDetailOpen, fetchData,
+    });
   };
 
 
+  const resetCreateForm = () => {
+    setNewSchedule({ title: "", description: "", location: "", department_id: "", type: "trip", use_room: false, room_id: "", use_vehicle: false, vehicle_id: "", requested_vehicle_type: "4 chỗ", participants: [], target_profile_id: "" });
+    setStartDate(new Date());
+    setEndDate(new Date());
+    setStartTime("08:00");
+    setEndTime("09:00");
+    setBgdMode('none');
+    setSelectedBGD([]);
+    setDeptMode('none');
+    setFilterDepts(profile?.department_id ? [profile.department_id] : []);
+    setParticipantMode('staff');
+    setSelectedParticipants([]);
+    setIsCreateOpen(false);
+  };
+
   const handleCreateSchedule = async () => {
-    if (!newSchedule.title || !startDate || !endDate) {
+    if (!startDate || !endDate) {
       toast({ variant: "destructive", title: "Lỗi", description: "Vui lòng điền đầy đủ thông tin bắt buộc." });
       return;
     }
-    // Chỉ kiểm tra xung đột khi không phải nghỉ phép
-    const start = new Date(startDate);
-    const [sHour, sMin] = startTime.split(':');
-    start.setHours(parseInt(sHour), parseInt(sMin));
-    const end = new Date(endDate);
-    const [eHour, eMin] = endTime.split(':');
-    end.setHours(parseInt(eHour), parseInt(eMin));
-
-    const isLeave = newSchedule.type === 'leave';
-
-    if (end <= start) {
-      toast({ variant: "destructive", title: "Lỗi thời gian", description: "Thời gian kết thúc phải sau thời gian bắt đầu." });
-      return;
-    }
-
-    if (!isLeave && newSchedule.location === 'Chi nhánh' && (!newSchedule.room_id || newSchedule.room_id === 'none')) {
-      toast({ variant: "destructive", title: "Thiếu phòng họp", description: "Vui lòng chọn phòng họp tại chi nhánh." });
-      return;
-    }
-
-    if (!isLeave && newSchedule.location !== 'Chi nhánh' && !newSchedule.location.trim()) {
-      toast({ variant: "destructive", title: "Thiếu địa điểm", description: "Vui lòng nhập địa điểm hoặc lộ trình cụ thể." });
-      return;
-    }
-
-    const allConflicts: string[] = [];
-    if (!isLeave && conflicts.length > 0) {
-      allConflicts.push(...conflicts);
-    }
-
-    if (!isLeave && resourceConflicts.length > 0) {
-      allConflicts.push(...resourceConflicts);
-    }
-
-    try {
-      const { use_vehicle, participants, vehicle_id, target_profile_id, ...insertData } = newSchedule;
-      
-      const targetId = (isLeave && newSchedule.target_profile_id) ? newSchedule.target_profile_id : profile?.id;
-      const targetProfile = isLeave ? allProfiles.find(p => p.id === targetId) : profile;
-      
-      const selectedParticipantIds = isLeave
-        ? [targetId].filter(Boolean)
-        : resolveParticipantIds({ selectedParticipants, bgdMode, selectedBGD, deptMode, filterDepts, participantMode, allProfiles });
-      const finalParticipants = isLeave
-        ? [targetId].filter(Boolean)
-        : Array.from(new Set([profile?.id, ...selectedParticipantIds].filter(Boolean)));
-
-      const participantConflicts = isLeave ? [] : await findParticipantConflicts({
-        participantIds: finalParticipants,
-        start,
-        end
-      });
-
-      if (participantConflicts.length > 0) {
-        allConflicts.push(...participantConflicts);
-      }
-
-      const isTargetBGD = targetProfile?.role === 'director' || targetProfile?.role === 'admin';
-      const isAuthorizedCreator = ['admin', 'secretary', 'hr_officer'].includes(profile?.role);
-      const shouldApproveImmediately = isLeave 
-        ? (isTargetBGD || isAuthorizedCreator)
-        : canCoordinateSharedResources(profile);
-      const status = shouldApproveImmediately ? 'approved' : 'pending';
-
-      const { data: createdSchedule, error } = await supabase.from('schedules').insert({
-        ...insertData,
-        start_time: start.toISOString(),
-        end_time: end.toISOString(),
-        room_id: (!isLeave && newSchedule.location === 'Chi nhánh' && newSchedule.room_id !== "none") ? newSchedule.room_id : null,
-        vehicle_id: null,
-        requested_vehicle_type: (!isLeave && use_vehicle) ? newSchedule.requested_vehicle_type : null,
-        use_vehicle: !isLeave && use_vehicle,
-        created_by: profile?.id,
-        department_id: targetProfile?.department_id || profile?.department_id,
-        status
-      }).select().single();
-      if (error) throw error;
-
-      // Nghỉ phép: chỉ thêm chính người tạo làm participant
-      // Lịch thường: resolve theo lựa chọn thành phần
-      if (finalParticipants.length > 0) {
-        const { error: insertError } = await supabase.from('schedule_participants').insert(
-          finalParticipants.map((pid: string) => ({ schedule_id: createdSchedule.id, profile_id: pid }))
-        );
-        if (insertError) throw insertError;
-      }
-
-      if (createdSchedule.status === 'pending') {
-        // Nghỉ phép: thông báo cho lãnh đạo phòng + TCTH lãnh đạo + BGĐ
-        // Lịch thường: thông báo chỉ cho TCTH
-        const notifyTargets = isLeave
-          ? allProfiles.filter(p => {
-              if (p.id === profile?.id) return false;
-              
-              const isCreatorManager = profile?.role === 'manager' || profile?.is_department_head === true;
-              
-              // BGĐ (director/admin) luôn nhận
-              if (p.role === 'admin' || p.role === 'director') return true;
-              
-              // Cán bộ nhân sự (hr_officer) nhận để duyệt bước 2
-              if (p.role === 'hr_officer') return true;
-              
-              // Lãnh đạo trực tiếp cùng phòng ban
-              if (!isCreatorManager && p.department_id === profile?.department_id && (p.role === 'manager' || p.is_department_head === true)) {
-                return true;
-              }
-              // Lãnh đạo phòng Tổ chức Tổng hợp
-              if (canCoordinateSharedResources(p) && (p.role === 'manager' || p.is_department_head === true)) {
-                return true;
-              }
-              
-              return false;
-            })
-          : allProfiles.filter(isScheduleApprover);
-
-        if (notifyTargets.length > 0) {
-          await sendNotifications(
-            notifyTargets.map(user => ({
-              user_id: user.id,
-              title: isLeave ? "Đơn xin nghỉ phép mới" : "Yêu cầu lịch trình mới",
-              content: isLeave
-                ? `${profile?.full_name} xin nghỉ phép: ${newSchedule.title}. Vui lòng phê duyệt đơn.`
-                : `${profile?.full_name} vừa đăng ký lịch: ${newSchedule.title}. Vui lòng điều phối xe/phòng.`,
-              link: "/dashboard/schedule"
-            }))
-          );
-        }
-      }
-
-      // Loại trừ lái xe: lái xe không nhận thông báo lịch chung khi phòng ban đăng ký
-      const participantNotifyTargets = finalParticipants.filter((uid: string) => {
-        if (uid === profile?.id) return false;
-        const targetProfile = allProfiles.find(p => p.id === uid);
-        return targetProfile?.role !== 'driver';
-      });
-      if (participantNotifyTargets.length > 0) {
-        await sendNotifications(
-          participantNotifyTargets.map((uid: string) => ({
-            user_id: uid,
-            title: createdSchedule.status === 'approved' ? "Lịch trình mới" : "Lịch trình đang chờ duyệt",
-            content: `${profile?.full_name} đã thêm bạn vào lịch trình "${newSchedule.title}" từ ${start.toLocaleString('vi-VN')} đến ${end.toLocaleString('vi-VN')}.`,
-            link: "/dashboard/schedule"
-          }))
-        );
-      }
-
-      if (allConflicts.length > 0) {
-        toast({ title: "Cảnh báo trùng lịch", description: allConflicts[0] });
-      } else {
-        toast({ title: "Thành công", description: isLeave ? "Đơn nghỉ phép đã được gửi." : "Lịch trình đã được đăng ký." });
-      }
-      // Reset toàn bộ form về trạng thái mặc định
-      setNewSchedule({ title: "", description: "", location: "", department_id: "", type: "trip", use_room: false, room_id: "", use_vehicle: false, vehicle_id: "", requested_vehicle_type: "4 chỗ", participants: [], target_profile_id: "" });
-      setStartDate(new Date());
-      setEndDate(new Date());
-      setStartTime("08:00");
-      setEndTime("09:00");
-      setBgdMode('none');
-      setSelectedBGD([]);
-      setDeptMode('none');
-      setFilterDepts(profile?.department_id ? [profile.department_id] : []);
-      setParticipantMode('staff');
-      setSelectedParticipants([]);
-      setIsCreateOpen(false);
-      fetchData();
-    } catch (error: any) {
-      toast({ variant: "destructive", title: "Lỗi", description: error.message });
-    }
+    await createScheduleHelper({
+      supabase, toast, profile, allProfiles, newSchedule,
+      startDate, endDate, startTime, endTime,
+      conflicts, resourceConflicts,
+      selectedParticipants, bgdMode, selectedBGD, deptMode, filterDepts, participantMode,
+      findParticipantConflicts, sendNotifications, isScheduleApprover,
+      resetForm: resetCreateForm,
+      fetchData,
+    });
   };
 
   const handleSelectSchedule = (s: any) => {

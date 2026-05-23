@@ -168,28 +168,32 @@ export function useAdmin() {
 
  const handleDeleteRoom = async (room: any) => {
  try {
- // Check for future schedules using this room
- const { count: futureScheduleCount, error: checkError } = await supabase
- .from('schedules')
- .select('id', { count: 'exact', head: true })
- .eq('room_id', room.id)
- .gte('start_time', new Date().toISOString());
- 
- if (checkError) throw checkError;
- 
- if ((futureScheduleCount || 0) > 0) {
- const count = futureScheduleCount;
- toast({ 
- variant: "destructive", 
- title: "Không thể xóa", 
- description: `Phòng "${room.name}" đang có ${count} lịch trình trong tương lai. Vui lòng hủy lịch trước khi xóa phòng.` 
- });
- return;
+ // Kiểm tra lịch tương lai + lịch quá khứ chưa hoàn tất (in_progress qua đêm)
+ const nowIso = new Date().toISOString();
+ const [futureRes, inProgressRes] = await Promise.all([
+   supabase.from('schedules').select('id', { count: 'exact', head: true }).eq('room_id', room.id).gte('start_time', nowIso),
+   supabase.from('schedules').select('id', { count: 'exact', head: true }).eq('room_id', room.id).eq('status', 'in_progress')
+ ]);
+ if (futureRes.error) throw futureRes.error;
+ if (inProgressRes.error) throw inProgressRes.error;
+
+ const futureCount = futureRes.count || 0;
+ const inProgressCount = inProgressRes.count || 0;
+ if (futureCount > 0 || inProgressCount > 0) {
+   const detail = inProgressCount > 0
+     ? `có ${inProgressCount} lịch đang diễn ra`
+     : `đang có ${futureCount} lịch trình trong tương lai`;
+   toast({
+     variant: "destructive",
+     title: "Không thể xóa",
+     description: `Phòng "${room.name}" ${detail}. Vui lòng hủy hoặc kết thúc các lịch trước khi xóa.`
+   });
+   return;
  }
 
  const { error } = await supabase.from('rooms').delete().eq('id', room.id);
  if (error) throw error;
- 
+
  setRooms(rooms.filter(r => r.id !== room.id));
  toast({ title: "Thành công", description: `Đã xóa phòng "${room.name}".` });
  } catch (error: any) {
@@ -199,28 +203,31 @@ export function useAdmin() {
 
  const handleDeleteVehicle = async (vehicle: any) => {
  try {
- // Check for future schedules using this vehicle
- const { count: futureScheduleCount, error: checkError } = await supabase
- .from('schedules')
- .select('id', { count: 'exact', head: true })
- .eq('vehicle_id', vehicle.id)
- .gte('start_time', new Date().toISOString());
- 
- if (checkError) throw checkError;
- 
- if ((futureScheduleCount || 0) > 0) {
- const count = futureScheduleCount;
- toast({ 
- variant: "destructive", 
- title: "Không thể xóa", 
- description: `Xe "${vehicle.plate_number}" đang có ${count} lịch trình trong tương lai. Vui lòng hủy gán xe trước khi xóa.` 
- });
- return;
+ const nowIso = new Date().toISOString();
+ const [futureRes, inProgressRes] = await Promise.all([
+   supabase.from('schedules').select('id', { count: 'exact', head: true }).eq('vehicle_id', vehicle.id).gte('start_time', nowIso),
+   supabase.from('schedules').select('id', { count: 'exact', head: true }).eq('vehicle_id', vehicle.id).eq('status', 'in_progress')
+ ]);
+ if (futureRes.error) throw futureRes.error;
+ if (inProgressRes.error) throw inProgressRes.error;
+
+ const futureCount = futureRes.count || 0;
+ const inProgressCount = inProgressRes.count || 0;
+ if (futureCount > 0 || inProgressCount > 0) {
+   const detail = inProgressCount > 0
+     ? `đang được sử dụng cho chuyến đang diễn ra`
+     : `có ${futureCount} lịch trình trong tương lai`;
+   toast({
+     variant: "destructive",
+     title: "Không thể xóa",
+     description: `Xe "${vehicle.plate_number}" ${detail}. Vui lòng hủy gán xe hoặc kết thúc chuyến trước khi xóa.`
+   });
+   return;
  }
 
  const { error } = await supabase.from('vehicles').delete().eq('id', vehicle.id);
  if (error) throw error;
- 
+
  setVehicles(vehicles.filter(v => v.id !== vehicle.id));
  toast({ title: "Thành công", description: `Đã xóa xe "${vehicle.plate_number}".` });
  } catch (error: any) {

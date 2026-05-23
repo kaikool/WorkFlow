@@ -27,6 +27,8 @@ import { Car } from "lucide-react";
 import { canApproveLeave, canCoordinateSharedResources, canUseDriverWorkspace } from "@/lib/permissions";
 import { useSchedule } from "./_hooks/useSchedule";
 import { NavbarPortal } from "@/components/layout/navbar-portal";
+import PageHeader from "@/components/layout/PageHeader";
+import { ListSkeleton } from "@/components/ui/list-skeleton";
 
 export default function SchedulePage() {
   const scheduleProps = useSchedule();
@@ -51,21 +53,18 @@ export default function SchedulePage() {
 
   if (!mounted) {
     return (
-      <div className="flex h-96 items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="page-container py-10">
+        <ListSkeleton variant="card" rows={6} />
       </div>
     );
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-10 animate-fade-in-up pb-20">
-      {/* Header */}
-      <div className="flex flex-col gap-4 pt-4 sm:flex-row sm:items-end sm:justify-between sm:pt-0">
-        <div className="hidden lg:block space-y-1">
-          <h1 className="text-2xl font-semibold text-slate-900">Lịch trình</h1>
-          <p className="text-[13px] text-slate-500 font-medium">Điều phối lịch họp & công tác</p>
-        </div>
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+    <div className="page-container space-y-10 animate-fade-in-up">
+      <PageHeader
+        title="Lịch trình"
+        description="Điều phối lịch họp & công tác"
+        action={
           <CreateScheduleDialog
             isOpen={isCreateOpen} setIsOpen={setIsCreateOpen}
             newSchedule={newSchedule} setNewSchedule={setNewSchedule}
@@ -85,9 +84,8 @@ export default function SchedulePage() {
             selectedParticipants={selectedParticipants} setSelectedParticipants={setSelectedParticipants}
             profile={profile}
           />
-        </div>
-      </div>
-
+        }
+      />
 
       {/* Chọn ngày */}
       <DateNavigator selectedDate={selectedDate} setSelectedDate={setSelectedDate} weekDays={weekDays} schedules={schedules} />

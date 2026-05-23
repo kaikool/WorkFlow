@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -29,11 +30,12 @@ import {
  TableHeader,
  TableRow
 } from '@/components/ui/table'
-import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/utils/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { getProfileDisplayTitle, sortProfilesByHierarchy } from "@/lib/utils";
 import { useSearchParams } from "next/navigation";
+import PageHeader from "@/components/layout/PageHeader";
+import { ListSkeleton } from "@/components/ui/list-skeleton";
 
 export default function UserManagementPage() {
  const [users, setUsers] = useState<any[]>([]);
@@ -108,19 +110,14 @@ export default function UserManagementPage() {
  );
  });
 
- if (loading) return <div className="flex h-96 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
+ if (loading) return <div className="page-container py-10"><ListSkeleton variant="table" rows={6} /></div>;
 
  return (
- <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-10 animate-fade-in-up pb-20">
- {/* Header */}
- <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 pt-4 sm:pt-0">
- <div className="space-y-1">
- <h1 className="text-3xl font-bold text-slate-900 tabular-nums">
- Quản lý nhân sự
- </h1>
- <p className="text-[12px] text-slate-500 font-bold truncate whitespace-nowrap">Cấu hình quyền hạn & phòng ban</p>
- </div>
- </div>
+ <div className="page-container space-y-10 animate-fade-in-up">
+ <PageHeader
+   title="Quản lý nhân sự"
+   description="Cấu hình quyền hạn & phòng ban"
+ />
 
  {/* User Table */}
  <div className="">
@@ -186,7 +183,23 @@ export default function UserManagementPage() {
  </Select>
  </TableCell>
  <TableCell className="text-right pr-8">
+ <div className="flex items-center justify-end gap-2">
+ {user.is_active === false ? (
+ <Button
+ size="sm"
+ onClick={() => handleUpdateUser(user.id, { is_active: true })}
+ disabled={updatingId === user.id}
+ className="min-h-9 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold"
+ >
+ Kích hoạt
+ </Button>
+ ) : (
+ <Badge className="bg-emerald-50 text-emerald-700 border-emerald-100 px-2.5 py-1 text-[11px] font-bold">
+ Đã kích hoạt
+ </Badge>
+ )}
  {updatingId === user.id && <Loader2 className="w-4 h-4 animate-spin text-primary inline-block" />}
+ </div>
  </TableCell>
  </TableRow>
  ))}

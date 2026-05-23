@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -9,16 +9,13 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Label } from '@/components/ui/label'
 import { toast } from '@/hooks/use-toast'
 import {
-  Workflow,
   Loader2,
   Lock,
-  Mail,
   User,
   Building2,
   Briefcase,
   Clock,
   ArrowLeft,
-  CheckCircle2
 } from 'lucide-react'
 import {
   Select,
@@ -41,7 +38,15 @@ export default function LoginPage() {
   const [isPendingApproval, setIsPendingApproval] = useState(false)
 
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = createClient()
+
+  // Tự động hiển thị màn chờ duyệt nếu middleware đẩy về với pending=1
+  useEffect(() => {
+    if (searchParams.get('pending') === '1') {
+      setIsPendingApproval(true)
+    }
+  }, [searchParams])
 
   // Lấy danh sách phòng ban từ Database khi bật chế độ đăng ký
   useEffect(() => {
@@ -75,40 +80,81 @@ export default function LoginPage() {
 
     try {
       if (isSignUp) {
-        // Gửi yêu cầu đăng ký vào bảng account_requests
-        const { error } = await supabase
-          .from('account_requests')
-          .insert({
-            full_name: fullName,
-            email: finalEmail,
-            role,
-            department_id: departmentId,
-            password // Lưu mật khẩu để Admin duyệt sẽ tạo tài khoản Auth
-          })
+        // Tạo tài khoản auth thật, profile sẽ được trigger handle_new_user tạo với is_active=false
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+          email: finalEmail,
+          password,
+          options: {
+            data: {
+              full_name: fullName,
+            },
+          },
+        })
 
-        if (error) {
-          if (error.code === '23505') {
-            throw new Error('Tên đăng nhập này đã được đăng ký hoặc đang chờ phê duyệt.')
+        if (signUpError) {
+          if (signUpError.message?.toLowerCase().includes('already registered')
+              || signUpError.message?.toLowerCase().includes('already')) {
+            throw new Error('Tên đăng nhập này đã tồn tại trong hệ thống.')
           }
-          throw error
+          throw signUpError
         }
+
+        // Đăng nhập tạm để có quyền cập nhật profile của chính mình (RLS profiles UPDATE = auth.uid()=id)
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: finalEmail,
+          password,
+        })
+
+        if (!signInError && signUpData?.user?.id) {
+          await supabase.from('profiles').update({
+            full_name: fullName,
+            department_id: departmentId || null,
+            role,
+          }).eq('id', signUpData.user.id)
+        }
+
+        // Ghi lại yêu cầu duyệt (audit) — không còn mật khẩu
+        await supabase.from('account_requests').insert({
+          full_name: fullName,
+          email: finalEmail,
+          role,
+          department_id: departmentId || null,
+          status: 'pending',
+        })
+
+        // Đăng xuất ngay để chờ admin duyệt is_active
+        await supabase.auth.signOut()
 
         setIsPendingApproval(true)
         toast({
           title: "Đã gửi yêu cầu",
-          description: "Yêu cầu cấp tài khoản mới của bạn đã được chuyển tới Quản trị viên.",
+          description: "Tài khoản đã được tạo. Vui lòng chờ Quản trị viên kích hoạt.",
         })
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data: signInData, error } = await supabase.auth.signInWithPassword({
           email: finalEmail,
           password,
         })
         if (error) throw error
 
+        // Kiểm tra trạng thái kích hoạt — nếu chưa được duyệt thì đăng xuất
+        if (signInData?.user?.id) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('is_active')
+            .eq('id', signInData.user.id)
+            .maybeSingle()
+
+          if (profile && profile.is_active === false) {
+            await supabase.auth.signOut()
+            setIsPendingApproval(true)
+            return
+          }
+        }
+
+        const redirectTo = searchParams.get('redirect') || '/dashboard'
         router.refresh()
-        setTimeout(() => {
-          router.push('/dashboard')
-        }, 100)
+        router.push(redirectTo)
       }
     } catch (error: any) {
       toast({
@@ -121,7 +167,7 @@ export default function LoginPage() {
     }
   }
 
-  // Màn hình trạng thái chờ duyệt lộng lẫy (premium card)
+  // Màn hình trạng thái chờ duyệt
   if (isPendingApproval) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-4 relative overflow-hidden">
@@ -133,21 +179,20 @@ export default function LoginPage() {
             </div>
 
             <div className="space-y-2">
-              <h2 className="text-xl font-bold text-slate-900">Yêu cầu đã được gửi!</h2>
+              <h2 className="text-xl font-bold text-slate-900">Tài khoản đang chờ kích hoạt</h2>
               <p className="text-slate-500 text-sm font-medium leading-relaxed px-2">
-                Yêu cầu của bạn đã được gửi tới Quản trị viên. Tài khoản sẽ được kích hoạt sau khi có phê duyệt. Chúng tôi sẽ gửi thông báo qua email của bạn.
+                Yêu cầu của bạn đã được ghi nhận. Quản trị viên sẽ kích hoạt tài khoản trong thời gian sớm nhất.
               </p>
             </div>
 
-            {/* Thông tin tóm tắt yêu cầu */}
             <div className="bg-slate-50 p-4 rounded-2xl text-left text-[11px] font-bold text-slate-500 space-y-2.5 border border-slate-100">
               <div className="flex justify-between items-center">
                 <span>Họ và tên</span>
-                <span className="text-slate-900 font-extrabold">{fullName}</span>
+                <span className="text-slate-900 font-extrabold">{fullName || '—'}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span>Tên đăng nhập</span>
-                <span className="text-slate-900 font-extrabold normal-case">{email.includes('@') ? email.split('@')[0] : email}</span>
+                <span className="text-slate-900 font-extrabold normal-case">{email.includes('@') ? email.split('@')[0] : email || '—'}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span>Chức danh</span>
@@ -196,10 +241,9 @@ export default function LoginPage() {
 
           <form onSubmit={handleAuth}>
             <CardContent className="p-8 pt-4 space-y-4">
-              {/* Chế độ Đăng ký: Thêm Họ tên, Chức danh, Phòng ban */}
+              {/* Chế độ Đăng ký */}
               {isSignUp && (
                 <div className="space-y-4 animate-fade-in-up">
-                  {/* Họ và tên */}
                   <div className="space-y-2">
                     <Label htmlFor="fullName" className="text-sm font-medium text-slate-500 ml-1">Họ và tên</Label>
                     <div className="relative">
@@ -216,7 +260,6 @@ export default function LoginPage() {
                     </div>
                   </div>
 
-                  {/* Chức danh (Role) */}
                   <div className="space-y-2">
                     <Label htmlFor="role" className="text-sm font-medium text-slate-500 ml-1">Chức danh</Label>
                     <div className="relative">
@@ -233,7 +276,6 @@ export default function LoginPage() {
                     </div>
                   </div>
 
-                  {/* Phòng ban công tác */}
                   <div className="space-y-2">
                     <Label htmlFor="department" className="text-sm font-medium text-slate-500 ml-1">Phòng ban công tác</Label>
                     <div className="relative">
@@ -255,7 +297,6 @@ export default function LoginPage() {
                 </div>
               )}
 
-              {/* Email */}
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-sm font-medium text-slate-500 ml-1">Tên đăng nhập</Label>
                 <div className="relative">
@@ -272,7 +313,6 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              {/* Mật khẩu */}
               <div className="space-y-2">
                 <Label htmlFor="password" className="text-sm font-medium text-slate-500 ml-1">Mật khẩu</Label>
                 <div className="relative">
@@ -281,6 +321,7 @@ export default function LoginPage() {
                     id="password"
                     type="password"
                     placeholder="••••••••"
+                    minLength={6}
                     className="pl-11 min-h-11 bg-slate-50 border-none rounded-xl font-medium text-sm"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}

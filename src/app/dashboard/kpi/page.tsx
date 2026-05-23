@@ -97,6 +97,8 @@ const KPI_TEMPLATES = [
 ];
 
 import { useKPI } from "./_hooks/useKPI";
+import PageHeader from "@/components/layout/PageHeader";
+import { ListSkeleton } from "@/components/ui/list-skeleton";
 
 export default function GoalsPage() {
   const kpiProps = useKPI(KPI_CATEGORIES, KPI_TEMPLATES);
@@ -110,20 +112,16 @@ export default function GoalsPage() {
     toggleMember, handleCreateGoal, filteredGoals, avgProgress
   } = kpiProps;
 
- if (loading) return <div className="flex h-96 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
+ if (loading) return <div className="page-container py-10"><ListSkeleton variant="table" rows={5} /></div>;
 
  return (
- <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-10 animate-fade-in-up pb-20">
+ <div className="page-container space-y-10 animate-fade-in-up">
  {/* Header Section */}
- <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 pt-4 sm:pt-0">
- <div className="hidden lg:block space-y-1">
- <h1 className="text-2xl font-semibold text-slate-900">
- Mục tiêu
- </h1>
- <p className="text-[13px] text-slate-500 font-medium">Quản trị KPIs & chỉ tiêu kinh doanh</p>
- </div>
-
- {(profile?.role === 'manager' || profile?.role === 'admin') && (
+ <PageHeader
+   title="Mục tiêu"
+   description="Quản trị KPIs & chỉ tiêu kinh doanh"
+   action={
+     (profile?.role === 'manager' || profile?.role === 'admin') ? (
  <Dialog open={isCreateOpen} onOpenChange={(open) => { setIsCreateOpen(open); if (!open) { setIsSuccess(false); setSelectedTemplate(null); } }}>
  <DialogTrigger asChild>
  <Button className="bg-primary hover:bg-primary/90 px-5 font-medium">
@@ -283,8 +281,9 @@ export default function GoalsPage() {
  )}
  </DialogContent>
  </Dialog>
- )}
- </div>
+ ) : null
+   }
+ />
 
   {/* KPI Stats Overview - Single Unified Card */}
   <div className="premium-card p-6 border-none">

@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
+import { EmptyState } from '@/components/ui/empty-state';
 
 export default function TaskOverview({ 
   stats, 
@@ -162,12 +163,11 @@ export default function TaskOverview({
               </Button>
             </div>
           ) : (
-            <div className="py-8 text-center space-y-4">
-              <div className="h-12 w-12 flex items-center justify-center mx-auto text-slate-500">
-                <Target className="w-6 h-6" />
-              </div>
-              <p className="text-sm font-medium text-slate-500 truncate whitespace-nowrap">Chưa có chỉ tiêu trọng tâm</p>
-            </div>
+            <EmptyState
+              icon={<Target className="icon-lg" />}
+              title="Chưa có chỉ tiêu trọng tâm"
+              variant="subtle"
+            />
           )}
         </div>
       </div>

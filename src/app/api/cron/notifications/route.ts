@@ -13,15 +13,22 @@ export async function GET(request: Request) {
     }
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
     if (!supabaseUrl || !supabaseKey) {
-      throw new Error('Missing Supabase environment variables');
+      throw new Error('Thiếu biến môi trường: cần NEXT_PUBLIC_SUPABASE_URL và SUPABASE_SERVICE_ROLE_KEY');
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey);
     const notifications: any[] = [];
     const now = new Date();
+
+    // 0. AUTO-ARCHIVE & CLEANUP định kỳ (chạy ở cron, không chạy ở client nữa)
+    try {
+      await supabase.rpc('auto_archive_and_cleanup');
+    } catch (cleanupErr) {
+      console.error('Auto-archive error:', cleanupErr);
+    }
 
     // 1. CHECK OVERDUE TASKS
     const { data: overdueTasks } = await supabase

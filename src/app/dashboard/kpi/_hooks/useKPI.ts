@@ -108,13 +108,14 @@ export function useKPI(KPI_CATEGORIES: any[], KPI_TEMPLATES: any[]) {
  const { data: newTask, error } = await supabase.from('kpis').insert(baseTask).select().single();
  if (error) throw error;
 
- // Thêm: Thông báo cho tất cả thành viên trong phòng
- if (team.length > 0) {
- const deptNotifications = team.map(member => ({
+ // Thông báo cho cán bộ trong phòng — loại trừ driver theo quy tắc §5.E.2
+ const deptNotifyTargets = team.filter((m: any) => m.role !== 'driver' && m.id !== profile?.id);
+ if (deptNotifyTargets.length > 0) {
+ const deptNotifications = deptNotifyTargets.map((member: any) => ({
  user_id: member.id,
  title: "Chỉ tiêu phòng mới",
  content: `Lãnh đạo đã giao chỉ tiêu chung cho phòng: "${title}". Mục tiêu: ${targetValue} ${unit}.`,
- link: `/dashboard/tasks/${newTask.id}`
+ link: `/dashboard/kpi/${newTask.id}`
  }));
  await supabase.from('notifications').insert(deptNotifications);
  }

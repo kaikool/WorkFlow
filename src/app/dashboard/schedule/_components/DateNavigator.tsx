@@ -21,7 +21,7 @@ export default function DateNavigator({ selectedDate, setSelectedDate, weekDays,
         <div className="flex items-center justify-between pb-1 px-1 gap-2">
           <div className="flex items-center gap-1.5 shrink-0">
             <CalendarDays className="w-4 h-4 text-primary" />
-            <span className="text-[14px] sm:text-[15px] font-bold text-slate-900 tracking-tight whitespace-nowrap">
+            <span className="text-[14px] sm:text-[15px] font-bold text-slate-900 whitespace-nowrap">
               Tháng {format(selectedDate, 'MM/yyyy')}
             </span>
           </div>

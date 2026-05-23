@@ -232,9 +232,12 @@ export function NewTodoForm() {
                 </SelectTrigger>
                 <SelectContent className="rounded-xl border border-slate-200 shadow-lg">
                   <SelectItem value="regular" className="font-medium text-sm py-2">Công việc nghiệp vụ</SelectItem>
-                  <SelectItem value="kpi"     className="font-medium text-sm py-2">Chỉ tiêu kinh doanh</SelectItem>
                 </SelectContent>
               </Select>
+              <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                Cần giao chỉ tiêu kinh doanh? Vui lòng dùng{' '}
+                <Link href="/dashboard/kpi" className="text-primary font-bold hover:underline">Trang Kế hoạch KPIs</Link>.
+              </p>
             </div>
 
             {/* Hạn hoàn thành & Mức độ */}

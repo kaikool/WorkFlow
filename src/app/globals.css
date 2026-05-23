@@ -64,6 +64,46 @@
     --app-card-radius: 18px;
   }
 
+  /* Apple HIG: tự động follow Dark mode hệ thống (iOS/macOS).
+     Người dùng vẫn có thể buộc light bằng class "force-light" trên <html> nếu cần. */
+  @media (prefers-color-scheme: dark) {
+    :root:not(.force-light) {
+      --background: 222 45% 6%;          /* slate-950 */
+      --foreground: 210 20% 96%;         /* slate-50  */
+      --card: 222 30% 10%;
+      --card-foreground: 210 20% 96%;
+      --popover: 222 30% 10%;
+      --popover-foreground: 210 20% 96%;
+      --primary: 217 91% 60%;            /* blue-500  */
+      --primary-foreground: 0 0% 100%;
+      --secondary: 222 25% 18%;
+      --secondary-foreground: 210 20% 96%;
+      --muted: 222 25% 14%;
+      --muted-foreground: 215 16% 65%;
+      --accent: 217 91% 60%;
+      --accent-foreground: 0 0% 100%;
+      --destructive: 0 72% 51%;
+      --destructive-foreground: 0 0% 100%;
+      --border: 222 20% 22%;
+      --input: 222 20% 22%;
+      --ring: 217 91% 60%;
+      --color-success-bg: 158 30% 12%;
+      --color-success-text: 158 60% 60%;
+      --color-warning-bg: 32 50% 15%;
+      --color-warning-text: 38 92% 65%;
+      --color-danger-bg: 4 40% 18%;
+      --color-danger-text: 4 86% 70%;
+      --color-info-bg: 221 60% 18%;
+      --color-info-text: 221 70% 75%;
+      --color-neutral-bg: 222 20% 18%;
+      --color-neutral-text: 215 16% 70%;
+      --color-kpi-bg: 221 60% 18%;
+      --color-kpi-text: 221 70% 75%;
+      --color-award-bg: 36 50% 18%;
+      --color-award-text: 43 96% 70%;
+    }
+  }
+
   @media (max-width: 640px) {
     :root {
       --app-font-large-title: 1.75rem;
@@ -114,7 +154,7 @@
     font-feature-settings: "cv02", "cv03", "cv04", "cv11", "ss01";
     font-size: 1rem;
     letter-spacing: 0;
-    line-height: 1.6;
+    line-height: 1.5;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -189,6 +229,12 @@
 .text-\[11px\] {
   font-size: var(--app-font-caption) !important;
   line-height: 1rem !important;
+}
+
+/* WCAG AA: text-slate-300 (contrast 1.6:1) → BẮT BUỘC tối thiểu slate-500 cho chữ trên nền sáng.
+   Class này nếu vẫn dùng sẽ tự được nâng lên contrast hợp chuẩn. */
+.text-slate-300 {
+  color: rgb(100 116 139) !important; /* slate-500 — contrast 5.0:1 */
 }
 
 .text-\[12px\],
@@ -355,6 +401,12 @@ main .rounded-\[20px\],
   border-radius: var(--app-card-radius) !important;
 }
 
+/* Đồng nhất bo góc cho mọi Dialog/AlertDialog theo TECHNICAL_RULES §2.C — Dialog/Modal 24px */
+[role="dialog"][data-radix-dialog-content],
+[role="alertdialog"][data-radix-alert-dialog-content] {
+  border-radius: 24px !important;
+}
+
 .finance-input,
 input,
 textarea,
@@ -389,4 +441,105 @@ main > div[class*="max-w-5xl"][class*="mx-auto"] {
 .tracking-widest {
   text-transform: none !important;
   letter-spacing: 0;
+}
+
+/* ==============================================================
+   DESIGN TOKENS — ĐỒNG BỘ THỊ GIÁC TUYỆT ĐỐI
+   Mọi trang/component dùng các class này để đảm bảo nhất quán.
+   ============================================================== */
+
+/* Heading tier — dùng thay text-2xl/3xl font-bold thủ công */
+.heading-page {
+  font-size: 1.5rem;
+  line-height: 1.875rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  color: rgb(15 23 42); /* slate-900 */
+}
+@media (min-width: 768px) {
+  .heading-page { font-size: 1.75rem; line-height: 2.125rem; }
+}
+
+.heading-section {
+  font-size: 1.0625rem;
+  line-height: 1.375rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: rgb(15 23 42);
+}
+
+.heading-card {
+  font-size: 0.9375rem;
+  line-height: 1.25rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: rgb(15 23 42);
+}
+
+.text-subtitle {
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+  font-weight: 500;
+  color: rgb(100 116 139); /* slate-500 — contrast 5.0:1 ✅ */
+}
+
+.text-label {
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+  font-weight: 500;
+  color: rgb(100 116 139);
+}
+
+.text-meta {
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: 500;
+  color: rgb(100 116 139);
+}
+
+/* Icon size tier (3 cấp duy nhất) */
+.icon-sm { width: 14px; height: 14px; flex-shrink: 0; }
+.icon-md { width: 16px; height: 16px; flex-shrink: 0; }
+.icon-lg { width: 20px; height: 20px; flex-shrink: 0; }
+
+/* Avatar size tier (3 cấp) */
+.avatar-sm { width: 32px; height: 32px; }
+.avatar-md { width: 40px; height: 40px; }
+.avatar-lg { width: 44px; height: 44px; }
+
+/* Section/Group spacing tier (4 cấp duy nhất) */
+.section-stack { display: flex; flex-direction: column; gap: 2rem; }       /* 32px — giữa các section lớn */
+.group-stack   { display: flex; flex-direction: column; gap: 1.5rem; }     /* 24px — trong 1 section */
+.item-stack    { display: flex; flex-direction: column; gap: 0.75rem; }    /* 12px — giữa các item nhỏ */
+.tight-stack   { display: flex; flex-direction: column; gap: 0.5rem; }     /* 8px — label-input */
+
+/* Card token tập trung (kế thừa premium-card) */
+.card-base {
+  background-color: rgb(255 255 255);
+  border: 1px solid rgb(241 245 249); /* slate-100 */
+  border-radius: var(--app-card-radius);
+  box-shadow: 0 1px 2px 0 rgb(15 23 42 / 0.04);
+  padding: var(--app-card-padding);
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+.card-base:hover {
+  box-shadow: 0 10px 30px -10px rgb(15 23 42 / 0.10);
+}
+
+/* Status color tier (đồng bộ ở mọi nơi — badge/border/text) */
+.status-success-bg { background-color: rgb(236 253 245); color: rgb(4 120 87); border-color: rgb(167 243 208); }
+.status-warning-bg { background-color: rgb(254 243 199); color: rgb(146 64 14); border-color: rgb(253 224 71); }
+.status-danger-bg  { background-color: rgb(254 226 226); color: rgb(153 27 27); border-color: rgb(252 165 165); }
+.status-info-bg    { background-color: rgb(219 234 254); color: rgb(30 64 175); border-color: rgb(147 197 253); }
+.status-neutral-bg { background-color: rgb(241 245 249); color: rgb(51 65 85); border-color: rgb(226 232 240); }
+.status-focal-bg   { background-color: rgb(254 243 199); color: rgb(146 64 14); border-color: rgb(252 211 77); } /* amber-gold cho KPI trọng tâm */
+
+/* Page container chuẩn — đảm bảo mọi trang có cùng max-width và padding */
+.page-container {
+  max-width: 72rem; /* 6xl */
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--app-page-x);
+  padding-right: var(--app-page-x);
+  padding-bottom: 5rem;
 }

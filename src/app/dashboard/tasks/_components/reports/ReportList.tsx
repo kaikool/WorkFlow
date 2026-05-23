@@ -11,6 +11,8 @@ import {
 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { EmptyState } from '@/components/ui/empty-state'
+import { ListSkeleton } from '@/components/ui/list-skeleton'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
@@ -114,10 +116,12 @@ export function ReportList({ searchQuery, filterStatus }: ReportListProps) {
       {/* Danh sách báo cáo */}
       <div className="space-y-3">
         {displayData.length === 0 && (
-          <div className="text-center py-12 bg-white rounded-2xl border border-slate-100 shadow-sm">
-            <FileText className="w-12 h-12 text-slate-200 mx-auto mb-3" />
-            <p className="text-slate-500 font-medium">Chưa có báo cáo nào</p>
-          </div>
+          <EmptyState
+            icon={<FileText className="icon-lg" />}
+            title="Chưa có báo cáo nào"
+            description="Báo cáo mới sẽ hiển thị tại đây."
+            variant="default"
+          />
         )}
         {(showAllReports ? displayData : displayData.slice(0, 5)).map(task => {
           const status        = STATUS_MAP[task.status] || STATUS_MAP.todo

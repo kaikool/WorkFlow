@@ -3,6 +3,7 @@
 import React from "react";
 import { format } from "date-fns";
 import { filterBGD, filterStaff, resolveParticipantIds, checkConflicts, checkResourceConflicts } from "../_lib/utils";
+import { confirmDialog } from "@/components/ui/confirm-dialog";
 
 interface UseScheduleDetailProps {
   isOpen: boolean;
@@ -155,19 +156,28 @@ export function useScheduleDetail({
   const isLeave = schedule?.type === 'leave';
 
   // --- Hàm xử lý ---
-  const handleSaveTime = () => {
+  const handleSaveTime = async () => {
     if (!newEndTime || !schedule) return;
-    const confirmMsg = "Bạn có chắc chắn muốn thay đổi thời gian kết thúc của lịch trình này không? Tất cả những người tham gia sẽ nhận được thông báo.";
-    if (confirm(confirmMsg)) {
+    const ok = await confirmDialog({
+      title: 'Thay đổi giờ kết thúc?',
+      description: 'Tất cả người tham gia sẽ nhận được thông báo cập nhật thời gian.',
+      confirmText: 'Lưu thay đổi',
+    });
+    if (ok) {
       onUpdateEndTime(schedule.id, new Date(newEndTime).toISOString());
       setIsEditingTime(false);
     }
   };
 
-  const handleEndNow = () => {
+  const handleEndNow = async () => {
     if (!schedule) return;
-    const confirmMsg = "Bạn có chắc chắn muốn báo kết thúc lịch trình này ngay bây giờ? Tất cả những người tham gia sẽ nhận được thông báo.";
-    if (confirm(confirmMsg)) {
+    const ok = await confirmDialog({
+      title: 'Kết thúc lịch trình ngay?',
+      description: 'Tài nguyên (xe/phòng) sẽ được giải phóng và thông báo cho người tham gia.',
+      confirmText: 'Kết thúc ngay',
+      danger: true,
+    });
+    if (ok) {
       onUpdateEndTime(schedule.id, new Date().toISOString());
       setIsEditingTime(false);
     }

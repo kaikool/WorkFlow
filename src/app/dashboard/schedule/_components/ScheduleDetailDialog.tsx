@@ -19,6 +19,7 @@ import { typeLabels } from "../_lib/constants";
 import { filterBGD, filterStaff } from "../_lib/utils";
 import { useScheduleDetail } from "../_hooks/useScheduleDetail";
 import ScheduleEditForm from "./ScheduleEditForm";
+import { createClient } from "@/utils/supabase/client";
 
 // --- Sub-component: Hiển thị danh sách người tham gia (Read Mode) ---
 function RenderParticipants({ schedule, allProfiles }: { schedule: any; allProfiles: any[] }) {
@@ -120,10 +121,41 @@ export default function ScheduleDetailDialog({
     isOpen, schedule, schedules, vehicles, rooms, allProfiles, currentProfile, isTCTH,
     onAssignVehicle, onUpdateEndTime, onUpdateSchedule
   });
+  const supabase = createClient();
+  const [safeLeave, setSafeLeave] = React.useState<any>(null);
+
+  // Khi mở chi tiết đơn nghỉ phép mà caller không phải chủ đơn → gọi RPC server-side
+  // để lấy payload đã được lọc (title/description ẩn nếu không có quyền)
+  React.useEffect(() => {
+    if (!isOpen || !schedule || schedule.type !== 'leave') {
+      setSafeLeave(null);
+      return;
+    }
+    if (schedule.created_by === currentProfile?.id) {
+      setSafeLeave(null);
+      return;
+    }
+    let active = true;
+    (async () => {
+      const { data, error } = await supabase.rpc('get_leave_safe', { p_schedule_id: schedule.id });
+      if (!active) return;
+      if (!error && data) {
+        const row = Array.isArray(data) ? data[0] : data;
+        setSafeLeave(row || null);
+      }
+    })();
+    return () => { active = false; };
+  }, [isOpen, schedule, currentProfile?.id]);
 
   if (!schedule) return null;
 
-  const isAllowedToView = canViewLeaveDetails(schedule, currentProfile);
+  // Nếu là đơn nghỉ phép và có dữ liệu RPC trả về → dùng payload đã được lọc ở server
+  const safeSchedule = (schedule.type === 'leave' && safeLeave)
+    ? { ...schedule, title: safeLeave.title, description: safeLeave.description, metadata: safeLeave.metadata }
+    : schedule;
+  const isAllowedToView = (schedule.type === 'leave' && safeLeave)
+    ? safeLeave.can_view_detail
+    : canViewLeaveDetails(schedule, currentProfile);
   const canEdit = detail.isLeave
     ? (detail.isCreator || isAllowedToView)
     : (detail.isParticipant || detail.isCreator || isTCTH);
@@ -157,16 +189,16 @@ export default function ScheduleDetailDialog({
         </DialogHeader>
         <div className="flex max-h-[calc(100dvh-2rem)] flex-col overflow-hidden">
           {/* Header */}
-          <DetailHeader schedule={schedule} badgeColor={detail.badgeColor} headerBg={detail.headerBg} isAllowedToView={isAllowedToView} />
+          <DetailHeader schedule={safeSchedule} badgeColor={detail.badgeColor} headerBg={detail.headerBg} isAllowedToView={isAllowedToView} />
 
           {/* Body */}
           <ScrollArea className="min-h-0 flex-1">
           <div className="space-y-5 p-5 sm:p-6">
             {/* Nội dung mô tả */}
-            {schedule.description && isAllowedToView && (
+            {safeSchedule.description && isAllowedToView && (
               <div className="space-y-2">
                 <p className="text-[12px] font-medium text-slate-400">Nội dung chi tiết</p>
-                <p className="text-sm font-medium text-slate-600 leading-relaxed bg-slate-50 p-4 rounded-2xl">{schedule.description}</p>
+                <p className="text-sm font-medium text-slate-600 leading-relaxed bg-slate-50 p-4 rounded-2xl">{safeSchedule.description}</p>
               </div>
             )}
 

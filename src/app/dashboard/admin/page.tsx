@@ -61,6 +61,8 @@ import { cn, getProfileDisplayTitle, getProfileTitleBadgeClass, sortProfilesByHi
 import { createClient } from "@/utils/supabase/client";
 
 import { useAdmin } from "./_hooks/useAdmin";
+import PageHeader from "@/components/layout/PageHeader";
+import { ListSkeleton } from "@/components/ui/list-skeleton";
 
 export default function AdminPage() {
   const adminProps = useAdmin();
@@ -73,8 +75,8 @@ export default function AdminPage() {
 
  if (loading) {
  return (
- <div className="flex h-screen items-center justify-center">
- <Loader2 className="h-8 w-8 animate-spin text-primary" />
+ <div className="page-container py-10 space-y-6">
+   <ListSkeleton variant="table" rows={6} />
  </div>
  );
  }
@@ -93,19 +95,11 @@ export default function AdminPage() {
  });
 
  return (
- <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-10 animate-fade-in-up pb-20">
- {/* Header */}
- <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6">
- <div className="space-y-1">
- <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-3 tabular-nums">
- <ShieldCheck className="w-8 h-8 text-red-600" />
- Quản trị Hệ thống
- </h1>
- <p className="text-[12px] text-slate-500 font-bold truncate whitespace-nowrap">
- Toàn quyền cấu hình hệ thống bankportal
- </p>
- </div>
- </div>
+ <div className="page-container space-y-10 animate-fade-in-up">
+ <PageHeader
+   title="Quản trị Hệ thống"
+   description="Toàn quyền cấu hình hệ thống bankportal"
+ />
 
  {/* Stats */}
  {isAdmin && (
