@@ -17,11 +17,14 @@ export function useSchedule() {
   const [mounted, setMounted] = useState(false);
   const searchParams = useSearchParams();
 
-  // Auto-open create dialog when navigated with ?type=leave (e.g. from HR dashboard)
+  // Auto-open create dialog khi navigated with ?type=leave (e.g. from HR dashboard) hoặc ?create=1 (FAB mobile)
   useEffect(() => {
     const typeParam = searchParams.get('type');
+    const createParam = searchParams.get('create');
     if (typeParam === 'leave') {
       setNewSchedule(prev => ({ ...prev, type: 'leave' }));
+      setIsCreateOpen(true);
+    } else if (createParam === '1') {
       setIsCreateOpen(true);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps

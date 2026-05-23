@@ -42,6 +42,7 @@ import { ConfirmDialogProvider } from "@/components/ui/confirm-dialog";
 import AnniversaryDialog from "./AnniversaryDialog";
 import DesktopSidebar from "./DesktopSidebar";
 import MobileBottomNav from "./MobileBottomNav";
+import MobileCreateFab from "./MobileCreateFab";
 
 interface DashboardLayoutProps {
  children: React.ReactNode;
@@ -391,6 +392,7 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
  {children}
  </main>
  <MobileBottomNav navItems={navItems} pathname={pathname} />
+ <MobileCreateFab />
  </div>
  </div>
  );

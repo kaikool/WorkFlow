@@ -31,6 +31,14 @@ export function useKPI(KPI_CATEGORIES: any[], KPI_TEMPLATES: any[]) {
  fetchInitialData();
  }, []);
 
+ // Auto-open dialog tạo KPI khi vào URL có ?create=1 (từ FAB mobile)
+ useEffect(() => {
+   if (searchParams.get('create') === '1') {
+     setIsCreateOpen(true);
+   }
+ // eslint-disable-next-line react-hooks/exhaustive-deps
+ }, [searchParams]);
+
  const fetchInitialData = async () => {
  setLoading(true);
  try {

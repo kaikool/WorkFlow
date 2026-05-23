@@ -55,6 +55,13 @@ export default function TeamPage() {
   const [isCopied, setIsCopied] = useState(false);
   const [profile, setProfile] = useState<any>(null);
 
+  // Auto-open invite dialog khi vào URL có ?create=1 (từ FAB mobile)
+  useEffect(() => {
+    if (searchParams.get('create') === '1') {
+      setIsInviteOpen(true);
+    }
+  }, [searchParams]);
+
   const { toast } = useToast();
   const supabase = createClient();
   const router = useRouter();
