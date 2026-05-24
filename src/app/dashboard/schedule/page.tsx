@@ -94,7 +94,7 @@ export default function SchedulePage() {
       <DateNavigator selectedDate={selectedDate} setSelectedDate={setSelectedDate} weekDays={weekDays} schedules={schedules} />
 
       {/* View duy nhất — Tablist phạm vi (Toàn chi nhánh / BGĐ / Phòng của tôi)
-          đã nhúng sẵn "Điều phối tài nguyên" (cho TCTH) và "Duyệt nghỉ phép" (cho lãnh đạo) */}
+          đã nhúng sẵn "Điều phối tài nguyên" (cho bộ phận điều phối) và "Duyệt nghỉ phép" (cho lãnh đạo) */}
       <CalendarView
         loading={loading}
         filterType={filterType} setFilterType={setFilterType}

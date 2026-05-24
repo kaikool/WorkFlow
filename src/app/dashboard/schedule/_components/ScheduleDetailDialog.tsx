@@ -122,7 +122,7 @@ export default function ScheduleDetailDialog({
     isOpen, schedule, schedules, vehicles, rooms, allProfiles, currentProfile,
     onAssignVehicle, onUpdateEndTime, onUpdateSchedule, onResubmitSchedule
   });
-  const isTCTH = detail.canCoord;
+  const isCoordinator = detail.canCoord;
   const supabase = createClient();
   const [safeLeave, setSafeLeave] = React.useState<any>(null);
 
@@ -163,7 +163,7 @@ export default function ScheduleDetailDialog({
     ? (detail.isCreator || isAllowedToView)
     : isRejected
       ? detail.isCreator
-      : (detail.isParticipant || detail.isCreator || isTCTH);
+      : (detail.isParticipant || detail.isCreator || isCoordinator);
 
   // Chế độ sửa — ủy quyền sang component ScheduleEditForm
   if (detail.isEditingSchedule) {
@@ -285,8 +285,8 @@ export default function ScheduleDetailDialog({
               </div>
             )}
 
-            {/* Điều phối xe (TCTH) */}
-            {isTCTH && schedule.use_vehicle && !schedule.vehicle_id && (
+            {/* Điều phối xe */}
+            {isCoordinator && schedule.use_vehicle && !schedule.vehicle_id && (
               <div className="p-5 bg-slate-50 rounded-2xl space-y-4 animate-in slide-in-from-bottom-2 duration-300">
                 <div className="flex items-center gap-3">
                   <div className="p-2.5 bg-white rounded-xl shadow-sm shrink-0">
@@ -376,7 +376,7 @@ export default function ScheduleDetailDialog({
           {/* Footer */}
           <DialogFooter className="app-dialog-sheet-footer flex flex-row flex-wrap justify-between items-center gap-3">
             <Button variant="ghost" className="min-h-11 px-4 rounded-xl font-medium text-slate-600 text-[13px] hover:bg-slate-200 active:scale-95 transition-all whitespace-nowrap" onClick={() => setIsOpen(false)}>Đóng cửa sổ</Button>
-            {isTCTH && schedule.vehicle_id && (
+            {isCoordinator && schedule.vehicle_id && (
               <Button
                 variant="outline"
                 className="min-h-11 px-4 rounded-xl font-medium text-[12px] border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 shadow-sm active:scale-95 transition-all whitespace-nowrap"

@@ -1,90 +1,67 @@
 'use client'
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Mail,
-  ShieldCheck,
-  Camera,
-  CheckCircle2,
-  Loader2,
-  Briefcase,
-  LogOut,
-  History,
-  Phone,
-  Calendar,
+  Mail, Camera, Loader2, LogOut, History, Phone, Calendar,
+  Briefcase, MapPin, Hash, Pencil, CheckCircle2, Cake, IdCard, UserCog,
+  ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { notifyError, notifySuccess } from "@/lib/notify";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
-import { getProfileDisplayTitle, getProfileTitleBadgeClass, cn } from "@/lib/utils";
-import ChangePasswordSection from "./_components/ChangePasswordSection";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { vi } from "date-fns/locale";
+import PageHeader from "@/components/layout/PageHeader";
+import AvatarCropDialog from "@/components/ui/avatar-crop-dialog";
+import { ROLE_LABELS, STATUS_BADGES } from "../team/_lib/constants";
+import { getProfileBadgeStatus, getYearsOfService } from "../team/_lib/utils";
+import EditProfileDialog from "../team/_components/EditProfileDialog";
 
+// Trang hồ sơ cá nhân — đồng bộ pattern với ProfileDetailDialog (team module).
+// Self-mode: dùng EditProfileDialog để cập nhật phone/extension/seat_location/avatar
+// + birthday_notify_optout (các field hiển thị trong danh bạ Nhân sự).
 export default function ProfilePage() {
+  const router = useRouter();
+  const supabase = useMemo(() => createClient(), []);
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [updating, setUpdating] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [activities, setActivities] = useState<any[]>([]);
-  const [departments, setDepartments] = useState<any[]>([]);
-  const [isUpdateOpen, setIsUpdateOpen] = useState(false);
-
-  const [newName, setNewName] = useState("");
-  const [newDept, setNewDept] = useState("");
-  const [newRole, setNewRole] = useState("");
-  const [newPhone, setNewPhone] = useState("");
-  const [newBirthday, setNewBirthday] = useState("");
-
+  const [todaySchedules, setTodaySchedules] = useState<any[]>([]);
+  const [ooo, setOoo] = useState<any | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
+  const [cropFile, setCropFile] = useState<File | null>(null);
+  const [cropOpen, setCropOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const supabase = createClient();
-  const router = useRouter();
 
   useEffect(() => {
-    fetchProfile();
-    fetchActivities();
-    fetchDepartments();
+    void loadAll();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const fetchDepartments = async () => {
-    const { data } = await supabase.from('departments').select('*').order('name');
-    setDepartments(data || []);
-  };
-
-  const fetchProfile = async () => {
+  const loadAll = async () => {
     setLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      const { data, error } = await supabase
-        .from('profiles')
-        .select(`*, departments (name)`)
-        .eq('id', user.id)
-        .single();
-      if (error) throw error;
-      setProfile({ ...data, email: user.email });
-      setNewName(data.full_name || "");
-      setNewDept(data.department_id || "");
-      setNewRole(data.role || "");
-      setNewPhone(data.phone || "");
-      setNewBirthday(data.birthday || "");
+
+      const todayIso = new Date().toISOString();
+      const [profileRes, activityRes, scheduleRes, oooRes] = await Promise.all([
+        supabase.from('profiles').select('*, departments (id, name)').eq('id', user.id).single(),
+        supabase.from('task_comments').select('*, task:tasks(title)').eq('user_id', user.id).order('created_at', { ascending: false }).limit(5),
+        supabase.from('schedules').select('id, type, status, start_time, end_time, created_by').eq('created_by', user.id).lte('start_time', todayIso).gte('end_time', todayIso),
+        supabase.from('out_of_office').select('*').eq('user_id', user.id).maybeSingle(),
+      ]);
+      if (profileRes.error) throw profileRes.error;
+      setProfile({ ...profileRes.data, email: user.email });
+      setActivities(activityRes.data ?? []);
+      setTodaySchedules(scheduleRes.data ?? []);
+      setOoo(oooRes.data ?? null);
     } catch (error) {
       notifyError(error, "Không tải được hồ sơ");
     } finally {
@@ -92,307 +69,319 @@ export default function ProfilePage() {
     }
   };
 
-  const fetchActivities = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    const { data } = await supabase
-      .from('task_comments')
-      .select(`*, task:tasks(title)`)
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(5);
-    setActivities(data || []);
+  const handleAvatarPicked = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setCropFile(file);
+    setCropOpen(true);
   };
 
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const handleCroppedUpload = async (blob: Blob) => {
+    if (!profile?.id) return;
     setUploading(true);
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}.${fileExt}`;
-      const filePath = `${profile.id}/${fileName}`;
-
-      // Upload image to Supabase Storage
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      // Get Public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filePath);
-
-      // Update Profile
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ avatar_url: publicUrl })
-        .eq('id', profile.id);
-
-      if (updateError) throw updateError;
-
-      setProfile({ ...profile, avatar_url: publicUrl });
+      const path = `${profile.id}/${Date.now()}.jpg`;
+      const { error: upErr } = await supabase.storage.from('avatars').upload(path, blob, {
+        upsert: true,
+        contentType: 'image/jpeg',
+      });
+      if (upErr) throw upErr;
+      const { data } = supabase.storage.from('avatars').getPublicUrl(path);
+      const busted = `${data.publicUrl}?v=${Date.now()}`;
+      const { error: updErr } = await supabase.from('profiles').update({ avatar_url: busted }).eq('id', profile.id);
+      if (updErr) throw updErr;
+      setProfile((p: any) => ({ ...p, avatar_url: busted }));
       notifySuccess("Đã cập nhật ảnh đại diện");
       router.refresh();
     } catch (error) {
       notifyError(error, "Không tải lên được ảnh");
     } finally {
       setUploading(false);
+      setCropFile(null);
     }
   };
 
-  const handleUpdateProfile = async () => {
-    if (!newName.trim()) return;
-    setUpdating(true);
-    try {
-      const updateData: any = {
-        full_name: newName,
-        department_id: newDept || null,
-        phone: newPhone || null,
-        birthday: newBirthday || null
-      };
-
-      if (profile.role === 'admin') {
-        updateData.role = newRole;
-      }
-
-      const { error } = await supabase
-        .from('profiles')
-        .update(updateData)
-        .eq('id', profile.id);
-
-      if (error) throw error;
-      await fetchProfile();
-      setIsUpdateOpen(false);
-      notifySuccess("Đã cập nhật hồ sơ");
-      router.refresh();
-    } catch (error) {
-      notifyError(error, "Không cập nhật được hồ sơ");
-    } finally {
-      setUpdating(false);
-    }
-  };
-
-  if (loading) return <div className="flex h-96 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-slate-400" /></div>;
+  if (loading) {
+    return (
+      <div className="page-container animate-fade-in-up">
+        <div className="flex h-96 items-center justify-center">
+          <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+        </div>
+      </div>
+    );
+  }
   if (!profile) return null;
 
-  const isAdmin = profile.role === 'admin';
+  const status = getProfileBadgeStatus(profile, todaySchedules, ooo, new Date());
+  const role = ROLE_LABELS[profile.role] ?? ROLE_LABELS.staff;
+  const statusMeta = STATUS_BADGES[status];
+  const years = getYearsOfService(profile.branch_join_date);
+  const deptName = profile.departments?.name ?? null;
+  const mailto = profile.ad_account ? `mailto:${profile.ad_account}@agribank.com.vn` : null;
+
+  const heroBg = (() => {
+    if (status === 'on_leave') return 'bg-amber-50/50';
+    if (status === 'on_trip') return 'bg-sky-50/50';
+    if (status === 'birthday_today') return 'bg-pink-50/50';
+    if (status === 'new_joiner') return 'bg-emerald-50/50';
+    return 'bg-slate-50/60';
+  })();
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-6 md:space-y-10 animate-fade-in-up pb-20">
-      {/* Header chuẩn theo MASTER.md */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pt-4 sm:pt-0">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-semibold text-slate-900">Hồ sơ cá nhân</h1>
-          <p className="text-[13px] text-slate-500 font-medium">Thông tin tài khoản và quá trình công tác</p>
-        </div>
-        <Button 
-          variant="ghost" 
-          onClick={async () => { await supabase.auth.signOut(); router.push('/login'); }} 
-          className="rounded-xl px-5 font-medium text-red-500 transition-all hover:bg-red-50 hover:text-red-600 active:scale-95"
-        >
-          <LogOut className="w-4 h-4 mr-2" />
-          Đăng xuất
-        </Button>
-      </div>
+    <div className="page-container space-y-6 md:space-y-8 animate-fade-in-up">
+      <PageHeader
+        title="Hồ sơ cá nhân"
+        description="Thông tin tài khoản và thông tin hiển thị trong danh bạ Nhân sự"
+        action={
+          <Button
+            variant="ghost"
+            onClick={async () => { await supabase.auth.signOut(); router.push('/login'); }}
+            className="min-h-11 rounded-xl px-5 font-semibold text-red-500 hover:bg-red-50 hover:text-red-600 active:scale-95 transition-all"
+          >
+            <LogOut className="icon-sm mr-2" />
+            Đăng xuất
+          </Button>
+        }
+      />
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-10">
-        <div className="lg:col-span-8 space-y-6 md:space-y-10">
-          
-          {/* Card Hồ sơ */}
-          <div className="premium-card p-6 border-none flex flex-col sm:flex-row items-center sm:items-start gap-6 sm:gap-10">
+      {/* HERO — đồng bộ ProfileDetailDialog: nền nhẹ theo trạng thái, không noise */}
+      <section className={cn("premium-card !p-0 overflow-hidden", heroBg)}>
+        <div className="px-[var(--app-page-x)] py-5 sm:py-6">
+          <div className="flex items-start gap-3 sm:gap-4">
             <div
-              className="relative group cursor-pointer shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+              className="relative shrink-0 group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 rounded-full"
               role="button"
               tabIndex={0}
               aria-label="Cập nhật ảnh đại diện"
               onClick={() => fileInputRef.current?.click()}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" || event.key === " ") {
-                  event.preventDefault();
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
                   fileInputRef.current?.click();
                 }
               }}
             >
-              <Avatar className="h-28 w-28 sm:h-32 sm:w-32 shadow-sm transition-all group-hover:opacity-80">
+              <Avatar className="h-16 w-16 sm:h-20 sm:w-20 ring-2 ring-white shadow-sm">
                 <AvatarImage src={profile.avatar_url} className="object-cover" />
-                <AvatarFallback className="bg-slate-100 text-slate-600 text-3xl font-semibold tabular-nums">
-                  {profile.full_name?.[0]}
-                </AvatarFallback>
+                <AvatarFallback className="bg-primary text-white text-xl font-bold">{profile.full_name?.[0]}</AvatarFallback>
               </Avatar>
-              <div className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-                {uploading ? <Loader2 className="w-6 h-6 text-white animate-spin" /> : <Camera className="w-6 h-6 text-white" />}
+              <span className={cn("absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-white", statusMeta.dotColor)} />
+              <div className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                {uploading ? <Loader2 className="icon-sm text-white animate-spin" /> : <Camera className="icon-sm text-white" />}
               </div>
-              <Input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleAvatarUpload} disabled={uploading} />
+              <Input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarPicked}
+                disabled={uploading}
+              />
             </div>
-            
-            <div className="space-y-6 flex-1 text-center sm:text-left min-w-0">
-              <div className="space-y-2">
-                <div className="flex flex-col sm:flex-row items-center gap-3">
-                  <h2 className="text-[20px] font-bold text-slate-900 truncate w-full sm:w-auto">
-                    {profile.full_name}
-                  </h2>
-                  <Badge className={cn("text-[11px] font-medium px-2.5 py-0.5 rounded-full shrink-0", getProfileTitleBadgeClass(profile))}>
-                    {getProfileDisplayTitle(profile)}
-                  </Badge>
-                </div>
-                <p className="text-slate-500 font-medium text-sm truncate">
-                  {(profile.role === 'director' || profile.role === 'admin') ? "Quản trị & Điều hành" : (profile.departments?.name || "Chưa xác định phòng ban")}
-                </p>
-              </div>
 
-              <div className="pt-2 flex justify-center sm:justify-start">
-                <Dialog open={isUpdateOpen} onOpenChange={setIsUpdateOpen}>
-                  <DialogTrigger asChild>
-                    <Button className="rounded-xl bg-slate-900 px-5 font-medium text-white shadow-sm transition-all hover:bg-slate-800 active:scale-95">
-                      Thiết lập hồ sơ
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="rounded-2xl border-none p-0 overflow-hidden max-w-sm shadow-2xl">
-                    <div className="bg-slate-900 p-6 text-white">
-                      <DialogTitle className="text-[17px] font-semibold">Cập nhật thông tin</DialogTitle>
-                      <p className="text-[12px] font-medium opacity-80 mt-1">Hoàn thiện thông tin hệ thống</p>
-                    </div>
-                    <div className="p-6 space-y-5">
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium text-slate-500 truncate">Họ và tên</Label>
-                        <Input value={newName} onChange={(e) => setNewName(e.target.value)} className="h-10 bg-slate-50 border-none rounded-xl font-medium text-[14px]" />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium text-slate-500 truncate">Số điện thoại</Label>
-                        <Input type="tel" value={newPhone} onChange={(e) => setNewPhone(e.target.value)} className="h-10 bg-slate-50 border-none rounded-xl font-medium text-[14px]" placeholder="VD: 0912345678" />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium text-slate-500 truncate">Ngày sinh</Label>
-                        <Input type="date" value={newBirthday} onChange={(e) => setNewBirthday(e.target.value)} className="h-10 bg-slate-50 border-none rounded-xl font-medium text-[14px]" />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium text-slate-500 truncate">Phòng ban công tác</Label>
-                        <Select value={newDept} onValueChange={setNewDept}>
-                          <SelectTrigger className="h-10 bg-slate-50 border-none rounded-xl font-medium text-[14px]">
-                            <SelectValue placeholder="Chọn phòng ban..." />
-                          </SelectTrigger>
-                          <SelectContent className="rounded-xl border-none shadow-lg">
-                            {departments.map((d) => (
-                              <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      {isAdmin && (
-                        <div className="space-y-2 pt-4 border-t border-slate-100">
-                          <Label className="text-sm font-medium text-slate-700 truncate">Quyền hệ thống (Admin)</Label>
-                          <Select value={newRole} onValueChange={setNewRole}>
-                            <SelectTrigger className="h-10 bg-slate-50 border-none rounded-xl font-medium text-slate-900 text-[14px]">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent className="rounded-xl border-none shadow-lg">
-                              <SelectItem value="staff">Cán bộ</SelectItem>
-                              <SelectItem value="manager">Lãnh đạo phòng</SelectItem>
-                              <SelectItem value="director">Ban giám đốc</SelectItem>
-                              <SelectItem value="admin">Quản trị hệ thống</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      )}
-
-                      <Button onClick={handleUpdateProfile} disabled={updating || !newName.trim()} className="w-full bg-slate-900 hover:bg-slate-800 text-white h-10 rounded-xl font-medium mt-4 shadow-sm active:scale-95 transition-all">
-                        {updating ? <Loader2 className="w-4 h-4 animate-spin" /> : "Lưu thay đổi"}
-                      </Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
+            <div className="flex-1 min-w-0 item-stack !gap-1">
+              <h2 className="heading-section break-words">{profile.full_name}</h2>
+              {profile.title && <p className="text-label truncate">{profile.title}</p>}
+              <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                <Badge className={cn("font-bold rounded-md border-none", role.color)}>{role.label}</Badge>
+                {profile.is_department_head && (
+                  <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 font-bold">Trưởng phòng</Badge>
+                )}
+                {status !== 'available' && (
+                  <Badge className={cn("font-bold rounded-md border", statusMeta.chipClass)}>{statusMeta.label}</Badge>
+                )}
               </div>
             </div>
-          </div>
 
-          {/* Lịch sử hoạt động */}
-          <div className="premium-card p-6 border-none space-y-6">
-            <h3 className="text-sm font-medium text-slate-500 flex items-center gap-2 truncate">
-              <History className="w-4 h-4 text-slate-400 shrink-0" /> Hoạt động gần đây
-            </h3>
-            <div className="space-y-3">
-              {activities.length > 0 ? activities.map((act) => (
-                <div key={act.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex items-center gap-4 group hover:bg-white hover:shadow-sm transition-all">
-                  <div className="p-2 bg-white rounded-xl shadow-sm shrink-0">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                  </div>
-                  <div className="space-y-0.5 min-w-0 flex-1">
-                    <p className="text-[14px] font-medium text-slate-900 truncate">
-                      Phản hồi tại: <span className="font-semibold text-slate-700">{act.task?.title}</span>
-                    </p>
-                    <p className="text-[12px] font-medium text-slate-500 truncate tabular-nums">
-                      {new Date(act.created_at).toLocaleString('vi-VN')}
-                    </p>
-                  </div>
-                </div>
-              )) : (
-                <div className="py-8 flex flex-col items-center justify-center text-center bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
-                  <p className="text-[13px] font-medium text-slate-500">Chưa có hoạt động nào được ghi nhận.</p>
-                </div>
-              )}
-            </div>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-9 w-9 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-white shrink-0"
+              onClick={() => setEditOpen(true)}
+              aria-label="Sửa hồ sơ"
+            >
+              <Pencil className="icon-sm" />
+            </Button>
           </div>
         </div>
+      </section>
 
-        {/* Thông tin công tác */}
-        <div className="lg:col-span-4 space-y-6">
-          <div className="premium-card p-6 border-none space-y-6">
-            <h3 className="text-sm font-medium text-slate-500 flex items-center gap-2 truncate">
-              <Briefcase className="w-4 h-4 text-slate-400 shrink-0" /> Thông tin công tác
-            </h3>
-            <div className="space-y-4">
-              <div className="space-y-1.5">
-                <p className="text-[11px] font-bold text-slate-500 truncate">Email</p>
-                <div className="px-4 py-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center gap-3 min-w-0">
-                  <Mail className="w-4 h-4 text-slate-400 shrink-0" />
-                  <span className="text-[14px] font-medium text-slate-900 truncate">{profile.email}</span>
-                </div>
-              </div>
-              <div className="space-y-1.5">
-                <p className="text-[11px] font-bold text-slate-500 truncate">Chức danh</p>
-                <div className="px-4 py-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center gap-3 min-w-0">
-                  <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span className="text-[14px] font-medium text-slate-900 truncate">{getProfileDisplayTitle(profile)}</span>
-                </div>
-              </div>
-              
-              {profile.phone && (
-                <div className="space-y-1.5">
-                  <p className="text-[11px] font-bold text-slate-500 truncate">Số điện thoại</p>
-                  <div className="px-4 py-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center gap-3 min-w-0 group">
-                    <Phone className="w-4 h-4 text-blue-500 shrink-0" />
-                    <a href={`tel:${profile.phone}`} className="text-[14px] font-medium text-slate-900 truncate hover:text-blue-600 hover:underline">
-                      {profile.phone}
-                    </a>
-                  </div>
-                </div>
-              )}
+      {/* OOO active banner */}
+      {ooo && new Date(ooo.ends_at) > new Date() && (
+        <section className="rounded-2xl status-warning-bg border border-amber-200 p-4 item-stack">
+          <p className="heading-card text-amber-900">📍 Bạn đang bật chế độ vắng mặt</p>
+          <p className="text-label !text-amber-900 leading-snug">{ooo.message}</p>
+          <p className="text-meta !text-amber-700">
+            Đến {format(new Date(ooo.ends_at), "EEEE, dd/MM/yyyy HH:mm", { locale: vi })}
+          </p>
+        </section>
+      )}
 
-              {profile.birthday && (
-                <div className="space-y-1.5">
-                  <p className="text-[11px] font-bold text-slate-500 truncate">Ngày sinh</p>
-                  <div className="px-4 py-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center gap-3 min-w-0">
-                    <Calendar className="w-4 h-4 text-amber-500 shrink-0" />
-                    <span className="text-[14px] font-medium text-slate-900 truncate">
-                      {new Date(profile.birthday).toLocaleDateString('vi-VN')}
-                    </span>
-                  </div>
-                </div>
-              )}
-            </div>
+      <div className="group-stack">
+        {/* CONTACT — thông tin hiển thị trong danh bạ Nhân sự */}
+        <section className="premium-card p-4 sm:p-5 item-stack">
+          <div className="flex items-center justify-between">
+            <h4 className="heading-card">Thông tin liên hệ</h4>
+            <span className="text-meta">Hiển thị trong danh bạ Nhân sự</span>
           </div>
-        </div>
+            <div className="flex flex-col">
+              <ContactRow
+                icon={Briefcase}
+                label="Phòng ban"
+                value={deptName ?? '—'}
+              />
+              <ContactRow
+                icon={Mail}
+                label="Email"
+                value={profile.email ?? '—'}
+                href={profile.email ? `mailto:${profile.email}` : undefined}
+                accent={!!profile.email}
+                valueClassName="truncate"
+              />
+              <ContactRow
+                icon={Phone}
+                label="Số di động"
+                value={profile.phone ?? '—'}
+                href={profile.phone ? `tel:${profile.phone}` : undefined}
+                accent={!!profile.phone}
+              />
+              <ContactRow
+                icon={Hash}
+                label="Số nội bộ"
+                value={profile.extension ?? '—'}
+                href={profile.extension ? `tel:${profile.extension}` : undefined}
+                accent={!!profile.extension}
+              />
+              <ContactRow
+                icon={MapPin}
+                label="Vị trí chỗ ngồi"
+                value={profile.seat_location ?? '—'}
+              />
+              <ContactRow
+                icon={Calendar}
+                label="Vào chi nhánh"
+                value={profile.branch_join_date
+                  ? `${format(new Date(profile.branch_join_date), "dd/MM/yyyy", { locale: vi })}${years !== null ? ` · ${years} năm` : ''}`
+                  : '—'}
+                last
+              />
+            </div>
+          </section>
+
+          {/* SENSITIVE — thông tin nhân sự (chỉ self thấy ở đây) */}
+          <section className="premium-card p-4 sm:p-5 item-stack">
+            <div className="flex items-center justify-between">
+              <h4 className="heading-card">Thông tin nhân sự</h4>
+              <span className="text-meta">Chỉ bạn và bộ phận Nhân sự thấy</span>
+            </div>
+            <div className="flex flex-col">
+              <ContactRow
+                icon={Cake}
+                label="Ngày sinh"
+                value={profile.birthday
+                  ? format(new Date(profile.birthday), "dd/MM/yyyy", { locale: vi })
+                  : '—'}
+              />
+              <ContactRow
+                icon={UserCog}
+                label="Giới tính"
+                value={profile.gender === 'male' ? 'Nam' : profile.gender === 'female' ? 'Nữ' : profile.gender === 'other' ? 'Khác' : '—'}
+              />
+              <ContactRow
+                icon={IdCard}
+                label="Mã CBNV"
+                value={profile.employee_code ?? '—'}
+              />
+              <ContactRow
+                icon={Mail}
+                label="AD account"
+                value={profile.ad_account ?? '—'}
+                last
+              />
+            </div>
+          </section>
+
+          {/* ACTIVITY */}
+          <section className="premium-card p-4 sm:p-5 item-stack">
+            <h4 className="heading-card flex items-center gap-2">
+              <History className="icon-sm text-slate-400" /> Hoạt động gần đây
+            </h4>
+            {activities.length > 0 ? (
+              <div className="flex flex-col">
+                {activities.map((act, idx) => (
+                  <div
+                    key={act.id}
+                    className={cn(
+                      "flex items-start gap-3 min-h-11 py-2.5",
+                      idx !== activities.length - 1 && "border-b border-slate-100",
+                    )}
+                  >
+                    <CheckCircle2 className="icon-sm text-emerald-500 shrink-0 mt-0.5" />
+                    <div className="flex-1 min-w-0 item-stack !gap-0.5">
+                      <p className="text-label !text-slate-900 truncate">
+                        Phản hồi tại: <span className="font-semibold">{act.task?.title ?? '—'}</span>
+                      </p>
+                      <p className="text-meta tabular-nums">
+                        {new Date(act.created_at).toLocaleString('vi-VN')}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-meta py-6 text-center">Chưa có hoạt động nào được ghi nhận.</p>
+            )}
+          </section>
       </div>
 
-      <ChangePasswordSection profileId={profile?.id} mustChange={profile?.must_change_password === true} />
+      {/* Edit dialog — viewer === target → self mode (phone/extension/seat_location/avatar + opt-out) */}
+      <EditProfileDialog
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        target={profile}
+        viewer={profile}
+        onSaved={loadAll}
+      />
+
+      <AvatarCropDialog
+        open={cropOpen}
+        onOpenChange={setCropOpen}
+        file={cropFile}
+        onCropped={handleCroppedUpload}
+      />
     </div>
   );
+}
+
+function ContactRow({
+  icon: Icon, label, value, href, accent, last, valueClassName,
+}: {
+  icon: any; label: string; value: string; href?: string;
+  accent?: boolean; last?: boolean; valueClassName?: string;
+}) {
+  const inner = (
+    <div className={cn(
+      "flex items-center gap-3 min-h-11 py-2.5",
+      !last && "border-b border-slate-100",
+    )}>
+      <Icon className={cn("icon-sm shrink-0", accent ? "text-primary" : "text-slate-400")} />
+      <div className="flex-1 min-w-0 item-stack !gap-0.5">
+        <span className="text-meta">{label}</span>
+        <span className={cn("text-label !text-slate-900 font-semibold", valueClassName)}>{value}</span>
+      </div>
+      {href && <ChevronRight className="icon-sm text-slate-300 shrink-0" />}
+    </div>
+  );
+  if (href) {
+    return (
+      <a
+        href={href}
+        className="block transition-colors hover:bg-slate-50/60 active:bg-slate-100/60"
+      >
+        {inner}
+      </a>
+    );
+  }
+  return inner;
 }

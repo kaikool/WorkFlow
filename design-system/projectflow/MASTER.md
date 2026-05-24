@@ -37,7 +37,7 @@
 - **Font:** System Font Stack theo Apple (`-apple-system`, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial). Không dùng Google Fonts.
 - **Mood:** financial, trustworthy, professional, corporate, banking, serious.
 - **Tracking:** Không dùng letter-spacing âm. Global CSS triệt tiêu `tracking-tight/tighter/wider/widest` để chữ rõ ở mọi breakpoint.
-- **Capitalization:** Không dùng all-caps cho heading, label, tab, button, badge hoặc section title. Dùng sentence case; chỉ giữ chữ hoa cho mã, biển số, viết tắt chính thức như KPI/TCTH.
+- **Capitalization:** Không dùng all-caps cho heading, label, tab, button, badge hoặc section title. Dùng sentence case; chỉ giữ chữ hoa cho mã, biển số, viết tắt chính thức như KPI.
 
 **Apple HIG Typography Scale responsive bắt buộc:**
 | Level | CSS token | Desktop web | iPad/tablet | Mobile | Usage |

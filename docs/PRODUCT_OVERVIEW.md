@@ -64,7 +64,7 @@ Hệ thống có **7 role** khai báo ở enum `user_role` (Postgres) + type `Us
 | `admin` | Quản trị viên (IT) | Toàn quyền: duyệt account_requests, CRUD `document_categories` (kèm SLA), quản lý phòng họp/xe, reset password, set `is_active`, xem mọi hồ sơ/task/lịch. |
 | `director` | Giám đốc / Phó Giám đốc | Xem **toàn bộ hồ sơ** chi nhánh (read-only truy vết), xem mọi task, duyệt đơn nghỉ phép của cấp Trưởng phòng / lãnh đạo cùng cấp. Lịch trình của BGĐ public toàn chi nhánh. |
 | `manager` | Trưởng phòng / Phó phòng | Xem & update task của phòng. Duyệt đơn nghỉ phép nhân viên cùng phòng (chỉ khi `is_department_head = true` HOẶC creator không phải lãnh đạo cùng cấp). Nếu thuộc phòng **Tổ chức Tổng hợp** (code `13602`) → có quyền điều phối phòng họp/xe như `secretary`. |
-| `staff` | Nhân viên (RM, GDV, KSV, Kho quỹ, Pháp chế, IT, TCTH…) | Tạo & luân chuyển hồ sơ vật lý, xem task được giao hoặc do mình tạo, đăng ký lịch họp/đặt xe, tạo đơn nghỉ phép. Phân biệt nhau qua `department_id`. |
+| `staff` | Nhân viên (RM, GDV, KSV, Kho quỹ, Pháp chế, IT, Tổ chức Tổng hợp…) | Tạo & luân chuyển hồ sơ vật lý, xem task được giao hoặc do mình tạo, đăng ký lịch họp/đặt xe, tạo đơn nghỉ phép. Phân biệt nhau qua `department_id`. |
 | `secretary` | Thư ký Ban Giám đốc | Điều phối phòng họp + xe ô tô (CRUD `rooms`, `vehicles`, duyệt/sửa `schedules` toàn chi nhánh, gán tài xế). |
 | `hr_officer` | Cán bộ Nhân sự | Workspace riêng (`HRDashboardView`), **read-only** đơn nghỉ phép toàn chi nhánh, xem danh bạ, xem mọi profile (tổng hợp data nhân sự). |
 | `driver` | Lái xe | Workspace riêng (`DriverDashboard`) chỉ xem chuyến đi được giao. **Bị chặn** khỏi module Hồ sơ vật lý, Công việc, Cán bộ. Có `start_km`/`end_km` workflow cho mỗi chuyến. |
@@ -75,7 +75,7 @@ Hệ thống có **7 role** khai báo ở enum `user_role` (Postgres) + type `Us
 |------|------|----------|
 | `is_active` | boolean | Middleware đọc cờ này. Nếu `false` → `signOut` ngay + redirect `/login?pending=1` (chờ admin duyệt). |
 | `is_department_head` | boolean | Phân biệt "Trưởng phòng chính thức" với "Phó phòng" trong luồng duyệt nghỉ phép. |
-| `must_change_password` | boolean | Khi admin reset password → set `true`. Hiển thị `MustChangePasswordBanner` ép user đổi mật khẩu ở `/dashboard/profile#change-password`. |
+| `must_change_password` | boolean | Khi admin reset password → set `true`. Hiển thị `MustChangePasswordBanner` ép user đổi mật khẩu ở `/dashboard/settings` (mở `ChangePasswordDialog`). |
 
 ### 2.3 Ma trận "ai làm được gì" (rút từ permissions + RLS + navigation `hideFor`)
 
@@ -85,15 +85,15 @@ Hệ thống có **7 role** khai báo ở enum `user_role` (Postgres) + type `Us
 | Xem sidebar **Công việc** | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
 | Xem sidebar **Lịch trình** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ (workspace lái xe) |
 | Xem sidebar **Hồ sơ** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Xem sidebar **Cán bộ** | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ |
+| Xem sidebar **Cán bộ** (+ mobile bottom nav) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
 | Tạo hồ sơ vật lý | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
 | Tab "Toàn chi nhánh" (xem mọi hồ sơ) | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | CRUD `document_categories` (nhóm hồ sơ + SLA) | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| CRUD `rooms` + `vehicles` | ✅ | ❌ | ✅ (chỉ TCTH) | ❌ | ✅ | ❌ | ❌ |
+| CRUD `rooms` + `vehicles` | ✅ | ❌ | ✅ (manager phòng điều phối) | ❌ | ✅ | ❌ | ❌ |
 | Duyệt đơn nghỉ phép | ✅ | ✅ (cấp manager↑) | ✅ (cùng phòng, có điều kiện) | ❌ | ❌ | ❌ (chỉ read) | ❌ |
-| Gán tài xế cho chuyến | ✅ | ❌ | ✅ (chỉ TCTH) | ❌ | ✅ | ❌ | ❌ |
+| Gán tài xế cho chuyến | ✅ | ❌ | ✅ (manager phòng điều phối) | ❌ | ✅ | ❌ | ❌ |
 | Duyệt `account_requests` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Gửi `recognitions` (vinh danh) | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Gửi `recognitions` (ghi nhận đồng nghiệp) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
 
 > Helper chính thức: [`src/lib/permissions.ts`](src/lib/permissions.ts). Mọi check role/department phải đi qua helper, **cấm inline `profile.role === 'admin'` trong component** (xem `ARCHITECTURE.md §6.4`).
 
@@ -108,13 +108,15 @@ Seed mặc định trong `schema.sql`:
 | — | Kho quỹ | Là chặng cuối trong nhiều luồng hồ sơ |
 | — | Pháp chế | |
 | — | Công nghệ thông tin | Admin thường thuộc phòng này |
-| `13602` | **Tổ chức Tổng hợp (TCTH)** | ⭐ Phòng đặc biệt. Manager TCTH có quyền điều phối phòng họp/xe ngang `secretary` (helper `isTcthDepartment`). |
+| `13602` | **Tổ chức Tổng hợp** | ⭐ Phòng đặc biệt (bộ phận điều phối tài nguyên chi nhánh). Manager của phòng này có quyền điều phối phòng họp/xe ngang `secretary` (helper `isCoordinatorDepartment`). |
 
 ---
 
 ## 3. Core Modules (Các phân hệ chính)
 
 Sidebar (`src/components/layout/dashboard-layout.tsx`) hiện có **5 entry chính**: Dashboard, Công việc, Lịch trình, Hồ sơ, Cán bộ — kèm flag `hideFor` ẩn theo role. Ngoài ra có 3 module phụ truy cập qua menu dropdown / direct URL: Profile, Admin, Settings.
+
+> **Mobile note**: PWA trên mobile **không hiển thị sidebar** — chỉ dùng `MobileBottomNav`. Mảng `navItems` trong `dashboard-layout.tsx` được share cho cả desktop sidebar và mobile bottom nav, nên khi thêm/sửa entry và muốn hiện trên mobile, **bắt buộc** rà lại `hideFor` của entry đó. Ví dụ Cán bộ ban đầu `hideFor: ['driver', 'secretary', 'staff']` khiến cán bộ giao dịch không vào được trên điện thoại — đã sửa thành `hideFor: ['driver']` ở Phase 2.
 
 ---
 
@@ -272,7 +274,7 @@ Trang đích sau login. **Hiển thị view khác nhau theo role**:
 |------|------|
 | `driver` | `DriverDashboardView` — list chuyến đi sắp tới + lịch sử Km |
 | `hr_officer` | `HRDashboardView` — tổng quan nhân sự, danh sách đơn nghỉ phép pending |
-| `manager` TCTH | `TCTHDashboardView` — bảng điều phối tài nguyên |
+| `manager` phòng điều phối | `CoordinatorDashboardView` — bảng điều phối tài nguyên |
 | Còn lại | `QuickStats` + `TaskOverview` + Timeline lịch hôm nay |
 
 **Block hiển thị mặc định** (cho staff/manager/admin/director thông thường):
@@ -360,7 +362,7 @@ Mọi assignee picker dùng `<PeoplePicker>` shared (`src/components/ui/people-p
   - **`DateNavigator`** — chọn ngày, hiển thị 7 ngày nổi bật ngày được chọn.
   - **3 phạm vi filter**: "Toàn chi nhánh" / "BGĐ" / "Phòng của tôi".
   - **Sub-dashboard nhúng**:
-    - `ResourcesManagerDashboard` (chỉ TCTH/secretary/admin) — bảng điều phối phòng họp + xe.
+    - `ResourcesManagerDashboard` (chỉ bộ phận điều phối/secretary/admin) — bảng điều phối phòng họp + xe.
     - `LeaveApprovalDashboard` (chỉ user có quyền `canApproveLeave`) — list đơn pending + duyệt 1 click.
     - `DirectorTimeline` — timeline ngày dành cho BGĐ.
 
@@ -395,13 +397,13 @@ URL vẫn là `/dashboard/schedule` nhưng auto-detect role `driver` → render 
 | Xem chuyến được giao | Filter `schedules WHERE driver_id = auth.uid()` (RLS cho phép) |
 | **Bắt đầu chuyến** | `StartTripDialog` → nhập `start_km` → UPDATE `schedules.metadata = {start_km: …}` + status `in_progress` |
 | **Kết thúc chuyến** | `EndTripDialog` → nhập `end_km` (validate > start_km) → UPDATE metadata `{start_km, end_km, actual_distance}` + status `completed` |
-| **Báo sự cố** | `ReportIssueDialog` → insert notification cho TCTH/secretary |
+| **Báo sự cố** | `ReportIssueDialog` → insert notification cho bộ phận điều phối/secretary |
 | Stat cá nhân | `DriverStatsGrid` — tổng số chuyến, tổng Km tháng |
 | Card từng chuyến | `MyTripCard` — hiển thị Km xuất phát/về, biển số, người yêu cầu |
 
 #### 3.4.5 Gán xe + tài xế (Resource Coordination)
 
-Secretary / admin / TCTH manager:
+Secretary / admin / manager phòng điều phối:
 1. Mở `ScheduleDetailDialog` của 1 schedule `type='trip'`.
 2. Chọn `vehicle_id` + `driver_id` từ list.
 3. UPDATE schedule → status `approved` + notification cho driver "Bạn được phân công lịch chạy xe …".
@@ -417,15 +419,58 @@ RPC `check_schedule_participant_conflicts(participants, start, end, ignore_id)` 
 
 ### 3.5 Module Cán bộ (Team)
 
-> URL: `/dashboard/team` + detail `/dashboard/team/[id]` · Code: [`src/app/dashboard/team/`](src/app/dashboard/team/)
+> URL: `/dashboard/team` (Detail = Dialog `?id=<uuid>`, KHÔNG còn route `[id]`) · Code: [`src/app/dashboard/team/`](src/app/dashboard/team/)
 
-- **Danh bạ cán bộ** chi nhánh (avatar, số máy, sinh nhật, ngày vào ngành, AD account).
-- **Sắp xếp theo phân cấp** (`sortProfilesByHierarchy` từ `lib/utils.ts`) — Giám đốc → Phó GĐ → Trưởng phòng → Phó phòng → nhân viên.
-- **Trang chi tiết `[id]`**:
-  - Thông tin cá nhân + phòng ban + title.
-  - Task đang phụ trách + lịch trình sắp tới.
-  - **Recognitions** (vinh danh): admin/director gửi message tôn vinh, hiển thị như feed trên trang cá nhân của người được vinh danh.
-- **Helper `canAccessPeopleDirectory`** ẩn module này với `staff` thường — chỉ `admin | director | hr_officer | manager` xem được.
+**Mục tiêu**: thay danh bạ rời rạc (Zalo / Outlook / sổ tay) bằng 1 nguồn dữ liệu duy nhất — mọi cán bộ (trừ lái xe) tra cứu được số máy, phòng ban, vị trí ngồi, OOO, lịch nghỉ.
+
+**Tính năng**
+
+- **Danh bạ toàn chi nhánh**: avatar, số máy, số nội bộ (`extension`), vị trí ngồi (`seat_location`), title, phòng ban, ngày vào ngành. Search-as-you-type theo tên / phone / extension / title / ad_account (no-accent).
+- **Filter chip trạng thái** (Đang nghỉ / Đi công tác / Sinh nhật / Mới vào): compute realtime từ `schedules` (type=`leave`/`trip` đang active) + `profiles.birthday` + `profiles.branch_join_date` (≤30 ngày).
+- **Stats hero**: tổng cán bộ, đang vắng mặt, sinh nhật hôm nay, mới gia nhập.
+- **2 view qua Tabs**:
+  - **Danh bạ** — group theo phòng ban (Accordion, BGĐ + phòng mình mặc định mở).
+  - **Sơ đồ tổ chức** — `OrgChartView` cây tổ chức theo phòng, trưởng phòng nổi bật (Crown icon).
+- **Detail = Dialog** (`ProfileDetailDialog`) — deep link `?id=<uuid>`:
+  - Field công khai: full_name, avatar, phone, extension, seat_location, department, title, branch_join_date, is_department_head.
+  - **Field nhạy cảm** (`ProfileSensitiveSection`): birthday, ad_account, employee_code, gender — chỉ self + admin + hr_officer + director thấy.
+  - **Stats tháng** (`ProfileStatsSection`): số task tháng này — đếm theo `assignee_id` + `created_at >= startOfMonth` (sửa bug cũ đếm tất cả task).
+  - **Recognitions** (`RecognitionsSection`): timeline ghi nhận đồng nghiệp + form gửi inline (great_work 👏 / team_player 🤝 / innovation 💡 / mentor 🎓). Mọi role active trừ driver được gửi. Push notification cho người nhận.
+  - **OOO banner**: nếu target có `out_of_office` active → banner amber với message + hạn.
+  - **Sticky footer**: Gọi (`tel:`), Mail (`mailto:`), Ghi nhận — touch ≥ 44px.
+  - **Sửa hồ sơ** (`EditProfileDialog`): self sửa phone/extension/seat_location/avatar; admin+hr_officer sửa full (kể cả role, nhưng chỉ admin được đổi role).
+- **OOO toggle** (`OutOfOfficeToggle`): self bật Out of Office với message + thời hạn → upsert bảng `out_of_office`. Cron `cleanup_expired_ooo` chạy daily dọn record hết hạn.
+
+**Permission matrix mới**
+
+| Action | Helper | admin | director | manager | staff | secretary | hr_officer | driver |
+|---|---|---|---|---|---|---|---|---|
+| Xem danh bạ | `canViewPeopleDirectory` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
+| Xem field nhạy cảm | `canViewSensitiveProfileFields` | ✅ | ✅ | self | self | self | ✅ | — |
+| Sửa hồ sơ người khác | `canEditProfile` | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ |
+| Gửi recognition | `canRecognize` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
+| Widget "Nhịp đập nhân sự" trên dashboard | `canViewPeopleAnalyticsWidget` | ✅ | ❌ | ✅ (chỉ manager phòng điều phối) | ❌ | ✅ | ✅ | ❌ |
+
+> Helper cũ `canAccessPeopleDirectory` đã deprecated (giữ lại tương thích). Code mới phải dùng `canViewPeopleDirectory`.
+
+**Mobile entry point**: sau Phase 2, Team module đã được bổ sung vào **MobileBottomNav** (đi qua `navItems` ở [`dashboard-layout.tsx`](src/components/layout/dashboard-layout.tsx) — `hideFor: ['driver']`). Trước đó staff/secretary không có cách vào trang Team trên mobile vì mobile chỉ dùng bottom nav, không có sidebar. Khi thêm module mới có entry trong sidebar nhưng muốn hiện trên mobile, **bắt buộc** rà lại mảng `navItems` này.
+
+**Module structure** (chuẩn `_components/_hooks/_lib`):
+
+```
+src/app/dashboard/team/
+├── page.tsx                            # Wrapper Suspense → <TeamPage/>
+├── [id]/page.tsx                       # Redirect stub → /dashboard/team?id=<uuid>
+├── _lib/{constants,utils}.ts
+├── _hooks/{useTeamDirectory,useProfileDetail,useRecognitions}.ts
+└── _components/{TeamPage,ProfileDetailDialog,ProfileSensitiveSection,
+                 ProfileStatsSection,RecognitionsSection,EditProfileDialog,
+                 OutOfOfficeToggle,OrgChartView,PeopleAnalyticsWidget}.tsx
+```
+
+> Search bar + danh sách thẻ thành viên được render inline trong `TeamPage.tsx` (chưa tách subcomponent riêng vì cùng nằm trong file dưới 500 dòng — đúng quy tắc `ARCHITECTURE.md §2.3`).
+
+Realtime channel: `team_realtime_sync` — subscribe `profiles`, `schedules`, `out_of_office`, `recognitions`.
 
 ---
 
@@ -433,11 +478,16 @@ RPC `check_schedule_participant_conflicts(participants, start, end, ignore_id)` 
 
 > URL: `/dashboard/profile` · Code: [`src/app/dashboard/profile/`](src/app/dashboard/profile/)
 
-- **Update thông tin cá nhân**: avatar (upload bucket `avatars`), số điện thoại, sinh nhật, giới tính, AD account, ngày vào ngành.
-- **Đổi mật khẩu** (`ChangePasswordSection.tsx`):
-  - Nếu `must_change_password = true` → banner đỏ ép đổi.
-  - Khi đổi thành công → UPDATE `must_change_password = false`.
-- **Subscribe push notification** — hook `use-push-subscription.ts` insert vào `push_subscriptions`.
+Trang hồ sơ cá nhân — đồng bộ pattern với `ProfileDetailDialog` của module Team (xem §3.5), self-mode:
+
+- **Hero card**: avatar (upload bucket `avatars` qua `AvatarCropDialog` — pan + zoom 1:1), tên + chức danh + badge role + badge trạng thái (Đang nghỉ / Đi công tác / Sinh nhật hôm nay / Mới gia nhập).
+- **Thông tin liên hệ** (hiển thị trong danh bạ Nhân sự): phòng ban, email, số di động, số nội bộ, vị trí chỗ ngồi, ngày vào chi nhánh.
+- **Thông tin nhân sự** (chỉ self + bộ phận Nhân sự thấy): ngày sinh, giới tính, mã CBNV, AD account.
+- **OOO banner** + **Hoạt động gần đây** (5 task comment mới nhất).
+- **Sửa hồ sơ**: mở `EditProfileDialog` (shared với module Team) — self sửa được phone/extension/seat_location/avatar/birthday/gender/birthday_notify_optout.
+- **Đăng xuất** ở `PageHeader.action`.
+
+> Đổi mật khẩu **không nằm trên trang này** — đã chuyển sang `/dashboard/settings` (xem §3.8) khớp pattern "Detail = Dialog" của hệ thống. Subscribe push notification cũng nằm ở Settings.
 
 ---
 
@@ -463,8 +513,15 @@ Ngoài 3 tab này, admin còn:
 
 > URL: `/dashboard/settings` + sub `/dashboard/settings/users` · Code: [`src/app/dashboard/settings/`](src/app/dashboard/settings/)
 
-- Trang setting cá nhân (theme PWA, manage push subscription).
-- Sub-page `/users` cho admin quản lý user (trùng chức năng với admin module — đang trong quá trình thống nhất, xem `ARCHITECTURE.md §9`).
+Trang cài đặt tài khoản cá nhân — chỉ 2 nhóm:
+
+- **Thông báo** — Switch bật/tắt push notification PWA (đi qua hook `use-push-subscription.ts`, insert/delete `push_subscriptions`). Tự gợi ý "Thêm vào màn hình chính" + cấp quyền nếu chưa subscribe.
+- **Bảo mật — Đổi mật khẩu**: row `min-h-11` với chevron, click mở `ChangePasswordDialog` (`_components/ChangePasswordDialog.tsx` — pattern `app-dialog-sheet`):
+  - Nếu `must_change_password = true` → row có badge amber "Cần đổi" + dialog hiển thị banner "Đang dùng mật khẩu mặc định".
+  - Validate: tối thiểu 6 ký tự, xác nhận khớp.
+  - Submit → `supabase.auth.updateUser({ password })` + UPDATE `profiles.must_change_password = false` + `router.refresh()`.
+
+Sub-page `/dashboard/settings/users` cho admin quản lý user (trùng chức năng với admin module — đang trong quá trình thống nhất, xem `ARCHITECTURE.md §9`).
 
 ---
 
@@ -514,7 +571,7 @@ Ngoài 3 tab này, admin còn:
    │  ├─ Render DashboardLayout (sidebar + topnav)    │
    │  ├─ Nếu profile.must_change_password = true      │
    │  │   → MustChangePasswordBanner đỏ trên top      │
-   │  │   → click → /dashboard/profile#change-password│
+   │  │   → click → /dashboard/settings (mở dialog)   │
    │  ├─ Nếu hôm nay là ngày kỷ niệm vào ngành        │
    │  │   → AnniversaryDialog auto popup              │
    │  └─ Render page con (handover/tasks/schedule…)   │
@@ -589,7 +646,7 @@ Query string `?q=...&status=...` đẩy vào URL → mỗi page tự đọc và 
 
 | Job | Lịch | Nơi chạy | Tác dụng |
 |-----|------|----------|----------|
-| `/api/cron/notifications` | `0 8 * * *` daily 8:00 ICT (`vercel.json`) | Vercel cron — dùng `SUPABASE_SERVICE_ROLE_KEY` | (1) Gọi `auto_archive_and_cleanup()`. (2) Quét task quá hạn → insert notification "Quá hạn". (3) Chúc mừng sinh nhật cán bộ trong ngày. Bảo vệ bằng `CRON_SECRET` nếu được set. |
+| `/api/cron/notifications` | `0 8 * * *` daily 8:00 ICT (`vercel.json`) | Vercel cron — dùng `SUPABASE_SERVICE_ROLE_KEY` | (1) Gọi `auto_archive_and_cleanup()`. (2) Quét task quá hạn → insert notification "Quá hạn". (3) **Chúc sinh nhật toàn chi nhánh** (loại driver + người opt-out `birthday_notify_optout=true`; tự skip chính chủ thể). (4) **Kỷ niệm gắn bó** 5/10/15/20 năm — notify toàn chi nhánh. (5) Gọi RPC `cleanup_expired_ooo()` dọn OOO hết hạn. Bảo vệ bằng `CRON_SECRET` nếu được set. |
 | Edge `cleanup-document-images` | `0 19 * * *` UTC = 02:00 ICT | Supabase Edge Function | Quét `documents` `COMPLETED > 30 ngày, attached_image_urls ≠ '{}'` → xoá file storage + clear mảng URLs. Giới hạn 200 hồ sơ/lượt. |
 | Edge `push-notification` | Trigger qua DB webhook (không phải cron) | Supabase Edge Function | Mỗi INSERT `notifications` → đọc `push_subscriptions` → fire Web Push VAPID tới mọi device. |
 
@@ -602,8 +659,8 @@ Query string `?q=...&status=...` đẩy vào URL → mỗi page tự đọc và 
 | Hạng mục | Trạng thái | Hướng |
 |----------|-----------|-------|
 | Migrate form lớn sang `react-hook-form` + `zod` | Deps có sẵn, một số dialog vẫn dùng `useState` thủ công | Áp dụng cho form > 4 field theo lần đụng vào |
-| Refactor `team/[id]/page.tsx` (455 dòng), `admin/page.tsx` (461 dòng) | Sát giới hạn 500 dòng | Lần đụng tiếp theo phải tách subcomponent |
-| `_components/_hooks/_lib` cho `tasks`, `admin`, `team` | Đang lệch chuẩn (thiếu `_lib` ở `team`, `_components` rỗng ở `admin`) | Module mới bắt buộc đủ 3 folder |
+| Refactor `admin/page.tsx` (461 dòng) | Sát giới hạn 500 dòng | Lần đụng tiếp theo phải tách subcomponent |
+| `_components/_hooks/_lib` cho `admin` | `tasks`, `team`, `schedule`, `handover` đã đủ 3 folder; `admin` còn lệch (`_components`/`_lib` rỗng) | Lần đụng vào tiếp theo tách subcomponent từ `admin/page.tsx` (461 dòng — sát giới hạn) |
 | `database.types.ts` | Đang hand-craft | Gen từ Supabase CLI |
 | Bảng `account_requests` | Có schema + RLS nhưng `/register` đang bypass | Hoặc bật luồng admin-duyệt qua bảng này, hoặc xoá bảng để gọn |
 | Module KPI cũ | Đã drop (xem `migration_drop_kpi_module.sql`) | — |
@@ -616,12 +673,11 @@ Query string `?q=...&status=...` đẩy vào URL → mỗi page tự đọc và 
 | Tài liệu | Nội dung |
 |----------|----------|
 | [`README.md`](README.md) | Setup, env vars, deploy, troubleshooting |
-| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Quy chuẩn code, naming, fetch pattern, RPC, workflow thêm module |
-| [`docs/TECHNICAL_RULES.md`](docs/TECHNICAL_RULES.md) | UI/UX (Apple HIG), palette, RLS business rules |
-| [`DATABASE_SCHEMA.md`](DATABASE_SCHEMA.md) | Entities, RLS strategy, SLA logic, storage, cronjobs |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Quy chuẩn code, naming, fetch pattern, RPC, workflow thêm module (đã gộp luôn UI/UX + business rules từ file `TECHNICAL_RULES.md` cũ) |
+| [`docs/DATABASE_SCHEMA.md`](docs/DATABASE_SCHEMA.md) | Entities, RLS strategy, SLA logic, storage, cronjobs |
 | [`schema.sql`](schema.sql) | Snapshot DB (truth source) |
 | [`supabase/migration_handover_module.sql`](supabase/migration_handover_module.sql) | Migration mẫu chuẩn (RLS + RPC + Trigger) |
 
 ---
 
-**Phiên bản:** 1.1 — bổ sung Dashboard Home, Driver workspace, Leave approval flow, Auth flow, Realtime channels, Cronjobs, Roadmap.
+**Phiên bản:** 1.2 — 2026-05-24 (sync mã nguồn: Settings module có ChangePasswordDialog, Profile self-mode, team module structure thực tế, gỡ tham chiếu `TECHNICAL_RULES.md`).

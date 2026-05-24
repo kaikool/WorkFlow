@@ -8,8 +8,9 @@ import { Button } from "@/components/ui/button";
 import DirectorTimeline from "../schedule/_components/DirectorTimeline";
 import ResourcesManagerDashboard from "../schedule/_components/ResourcesManagerDashboard";
 import ScheduleDetailDialog from "../schedule/_components/ScheduleDetailDialog";
+import PeopleAnalyticsWidget from "../team/_components/PeopleAnalyticsWidget";
 
-interface TCTHViewProps {
+interface CoordinatorViewProps {
   profile: any;
   schedules: any[];
   vehicles: any[];
@@ -31,7 +32,7 @@ interface TCTHViewProps {
   handleUpdateSchedule: (id: string, u: any) => void;
 }
 
-export default function TCTHDashboardView(props: TCTHViewProps) {
+export default function CoordinatorDashboardView(props: CoordinatorViewProps) {
   const {
     profile, schedules, vehicles, rooms, allProfiles, departments,
     selectedDate, isTodaySelected, currentTimePercent, startLimit, duration,
@@ -145,6 +146,8 @@ export default function TCTHDashboardView(props: TCTHViewProps) {
         selectedDate={selectedDate}
         onSelectSchedule={handleSelectSchedule}
       />
+
+      <PeopleAnalyticsWidget members={allProfiles} todaySchedules={schedules} />
 
       <ScheduleDetailDialog
         isOpen={isDetailOpen}

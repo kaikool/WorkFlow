@@ -371,7 +371,7 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
                     <div className="p-2 bg-white rounded-xl shadow-sm">
                       <Car className="w-4 h-4 text-blue-600" />
                     </div>
-                    <p className="text-sm font-medium text-blue-700 leading-tight">Yêu cầu của bạn sẽ được bộ phận TCTH phê duyệt và gán xe/lái xe cụ thể sau khi đăng ký.</p>
+                    <p className="text-sm font-medium text-blue-700 leading-tight">Yêu cầu của bạn sẽ được bộ phận điều phối phê duyệt và gán xe/lái xe cụ thể sau khi đăng ký.</p>
                   </div>
                 </div>
               )}

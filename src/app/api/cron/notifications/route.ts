@@ -23,7 +23,7 @@ export async function GET(request: Request) {
     const notifications: any[] = [];
     const now = new Date();
 
-    // 0. AUTO-ARCHIVE & CLEANUP định kỳ (chạy ở cron, không chạy ở client nữa)
+    // 0. AUTO-ARCHIVE & CLEANUP định kỳ
     try {
       await supabase.rpc('auto_archive_and_cleanup');
     } catch (cleanupErr) {
@@ -46,9 +46,7 @@ export async function GET(request: Request) {
       .eq('is_archived', false);
 
     if (overdueTasks && overdueTasks.length > 0) {
-      // Create notifications (status giữ nguyên — derived overdue ở UI)
       overdueTasks.forEach(task => {
-        // Notify Assignee
         if (task.assignee_id) {
           notifications.push({
             user_id: task.assignee_id,
@@ -57,7 +55,6 @@ export async function GET(request: Request) {
             link: `/dashboard/tasks/${task.id}`
           });
         }
-        // Notify Creator
         if (task.created_by && task.created_by !== task.assignee_id) {
           notifications.push({
             user_id: task.created_by,
@@ -94,55 +91,78 @@ export async function GET(request: Request) {
       });
     }
 
-    // 3. CHECK BIRTHDAYS
-    const currentMonth = now.getMonth() + 1; // 1-12
+    // 3. CHECK BIRTHDAYS + ANNIVERSARIES — TOÀN CHI NHÁNH
+    // Bỏ filter department; driver không nhận; opt-out không bị thông báo ra ngoài; chính chủ thể bỏ qua noti người khác.
+    const currentMonth = now.getMonth() + 1;
     const currentDay = now.getDate();
-    
-    // We cannot easily query extract(month from birthday) with postgrest without RPC, 
-    // so we fetch profiles with birthdays and filter in memory since profiles count is usually small per company.
+
     const { data: profiles } = await supabase
       .from('profiles')
-      .select('id, full_name, birthday, department_id')
-      .not('birthday', 'is', null);
+      .select('id, full_name, birthday, branch_join_date, role, birthday_notify_optout, is_active')
+      .eq('is_active', true);
 
     if (profiles && profiles.length > 0) {
+      const audience = profiles.filter(p => p.role !== 'driver');
+
+      // 3.A. BIRTHDAY — toàn chi nhánh
       const birthdayPeople = profiles.filter(p => {
         if (!p.birthday) return false;
+        if (p.birthday_notify_optout) return false;
         const bDate = new Date(p.birthday);
         return bDate.getMonth() + 1 === currentMonth && bDate.getDate() === currentDay;
       });
 
-      if (birthdayPeople.length > 0) {
-        // Notify everyone in their department
-        for (const person of birthdayPeople) {
-          if (person.department_id) {
-            const { data: colleagues } = await supabase
-              .from('profiles')
-              .select('id')
-              .eq('department_id', person.department_id)
-              .neq('id', person.id);
-              
-            if (colleagues) {
-              colleagues.forEach(c => {
-                notifications.push({
-                  user_id: c.id,
-                  title: 'Sinh nhật đồng nghiệp \uD83C\uDF82',
-                  content: `Hôm nay là sinh nhật của ${person.full_name}. Hãy gửi lời chúc mừng nhé!`,
-                  link: `/dashboard/team/${person.id}`
-                });
-              });
-            }
-          }
-          
-          // Notify the birthday person
-          notifications.push({
-            user_id: person.id,
-            title: 'Chúc mừng sinh nhật! \uD83C\uDF89',
-            content: `Tập thể công ty chúc bạn một tuổi mới đầy thành công và hạnh phúc!`,
-            link: `/dashboard/profile`
+      for (const person of birthdayPeople) {
+        audience
+          .filter(c => c.id !== person.id)
+          .forEach(c => {
+            notifications.push({
+              user_id: c.id,
+              title: 'Sinh nhật đồng nghiệp 🎂',
+              content: `Hôm nay là sinh nhật của ${person.full_name}. Gửi lời chúc qua mục Ghi nhận nhé!`,
+              link: `/dashboard/team?id=${person.id}`
+            });
           });
-        }
+
+        notifications.push({
+          user_id: person.id,
+          title: 'Chúc mừng sinh nhật! 🎉',
+          content: `Tập thể chi nhánh chúc bạn một tuổi mới đầy thành công và hạnh phúc!`,
+          link: `/dashboard/profile`
+        });
       }
+
+      // 3.B. ANNIVERSARY (5/10/15/20 năm gắn bó) — không phụ thuộc opt-out
+      const ANNIVERSARY_YEARS = [5, 10, 15, 20];
+      const anniversaryPeople = profiles.filter(p => {
+        if (!p.branch_join_date) return false;
+        const join = new Date(p.branch_join_date);
+        if (join.getMonth() + 1 !== currentMonth || join.getDate() !== currentDay) return false;
+        const years = now.getFullYear() - join.getFullYear();
+        return ANNIVERSARY_YEARS.includes(years);
+      });
+
+      for (const person of anniversaryPeople) {
+        const join = new Date(person.branch_join_date as string);
+        const years = now.getFullYear() - join.getFullYear();
+        audience
+          .filter(c => c.id !== person.id)
+          .forEach(c => {
+            notifications.push({
+              user_id: c.id,
+              title: `🎉 Kỷ niệm ${years} năm gắn bó của ${person.full_name}`,
+              content: `${person.full_name} đã đồng hành cùng chi nhánh ${years} năm. Gửi lời chúc qua mục Ghi nhận.`,
+              link: `/dashboard/team?id=${person.id}`
+            });
+          });
+      }
+    }
+
+    // 4. CLEANUP EXPIRED OUT_OF_OFFICE
+    try {
+      await supabase.rpc('cleanup_expired_ooo');
+    } catch (oooErr) {
+      console.error('Cleanup OOO error:', oooErr);
     }
 
     // Insert all notifications
@@ -150,11 +170,11 @@ export async function GET(request: Request) {
       await supabase.from('notifications').insert(notifications);
     }
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       processed_overdue: overdueTasks?.length || 0,
       processed_upcoming: upcomingTasks?.length || 0,
-      notifications_sent: notifications.length 
+      notifications_sent: notifications.length
     });
 
   } catch (error: any) {

@@ -87,7 +87,7 @@ export default function ScheduleEditForm({
                   reasonValid ? "opacity-75" : "text-amber-700"
                 )}>
                   {reasonValid
-                    ? `${reasonLen} ký tự · TCTH sẽ nhận được lý do này khi bạn gửi.`
+                    ? `${reasonLen} ký tự · Bộ phận điều phối sẽ nhận được lý do này khi bạn gửi.`
                     : `Cần thêm ${10 - reasonLen} ký tự (tối thiểu 10).`}
                 </p>
               </div>

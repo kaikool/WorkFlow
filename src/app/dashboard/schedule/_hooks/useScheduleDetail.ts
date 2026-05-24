@@ -32,7 +32,7 @@ export function useScheduleDetail({
   const [newEndTime, setNewEndTime] = React.useState("");
   const [editData, setEditData] = React.useState<any>({});
 
-  // --- Trạng thái điều phối xe (TCTH) ---
+  // --- Trạng thái điều phối xe ---
   const [tempVehicleId, setTempVehicleId] = React.useState<string | null>(null);
   const [tempDriverId, setTempDriverId] = React.useState<string | null>(null);
 

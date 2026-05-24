@@ -115,20 +115,20 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
       setIsStartOpen(false);
       setStartKm("");
 
-      // Kiểm tra lệch lịch trình và cảnh báo TCTH
+      // Kiểm tra lệch lịch trình và cảnh báo bộ phận điều phối
       const scheduledStart = new Date(schedule.start_time);
       const deviationMinutes = Math.round((actualStart.getTime() - scheduledStart.getTime()) / 60000);
       const THRESHOLD_MINUTES = 15;
 
       if (Math.abs(deviationMinutes) >= THRESHOLD_MINUTES) {
-        const { data: tcthStaff } = await supabase.from('profiles').select('id, role, departments(name, code)');
-        const tcthTargets = tcthStaff?.filter((p: any) => canCoordinateSharedResources(p)) || [];
-        if (tcthTargets.length > 0) {
+        const { data: coordinatorStaff } = await supabase.from('profiles').select('id, role, departments(name, code)');
+        const coordinatorTargets = coordinatorStaff?.filter((p: any) => canCoordinateSharedResources(p)) || [];
+        if (coordinatorTargets.length > 0) {
           const label = deviationMinutes > 0
             ? `muộn ${deviationMinutes} phút so với lịch (đăng ký ${scheduledStart.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })})`
             : `sớm ${Math.abs(deviationMinutes)} phút so với lịch (đăng ký ${scheduledStart.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })})`;
           await supabase.from('notifications').insert(
-            tcthTargets.map((target: any) => ({
+            coordinatorTargets.map((target: any) => ({
               user_id: target.id,
               title: `⚠️ Lệch lịch trình: ${deviationMinutes > 0 ? 'Xuất phát muộn' : 'Xuất phát sớm'}`,
               content: `Tài xế ${profile?.full_name} bắt đầu chuyến "${schedule.title}" ${label}.`,
@@ -176,13 +176,13 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
 
       if (error) throw error;
 
-      // Một lần lấy danh sách TCTH cho cả hai thông báo (quyết toán + lệch giờ)
-      const { data: tcthStaff } = await supabase.from('profiles').select('id, role, departments(name, code)');
-      const tcthTargets = tcthStaff?.filter((p: any) => canCoordinateSharedResources(p)) || [];
+      // Một lần lấy danh sách bộ phận điều phối cho cả hai thông báo (quyết toán + lệch giờ)
+      const { data: coordinatorStaff } = await supabase.from('profiles').select('id, role, departments(name, code)');
+      const coordinatorTargets = coordinatorStaff?.filter((p: any) => canCoordinateSharedResources(p)) || [];
 
-      if (tcthTargets.length > 0) {
+      if (coordinatorTargets.length > 0) {
         await supabase.from('notifications').insert(
-          tcthTargets.map((target: any) => ({
+          coordinatorTargets.map((target: any) => ({
             user_id: target.id,
             title: "Quyết toán hành trình xe công 🚗",
             content: `Tài xế ${profile?.full_name} đã kết thúc chuyến "${schedule.title}". Quãng đường di chuyển thực tế: ${actual_distance} km.`,
@@ -200,12 +200,12 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
       const endDeviationMinutes = Math.round((actualEnd.getTime() - scheduledEnd.getTime()) / 60000);
       const END_THRESHOLD = 30;
 
-      if (Math.abs(endDeviationMinutes) >= END_THRESHOLD && tcthTargets.length > 0) {
+      if (Math.abs(endDeviationMinutes) >= END_THRESHOLD && coordinatorTargets.length > 0) {
         const endLabel = endDeviationMinutes > 0
           ? `kết thúc muộn ${endDeviationMinutes} phút (dự kiến ${scheduledEnd.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })})`
           : `kết thúc sớm ${Math.abs(endDeviationMinutes)} phút (dự kiến ${scheduledEnd.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })})`;
         await supabase.from('notifications').insert(
-          tcthTargets.map((target: any) => ({
+          coordinatorTargets.map((target: any) => ({
             user_id: target.id,
             title: `🚗 Quyết toán xe + Lệch lịch: ${endDeviationMinutes > 0 ? 'Trễ lịch' : 'Về sớm'}`,
             content: `Tài xế ${profile?.full_name} đã ${endLabel} cho chuyến "${schedule.title}". Quãng đường thực tế: ${actual_distance} km.`,
@@ -244,12 +244,12 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
         await supabase.from('vehicles').update({ status: 'maintenance' }).eq('id', schedule.vehicle_id);
       }
 
-      // Thông báo cho TCTH
-      const { data: tcthStaff } = await supabase.from('profiles').select('id, role, departments(name, code)');
-      const tcthTargets = tcthStaff?.filter((p: any) => canCoordinateSharedResources(p)) || [];
-      if (tcthTargets.length > 0) {
+      // Thông báo cho bộ phận điều phối
+      const { data: coordinatorStaff } = await supabase.from('profiles').select('id, role, departments(name, code)');
+      const coordinatorTargets = coordinatorStaff?.filter((p: any) => canCoordinateSharedResources(p)) || [];
+      if (coordinatorTargets.length > 0) {
         await supabase.from('notifications').insert(
-          tcthTargets.map((target: any) => ({
+          coordinatorTargets.map((target: any) => ({
             user_id: target.id,
             title: "⚠️ Sự cố phương tiện 🚗",
             content: `Tài xế ${profile?.full_name} báo cáo sự cố xe ${(schedule.vehicle as any)?.plate_number || ""}: ${issueText}`,
@@ -260,7 +260,7 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
 
       notifySuccess(
         "Đã báo cáo sự cố",
-        "Xe đã chuyển sang trạng thái bảo trì và TCTH đã được thông báo."
+        "Xe đã chuyển sang trạng thái bảo trì và bộ phận điều phối đã được thông báo."
       );
       setIsIssueOpen(false);
       setIssueText("");

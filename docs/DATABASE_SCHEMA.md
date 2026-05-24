@@ -14,7 +14,7 @@
    - 4.4 `tasks` + `task_comments`
    - 4.5 `schedules` + `schedule_participants` + `rooms` + `vehicles`
    - 4.6 `notifications` + `push_subscriptions`
-   - 4.7 `recognitions` + `account_requests`
+   - 4.7 `recognitions` + `out_of_office` + `account_requests`
 5. [Index list đầy đủ](#5-index-list-đầy-đủ)
 6. [Foreign key behavior](#6-foreign-key-behavior-cascade--set-null--restrict)
 7. [Triggers & Functions](#7-triggers--functions)
@@ -103,6 +103,7 @@
 │  notifications (user_id, title, content, type, link, is_read)│
 │  push_subscriptions (user_id, subscription JSONB, device)    │
 │  recognitions (sender_id, receiver_id, content, type)        │
+│  out_of_office (user_id UNIQUE, message, ends_at)            │
 │  account_requests (full_name, email, role, dept, status)     │
 └───────────────────────────────────────────────────────────────┘
 ```
@@ -134,7 +135,7 @@
 |------|--------|-----------|----------|
 | `user_role` | `admin`, `director`, `manager`, `staff`, `secretary`, `hr_officer`, `driver` | `schema.sql §1` (3 giá trị đầu) + `ALTER TYPE ADD VALUE` cho 4 giá trị sau | Vai trò user — quyết định mọi RLS policy |
 | `task_status` | `todo`, `doing`, `done`, `late`, `closed` | `schema.sql §1` (4 đầu) + `ADD VALUE 'closed'` | Status cho `tasks` |
-| `task_priority` | ⚠️ **Chỉ tham chiếu trong schema.sql nhưng không có CREATE TYPE rõ ràng** | (cần verify) | Mức ưu tiên task (`low`/`medium`/`high`/`urgent`) |
+| `task_priority` | `low`, `medium`, `high` | `migration_tasks_revamp.sql` | Mức ưu tiên task — cột `tasks.priority` DEFAULT `'medium'` |
 | `schedule_type` | `meeting`, `trip`, `event`, `leave` | `schema.sql` (3 đầu) + `ADD VALUE 'leave'` ở `fix_security_and_logic_patch.sql` | Loại lịch trình |
 | `schedule_status` | `pending`, `approved`, `rejected`, `in_progress`, `completed` | `schema.sql` | Status lịch trình |
 | `document_status` | `DRAFT`, `PENDING_RECEIPT`, `IN_REVIEW`, `RETURNED`, `COMPLETED` | `migration_handover_module.sql §1` | Status hồ sơ vật lý |
@@ -172,6 +173,11 @@ CREATE TABLE profiles (
     is_department_head      BOOLEAN DEFAULT false,  -- Trưởng phòng chính thức (≠ Phó phòng)
     is_active               BOOLEAN DEFAULT true,   -- false → middleware signOut
     must_change_password    BOOLEAN DEFAULT false,  -- true → banner ép đổi mật khẩu
+    -- Phase 2 (migration_team_phase2.sql) — module Cán bộ
+    extension               TEXT,                -- Số nội bộ (3-6 chữ số)
+    seat_location           TEXT,                -- Vị trí chỗ ngồi vật lý (vd "Tầng 2 - Quầy 5")
+    employee_code           TEXT,                -- Mã nhân viên — nhạy cảm (chỉ self + admin/hr_officer/director xem)
+    birthday_notify_optout  BOOLEAN NOT NULL DEFAULT false, -- Tắt thông báo sinh nhật cho đồng nghiệp
     updated_at              TIMESTAMPTZ DEFAULT NOW()
 );
 ```
@@ -179,13 +185,14 @@ CREATE TABLE profiles (
 - **Tạo tự động**: trigger `handle_new_user()` (xem §7) bắn khi user signup vào `auth.users` → insert row tương ứng với `role = 'staff'`, `is_active = FALSE` (chờ admin duyệt — theo migration mới).
 - **`ad_account UNIQUE`** — đảm bảo 1 tài khoản AD chỉ map 1 profile.
 - **Không có `created_at`** trong bảng này (vì PK đã là FK tới `auth.users.id`, dùng `auth.users.created_at` nếu cần).
+- **Field nhạy cảm** (chỉ self + admin + hr_officer + director xem): `birthday`, `gender`, `ad_account`, `employee_code`. Kiểm tra qua `canViewSensitiveProfileFields(viewer, target)` ở client.
 
 ### 4.2 `departments`
 
 ```sql
 CREATE TABLE departments (
     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    code        TEXT UNIQUE,            -- ⭐ "13602" cho phòng TCTH (dùng trong RLS)
+    code        TEXT UNIQUE,            -- ⭐ "13602" cho phòng điều phối Tổ chức Tổng hợp (dùng trong RLS)
     name        TEXT NOT NULL UNIQUE,
     created_at  TIMESTAMPTZ DEFAULT NOW()
 );
@@ -497,12 +504,31 @@ CREATE TABLE recognitions (
     sender_id       UUID REFERENCES profiles(id),
     receiver_id     UUID REFERENCES profiles(id),
     content         TEXT NOT NULL,
-    type            TEXT DEFAULT 'praise',       -- "praise" | "award" | ...
+    type            TEXT DEFAULT 'praise',       -- 'great_work' | 'team_player' | 'innovation' | 'mentor' | 'praise'
     created_at      TIMESTAMPTZ DEFAULT NOW()
 );
 ```
 
-Chỉ `admin`/`director` mới INSERT được (RLS).
+- **RLS hiện tại (`schema.sql`)**: SELECT mở (`USING true`), INSERT chỉ `admin`/`director`. Module Team (`useRecognitions`) gọi INSERT trực tiếp, nên các role khác (`manager`/`staff`/`secretary`/`hr_officer`) hiện sẽ bị RLS chặn ở DB dù `canRecognize()` ở client cho phép. **TODO**: mở RLS cho `auth.uid() = sender_id AND role != 'driver'` để khớp business intent — chưa có migration làm việc này, code Team đã sẵn sàng.
+- Notification cho receiver được hook `useRecognitions` insert trực tiếp vào `notifications` (không qua trigger DB).
+
+#### `out_of_office` (Phase 2 — vắng mặt tạm thời)
+
+```sql
+CREATE TABLE out_of_office (
+    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id     UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+    message     TEXT NOT NULL,
+    ends_at     TIMESTAMPTZ NOT NULL,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (user_id)                                  -- 1 user — 1 record OOO active
+);
+CREATE INDEX idx_ooo_ends_at ON out_of_office(ends_at);
+```
+
+- **RLS:** `ooo_select_all` — `USING (true)` cho mọi authenticated (để banner OOO hiển thị trên hồ sơ chéo phòng); `ooo_owner_write` — chỉ chính chủ INSERT/UPDATE/DELETE.
+- **Cleanup** — RPC `cleanup_expired_ooo()` xoá row có `ends_at < NOW()`. Gọi mỗi sáng bởi `/api/cron/notifications` (xem §12).
+- Client render banner `.status-warning-bg` trên `ProfileDetailDialog` khi `ends_at > NOW()` (double-check để phòng cron lệch).
 
 #### `account_requests` (yêu cầu cấp tài khoản)
 
@@ -615,11 +641,14 @@ public.get_leave_safe(p_schedule_id)         -- RPC client gọi để lấy det
 
 ```sql
 public.auto_archive_and_cleanup()  -- RETURNS void
+public.cleanup_expired_ooo()       -- RETURNS integer (số row bị xoá)
 ```
 
-- Archive task `done`/`closed` quá 60 ngày (`is_archived = true`).
-- DELETE notifications quá 30 ngày.
-- Được cron Vercel `/api/cron/notifications` gọi hằng ngày 8:00 ICT.
+- `auto_archive_and_cleanup()`:
+  - Archive task `done`/`closed` quá 60 ngày (`is_archived = true`).
+  - DELETE notifications quá 30 ngày.
+- `cleanup_expired_ooo()` (Phase 2): DELETE `out_of_office WHERE ends_at < NOW()` — trả về số row đã xoá.
+- Cả hai được cron Vercel `/api/cron/notifications` gọi hằng ngày 8:00 ICT.
 
 ---
 
@@ -637,6 +666,7 @@ public.auto_archive_and_cleanup()  -- RETURNS void
 | `current_user_department` | — | `UUID` | bất kỳ authenticated | Helper cached cho RLS |
 | `current_user_is_head` | — | `BOOLEAN` | bất kỳ authenticated | Helper cached cho RLS |
 | `auto_archive_and_cleanup` | — | `VOID` | gọi qua cron (service role) | Archive task cũ + xoá notification cũ |
+| `cleanup_expired_ooo` | — | `INTEGER` | gọi qua cron (service role) | Xoá row `out_of_office` đã hết hạn — trả về số row đã xoá |
 
 > **Pattern client gọi RPC** (xem `ARCHITECTURE.md §6.3`):
 >
@@ -767,7 +797,7 @@ Workspace lái xe (`DriverDashboard.tsx`) update trực tiếp các field này k
 
 | Loại bảng | Strategy SELECT | Strategy mutation |
 |-----------|----------------|-------------------|
-| **Public read** (`departments`, `rooms`, `vehicles`, `recognitions`, `task_comments`, `schedule_participants`) | `USING (true)` cho mọi authenticated | Write: theo role (admin/secretary/TCTH) |
+| **Public read** (`departments`, `rooms`, `vehicles`, `recognitions`, `task_comments`, `schedule_participants`) | `USING (true)` cho mọi authenticated | Write: theo role (admin/secretary/bộ phận điều phối) |
 | **Owner-only** (`notifications`, `push_subscriptions`) | `USING (auth.uid() = user_id)` | Tương tự — chỉ owner |
 | **Quan hệ + role** (`documents`, `document_handovers`, `tasks`, `schedules`) | Phối hợp: creator + assignee + participant + role (admin/director/role đặc thù) | INSERT theo role, UPDATE qua RPC |
 | **Admin-only** (`account_requests`, `document_categories`) | `current_user_role() = 'admin'` | Toàn quyền chỉ admin |
@@ -821,8 +851,8 @@ Update tương tự, kết hợp với **trigger `guard_tasks_update`** để ch
 
 ```sql
 -- SELECT: creator + cùng phòng + participant + director public + role đặc thù + driver
--- UPDATE: TCTH + creator + admin/secretary/hr_officer + driver (chuyến của mình)
--- DELETE: cấm khi status = 'in_progress'; còn lại cho creator + admin/sec/hr/director/TCTH
+-- UPDATE: bộ phận điều phối + creator + admin/secretary/hr_officer + driver (chuyến của mình)
+-- DELETE: cấm khi status = 'in_progress'; còn lại cho creator + admin/sec/hr/director/điều phối
 ```
 
 Riêng nội dung đơn nghỉ phép (`type='leave'`): payload có `description`/`title` chỉ trả về cho user pass check `can_view_leave_detail()`:
@@ -842,7 +872,7 @@ USING (
                                      'hr_officer', 'secretary')   -- (2) Role có toàn quyền
   OR department_id = public.current_user_department()       -- (3) Cùng phòng
   OR role = 'director'                                      -- (4) BGĐ public toàn cb
-  OR role = 'driver'                                        -- (5) Driver public (để TCTH gán)
+  OR role = 'driver'                                        -- (5) Driver public (để bộ phận điều phối gán)
   OR EXISTS (                                                -- (6) Cùng tham gia ≥ 1 schedule
     SELECT 1 FROM schedule_participants sp1
     JOIN schedule_participants sp2 ON sp1.schedule_id = sp2.schedule_id
@@ -884,7 +914,7 @@ Bảo mật bucket `documents`: dựa vào path có UUID khó đoán + intranet 
 
 | Job | Lịch | Nơi chạy | Tác dụng |
 |-----|------|----------|----------|
-| `/api/cron/notifications` | `0 8 * * *` daily 8:00 ICT (`vercel.json`) | Vercel cron, dùng `SUPABASE_SERVICE_ROLE_KEY` | Gọi `auto_archive_and_cleanup()` + quét task quá hạn → notification + chúc mừng sinh nhật. Bảo vệ bằng `CRON_SECRET` header |
+| `/api/cron/notifications` | `0 8 * * *` daily 8:00 ICT (`vercel.json`) | Vercel cron, dùng `SUPABASE_SERVICE_ROLE_KEY` | (1) `auto_archive_and_cleanup()` + quét task quá hạn → notification. (2) Chúc mừng sinh nhật **toàn chi nhánh** (trừ driver / `birthday_notify_optout=true` / chính chủ). (3) Anniversary 5/10/15/20 năm gắn bó. (4) `cleanup_expired_ooo()`. Bảo vệ bằng `CRON_SECRET` header |
 | Edge `cleanup-document-images` | `0 19 * * *` UTC = 02:00 ICT | Supabase Edge (Deno) | Quét `documents` `status=COMPLETED AND completed_at < NOW() - 30 days` → xoá file storage + clear URLs. Giới hạn 200 hồ sơ/lượt |
 | Edge `push-notification` | Trigger qua DB webhook (không phải cron) | Supabase Edge | INSERT `notifications` → đọc `push_subscriptions` → fire Web Push qua VAPID |
 
@@ -1000,6 +1030,9 @@ NOTIFY pgrst, 'reload schema';
 10. `supabase/migration_reset_passwords.sql` — RPC reset password + thêm `must_change_password`.
 11. `supabase/migration_drop_kpi_module.sql` — dọn module KPI cũ (đã loại bỏ).
 12. `supabase/fix_schedule_notifications_conflicts.sql` — refresh `check_schedule_participant_conflicts` RPC.
+13. `supabase/migration_schedule_rejection.sql` — thêm `rejection_reason/rejected_by/rejected_at/change_reason` vào `schedules`.
+14. `supabase/migration_tasks_analytics_tcth_only.sql` — `tasks_analytics()` RPC scope toàn nhánh chỉ cho phòng điều phối (code `13602`).
+15. `supabase/migration_team_phase2.sql` — module Cán bộ Phase 2: thêm `extension/seat_location/employee_code/birthday_notify_optout` vào `profiles` + tạo bảng `out_of_office` + RPC `cleanup_expired_ooo`.
 
 Sau migration cuối: `NOTIFY pgrst, 'reload schema';`
 
@@ -1041,12 +1074,11 @@ npx supabase gen types typescript --project-id <ref> > src/types/database.types.
 | Tài liệu | Nội dung |
 |----------|----------|
 | [`README.md`](README.md) | Setup, env vars, deploy, troubleshooting |
-| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Quy chuẩn code, đặc biệt §6 (Supabase), §6.5 (Realtime), §6.8 (transit state) |
-| [`docs/TECHNICAL_RULES.md`](docs/TECHNICAL_RULES.md) | UI/UX + RLS business rules |
-| [`PRODUCT_OVERVIEW.md`](PRODUCT_OVERVIEW.md) | Bối cảnh + nghiệp vụ + luồng module |
+| [`docs/PRODUCT_OVERVIEW.md`](PRODUCT_OVERVIEW.md) | Bối cảnh + nghiệp vụ + luồng module |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Quy chuẩn code, đặc biệt §6 (Supabase), §6.5 (Realtime), §6.8 (transit state); cũng chứa UI/UX + RLS business rules đã gộp từ `TECHNICAL_RULES.md` cũ |
 | [`schema.sql`](schema.sql) | Snapshot DB |
 | [`supabase/migration_handover_module.sql`](supabase/migration_handover_module.sql) | ⭐ Mẫu chuẩn migration (RLS + RPC + Trigger) |
 
 ---
 
-**Phiên bản:** 1.1 — bổ sung schema chi tiết từng bảng, enum types, index list, RPC list đầy đủ, FK behavior, cached helpers, sample queries, backup tips.
+**Phiên bản:** 1.2 — 2026-05-24 (sync mã nguồn: ghi chú RLS `recognitions` chưa khớp `canRecognize`, gỡ tham chiếu `TECHNICAL_RULES.md`).

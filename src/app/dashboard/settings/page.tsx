@@ -1,167 +1,89 @@
 'use client'
 
-import React, { useState } from "react";
-import { 
-  Bell, 
-  Shield, 
-  Lock, 
-  Smartphone,
-  ChevronRight,
-  History,
-  Loader2,
-  Mail,
-  Zap,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
+import React from "react";
+import { Bell, Lock, ChevronRight, ShieldAlert } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { notifyError, notifySuccess } from "@/lib/notify";
 import { usePushSubscription } from "@/hooks/use-push-subscription";
+import { createClient } from "@/utils/supabase/client";
+import PageHeader from "@/components/layout/PageHeader";
+import ChangePasswordDialog from "./_components/ChangePasswordDialog";
 
 export default function SettingsPage() {
-  const { subscription, permission, subscribe, unsubscribe } = usePushSubscription();
-  const [isSaving, setIsSaving] = useState(false);
-  const [notifications, setNotifications] = useState({
-    email: true,
-    deadline: true
-  });
+  const { subscription, subscribe, unsubscribe } = usePushSubscription();
+  const [profileId, setProfileId] = React.useState<string | undefined>();
+  const [mustChange, setMustChange] = React.useState(false);
+  const [pwOpen, setPwOpen] = React.useState(false);
+  const supabase = React.useMemo(() => createClient(), []);
 
-  const handleSave = () => {
-    setIsSaving(true);
-    setTimeout(() => {
-      setIsSaving(false);
-      notifySuccess("Đã lưu cài đặt");
-    }, 1000);
-  };
+  React.useEffect(() => {
+    void (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      setProfileId(user.id);
+      const { data } = await supabase.from('profiles').select('must_change_password').eq('id', user.id).single();
+      setMustChange(!!data?.must_change_password);
+    })();
+  }, [supabase]);
 
-  const handleNotImplemented = (featureName: string) => {
-    notifySuccess(
-      "Chức năng đang phát triển",
-      `Tính năng ${featureName} sẽ sớm ra mắt trong bản cập nhật tới.`
-    );
+  const togglePush = async (v: boolean) => {
+    if (v) {
+      const sub = await subscribe();
+      if (sub) notifySuccess("Đã bật thông báo đẩy");
+      else notifyError(null, "Hãy 'Thêm vào màn hình chính' và cấp quyền thông báo trước");
+    } else {
+      await unsubscribe();
+      notifySuccess("Đã tắt thông báo đẩy");
+    }
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-6 md:space-y-10 animate-fade-in-up pb-20">
-      {/* Header chuẩn theo MASTER.md */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pt-4 sm:pt-0">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-semibold text-slate-900">Cài đặt hệ thống</h1>
-          <p className="text-[13px] text-slate-500 font-medium">Cấu hình trải nghiệm cá nhân và bảo mật tài khoản</p>
+    <div className="page-container space-y-6 md:space-y-8 animate-fade-in-up">
+      <PageHeader title="Cài đặt" description="Thông báo và bảo mật tài khoản" />
+
+      <section className="premium-card item-stack">
+        <h4 className="heading-card flex items-center gap-2">
+          <Bell className="icon-sm text-slate-400" /> Thông báo
+        </h4>
+        <div className="flex items-center justify-between min-h-11">
+          <div className="min-w-0 item-stack !gap-1">
+            <p className="text-label !text-slate-900 font-semibold">Thông báo đẩy</p>
+            <p className="text-meta">Nhận thông báo tức thời trên thiết bị</p>
+          </div>
+          <Switch checked={!!subscription} onCheckedChange={togglePush} />
         </div>
-        <Button 
-          onClick={handleSave} 
-          disabled={isSaving} 
-          className="rounded-xl bg-slate-900 px-5 font-medium text-white shadow-sm transition-all hover:bg-slate-800 active:scale-95"
+      </section>
+
+      <section className="premium-card item-stack">
+        <h4 className="heading-card flex items-center gap-2">
+          <Lock className="icon-sm text-slate-400" /> Bảo mật
+        </h4>
+        <button
+          type="button"
+          onClick={() => setPwOpen(true)}
+          className="flex items-center justify-between min-h-11 -mx-2 px-2 rounded-xl hover:bg-slate-50 active:bg-slate-100 transition-colors text-left"
         >
-          {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-          Lưu thay đổi
-        </Button>
-      </div>
-
-      <div className="grid grid-cols-1 gap-6 md:gap-10">
-        {/* Notifications Section */}
-        <div className="space-y-6">
-          <h3 className="text-sm font-medium text-slate-500 flex items-center gap-2 truncate">
-            <Bell className="w-4 h-4 text-slate-400 shrink-0" /> Nhận thông báo
-          </h3>
-          <div className="premium-card p-0 border-none overflow-hidden divide-y divide-slate-100">
-            {/* Thông báo tức thời */}
-            <div className="p-6 flex items-center justify-between group hover:bg-slate-50/50 transition-all">
-              <div className="flex items-center gap-4 flex-1 min-w-0 pr-4">
-                <div className="p-3 bg-amber-50 rounded-xl text-amber-600 shrink-0"><Zap className="w-5 h-5" /></div>
-                <div className="space-y-1">
-                  <p className="text-[15px] font-bold text-slate-900">Thông báo tức thời (Push Notifications)</p>
-                  <p className="text-[13px] text-slate-500 font-medium">Thông báo nổi trên thiết bị khi có công việc mới hoặc cập nhật trạng thái</p>
-                </div>
-              </div>
-              <Switch 
-                checked={!!subscription} 
-                onCheckedChange={async (v) => {
-                  if (v) {
-                    const sub = await subscribe();
-                    if (sub) {
-                      notifySuccess(
-                        "Đã bật thông báo đẩy",
-                        "Bạn sẽ nhận được tin nhắn tức thời từ hệ thống."
-                      );
-                    } else {
-                      notifyError(
-                        null,
-                        "Vui lòng đảm bảo bạn đã 'Thêm vào màn hình chính' và cấp quyền thông báo cho ứng dụng."
-                      );
-                    }
-                  } else {
-                    await unsubscribe();
-                    notifySuccess("Đã tắt thông báo đẩy");
-                  }
-                }} 
-              />
-            </div>
-
-            {/* Báo cáo Email */}
-            <div className="p-6 flex items-center justify-between group hover:bg-slate-50/50 transition-all">
-              <div className="flex items-center gap-4 flex-1 min-w-0 pr-4">
-                <div className="p-3 bg-slate-50 rounded-xl text-slate-500 shrink-0"><Mail className="w-5 h-5" /></div>
-                <div className="space-y-1">
-                  <p className="text-[15px] font-bold text-slate-900">Báo cáo Email</p>
-                  <p className="text-[13px] text-slate-500 font-medium">Tóm tắt kết quả xử lý công việc và biến động vào cuối mỗi ngày</p>
-                </div>
-              </div>
-              <Switch checked={notifications.email} onCheckedChange={(v) => setNotifications({...notifications, email: v})} />
-            </div>
+          <div className="min-w-0 item-stack !gap-1">
+            <p className="text-label !text-slate-900 font-semibold flex items-center gap-2">
+              Đổi mật khẩu
+              {mustChange && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 text-[11px] font-bold border border-amber-200">
+                  <ShieldAlert className="h-3 w-3" /> Cần đổi
+                </span>
+              )}
+            </p>
+            <p className="text-meta">Đặt mật khẩu cá nhân mới</p>
           </div>
-        </div>
+          <ChevronRight className="icon-sm text-slate-300 shrink-0" />
+        </button>
+      </section>
 
-        {/* Security Section */}
-        <div className="space-y-6">
-          <h3 className="text-sm font-medium text-slate-500 flex items-center gap-2 truncate">
-            <Shield className="w-4 h-4 text-slate-400 shrink-0" /> Bảo mật & Đăng nhập
-          </h3>
-          <div className="premium-card p-0 border-none overflow-hidden divide-y divide-slate-100">
-            {/* Thay đổi mật khẩu */}
-            <div 
-              className="p-6 flex items-center justify-between group hover:bg-slate-50/50 transition-all cursor-pointer"
-              onClick={() => handleNotImplemented('Đổi mật khẩu')}
-            >
-              <div className="flex items-center gap-4 flex-1 min-w-0 pr-4">
-                <div className="p-3 bg-slate-100 rounded-xl text-slate-600 shrink-0"><Lock className="w-5 h-5" /></div>
-                <div className="space-y-1">
-                  <p className="text-[15px] font-bold text-slate-900">Thay đổi mật khẩu</p>
-                  <p className="text-[13px] text-slate-500 font-medium">Cập nhật mật khẩu định kỳ (đang phát triển)</p>
-                </div>
-              </div>
-              <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-slate-600 transition-all shrink-0" />
-            </div>
-
-            {/* 2FA */}
-            <div className="p-6 flex items-center justify-between group hover:bg-slate-50/50 transition-all opacity-60">
-              <div className="flex items-center gap-4 flex-1 min-w-0 pr-4">
-                <div className="p-3 bg-slate-50 rounded-xl text-slate-400 shrink-0"><Smartphone className="w-5 h-5" /></div>
-                <div className="space-y-1">
-                  <p className="text-[15px] font-bold text-slate-900">Xác thực 2 bước (2FA)</p>
-                  <p className="text-[13px] text-slate-500 font-medium">Sắp ra mắt: Bảo vệ tài khoản bằng mã OTP</p>
-                </div>
-              </div>
-              <Switch disabled checked={false} />
-            </div>
-
-            {/* Lịch sử đăng nhập */}
-            <div 
-              className="p-6 flex items-center justify-between group hover:bg-slate-50/50 transition-all cursor-pointer"
-              onClick={() => handleNotImplemented('Lịch sử đăng nhập')}
-            >
-              <div className="flex items-center gap-4 flex-1 min-w-0 pr-4">
-                <div className="p-3 bg-slate-50 rounded-xl text-slate-500 shrink-0"><History className="w-5 h-5" /></div>
-                <div className="space-y-1">
-                  <p className="text-[15px] font-bold text-slate-900">Lịch sử đăng nhập</p>
-                  <p className="text-[13px] text-slate-500 font-medium">Kiểm tra các phiên bản thiết bị đã từng truy cập (đang phát triển)</p>
-                </div>
-              </div>
-              <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-slate-600 transition-all shrink-0" />
-            </div>
-          </div>
-        </div>
-      </div>
+      <ChangePasswordDialog
+        open={pwOpen}
+        onOpenChange={setPwOpen}
+        profileId={profileId}
+        mustChange={mustChange}
+      />
     </div>
   );
 }

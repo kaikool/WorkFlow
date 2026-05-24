@@ -1,4 +1,4 @@
-export function isTcthDepartment(profile: any): boolean {
+export function isCoordinatorDepartment(profile: any): boolean {
   if (!profile) return false;
   const depts = profile.departments;
   if (!depts) return false;
@@ -11,7 +11,7 @@ export function canCoordinateSharedResources(profile: any): boolean {
 
   if (profile.role === 'admin' || profile.role === 'secretary') return true;
 
-  return profile.role === 'manager' && isTcthDepartment(profile);
+  return profile.role === 'manager' && isCoordinatorDepartment(profile);
 }
 
 export function canManageResourceCatalog(profile: any): boolean {
@@ -32,6 +32,37 @@ export function canAccessPeopleDirectory(profile: any): boolean {
   if (!profile) return false;
 
   return ['admin', 'director', 'hr_officer'].includes(profile.role) || profile.role === 'manager';
+}
+
+// Xem danh bạ — mở rộng cho staff/secretary/hr_officer/manager/director/admin.
+// Driver vẫn chặn vì không có nhu cầu nghiệp vụ (workspace riêng).
+export function canViewPeopleDirectory(profile: any): boolean {
+  return !!profile && profile.role !== 'driver';
+}
+
+// Xem field nhạy cảm trên hồ sơ người khác (birthday, ad_account, employee_code, gender).
+// Self luôn xem được; ngoài ra chỉ admin/hr_officer/director.
+export function canViewSensitiveProfileFields(viewer: any, target: any): boolean {
+  if (!viewer || !target) return false;
+  if (viewer.id === target.id) return true;
+  return ['admin', 'hr_officer', 'director'].includes(viewer.role);
+}
+
+// Sửa hồ sơ — self sửa field hạn chế; admin/hr_officer sửa full.
+export function canEditProfile(viewer: any, target: any): boolean {
+  if (!viewer || !target) return false;
+  if (viewer.id === target.id) return true;
+  return ['admin', 'hr_officer'].includes(viewer.role);
+}
+
+// Gửi ghi nhận đồng nghiệp (recognitions) — mọi role active trừ driver.
+export function canRecognize(profile: any): boolean {
+  return !!profile && profile.role !== 'driver';
+}
+
+// Widget analytics nhân sự (sắp sinh nhật, sắp nghỉ, anniversary) — bộ phận điều phối + HR.
+export function canViewPeopleAnalyticsWidget(profile: any): boolean {
+  return canCoordinateSharedResources(profile) || profile?.role === 'hr_officer';
 }
 
 export function canApproveLeave(profile: any, leave?: any): boolean {
@@ -86,7 +117,7 @@ export function canCreateDocument(profile: any): boolean {
 // Module Công việc (Tasks) -----------------------------------------------------
 
 // Phòng đầu mối — code đặc biệt được phép yêu cầu báo cáo cho phòng khác,
-// kể cả cán bộ staff. Theo nghiệp vụ chi nhánh (TCTH + 4 phòng đầu mối khác).
+// kể cả cán bộ staff. Theo nghiệp vụ chi nhánh (phòng điều phối + 4 phòng đầu mối khác).
 const HUB_DEPARTMENT_CODES = ['13618', '13602', '13605', '13609', '13603'];
 
 // Trích code phòng từ profile — Supabase có thể trả `departments` dưới dạng
@@ -170,19 +201,19 @@ export function canCreateRecurringTemplate(profile: any): boolean {
 
 // Xem Analytics module Tasks.
 //   • Admin/Director: toàn nhánh.
-//   • Manager (any): vào được, scope toàn nhánh nếu TCTH, phòng mình nếu khác.
-//   • Staff TCTH (13602): toàn nhánh.
+//   • Manager (any): vào được, scope toàn nhánh nếu phòng điều phối, phòng mình nếu khác.
+//   • Staff phòng điều phối (Tổ chức Tổng hợp — code 13602): toàn nhánh.
 //   • Staff khác: KHÔNG xem được.
 export function canViewTaskAnalytics(profile: any): boolean {
   if (!profile) return false;
   if (['admin', 'director', 'manager'].includes(profile.role)) return true;
-  return profile.role === 'staff' && isTcthDepartment(profile);
+  return profile.role === 'staff' && isCoordinatorDepartment(profile);
 }
 
 // Xem Analytics ở phạm vi TOÀN NHÁNH (cho filter dept dropdown).
-// Manager non-TCTH bị giới hạn phòng mình.
+// Manager ngoài phòng điều phối bị giới hạn phòng mình.
 export function canViewBranchAnalytics(profile: any): boolean {
   if (!profile) return false;
   if (['admin', 'director'].includes(profile.role)) return true;
-  return isTcthDepartment(profile);
+  return isCoordinatorDepartment(profile);
 }

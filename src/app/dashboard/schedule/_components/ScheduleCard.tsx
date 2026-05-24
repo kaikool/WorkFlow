@@ -20,7 +20,7 @@ interface ScheduleCardProps {
 }
 
 export default function ScheduleCard({ item, profile, onSelect, onStatusUpdate }: ScheduleCardProps) {
-  const isTCTH = canCoordinateSharedResources(profile);
+  const isCoordinator = canCoordinateSharedResources(profile);
   const [rejectOpen, setRejectOpen] = React.useState(false);
   const type = typeLabels[item.type] || typeLabels.meeting;
   const status = statusLabels[item.status] ?? { label: item.status ?? "Không rõ", color: "bg-slate-100 text-slate-500" };
@@ -132,7 +132,7 @@ export default function ScheduleCard({ item, profile, onSelect, onStatusUpdate }
               )}
             </div>
 
-            {isTCTH && item.status === 'pending' && (
+            {isCoordinator && item.status === 'pending' && (
               <div className="flex gap-2 pt-4 border-t border-slate-50 relative z-10">
                 <Button size="sm" disabled={item.use_vehicle && !item.vehicle_id}
                   onClick={(e) => { e.stopPropagation(); onStatusUpdate(item.id, 'approved'); }}

@@ -337,7 +337,7 @@ export function useSchedule() {
     }
   };
 
-  // Creator đẩy lại lịch đã bị từ chối — kèm "Lý do thay đổi" gửi cho TCTH.
+  // Creator đẩy lại lịch đã bị từ chối — kèm "Lý do thay đổi" gửi cho bộ phận điều phối.
   const handleResubmitSchedule = async (id: string, changeReason: string, editedPayload: any) => {
     try {
       const schedule = schedules.find(s => s.id === id);
@@ -357,7 +357,7 @@ export function useSchedule() {
         findParticipantConflicts, sendNotifications, setIsDetailOpen, fetchData,
       });
 
-      // Fan-out notification cho danh sách approver (admin + secretary + manager TCTH)
+      // Fan-out notification cho danh sách approver (admin + secretary + manager phòng điều phối)
       const approverIds = allProfiles
         .filter((p: any) => {
           if (p.role === 'admin' || p.role === 'secretary') return true;

@@ -47,7 +47,7 @@ export default function CalendarView(props: CalendarViewProps) {
     onSelectSchedule, onStatusUpdate
   } = props;
 
-  const isTCTH = canCoordinateSharedResources(profile);
+  const isCoordinator = canCoordinateSharedResources(profile);
 
   const [showAllSchedules, setShowAllSchedules] = useState(false);
   const DEFAULT_LIMIT = 4;
@@ -122,7 +122,7 @@ export default function CalendarView(props: CalendarViewProps) {
         <TabsList className="grid grid-cols-3 min-h-9">
           <TabsTrigger value="all" className="rounded-lg px-2 text-[12px] font-medium md:text-[14px] relative">
             <span className="truncate">Chi nhánh</span>
-            {isTCTH && pendingVehicleCount > 0 && (
+            {isCoordinator && pendingVehicleCount > 0 && (
               <Badge className="ml-1.5 h-5 min-w-5 shrink-0 justify-center rounded-full border-none bg-amber-600 px-1.5 text-[10px] font-bold leading-none text-white tabular-nums">
                 {pendingVehicleCount > 9 ? "9+" : pendingVehicleCount}
               </Badge>
@@ -144,7 +144,7 @@ export default function CalendarView(props: CalendarViewProps) {
 
       {/* TAB: Toàn chi nhánh — nhúng điều phối tài nguyên nếu user có quyền.
           Mặc định ĐÓNG để ưu tiên lịch trình. Click vào header để mở rộng. */}
-      {filterType === 'all' && isTCTH && (
+      {filterType === 'all' && isCoordinator && (
         <Collapsible defaultOpen={false} className="space-y-3">
           <CollapsibleTrigger
             className={cn(

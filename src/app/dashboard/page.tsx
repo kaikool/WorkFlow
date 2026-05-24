@@ -3,7 +3,7 @@
 // Dashboard page — chỉ là dispatcher 4 view:
 //   - DriverDashboardView (lái xe)
 //   - HRDashboardView (nhân sự)
-//   - TCTHDashboardView (TCTH manager — không phải admin/director)
+//   - CoordinatorDashboardView (bộ phận điều phối tài nguyên chi nhánh)
 //   - DefaultDashboardView (admin/director/manager/staff thường — 90% người dùng)
 // Default view gọi RPC dashboard_summary() qua hook nội bộ.
 // Legacy schedule data chỉ fetch khi role thực sự cần — KHÔNG còn chạy cho default user.
@@ -21,7 +21,7 @@ import {
 import { fetchCurrentProfile } from '@/lib/fetch-profile';
 import DriverDashboardView from './_components/DriverDashboardView';
 import HRDashboardView from './_components/HRDashboardView';
-import TCTHDashboardView from './_components/TCTHDashboardView';
+import CoordinatorDashboardView from './_components/CoordinatorDashboardView';
 import DefaultDashboardView from './_components/DefaultDashboardView';
 import { StatsSkeleton, ListSkeleton } from '@/components/ui/list-skeleton';
 
@@ -48,7 +48,7 @@ export default function DashboardPage() {
   const [profile, setProfile] = useState<any>(null);
   const [profileLoading, setProfileLoading] = useState(true);
 
-  // Legacy state — chỉ dùng cho Driver/HR/TCTH.
+  // Legacy state — chỉ dùng cho Driver/HR/Coordinator.
   const [scheduleData, setScheduleData] = useState<LegacyScheduleState>(EMPTY_SCHEDULE);
   const [legacyLoading, setLegacyLoading] = useState(false);
   const [selectedSchedule, setSelectedSchedule] = useState<any>(null);
@@ -338,7 +338,7 @@ export default function DashboardPage() {
       );
     }
     return (
-      <TCTHDashboardView
+      <CoordinatorDashboardView
         profile={profile}
         schedules={scheduleData.schedules}
         vehicles={scheduleData.vehicles}
