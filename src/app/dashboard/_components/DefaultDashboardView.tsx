@@ -3,17 +3,21 @@
 // DefaultDashboardView — view chính cho admin/director/manager/staff.
 // Gọi 1 RPC dashboard_summary() qua useDashboardSummary().
 // 3 KPI card + grid 12 col (8 today list / 4 pending docs).
+// Cuối trang: widget "Nhịp đập nhân sự" — sắp sinh nhật/anniversary/đang nghỉ.
 
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight, Sparkles, ListChecks, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { StatsSkeleton, ListSkeleton } from '@/components/ui/list-skeleton';
+import { createClient } from '@/utils/supabase/client';
+import { useAppData } from '@/hooks/use-app-data';
 import { useDashboardSummary } from '../_hooks/useDashboardSummary';
 import TodayTaskList from './TodayTaskList';
 import PendingDocsWidget from './PendingDocsWidget';
+import PeopleAnalyticsWidget from '../team/_components/PeopleAnalyticsWidget';
 
 const INSPIRATIONAL_QUOTES = [
   'Hôm nay là cơ hội để bạn bứt phá chỉ tiêu kinh doanh.',
@@ -27,6 +31,27 @@ const INSPIRATIONAL_QUOTES = [
 
 export default function DefaultDashboardView({ profile }: { profile: any }) {
   const { loading, data } = useDashboardSummary();
+  const { profiles } = useAppData();
+  const supabase = useMemo(() => createClient(), []);
+  // Schedules type='leave' hôm nay — phục vụ cột "Đang nghỉ phép" của widget nhịp đập.
+  // Query nhẹ (filter status approved/in_progress, lte/gte hôm nay), không cần realtime.
+  const [todayLeaves, setTodayLeaves] = useState<any[]>([]);
+
+  useEffect(() => {
+    const todayIso = new Date().toISOString();
+    let active = true;
+    (async () => {
+      const { data } = await supabase
+        .from('schedules')
+        .select('id, type, status, start_time, end_time, created_by')
+        .eq('type', 'leave')
+        .in('status', ['approved', 'in_progress'])
+        .lte('start_time', todayIso)
+        .gte('end_time', todayIso);
+      if (active && data) setTodayLeaves(data);
+    })();
+    return () => { active = false; };
+  }, [supabase]);
 
   // Quote ổn định theo session — không re-roll khi component re-render do realtime.
   const quote = useMemo(
@@ -143,6 +168,9 @@ export default function DefaultDashboardView({ profile }: { profile: any }) {
           <PendingDocsWidget docs={pending_docs} />
         </div>
       </div>
+
+      {/* Nhịp đập nhân sự — sinh nhật/anniversary/đang nghỉ. Tự ẩn khi không có dữ liệu. */}
+      <PeopleAnalyticsWidget members={profiles} todaySchedules={todayLeaves} />
     </div>
   );
 }

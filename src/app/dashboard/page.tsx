@@ -69,10 +69,13 @@ export default function DashboardPage() {
       ? ((currentMinutes - startLimit) / duration) * 100
       : -1;
 
+  // Legacy schedule (timeline + pending queue) chỉ cần cho Driver/HR/Coordinator view.
+  // CoordinatorDashboardView giờ chỉ dành cho secretary (lễ tân) — admin/director/manager
+  // (kể cả TCTH) đều dùng DefaultDashboardView; coordinator queue thao tác qua /schedule.
   const needsLegacySchedule = profile
     ? canUseDriverWorkspace(profile)
       || canUseHumanResourcesWorkspace(profile)
-      || (canCoordinateSharedResources(profile) && profile.role !== 'admin' && profile.role !== 'director')
+      || profile.role === 'secretary'
     : false;
 
   // Step 1: profile lấy từ AppDataProvider — không còn fetch riêng tại đây.
@@ -312,10 +315,10 @@ export default function DashboardPage() {
     );
   }
 
-  const isResourcesManagerDashboard =
-    canCoordinateSharedResources(profile)
-    && profile?.role !== 'admin'
-    && profile?.role !== 'director';
+  // CoordinatorDashboardView (timeline + pending queue duyệt xe/phòng) chỉ dành cho
+  // secretary (lễ tân). Manager mọi phòng đều dùng DefaultDashboardView — tránh trải
+  // nghiệm khác nhau giữa TP TCTH vs TP phòng khác (gây khó training).
+  const isResourcesManagerDashboard = profile?.role === 'secretary';
   if (isResourcesManagerDashboard) {
     if (legacyLoading) {
       return (
