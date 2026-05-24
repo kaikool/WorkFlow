@@ -3,14 +3,13 @@
 // Dialog phân công lại NV (Manager+ giao báo cáo cấp phòng cho NV cụ thể).
 // Dùng AssigneePicker collapsible — đồng bộ pattern với module Hồ sơ.
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Loader2, Users } from 'lucide-react';
-import { createClient } from '@/utils/supabase/client';
-import { fetchCurrentProfile } from '@/lib/fetch-profile';
+import { useAppData } from '@/hooks/use-app-data';
 import { notifyError, notifySuccess, notifyValidation } from '@/lib/notify';
 import { delegateTask } from '../_lib/taskActions';
 import { fetchAssignableProfiles } from '../_lib/fetchTasks';
@@ -36,28 +35,24 @@ interface Props {
 }
 
 export function TaskDelegateDialog({ task, currentAssigneeIds, onClose, onChanged }: Props) {
-  const supabase = useMemo(() => createClient(), []);
+  const { currentProfile } = useAppData();
   const [profiles, setProfiles] = useState<ProfileItem[]>([]);
-  const [currentProfile, setCurrentProfile] = useState<any>(null);
   const [selected, setSelected] = useState<string[]>(currentAssigneeIds);
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
 
   useEffect(() => {
+    if (!currentProfile) return;
+    setFetching(true);
     (async () => {
-      setFetching(true);
-      const p = await fetchCurrentProfile(supabase);
-      if (!p) { setFetching(false); return; }
-      setCurrentProfile(p);
-
       if (task.department_id) {
         const list = await fetchAssignableProfiles({
           context: 'delegate',
           caller: {
-            id: p.id,
-            role: p.role,
-            department_id: p.department_id,
-            department_code: getProfileDepartmentCode(p),
+            id: currentProfile.id,
+            role: currentProfile.role ?? null,
+            department_id: currentProfile.department_id ?? null,
+            department_code: getProfileDepartmentCode(currentProfile),
           },
           taskDepartmentId: task.department_id,
         });
@@ -65,7 +60,7 @@ export function TaskDelegateDialog({ task, currentAssigneeIds, onClose, onChange
       }
       setFetching(false);
     })();
-  }, [supabase, task.department_id]);
+  }, [currentProfile?.id, task.department_id]);
 
   const handleSubmit = async () => {
     if (selected.length === 0) {

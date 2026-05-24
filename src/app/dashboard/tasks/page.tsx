@@ -14,8 +14,7 @@ import PageHeader from '@/components/layout/PageHeader';
 import { ListSkeleton } from '@/components/ui/list-skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 
-import { createClient } from '@/utils/supabase/client';
-import { fetchCurrentProfile } from '@/lib/fetch-profile';
+import { useAppData } from '@/hooks/use-app-data';
 import { useTasksDashboard } from './_hooks/useTasksDashboard';
 import { useOptimisticAction } from './_hooks/useOptimisticAction';
 import { TaskListSection } from './_components/TaskListSection';
@@ -37,7 +36,6 @@ function tabToScope(tab: TabValue): TaskScope {
 }
 
 function TasksContent() {
-  const supabase = useMemo(() => createClient(), []);
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -50,16 +48,16 @@ function TasksContent() {
   const [tab, setTab] = useState<TabValue>('mine');
   const [openBatchId, setOpenBatchId] = useState<string | null>(null);
 
+  const { currentProfile } = useAppData();
+
+  // Chọn tab mặc định theo role — chạy 1 lần khi currentProfile sẵn sàng
   useEffect(() => {
-    (async () => {
-      const p = await fetchCurrentProfile(supabase);
-      if (!p) return;
-      setProfile(p);
-      if (p.role === 'admin' || p.role === 'director') setTab('branch');
-      else if (p.role === 'manager') setTab('inbox');
-      else setTab('mine');
-    })();
-  }, [supabase]);
+    if (!currentProfile) return;
+    setProfile(currentProfile);
+    if (currentProfile.role === 'admin' || currentProfile.role === 'director') setTab('branch');
+    else if (currentProfile.role === 'manager') setTab('inbox');
+    else setTab('mine');
+  }, [currentProfile?.id]);
 
   const scope = tabToScope(tab);
   const dash = useTasksDashboard({ scope, enabled: !!profile });

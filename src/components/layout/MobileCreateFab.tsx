@@ -1,10 +1,9 @@
 'use client'
 
-import React, { useEffect, useMemo, useState } from "react";
+import React from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
-import { createClient } from "@/utils/supabase/client";
-import { fetchCurrentProfile } from "@/lib/fetch-profile";
+import { useAppData } from "@/hooks/use-app-data";
 
 // Floating Action Button (FAB) cho tạo mới, contextual theo route.
 // Theo HIG: chỉ hiển thị mobile (lg:hidden), nằm trên mobile bottom nav,
@@ -28,27 +27,14 @@ const CREATE_ACTIONS: Record<string, CreateAction> = {
 export default function MobileCreateFab() {
   const pathname = usePathname();
   const router = useRouter();
-  const supabase = useMemo(() => createClient(), []);
-  const [role, setRole] = useState<string | null>(null);
-  const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      const p = await fetchCurrentProfile(supabase);
-      if (!alive) return;
-      setRole(p?.role ?? null);
-      setReady(true);
-    })();
-    return () => { alive = false; };
-  }, [supabase]);
+  const { currentProfile, hydrating } = useAppData();
 
   const action = CREATE_ACTIONS[pathname];
   if (!action) return null;
   // Chờ load profile xong rồi mới quyết định — tránh flash FAB cho admin.
-  if (!ready) return null;
+  if (hydrating && !currentProfile) return null;
   // Admin = quản trị hệ thống, không tham gia tạo resource chi nhánh.
-  if (role === 'admin') return null;
+  if (currentProfile?.role === 'admin') return null;
 
   const handleClick = () => {
     if (action.kind === 'link') {

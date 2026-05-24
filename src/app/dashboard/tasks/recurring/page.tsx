@@ -8,8 +8,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import PageHeader from '@/components/layout/PageHeader';
 import { ListSkeleton } from '@/components/ui/list-skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
-import { createClient } from '@/utils/supabase/client';
-import { fetchCurrentProfile } from '@/lib/fetch-profile';
+import { useAppData } from '@/hooks/use-app-data';
 import { canCreateRecurringTemplate, canAssignTaskToOthers, canRequestReport } from '@/lib/permissions';
 import { useRecurringTemplates } from '../_hooks/useRecurringTemplates';
 import { RecurringTemplateCard } from '../_components/RecurringTemplateCard';
@@ -19,21 +18,17 @@ import type { RecurringTemplate } from '../_lib/recurringHelpers';
 type TypeFilter = 'all' | 'task' | 'report';
 
 export default function RecurringPage() {
-  const supabase = useMemo(() => createClient(), []);
   const router = useRouter();
-  const [profile, setProfile] = useState<any>(null);
+  const { currentProfile } = useAppData();
+  const profile = currentProfile;
   const [editing, setEditing] = useState<RecurringTemplate | null>(null);
   const [open, setOpen] = useState(false);
   const [filter, setFilter] = useState<TypeFilter>('all');
 
   useEffect(() => {
-    (async () => {
-      const p = await fetchCurrentProfile(supabase);
-      if (!p) return;
-      setProfile(p);
-      if (!canCreateRecurringTemplate(p)) router.replace('/dashboard/tasks');
-    })();
-  }, [supabase, router]);
+    if (!profile) return;
+    if (!canCreateRecurringTemplate(profile)) router.replace('/dashboard/tasks');
+  }, [profile?.id, router]);
 
   const { loading, items, refetch } = useRecurringTemplates(!!profile);
 

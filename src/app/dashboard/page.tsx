@@ -18,7 +18,6 @@ import {
   canUseDriverWorkspace,
   canUseHumanResourcesWorkspace,
 } from '@/lib/permissions';
-import { fetchCurrentProfile } from '@/lib/fetch-profile';
 import { useAppData } from '@/hooks/use-app-data';
 import DriverDashboardView from './_components/DriverDashboardView';
 import HRDashboardView from './_components/HRDashboardView';
@@ -45,11 +44,11 @@ const EMPTY_SCHEDULE: LegacyScheduleState = {
 export default function DashboardPage() {
   const supabase = useMemo(() => createClient(), []);
   const { toast } = useToast();
-  // Profiles + departments lấy từ AppDataProvider (shared cache) — không fetch lại
-  const { profiles: cachedProfiles, departments: cachedDepartments } = useAppData();
+  // Profiles + departments + profile của user lấy từ AppDataProvider (shared cache)
+  const { profiles: cachedProfiles, departments: cachedDepartments, currentProfile, hydrating } = useAppData();
 
-  const [profile, setProfile] = useState<any>(null);
-  const [profileLoading, setProfileLoading] = useState(true);
+  const profile = currentProfile;
+  const profileLoading = hydrating && !currentProfile;
 
   // Legacy state — chỉ dùng cho Driver/HR/Coordinator.
   const [scheduleData, setScheduleData] = useState<LegacyScheduleState>(EMPTY_SCHEDULE);
@@ -76,17 +75,7 @@ export default function DashboardPage() {
       || (canCoordinateSharedResources(profile) && profile.role !== 'admin' && profile.role !== 'director')
     : false;
 
-  // Step 1: fetch profile mỏng.
-  useEffect(() => {
-    let active = true;
-    (async () => {
-      const p = await fetchCurrentProfile(supabase);
-      if (!active) return;
-      setProfile(p);
-      setProfileLoading(false);
-    })();
-    return () => { active = false; };
-  }, [supabase]);
+  // Step 1: profile lấy từ AppDataProvider — không còn fetch riêng tại đây.
 
   // Step 2: legacy schedule fetch — chỉ chạy khi profile yêu cầu.
   const fetchScheduleDashboardData = async (currentProfile: any) => {

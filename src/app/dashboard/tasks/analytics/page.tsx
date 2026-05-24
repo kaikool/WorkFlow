@@ -8,8 +8,7 @@ import { vi } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import PageHeader from '@/components/layout/PageHeader';
-import { createClient } from '@/utils/supabase/client';
-import { fetchCurrentProfile } from '@/lib/fetch-profile';
+import { useAppData } from '@/hooks/use-app-data';
 import { canViewTaskAnalytics, canViewBranchAnalytics } from '@/lib/permissions';
 import { useTaskAnalytics } from '../_hooks/useTaskAnalytics';
 import { AnalyticsKpiCards } from '../_components/analytics/AnalyticsKpiCards';
@@ -22,25 +21,23 @@ import { DepartmentPicker } from '@/components/ui/department-picker';
 type Range = 'week' | 'month';
 
 export default function AnalyticsPage() {
-  const supabase = useMemo(() => createClient(), []);
   const router = useRouter();
-  const [profile, setProfile] = useState<any>(null);
+  const { currentProfile } = useAppData();
+  const profile = currentProfile;
   const [range, setRange] = useState<Range>('week');
   const [departments, setDepartments] = useState<any[]>([]);
   const [deptFilter, setDeptFilter] = useState<string[]>([]);
 
   useEffect(() => {
-    (async () => {
-      const p = await fetchCurrentProfile(supabase);
-      if (!p) return;
-      setProfile(p);
-      if (!canViewTaskAnalytics(p)) router.replace('/dashboard/tasks');
-      if (canViewBranchAnalytics(p)) {
-        const depts = await fetchDepartments();
-        setDepartments(depts);
-      }
-    })();
-  }, [supabase, router]);
+    if (!profile) return;
+    if (!canViewTaskAnalytics(profile)) {
+      router.replace('/dashboard/tasks');
+      return;
+    }
+    if (canViewBranchAnalytics(profile)) {
+      void fetchDepartments().then(setDepartments);
+    }
+  }, [profile?.id, router]);
 
   const { from, to } = useMemo(() => {
     const now = new Date();

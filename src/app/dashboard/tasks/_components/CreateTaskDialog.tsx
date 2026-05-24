@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@/components/ui/dialog';
@@ -21,8 +21,7 @@ import {
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import { createClient } from '@/utils/supabase/client';
-import { fetchCurrentProfile } from '@/lib/fetch-profile';
+import { useAppData } from '@/hooks/use-app-data';
 import { notifyError, notifyValidation, notifySuccess } from '@/lib/notify';
 import { canAssignTaskToOthers, canRequestReport, getProfileDepartmentCode, isHubDepartment } from '@/lib/permissions';
 import { createTask } from '../_lib/taskActions';
@@ -51,8 +50,8 @@ interface Props {
 }
 
 export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
-  const supabase = useMemo(() => createClient(), []);
-  const [profile, setProfile] = useState<any>(null);
+  const { currentProfile } = useAppData();
+  const profile = currentProfile;
   const [profiles, setProfiles] = useState<ProfileItem[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [fetching, setFetching] = useState(true);
@@ -71,31 +70,27 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || !profile) return;
     setFetching(true);
     (async () => {
-      const p = await fetchCurrentProfile(supabase);
-      if (!p) { setFetching(false); return; }
-      setProfile(p);
-
       const list = await fetchAssignableProfiles({
         context: formType === 'task' ? 'create-task' : 'create-report',
         caller: {
-          id: p.id,
-          role: p.role,
-          department_id: p.department_id,
-          department_code: getProfileDepartmentCode(p),
+          id: profile.id,
+          role: profile.role ?? null,
+          department_id: profile.department_id ?? null,
+          department_code: getProfileDepartmentCode(profile),
         },
       });
       setProfiles(list as ProfileItem[]);
 
-      if (p.role === 'staff') setSelectedAssignees([p.id]);
+      if (profile.role === 'staff') setSelectedAssignees([profile.id]);
 
       const depts = await fetchDepartments();
       setDepartments(depts);
       setFetching(false);
     })();
-  }, [isOpen, supabase, formType]);
+  }, [isOpen, profile?.id, formType]);
 
   const isStaff = profile?.role === 'staff';
   const isHub = isHubDepartment(profile);

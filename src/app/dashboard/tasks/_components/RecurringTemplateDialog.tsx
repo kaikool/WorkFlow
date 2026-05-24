@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@/components/ui/dialog';
@@ -14,8 +14,7 @@ import {
 } from '@/components/ui/select';
 import { Loader2, Flag, Building2, User as UserIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { createClient } from '@/utils/supabase/client';
-import { fetchCurrentProfile } from '@/lib/fetch-profile';
+import { useAppData } from '@/hooks/use-app-data';
 import { notifyError, notifyValidation, notifySuccess } from '@/lib/notify';
 import {
   canAssignTaskToOthers,
@@ -38,8 +37,8 @@ interface Props {
 }
 
 export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }: Props) {
-  const supabase = useMemo(() => createClient(), []);
-  const [profile, setProfile] = useState<any>(null);
+  const { currentProfile } = useAppData();
+  const profile = currentProfile;
   const [profiles, setProfiles] = useState<any[]>([]);
   const [departments, setDepartments] = useState<any[]>([]);
 
@@ -59,19 +58,16 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || !profile) return;
     (async () => {
-      const p = await fetchCurrentProfile(supabase);
-      if (!p) return;
-      setProfile(p);
       const [list, depts] = await Promise.all([
         fetchAssignableProfiles({
           context: taskType === 'task' ? 'create-task' : 'create-report',
           caller: {
-            id: p.id,
-            role: p.role,
-            department_id: p.department_id,
-            department_code: getProfileDepartmentCode(p),
+            id: profile.id,
+            role: profile.role ?? null,
+            department_id: profile.department_id ?? null,
+            department_code: getProfileDepartmentCode(profile),
           },
         }),
         fetchDepartments(),
@@ -79,7 +75,7 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
       setProfiles(list);
       setDepartments(depts);
     })();
-  }, [isOpen, supabase, taskType]);
+  }, [isOpen, profile?.id, taskType]);
 
   useEffect(() => {
     if (!isOpen) return;
