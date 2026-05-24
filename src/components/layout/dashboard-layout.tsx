@@ -38,6 +38,7 @@ import {
  AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { createClient } from "@/utils/supabase/client";
+import { flushCache } from "@/lib/local-cache";
 import { NotificationsDropdown } from "@/components/notifications-dropdown";
 import { canManageResourceCatalog } from "@/lib/permissions";
 import { ConfirmDialogProvider } from "@/components/ui/confirm-dialog";
@@ -290,6 +291,7 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
 
  const handleLogout = async () => {
     setIsLogoutDialogOpen(false);
+    flushCache();
     await supabase.auth.signOut();
     // Chuyển hướng cứng (Hard reload) để dọn sạch hoàn toàn các lớp phủ Dialog Portal Radix bị kẹt và session cũ
     window.location.href = '/login';

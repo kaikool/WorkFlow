@@ -1,4 +1,5 @@
 // Helper fetch dữ liệu lịch trình — tách khỏi useSchedule để giữ file gốc dưới 500 dòng.
+// Profiles/departments KHÔNG còn fetch ở đây — caller bơm vào từ AppDataProvider cache.
 
 import { addDays, endOfDay, endOfWeek, startOfWeek } from "date-fns";
 import { canCoordinateSharedResources } from "@/lib/permissions";
@@ -9,23 +10,13 @@ export interface FetchedScheduleData {
   schedules: any[];
   vehicles: any[];
   rooms: any[];
-  allProfiles: any[];
-  departments: any[];
-  profile: any;
 }
 
 export async function fetchScheduleData(
   supabase: any,
   selectedDate: Date,
-  initialProfile: any
+  currentProfile: any
 ): Promise<FetchedScheduleData> {
-  let currentProfile: any = initialProfile;
-  const { data: { user } } = await supabase.auth.getUser();
-  if (user) {
-    const { data: p } = await supabase.from('profiles').select('*, departments(name, code)').eq('id', user.id).single();
-    currentProfile = p;
-  }
-
   const start = startOfWeek(selectedDate, { weekStartsOn: 1 });
   const end = new Date(Math.max(
     endOfWeek(selectedDate, { weekStartsOn: 1 }).getTime(),
@@ -53,15 +44,11 @@ export async function fetchScheduleData(
     { data: pendingQueue, error: pendingError },
     { data: vData },
     { data: rData },
-    { data: pData },
-    { data: dData },
   ] = await Promise.all([
     schedulesQuery,
     pendingQueueQuery,
     supabase.from('vehicles').select('*, default_driver:profiles!vehicles_driver_id_fkey(id, full_name, phone)'),
     supabase.from('rooms').select('*'),
-    supabase.from('profiles').select('id, full_name, title, role, department_id, is_department_head, departments(name, code)').neq('role', 'admin'),
-    supabase.from('departments').select('*'),
   ]);
 
   if (sError) throw sError;
@@ -75,8 +62,5 @@ export async function fetchScheduleData(
     schedules: merged,
     vehicles: vData || [],
     rooms: rData || [],
-    allProfiles: pData || [],
-    departments: dData || [],
-    profile: currentProfile,
   };
 }

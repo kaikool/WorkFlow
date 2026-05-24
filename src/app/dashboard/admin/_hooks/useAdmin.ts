@@ -3,10 +3,12 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { sortProfilesByHierarchy } from "@/lib/utils";
 import { notifyError, notifySuccess, notifyValidation } from "@/lib/notify";
+import { useAppData } from "@/hooks/use-app-data";
 
 export function useAdmin() {
  const router = useRouter();
  const supabase = createClient();
+ const { currentProfile } = useAppData();
 
  const [loading, setLoading] = useState(true);
  const [userProfile, setUserProfile] = useState<any>(null);
@@ -33,22 +35,15 @@ export function useAdmin() {
  const initAdmin = async () => {
  setLoading(true);
  try {
- const { data: { user } } = await supabase.auth.getUser();
- if (!user) {
- router.push('/login');
+ if (!currentProfile) {
+ // Provider chưa hydrate xong — đợi lượt render tiếp theo
  return;
  }
 
- const { data: profile } = await supabase
- .from('profiles')
- .select('*, departments(name)')
- .eq('id', user.id)
- .single();
-
- setUserProfile(profile);
+ setUserProfile(currentProfile);
 
  // Chỉ ADMIN hoặc SECRETARY mới được vào trang này
- if (profile?.role !== 'admin' && profile?.role !== 'secretary') {
+ if (currentProfile.role !== 'admin' && currentProfile.role !== 'secretary') {
  notifyError(null, "Khu vực này chỉ dành cho Quản trị viên và Lễ tân.");
  router.push('/dashboard/schedule');
  return;
@@ -63,7 +58,8 @@ export function useAdmin() {
  };
 
  initAdmin();
- }, []);
+ // eslint-disable-next-line react-hooks/exhaustive-deps
+ }, [currentProfile?.id]);
 
  const fetchData = async () => {
  try {

@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Label } from '@/components/ui/label'
 import { notifyError, notifySuccess } from '@/lib/notify'
 import { Workflow, Loader2, Lock, Mail, User, ShieldCheck } from 'lucide-react'
+import { Logo } from "@/components/ui/logo"
 
 function RegisterContent() {
  const [email, setEmail] = useState('')
@@ -74,11 +75,11 @@ function RegisterContent() {
  <Card className="w-full shadow-2xl border-none rounded-2xl bg-white/80 backdrop-blur-xl overflow-hidden">
  <div className="bg-primary p-8 text-white text-center relative overflow-hidden">
  <div className="absolute top-0 right-0 p-4 opacity-5">
- <img src="/logo.png" alt="" className="w-24 h-24 rotate-12 grayscale" />
+ <Logo className="w-24 h-24 rotate-12" variant="white" />
  </div>
  <div className="relative z-10 flex flex-col items-center">
  <div className="mb-4 transition-transform hover:scale-105 flex items-center justify-center">
- <img src="/logo.png" alt="Logo" className="h-14 w-14 object-contain" />
+ <Logo className="h-14 w-14" variant="white" />
  </div>
  <CardTitle className="text-2xl font-bold tabular-nums">Gia nhập WorkFlow</CardTitle>
  <CardDescription className="text-primary-foreground/70 mt-2 font-medium">Hệ thống điều hành và quản trị mục tiêu</CardDescription>

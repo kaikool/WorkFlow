@@ -2,6 +2,7 @@
 
 import React, { useCallback, useState } from "react";
 import Cropper, { type Area } from "react-easy-crop";
+import imageCompression from "browser-image-compression";
 import { Crop, ZoomIn, ZoomOut } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -27,8 +28,8 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   });
 }
 
-// Cắt ảnh thành blob vuông theo croppedAreaPixels.
-async function getCroppedBlob(imageSrc: string, area: Area, size = 512): Promise<Blob> {
+// Cắt ảnh + nén — output blob JPEG ≤100KB ở 384×384 (đủ sắc nét cho retina).
+async function getCroppedBlob(imageSrc: string, area: Area, size = 384): Promise<Blob> {
   const img = await loadImage(imageSrc);
   const canvas = document.createElement('canvas');
   canvas.width = size;
@@ -36,9 +37,28 @@ async function getCroppedBlob(imageSrc: string, area: Area, size = 512): Promise
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Canvas context unavailable');
   ctx.drawImage(img, area.x, area.y, area.width, area.height, 0, 0, size, size);
-  return new Promise((resolve, reject) => {
-    canvas.toBlob((b) => b ? resolve(b) : reject(new Error('Cannot create blob')), 'image/jpeg', 0.92);
+
+  const initial = await new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(
+      (b) => b ? resolve(b) : reject(new Error('Cannot create blob')),
+      'image/jpeg',
+      0.82,
+    );
   });
+  if (initial.size <= 100 * 1024) return initial;
+
+  // Belt-and-suspenders: nén thêm cho ảnh có nội dung phức tạp (ảnh chụp ngoài trời).
+  const file = new File([initial], 'avatar.jpg', { type: 'image/jpeg' });
+  try {
+    return await imageCompression(file, {
+      maxSizeMB: 0.1,
+      maxWidthOrHeight: 384,
+      useWebWorker: true,
+      initialQuality: 0.8,
+    });
+  } catch {
+    return initial;
+  }
 }
 
 export default function AvatarCropDialog({ open, onOpenChange, file, onCropped }: AvatarCropDialogProps) {
@@ -66,7 +86,7 @@ export default function AvatarCropDialog({ open, onOpenChange, file, onCropped }
     if (!imageSrc || !areaPx) return;
     setProcessing(true);
     try {
-      const blob = await getCroppedBlob(imageSrc, areaPx, 512);
+      const blob = await getCroppedBlob(imageSrc, areaPx, 384);
       onCropped(blob);
       onOpenChange(false);
     } catch (e) {

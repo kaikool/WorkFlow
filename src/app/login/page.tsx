@@ -24,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Logo } from "@/components/ui/logo"
 
 // Trang gốc phải bọc Suspense vì LoginForm dùng useSearchParams() — Next.js yêu cầu
 // để có thể bailout sang client-side render khi prerender.
@@ -239,7 +240,7 @@ function LoginForm() {
         <Card className="w-full shadow-2xl border-none rounded-2xl bg-white/80 backdrop-blur-xl overflow-hidden transition-all duration-500">
           <CardHeader className="space-y-1 flex flex-col items-center p-8 pb-4">
             <div className="mb-3 transition-transform hover:scale-105 flex items-center justify-center">
-              <img src="/logo.png" alt="Logo" className="h-16 w-16 object-contain" />
+              <Logo className="h-16 w-16" />
             </div>
             <CardTitle className="text-2xl font-bold text-slate-900">
               WorkFlow Portal

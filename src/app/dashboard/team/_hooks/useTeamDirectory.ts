@@ -2,94 +2,77 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { notifyError } from "@/lib/notify";
 import { sortProfilesByHierarchy } from "@/lib/utils";
+import { useAppData } from "@/hooks/use-app-data";
 
-// Hook chính cho /dashboard/team — fetch profiles + schedules hôm nay + OOO active
-// để Card có thể compute badge trạng thái. Realtime channel team_realtime_sync
-// đẩy refetch nhẹ khi profiles/schedules/out_of_office thay đổi.
+// Hook chính cho /dashboard/team — profile/profiles/OOO lấy từ AppDataProvider
+// (cache shared). Chỉ schedules-hôm-nay fetch riêng vì là dữ liệu query-specific.
+// Realtime channel team_schedules_sync chỉ subscribe schedules (profiles/ooo đã
+// được provider subscribe sẵn).
 export function useTeamDirectory() {
   const supabase = useMemo(() => createClient(), []);
-  const [profile, setProfile] = useState<any>(null);
-  const [members, setMembers] = useState<any[]>([]);
+  const { profiles, currentProfile, outOfOffice, hydrating, refresh } = useAppData();
   const [todaySchedules, setTodaySchedules] = useState<any[]>([]);
-  const [oooList, setOooList] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [schedulesLoading, setSchedulesLoading] = useState(true);
 
-  const fetchAll = useCallback(async () => {
-    setLoading(true);
+  const fetchSchedules = useCallback(async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        setProfile(null);
-        setMembers([]);
-        return;
-      }
-
-      const { data: me } = await supabase.from('profiles').select('*, departments (id, name, code)').eq('id', user.id).single();
-      setProfile(me);
-
-      // Admin xem được admin khác (debug). Người thường ẩn admin.
-      let query = supabase.from('profiles').select('*, departments (id, name, code)').eq('is_active', true);
-      if (me?.role !== 'admin') query = query.neq('role', 'admin');
-      const { data: profiles, error } = await query;
-      if (error) throw error;
-      setMembers(sortProfilesByHierarchy(profiles || []));
-
-      // Lịch active hôm nay — để compute badge on_leave/on_trip
       const now = new Date();
       const startOfDay = new Date(now); startOfDay.setHours(0, 0, 0, 0);
       const endOfDay = new Date(now); endOfDay.setHours(23, 59, 59, 999);
-      const { data: scheds } = await supabase
+      const { data, error } = await supabase
         .from('schedules')
         .select('id, type, status, created_by, start_time, end_time')
         .in('status', ['approved', 'in_progress'])
         .lte('start_time', endOfDay.toISOString())
         .gte('end_time', startOfDay.toISOString());
-      setTodaySchedules(scheds || []);
-
-      // OOO đang active — table có thể chưa tồn tại (pre-Phase 2 migration). Bọc try.
-      try {
-        const { data: ooos } = await supabase
-          .from('out_of_office')
-          .select('*')
-          .gte('ends_at', now.toISOString());
-        setOooList(ooos || []);
-      } catch {
-        setOooList([]);
-      }
+      if (error) throw error;
+      setTodaySchedules(data || []);
     } catch (error) {
-      notifyError(error, "Không tải được danh bạ");
+      notifyError(error, "Không tải được lịch hôm nay");
     } finally {
-      setLoading(false);
+      setSchedulesLoading(false);
     }
   }, [supabase]);
 
   useEffect(() => {
-    fetchAll();
+    fetchSchedules();
 
     let refetchTimer: any = null;
     const scheduleRefetch = () => {
       if (refetchTimer) clearTimeout(refetchTimer);
-      refetchTimer = setTimeout(() => fetchAll(), 600);
+      refetchTimer = setTimeout(() => fetchSchedules(), 600);
     };
 
     const channel = supabase
-      .channel('team_realtime_sync')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, scheduleRefetch)
+      .channel('team_schedules_sync')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'schedules' }, scheduleRefetch)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'out_of_office' }, scheduleRefetch)
       .subscribe();
 
     return () => {
       if (refetchTimer) clearTimeout(refetchTimer);
       supabase.removeChannel(channel);
     };
-  }, [fetchAll, supabase]);
+  }, [fetchSchedules, supabase]);
+
+  // Người thường ẩn admin khỏi danh bạ; admin xem được tất cả (debug)
+  const members = useMemo(() => {
+    const list = currentProfile?.role === 'admin'
+      ? profiles
+      : profiles.filter((p) => p.role !== 'admin');
+    return sortProfilesByHierarchy(list);
+  }, [profiles, currentProfile?.role]);
 
   const oooByUser = useMemo(() => {
     const map = new Map<string, any>();
-    for (const o of oooList) map.set(o.user_id, o);
+    Object.values(outOfOffice).forEach((o) => map.set(o.user_id, o));
     return map;
-  }, [oooList]);
+  }, [outOfOffice]);
 
-  return { profile, members, todaySchedules, oooByUser, loading, refetch: fetchAll };
+  const loading = (hydrating && profiles.length === 0) || schedulesLoading;
+
+  const refetch = useCallback(async () => {
+    await Promise.all([refresh(), fetchSchedules()]);
+  }, [refresh, fetchSchedules]);
+
+  return { profile: currentProfile, members, todaySchedules, oooByUser, loading, refetch };
 }

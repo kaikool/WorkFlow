@@ -18,6 +18,7 @@ import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 import PageHeader from "@/components/layout/PageHeader";
 import AvatarCropDialog from "@/components/ui/avatar-crop-dialog";
+import { useAppData } from "@/hooks/use-app-data";
 import { ROLE_LABELS, STATUS_BADGES } from "../team/_lib/constants";
 import { getProfileBadgeStatus, getYearsOfService } from "../team/_lib/utils";
 import EditProfileDialog from "../team/_components/EditProfileDialog";
@@ -28,40 +29,40 @@ import EditProfileDialog from "../team/_components/EditProfileDialog";
 export default function ProfilePage() {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
+  const { currentProfile, outOfOffice, refresh } = useAppData();
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [activities, setActivities] = useState<any[]>([]);
   const [todaySchedules, setTodaySchedules] = useState<any[]>([]);
-  const [ooo, setOoo] = useState<any | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [cropFile, setCropFile] = useState<File | null>(null);
   const [cropOpen, setCropOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // OOO của user hiện tại — lấy từ cache shared
+  const ooo = currentProfile ? outOfOffice[currentProfile.id] ?? null : null;
+
   useEffect(() => {
     void loadAll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [currentProfile?.id]);
 
   const loadAll = async () => {
+    if (!currentProfile) return;
     setLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
       const todayIso = new Date().toISOString();
-      const [profileRes, activityRes, scheduleRes, oooRes] = await Promise.all([
-        supabase.from('profiles').select('*, departments (id, name)').eq('id', user.id).single(),
+      const [activityRes, scheduleRes] = await Promise.all([
         supabase.from('task_comments').select('*, task:tasks(title)').eq('user_id', user.id).order('created_at', { ascending: false }).limit(5),
         supabase.from('schedules').select('id, type, status, start_time, end_time, created_by').eq('created_by', user.id).lte('start_time', todayIso).gte('end_time', todayIso),
-        supabase.from('out_of_office').select('*').eq('user_id', user.id).maybeSingle(),
       ]);
-      if (profileRes.error) throw profileRes.error;
-      setProfile({ ...profileRes.data, email: user.email });
+      setProfile({ ...currentProfile, email: user.email });
       setActivities(activityRes.data ?? []);
       setTodaySchedules(scheduleRes.data ?? []);
-      setOoo(oooRes.data ?? null);
     } catch (error) {
       notifyError(error, "Không tải được hồ sơ");
     } finally {
@@ -92,6 +93,8 @@ export default function ProfilePage() {
       const { error: updErr } = await supabase.from('profiles').update({ avatar_url: busted }).eq('id', profile.id);
       if (updErr) throw updErr;
       setProfile((p: any) => ({ ...p, avatar_url: busted }));
+      // Cập nhật cache shared để header/sidebar avatar nhảy theo
+      void refresh();
       notifySuccess("Đã cập nhật ảnh đại diện");
       router.refresh();
     } catch (error) {

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Building2, LogOut, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Logo } from "@/components/ui/logo";
 
 interface NavItem {
   name: string;
@@ -25,7 +26,7 @@ export default function DesktopSidebar({ navItems, pathname, canManageSystem, pr
     <aside className="hidden lg:flex flex-col w-[272px] bg-[#f5f5f7]/90 backdrop-blur-xl border-r border-slate-200/70 sticky top-0 h-screen shrink-0 z-50">
       <div className="px-4 py-5 flex items-center gap-3">
         <div className="flex items-center justify-center shrink-0">
-          <img src="/logo.png" alt="Logo" className="w-9 h-9 object-contain" />
+          <Logo className="w-9 h-9" />
         </div>
         <div className="flex flex-col">
           <span className="text-[15px] font-semibold text-slate-900 leading-none">WorkFlow</span>

@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { canCoordinateSharedResources } from "@/lib/permissions";
 import { notifyError, notifySuccess, notifyValidation } from "@/lib/notify";
+import { useAppData } from "@/hooks/use-app-data";
 import StartTripDialog from "./driver/StartTripDialog";
 import EndTripDialog from "./driver/EndTripDialog";
 import ReportIssueDialog from "./driver/ReportIssueDialog";
@@ -25,6 +26,12 @@ interface DriverDashboardProps {
 
 export default function DriverDashboard({ schedules, profile, fetchData, toast }: DriverDashboardProps) {
   const supabase = createClient();
+  const { profiles: cachedProfiles } = useAppData();
+  // Bộ phận điều phối — tính từ cache shared, không query lại mỗi lần thao tác
+  const coordinatorTargets = React.useMemo(
+    () => cachedProfiles.filter((p: any) => canCoordinateSharedResources(p)),
+    [cachedProfiles]
+  );
   const [updating, setUpdating] = useState(false);
 
   // Dialog KM xuất phát
@@ -121,8 +128,6 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
       const THRESHOLD_MINUTES = 15;
 
       if (Math.abs(deviationMinutes) >= THRESHOLD_MINUTES) {
-        const { data: coordinatorStaff } = await supabase.from('profiles').select('id, role, departments(name, code)');
-        const coordinatorTargets = coordinatorStaff?.filter((p: any) => canCoordinateSharedResources(p)) || [];
         if (coordinatorTargets.length > 0) {
           const label = deviationMinutes > 0
             ? `muộn ${deviationMinutes} phút so với lịch (đăng ký ${scheduledStart.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })})`
@@ -176,9 +181,7 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
 
       if (error) throw error;
 
-      // Một lần lấy danh sách bộ phận điều phối cho cả hai thông báo (quyết toán + lệch giờ)
-      const { data: coordinatorStaff } = await supabase.from('profiles').select('id, role, departments(name, code)');
-      const coordinatorTargets = coordinatorStaff?.filter((p: any) => canCoordinateSharedResources(p)) || [];
+      // Bộ phận điều phối lấy từ cache shared (coordinatorTargets ở component scope)
 
       if (coordinatorTargets.length > 0) {
         await supabase.from('notifications').insert(
@@ -244,9 +247,7 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
         await supabase.from('vehicles').update({ status: 'maintenance' }).eq('id', schedule.vehicle_id);
       }
 
-      // Thông báo cho bộ phận điều phối
-      const { data: coordinatorStaff } = await supabase.from('profiles').select('id, role, departments(name, code)');
-      const coordinatorTargets = coordinatorStaff?.filter((p: any) => canCoordinateSharedResources(p)) || [];
+      // Thông báo cho bộ phận điều phối (lấy từ cache shared)
       if (coordinatorTargets.length > 0) {
         await supabase.from('notifications').insert(
           coordinatorTargets.map((target: any) => ({

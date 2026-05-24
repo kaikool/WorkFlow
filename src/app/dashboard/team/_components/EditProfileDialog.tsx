@@ -13,6 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import AvatarCropDialog from "@/components/ui/avatar-crop-dialog";
 import { createClient } from "@/utils/supabase/client";
 import { notifyError, notifySuccess, notifyValidation } from "@/lib/notify";
+import { useAppData } from "@/hooks/use-app-data";
 
 // Form sửa hồ sơ — 2 mode:
 //  - Self: chỉnh phone, extension, seat_location, avatar_url, birthday, gender, birthday_notify_optout.
@@ -33,8 +34,10 @@ const EXTENSION_RE = /^\d{3,6}$/;
 
 export default function EditProfileDialog({ open, onOpenChange, target, viewer, onSaved }: EditProfileDialogProps) {
   const supabase = useMemo(() => createClient(), []);
+  const { departments: cachedDepartments, refresh } = useAppData();
   const isAdminMode = viewer && ['admin', 'hr_officer'].includes(viewer.role);
-  const [departments, setDepartments] = useState<any[]>([]);
+  // Departments cho dropdown — lấy từ cache shared (đã sort theo name)
+  const departments = cachedDepartments;
   const [form, setForm] = useState<any>({});
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
@@ -61,13 +64,6 @@ export default function EditProfileDialog({ open, onOpenChange, target, viewer, 
       birthday_notify_optout: !!target.birthday_notify_optout,
     });
   }, [open, target]);
-
-  useEffect(() => {
-    if (!isAdminMode || !open) return;
-    supabase.from('departments').select('id, name, code').order('name').then((res: any) => {
-      setDepartments(res.data ?? []);
-    });
-  }, [isAdminMode, open, supabase]);
 
   const setField = (k: string, v: any) => setForm((s: any) => ({ ...s, [k]: v }));
 
@@ -133,6 +129,8 @@ export default function EditProfileDialog({ open, onOpenChange, target, viewer, 
 
       const { error } = await supabase.from('profiles').update(payload).eq('id', target.id);
       if (error) throw error;
+      // Invalidate cache shared để các consumer (sidebar, danh bạ, picker) cập nhật ngay
+      void refresh();
       notifySuccess("Đã lưu hồ sơ");
       onSaved?.();
       onOpenChange(false);

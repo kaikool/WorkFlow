@@ -10,10 +10,17 @@ import { confirmDialog } from "@/components/ui/confirm-dialog";
 import { createSchedule as createScheduleHelper } from "../_lib/createSchedule";
 import { updateScheduleAction } from "../_lib/updateSchedule";
 import { fetchScheduleData } from "../_lib/fetchScheduleData";
+import { useAppData } from "@/hooks/use-app-data";
 
 export function useSchedule() {
   const supabase = createClient();
   const { toast } = useToast();
+  // Profiles/departments/currentProfile lấy từ AppDataProvider — không fetch lại
+  const { currentProfile, profiles: cachedProfiles, departments: cachedDepartments } = useAppData();
+  // allProfiles của schedule cũ loại admin để giữ shape consumer
+  const allProfiles = useMemo(() => cachedProfiles.filter((p: any) => p.role !== 'admin'), [cachedProfiles]);
+  const profile = currentProfile;
+  const departments = cachedDepartments;
   const timelineContainerRef = useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = useState(false);
   const searchParams = useSearchParams();
@@ -49,9 +56,6 @@ export function useSchedule() {
   const [vehicles, setVehicles] = useState<any[]>([]);
   const [rooms, setRooms] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState<any>(null);
-  const [allProfiles, setAllProfiles] = useState<any[]>([]);
-  const [departments, setDepartments] = useState<any[]>([]);
 
   // State điều hướng
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -147,7 +151,7 @@ export function useSchedule() {
     const checkIds = resolveParticipantIds({
       selectedParticipants, bgdMode, selectedBGD, deptMode, filterDepts, participantMode, allProfiles
     });
-    const finalCheckIds = Array.from(new Set([profile?.id, ...checkIds].filter(Boolean)));
+    const finalCheckIds = Array.from(new Set([profile?.id, ...checkIds].filter(Boolean))) as string[];
     return checkConflicts({ checkIds: finalCheckIds, startDate, endDate, startTime, endTime, schedules });
   }, [startDate, endDate, startTime, endTime, selectedParticipants, selectedBGD, bgdMode, deptMode, participantMode, allProfiles, schedules, filterDepts, profile?.id]);
 
@@ -225,15 +229,12 @@ export function useSchedule() {
     setLoading(true);
     try {
       const result = await fetchScheduleData(supabase, selectedDate, profile);
-      setProfile(result.profile);
-      if (result.profile?.department_id && filterDepts.length === 0) {
-        setFilterDepts([result.profile.department_id]);
+      if (profile?.department_id && filterDepts.length === 0) {
+        setFilterDepts([profile.department_id]);
       }
       setSchedules(result.schedules);
       setVehicles(result.vehicles);
       setRooms(result.rooms);
-      setAllProfiles(result.allProfiles);
-      setDepartments(result.departments);
     } catch (error) {
       notifyError(error, "Không tải được dữ liệu lịch trình");
     } finally {

@@ -19,6 +19,7 @@ import {
   canUseHumanResourcesWorkspace,
 } from '@/lib/permissions';
 import { fetchCurrentProfile } from '@/lib/fetch-profile';
+import { useAppData } from '@/hooks/use-app-data';
 import DriverDashboardView from './_components/DriverDashboardView';
 import HRDashboardView from './_components/HRDashboardView';
 import CoordinatorDashboardView from './_components/CoordinatorDashboardView';
@@ -44,6 +45,8 @@ const EMPTY_SCHEDULE: LegacyScheduleState = {
 export default function DashboardPage() {
   const supabase = useMemo(() => createClient(), []);
   const { toast } = useToast();
+  // Profiles + departments lấy từ AppDataProvider (shared cache) — không fetch lại
+  const { profiles: cachedProfiles, departments: cachedDepartments } = useAppData();
 
   const [profile, setProfile] = useState<any>(null);
   const [profileLoading, setProfileLoading] = useState(true);
@@ -114,15 +117,11 @@ export default function DashboardPage() {
       { data: pendingQueue, error: pendingError },
       { data: vehicles },
       { data: rooms },
-      { data: allProfiles },
-      { data: departments },
     ] = await Promise.all([
       schedulesQuery,
       pendingQueueQuery,
       supabase.from('vehicles').select('*, default_driver:profiles!vehicles_driver_id_fkey(id, full_name, phone)'),
       supabase.from('rooms').select('*'),
-      supabase.from('profiles').select('id, full_name, title, avatar_url, role, department_id, is_department_head, departments(name, code)').neq('role', 'admin'),
-      supabase.from('departments').select('*'),
     ]);
 
     if (scheduleError) throw scheduleError;
@@ -134,8 +133,8 @@ export default function DashboardPage() {
       )),
       vehicles: vehicles || [],
       rooms: rooms || [],
-      allProfiles: allProfiles || [],
-      departments: departments || [],
+      allProfiles: cachedProfiles.filter((p: any) => p.role !== 'admin'),
+      departments: cachedDepartments,
     });
   };
 

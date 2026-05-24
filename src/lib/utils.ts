@@ -23,7 +23,7 @@ export function compareProfilesByHierarchy(a: any, b: any) {
   return (a?.full_name || "").localeCompare(b?.full_name || "", "vi")
 }
 
-export function sortProfilesByHierarchy<T extends { role?: string; is_department_head?: boolean; full_name?: string }>(profiles: T[]) {
+export function sortProfilesByHierarchy<T extends { role?: string | null; is_department_head?: boolean | null; full_name?: string | null }>(profiles: T[]) {
   return [...profiles].sort(compareProfilesByHierarchy)
 }
 

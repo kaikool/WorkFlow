@@ -17,6 +17,18 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'picsum.photos',       port: '', pathname: '/**' },
     ],
   },
+  async headers() {
+    return [
+      {
+        source: '/icon-:size(\\d+).png',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
+      },
+      {
+        source: '/manifest.webmanifest',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=86400' }],
+      },
+    ];
+  },
 };
 
 export default nextConfig;
