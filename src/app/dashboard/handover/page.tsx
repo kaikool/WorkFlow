@@ -87,7 +87,7 @@ export default function HandoverPage() {
       />
 
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as DeskTab)}>
-        <TabsList className="grid w-full grid-cols-2 sm:w-auto sm:inline-grid sm:grid-cols-3 bg-white shadow-sm ring-1 ring-slate-100">
+        <TabsList className="grid w-full grid-cols-2 sm:w-auto sm:inline-grid sm:grid-cols-3 bg-gray shadow-sm ring-1 ring-slate-100">
           <TabsTrigger value="inbox" className="rounded-lg text-[13px] font-medium">
             Đang giữ
             {inboxDocs.length > 0 && (
