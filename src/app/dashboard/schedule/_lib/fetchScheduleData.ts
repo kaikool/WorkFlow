@@ -3,7 +3,7 @@
 import { addDays, endOfDay, endOfWeek, startOfWeek } from "date-fns";
 import { canCoordinateSharedResources } from "@/lib/permissions";
 
-const SCHEDULE_SELECT = `*, creator:profiles!schedules_created_by_fkey(full_name, title, avatar_url, department_id, role, is_department_head), room:rooms(name), vehicle:vehicles(name, plate_number), driver:profiles!schedules_driver_id_fkey(id, full_name, title, phone), participants:schedule_participants(profile:profiles(id, full_name, title, avatar_url, role, is_department_head))`;
+const SCHEDULE_SELECT = `*, creator:profiles!schedules_created_by_fkey(full_name, title, avatar_url, department_id, role, is_department_head), room:rooms(name), vehicle:vehicles(name, plate_number), driver:profiles!schedules_driver_id_fkey(id, full_name, title, phone), rejecter:profiles!schedules_rejected_by_fkey(id, full_name, title), participants:schedule_participants(profile:profiles(id, full_name, title, avatar_url, role, is_department_head))`;
 
 export interface FetchedScheduleData {
   schedules: any[];
@@ -60,7 +60,7 @@ export async function fetchScheduleData(
     pendingQueueQuery,
     supabase.from('vehicles').select('*, default_driver:profiles!vehicles_driver_id_fkey(id, full_name, phone)'),
     supabase.from('rooms').select('*'),
-    supabase.from('profiles').select('id, full_name, title, role, department_id, is_department_head, departments(name, code)'),
+    supabase.from('profiles').select('id, full_name, title, role, department_id, is_department_head, departments(name, code)').neq('role', 'admin'),
     supabase.from('departments').select('*'),
   ]);
 

@@ -121,7 +121,7 @@ export default function DashboardPage() {
       pendingQueueQuery,
       supabase.from('vehicles').select('*, default_driver:profiles!vehicles_driver_id_fkey(id, full_name, phone)'),
       supabase.from('rooms').select('*'),
-      supabase.from('profiles').select('id, full_name, title, avatar_url, role, department_id, is_department_head, departments(name, code)'),
+      supabase.from('profiles').select('id, full_name, title, avatar_url, role, department_id, is_department_head, departments(name, code)').neq('role', 'admin'),
       supabase.from('departments').select('*'),
     ]);
 

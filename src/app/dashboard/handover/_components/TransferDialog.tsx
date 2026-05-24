@@ -36,9 +36,12 @@ export default function TransferDialog({
     }
   }, [isOpen]);
 
-  // Loại tài xế (không tham gia luồng giấy) và chính mình
+  // Loại tài xế (không tham gia luồng giấy), admin (quản trị hệ thống, không
+  // nhận hồ sơ chi nhánh) và chính mình
   const candidates = React.useMemo(() => {
-    return allProfiles.filter((p) => p.id !== currentProfile?.id && p.role !== "driver");
+    return allProfiles.filter(
+      (p) => p.id !== currentProfile?.id && p.role !== "driver" && p.role !== "admin",
+    );
   }, [allProfiles, currentProfile?.id]);
 
   const handleSubmit = async () => {

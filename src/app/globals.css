@@ -285,7 +285,7 @@ select,
   line-height: 1.35rem;
 }
 
-button:not([class*="flex-1"]),
+button:not([class*="flex-1"]):not([role="switch"]),
 a[role="button"],
 [role="button"],
 [role="menuitem"],
@@ -305,7 +305,7 @@ a,
   touch-action: manipulation;
 }
 
-button[class*="w-"],
+button[class*="w-"]:not([role="switch"]),
 [role="button"][class*="w-"] {
   min-width: var(--app-touch-target);
 }
@@ -571,6 +571,33 @@ main > div[class*="max-w-5xl"][class*="mx-auto"] {
   bottom: calc(max(env(safe-area-inset-bottom), 0.75rem) + 5rem);
 }
 
+/* Shell chuẩn cho mọi FAB (create / back / ...). Cùng size + shadow + focus.
+   Mặc định primary blue. Variant neutral đổi nền + shadow qua .fab-shell--neutral. */
+.fab-shell {
+  @apply fixed z-[55] right-4 bottom-safe-fab h-14 w-14 rounded-full
+         bg-primary text-white border border-primary/20
+         flex items-center justify-center
+         transition-all duration-200 ease-out
+         active:scale-90
+         focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/30;
+  box-shadow: 0 8px 24px -4px rgba(37, 99, 235, 0.45), 0 2px 8px -2px rgba(15, 23, 42, 0.12);
+}
+.fab-shell:hover {
+  box-shadow: 0 12px 32px -4px rgba(37, 99, 235, 0.55);
+}
+
+/* Hide FAB khi có Dialog / Popover / Sheet / Menu mở.
+   Radix gắn data-state="open" lên content overlay; popover thêm wrapper. */
+body:has([role="dialog"][data-state="open"]) [data-fab],
+body:has([role="alertdialog"][data-state="open"]) [data-fab],
+body:has([role="menu"][data-state="open"]) [data-fab],
+body:has([data-radix-popper-content-wrapper]) [data-fab] {
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.85) translateY(8px);
+  transition: opacity 0.15s ease-out, transform 0.15s ease-out;
+}
+
 /* Padding-bottom cho main content để không bị nav che, tự thích ứng safe-area */
 .pb-mobile-nav {
   padding-bottom: calc(env(safe-area-inset-bottom) + 6rem);
@@ -680,17 +707,18 @@ main > div[class*="max-w-5xl"][class*="mx-auto"] {
 
 /* ==============================================================
    ĐỒNG BỘ AVATAR — Snap mọi kích thước về 3 tier (32 / 40 / 44).
-   Quy ước: tất cả Avatar shadcn (rounded-full + class h-X w-X)
-   sẽ bị ép về 1 trong 3 size duy nhất, dù code cũ pass h-5/h-7/h-9...
+   Quy ước: chỉ áp cho Avatar shadcn (luôn có `overflow-hidden`).
+   KHÔNG đụng tới Switch / Badge / dot / chip — những thứ rounded-full
+   khác nhưng không phải avatar.
    ============================================================== */
-.rounded-full.h-5,  .rounded-full.h-6,  .rounded-full.h-7,  .rounded-full.h-8 { height: 32px !important; }
-.rounded-full.w-5,  .rounded-full.w-6,  .rounded-full.w-7,  .rounded-full.w-8 { width: 32px !important; }
+.rounded-full.overflow-hidden.h-5,  .rounded-full.overflow-hidden.h-6,  .rounded-full.overflow-hidden.h-7,  .rounded-full.overflow-hidden.h-8 { height: 32px !important; }
+.rounded-full.overflow-hidden.w-5,  .rounded-full.overflow-hidden.w-6,  .rounded-full.overflow-hidden.w-7,  .rounded-full.overflow-hidden.w-8 { width: 32px !important; }
 
-.rounded-full.h-9,  .rounded-full.h-10                                         { height: 40px !important; }
-.rounded-full.w-9,  .rounded-full.w-10                                         { width: 40px !important; }
+.rounded-full.overflow-hidden.h-9,  .rounded-full.overflow-hidden.h-10                                         { height: 40px !important; }
+.rounded-full.overflow-hidden.w-9,  .rounded-full.overflow-hidden.w-10                                         { width: 40px !important; }
 
-.rounded-full.h-11, .rounded-full.h-12, .rounded-full.h-14, .rounded-full.h-16 { height: 44px !important; }
-.rounded-full.w-11, .rounded-full.w-12, .rounded-full.w-14, .rounded-full.w-16 { width: 44px !important; }
+.rounded-full.overflow-hidden.h-11, .rounded-full.overflow-hidden.h-12, .rounded-full.overflow-hidden.h-14, .rounded-full.overflow-hidden.h-16 { height: 44px !important; }
+.rounded-full.overflow-hidden.w-11, .rounded-full.overflow-hidden.w-12, .rounded-full.overflow-hidden.w-14, .rounded-full.overflow-hidden.w-16 { width: 44px !important; }
 
 /* Class tokens cũng cùng giá trị */
 .avatar-sm { width: 32px !important; height: 32px !important; }

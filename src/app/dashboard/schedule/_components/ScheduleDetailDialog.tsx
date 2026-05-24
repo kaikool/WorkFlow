@@ -19,6 +19,7 @@ import { typeLabels } from "../_lib/constants";
 import { filterBGD, filterStaff } from "../_lib/utils";
 import { useScheduleDetail } from "../_hooks/useScheduleDetail";
 import ScheduleEditForm from "./ScheduleEditForm";
+import RejectedBanner from "./RejectedBanner";
 import { createClient } from "@/utils/supabase/client";
 
 // --- Sub-component: Hiển thị danh sách người tham gia (Read Mode) ---
@@ -105,22 +106,23 @@ interface ScheduleDetailDialogProps {
   schedules: any[];
   vehicles: any[];
   rooms: any[];
-  isTCTH: boolean;
   allProfiles: any[];
   departments: any[];
   currentProfile: any;
   onAssignVehicle: (scheduleId: string, vehicleId: string | null, driverId: string | null) => void;
   onUpdateEndTime: (scheduleId: string, newEndTime: string) => void;
   onUpdateSchedule: (scheduleId: string, updates: any) => void;
+  onResubmitSchedule?: (scheduleId: string, changeReason: string, editedPayload: any) => void;
 }
 
 export default function ScheduleDetailDialog({
-  isOpen, setIsOpen, schedule, schedules, vehicles, rooms, isTCTH, allProfiles, departments, currentProfile, onAssignVehicle, onUpdateEndTime, onUpdateSchedule
+  isOpen, setIsOpen, schedule, schedules, vehicles, rooms, allProfiles, departments, currentProfile, onAssignVehicle, onUpdateEndTime, onUpdateSchedule, onResubmitSchedule
 }: ScheduleDetailDialogProps) {
   const detail = useScheduleDetail({
-    isOpen, schedule, schedules, vehicles, rooms, allProfiles, currentProfile, isTCTH,
-    onAssignVehicle, onUpdateEndTime, onUpdateSchedule
+    isOpen, schedule, schedules, vehicles, rooms, allProfiles, currentProfile,
+    onAssignVehicle, onUpdateEndTime, onUpdateSchedule, onResubmitSchedule
   });
+  const isTCTH = detail.canCoord;
   const supabase = createClient();
   const [safeLeave, setSafeLeave] = React.useState<any>(null);
 
@@ -156,9 +158,12 @@ export default function ScheduleDetailDialog({
   const isAllowedToView = (schedule.type === 'leave' && safeLeave)
     ? safeLeave.can_view_detail
     : canViewLeaveDetails(schedule, currentProfile);
+  const isRejected = schedule.status === 'rejected';
   const canEdit = detail.isLeave
     ? (detail.isCreator || isAllowedToView)
-    : (detail.isParticipant || detail.isCreator || isTCTH);
+    : isRejected
+      ? detail.isCreator
+      : (detail.isParticipant || detail.isCreator || isTCTH);
 
   // Chế độ sửa — ủy quyền sang component ScheduleEditForm
   if (detail.isEditingSchedule) {
@@ -169,7 +174,6 @@ export default function ScheduleDetailDialog({
         schedule={schedule}
         vehicles={vehicles}
         rooms={rooms}
-        isTCTH={isTCTH}
         allProfiles={allProfiles}
         departments={departments}
         detail={detail}
@@ -193,6 +197,15 @@ export default function ScheduleDetailDialog({
         {/* Body */}
         <ScrollArea className="app-dialog-sheet-body">
           <div className="space-y-5 p-[var(--app-page-x)]">
+            {/* Banner đỏ khi lịch đã bị từ chối — chỉ creator thấy nút "Sửa & đẩy lại duyệt" */}
+            {isRejected && (
+              <RejectedBanner
+                schedule={schedule}
+                isCreator={detail.isCreator}
+                onResubmit={() => detail.openEditMode('resubmit')}
+              />
+            )}
+
             {/* Nội dung mô tả */}
             {safeSchedule.description && isAllowedToView && (
               <div className="space-y-2">
@@ -201,12 +214,12 @@ export default function ScheduleDetailDialog({
               </div>
             )}
 
-            {/* Nút sửa lịch trình — nổi bật */}
-            {canEdit && (
+            {/* Nút sửa lịch trình — nổi bật. Khi rejected: đã có nút trong banner đỏ. */}
+            {canEdit && !isRejected && (
               <Button
                 variant="outline"
                 className="w-full min-h-11 rounded-xl text-sm font-medium text-slate-700 border-slate-200 hover:bg-slate-50 active:scale-95 transition-all flex items-center justify-center gap-2"
-                onClick={() => detail.setIsEditingSchedule(true)}
+                onClick={() => detail.openEditMode('edit')}
               >
                 <Pencil className="w-4 h-4" />
                 Sửa lịch trình

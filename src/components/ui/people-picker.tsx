@@ -146,7 +146,7 @@ export function PeoplePicker({
                 value={g.key}
                 className={cn(
                   'border border-slate-100 rounded-xl bg-white px-3 overflow-hidden',
-                  selectedCount > 0 && 'ring-2 ring-primary/30 border-primary/20',
+                  selectedCount > 0 && 'border-primary bg-primary/[0.04]',
                 )}
               >
                 <AccordionTrigger className="hover:no-underline py-3 min-h-11">
@@ -217,7 +217,7 @@ function PersonRow({
       className={cn(
         'w-full h-10 flex items-center gap-2 rounded-full pl-1 pr-3 text-left transition-all',
         selected
-          ? 'bg-primary/10 ring-2 ring-primary/30'
+          ? 'bg-primary/10 ring-1 ring-inset ring-primary'
           : 'hover:bg-slate-50',
       )}
     >

@@ -332,6 +332,7 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, showArchive =
           taskId={task.id}
           comments={task.comments.filter(c => !c.content.startsWith('[Hệ thống]'))}
           onAdded={onChanged}
+          canCompose={currentProfile.role !== 'admin'}
         />
       </div>
 

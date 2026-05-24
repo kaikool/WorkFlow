@@ -84,7 +84,12 @@ export default function TeamPage() {
    return;
  }
 
+ // Admin là quản trị hệ thống — ẩn khỏi danh bạ chi nhánh (ghost trên bảng profile).
+ // Chính admin xem vẫn thấy đầy đủ để debug; người khác không thấy admin trong danh sách.
  let query = supabase.from('profiles').select(`*, departments (name)`);
+ if (currentProfile?.role !== 'admin') {
+   query = query.neq('role', 'admin');
+ }
 
  // Lọc theo phòng ban nếu không phải Admin, Director hoặc Cán bộ Nhân sự
  if (currentProfile && currentProfile.role !== 'admin' && currentProfile.role !== 'director' && currentProfile.role !== 'hr_officer' && currentProfile.department_id) {

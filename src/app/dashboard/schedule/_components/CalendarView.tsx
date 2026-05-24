@@ -14,6 +14,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { canCoordinateSharedResources } from "@/lib/permissions";
 
 interface CalendarViewProps {
   loading: boolean;
@@ -25,7 +26,6 @@ interface CalendarViewProps {
   selectedDate: Date;
   profile: any;
   allProfiles: any[];
-  isTCTH: boolean;
   canApproveLeavePermission: boolean;
   pendingVehicleCount: number;
   pendingLeavesCount: number;
@@ -35,17 +35,19 @@ interface CalendarViewProps {
   startLimit: number;
   duration: number;
   onSelectSchedule: (s: any) => void;
-  onStatusUpdate: (id: string, status: string) => Promise<void>;
+  onStatusUpdate: (id: string, status: string, reason?: string) => Promise<void>;
 }
 
 export default function CalendarView(props: CalendarViewProps) {
   const {
     loading, filterType, setFilterType, schedules, vehicles, rooms,
-    selectedDate, profile, allProfiles, isTCTH,
+    selectedDate, profile, allProfiles,
     canApproveLeavePermission, pendingVehicleCount, pendingLeavesCount,
     timelineContainerRef, isTodaySelected, currentTimePercent, startLimit, duration,
     onSelectSchedule, onStatusUpdate
   } = props;
+
+  const isTCTH = canCoordinateSharedResources(profile);
 
   const [showAllSchedules, setShowAllSchedules] = useState(false);
   const DEFAULT_LIMIT = 4;
@@ -56,6 +58,8 @@ export default function CalendarView(props: CalendarViewProps) {
     const selectedEnd = endOfDay(selectedDate);
     return schedules.filter(s => {
       if (new Date(s.start_time) > selectedEnd || new Date(s.end_time) < selectedStart) return false;
+      // Lịch bị từ chối: chỉ creator nhìn thấy để có thể đẩy lại duyệt
+      if (s.status === 'rejected' && s.created_by !== profile?.id) return false;
       if (filterType === 'dept') return s.department_id === profile?.department_id;
       return true;
     });
@@ -67,7 +71,8 @@ export default function CalendarView(props: CalendarViewProps) {
     return schedules
       .filter(s => {
         const start = new Date(s.start_time);
-        if (start <= selectedEnd || start > rangeEnd || s.status === 'rejected') return false;
+        if (start <= selectedEnd || start > rangeEnd) return false;
+        if (s.status === 'rejected' && s.created_by !== profile?.id) return false;
         if (filterType === 'dept') return s.department_id === profile?.department_id;
         return true;
       })
@@ -106,8 +111,8 @@ export default function CalendarView(props: CalendarViewProps) {
     return Array.isArray(dept) ? dept[0]?.name : dept?.name;
   };
 
-  const displayedSchedules = showAllSchedules 
-    ? filteredSchedules 
+  const displayedSchedules = showAllSchedules
+    ? filteredSchedules
     : filteredSchedules.slice(0, DEFAULT_LIMIT);
 
   return (
@@ -116,7 +121,7 @@ export default function CalendarView(props: CalendarViewProps) {
       <Tabs value={filterType} onValueChange={(value) => setFilterType(value as 'all' | 'bgd' | 'dept')} className="w-full">
         <TabsList className="grid grid-cols-3 min-h-9">
           <TabsTrigger value="all" className="rounded-lg px-2 text-[12px] font-medium md:text-[14px] relative">
-            <span className="truncate">Toàn chi nhánh</span>
+            <span className="truncate">Chi nhánh</span>
             {isTCTH && pendingVehicleCount > 0 && (
               <Badge className="ml-1.5 h-5 min-w-5 shrink-0 justify-center rounded-full border-none bg-amber-600 px-1.5 text-[10px] font-bold leading-none text-white tabular-nums">
                 {pendingVehicleCount > 9 ? "9+" : pendingVehicleCount}
@@ -239,7 +244,6 @@ export default function CalendarView(props: CalendarViewProps) {
                     <ScheduleCard
                       key={item.id}
                       item={item}
-                      isTCTH={isTCTH}
                       profile={profile}
                       onSelect={onSelectSchedule}
                       onStatusUpdate={onStatusUpdate}
@@ -249,8 +253,8 @@ export default function CalendarView(props: CalendarViewProps) {
 
                 {filteredSchedules.length > DEFAULT_LIMIT && (
                   <div className="flex justify-center pt-2">
-                    <Button 
-                      variant="ghost" 
+                    <Button
+                      variant="ghost"
                       onClick={() => setShowAllSchedules(!showAllSchedules)}
                       className="text-sm font-medium text-primary hover:bg-primary/5 rounded-full px-6 py-2 flex items-center gap-1.5"
                     >
@@ -275,7 +279,6 @@ export default function CalendarView(props: CalendarViewProps) {
                     <ScheduleCard
                       key={`upcoming-${item.id}`}
                       item={item}
-                      isTCTH={isTCTH}
                       profile={profile}
                       onSelect={onSelectSchedule}
                       onStatusUpdate={onStatusUpdate}
@@ -294,7 +297,7 @@ export default function CalendarView(props: CalendarViewProps) {
                     Nhân sự nghỉ phép ({leaveList.length})
                   </h3>
                 </div>
-                
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {leaveList.map(leave => {
                     const deptName = getProfileDeptName(leave.created_by);
@@ -303,7 +306,7 @@ export default function CalendarView(props: CalendarViewProps) {
                       : `${format(leave.startDate, 'dd/MM')} - ${format(leave.endDate, 'dd/MM/yyyy')}`;
 
                     return (
-                      <Card 
+                      <Card
                         key={leave.id}
                         onClick={() => onSelectSchedule(leave)}
                         className="rounded-2xl overflow-hidden border-none shadow-sm hover:shadow-lg transition-all duration-300 group cursor-pointer hover:-translate-y-0.5 hover:bg-slate-50/30"
@@ -314,7 +317,7 @@ export default function CalendarView(props: CalendarViewProps) {
                               "w-2 transition-all duration-300 group-hover:w-2.5 shrink-0",
                               leave.isCurrent ? "bg-amber-400" : "bg-blue-400"
                             )} />
-                            
+
                             <div className="flex-1 p-3.5 flex items-center gap-3.5 min-w-0">
                               <Avatar className="h-9 w-9 shrink-0 border border-slate-100 shadow-sm">
                                 <AvatarImage src={leave.creator?.avatar_url} />
@@ -322,7 +325,7 @@ export default function CalendarView(props: CalendarViewProps) {
                                   {leave.creator?.full_name?.[0]}
                                 </AvatarFallback>
                               </Avatar>
-                              
+
                               <div className="flex-1 min-w-0 space-y-1">
                                 <div className="flex items-center justify-between gap-2">
                                   <p className="text-[13px] font-extrabold text-slate-800 truncate group-hover:text-primary transition-colors">
@@ -330,18 +333,18 @@ export default function CalendarView(props: CalendarViewProps) {
                                   </p>
                                   <span className={cn(
                                     "text-[9px] font-extrabold px-2 py-0.5 rounded-md tracking-normal shrink-0",
-                                    leave.isCurrent 
-                                      ? "bg-amber-50 text-amber-600 border border-amber-200/50" 
+                                    leave.isCurrent
+                                      ? "bg-amber-50 text-amber-600 border border-amber-200/50"
                                       : "bg-blue-50/50 text-blue-600 border border-blue-200/40"
                                   )}>
                                     {leave.isCurrent ? "Đang nghỉ" : "Sắp nghỉ"}
                                   </span>
                                 </div>
-                                
+
                                 <p className="text-[10px] text-slate-400 font-bold truncate">
                                   {deptName || "Chưa phân phòng"}
                                 </p>
-                                
+
                                 <div className="flex items-center justify-between gap-1.5 pt-1.5 border-t border-slate-100">
                                   <span className="text-[9.5px] font-medium text-slate-400">Thời gian nghỉ:</span>
                                   <span className="text-[10.5px] font-bold text-slate-700">{formattedRange}</span>

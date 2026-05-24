@@ -1,7 +1,7 @@
 'use client'
 
 import React from "react";
-import { Clock, MapPin, Users, Car, DoorOpen, MoreVertical } from "lucide-react";
+import { Clock, MapPin, Users, Car, DoorOpen, MoreVertical, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,19 +9,24 @@ import { cn, compareProfilesByHierarchy, canViewLeaveDetails } from "@/lib/utils
 import { format, isSameDay } from "date-fns";
 import { typeLabels, statusLabels } from "../_lib/constants";
 import { AvatarStack } from "@/components/ui/people-picker";
+import { canCoordinateSharedResources } from "@/lib/permissions";
+import RejectScheduleDialog from "./RejectScheduleDialog";
 
 interface ScheduleCardProps {
   item: any;
-  isTCTH: boolean;
   profile?: any;
   onSelect: (item: any) => void;
-  onStatusUpdate: (id: string, status: string) => void;
+  onStatusUpdate: (id: string, status: string, reason?: string) => void | Promise<void>;
 }
 
-export default function ScheduleCard({ item, isTCTH, profile, onSelect, onStatusUpdate }: ScheduleCardProps) {
+export default function ScheduleCard({ item, profile, onSelect, onStatusUpdate }: ScheduleCardProps) {
+  const isTCTH = canCoordinateSharedResources(profile);
+  const [rejectOpen, setRejectOpen] = React.useState(false);
   const type = typeLabels[item.type] || typeLabels.meeting;
   const status = statusLabels[item.status] ?? { label: item.status ?? "Không rõ", color: "bg-slate-100 text-slate-500" };
   const isTrip = item.type === 'trip';
+  const isRejected = item.status === 'rejected';
+  const isOwnRejected = isRejected && profile?.id && item.created_by === profile.id;
   const sortedParticipants = [...(item.participants || [])].sort((a: any, b: any) => compareProfilesByHierarchy(a.profile, b.profile));
   const startTime = new Date(item.start_time);
   const endTime = new Date(item.end_time);
@@ -55,6 +60,11 @@ export default function ScheduleCard({ item, isTCTH, profile, onSelect, onStatus
                   {item.use_vehicle && !item.vehicle_id && (
                     <Badge className="bg-amber-50 text-amber-700 hover:bg-amber-50 border border-amber-100 font-semibold text-xs px-2.5 py-1 rounded-md flex items-center gap-1 whitespace-nowrap">
                       <Car className="w-2.5 h-2.5 shrink-0" /> Chờ điều xe
+                    </Badge>
+                  )}
+                  {isOwnRejected && (
+                    <Badge className="status-danger-bg border font-semibold text-xs px-2.5 py-1 rounded-md flex items-center gap-1 whitespace-nowrap">
+                      <XCircle className="w-2.5 h-2.5 shrink-0" /> Cần sửa &amp; đẩy lại
                     </Badge>
                   )}
                   <Badge className={cn("text-xs font-semibold px-2.5 py-1 rounded-md whitespace-nowrap", status.color)}>
@@ -129,7 +139,7 @@ export default function ScheduleCard({ item, isTCTH, profile, onSelect, onStatus
                   className="bg-slate-900 hover:bg-black min-h-11 rounded-xl font-semibold text-sm shadow-sm px-4"
                 >{item.use_vehicle && !item.vehicle_id ? "Cần gán xe trước" : "Duyệt lịch"}</Button>
                 <Button size="sm" variant="outline"
-                  onClick={(e) => { e.stopPropagation(); onStatusUpdate(item.id, 'rejected'); }}
+                  onClick={(e) => { e.stopPropagation(); setRejectOpen(true); }}
                   className="min-h-11 rounded-xl font-semibold text-sm border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900 px-4"
                 >Từ chối</Button>
               </div>
@@ -137,6 +147,13 @@ export default function ScheduleCard({ item, isTCTH, profile, onSelect, onStatus
           </div>
         </div>
       </CardContent>
+
+      <RejectScheduleDialog
+        isOpen={rejectOpen}
+        setIsOpen={setRejectOpen}
+        scheduleTitle={item.title}
+        onConfirm={async (reason) => { await onStatusUpdate(item.id, 'rejected', reason); }}
+      />
     </Card>
   );
 }

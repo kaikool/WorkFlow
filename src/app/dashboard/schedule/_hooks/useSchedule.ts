@@ -294,7 +294,7 @@ export function useSchedule() {
   };
 
   // Handlers
-  const handleStatusUpdate = async (id: string, status: string) => {
+  const handleStatusUpdate = async (id: string, status: string, reason?: string) => {
     try {
       const schedule = schedules.find(s => s.id === id);
       if (status === 'approved' && schedule?.use_vehicle && !schedule?.vehicle_id) {
@@ -305,7 +305,18 @@ export function useSchedule() {
         return;
       }
 
-      const { error } = await supabase.from('schedules').update({ status }).eq('id', id);
+      const updatePayload: any = { status };
+      if (status === 'rejected') {
+        updatePayload.rejection_reason = reason ?? null;
+        updatePayload.rejected_by = profile?.id ?? null;
+        updatePayload.rejected_at = new Date().toISOString();
+      } else if (status === 'approved') {
+        updatePayload.rejection_reason = null;
+        updatePayload.rejected_by = null;
+        updatePayload.rejected_at = null;
+      }
+
+      const { error } = await supabase.from('schedules').update(updatePayload).eq('id', id);
       if (error) throw error;
       if (schedule?.created_by && schedule.created_by !== profile?.id) {
         await sendNotifications([{
@@ -313,7 +324,7 @@ export function useSchedule() {
           title: status === 'approved' ? "Lịch trình Đã Duyệt" : "Lịch trình Từ Chối",
           content: status === 'approved'
             ? `Lịch trình "${schedule.title}" đã được phê duyệt. Chúc bạn có một buổi làm việc hiệu quả.`
-            : `Lịch trình "${schedule.title}" không được phê duyệt. Vui lòng kiểm tra lại.`,
+            : `Lịch trình "${schedule.title}" bị từ chối. Lý do: ${reason || 'Không có lý do được ghi lại.'}`,
           link: "/dashboard/schedule"
         }]);
       }
@@ -323,6 +334,52 @@ export function useSchedule() {
       fetchData();
     } catch (error) {
       notifyError(error, "Không cập nhật được trạng thái lịch trình");
+    }
+  };
+
+  // Creator đẩy lại lịch đã bị từ chối — kèm "Lý do thay đổi" gửi cho TCTH.
+  const handleResubmitSchedule = async (id: string, changeReason: string, editedPayload: any) => {
+    try {
+      const schedule = schedules.find(s => s.id === id);
+      if (!schedule) return;
+
+      const payload = {
+        ...editedPayload,
+        status: 'pending',
+        change_reason: changeReason,
+        rejection_reason: null,
+        rejected_by: null,
+        rejected_at: null,
+      };
+
+      await updateScheduleAction({
+        supabase, toast, profile, allProfiles, schedules, id, updates: payload,
+        findParticipantConflicts, sendNotifications, setIsDetailOpen, fetchData,
+      });
+
+      // Fan-out notification cho danh sách approver (admin + secretary + manager TCTH)
+      const approverIds = allProfiles
+        .filter((p: any) => {
+          if (p.role === 'admin' || p.role === 'secretary') return true;
+          if (p.role !== 'manager') return false;
+          const dept = Array.isArray(p.departments) ? p.departments[0] : p.departments;
+          return dept?.code === '13602' || dept?.name === 'Tổ chức Tổng hợp';
+        })
+        .map((p: any) => p.id)
+        .filter((uid: string) => uid && uid !== profile?.id);
+
+      if (approverIds.length > 0) {
+        await sendNotifications(
+          approverIds.map((uid: string) => ({
+            user_id: uid,
+            title: "Lịch trình được đẩy lại duyệt 🔁",
+            content: `Lịch "${editedPayload.title || schedule.title}" đã được chỉnh sửa và gửi lại để duyệt. Lý do thay đổi: ${changeReason}`,
+            link: "/dashboard/schedule"
+          }))
+        );
+      }
+    } catch (error) {
+      notifyError(error, "Không đẩy lại được lịch trình");
     }
   };
 
@@ -504,6 +561,6 @@ export function useSchedule() {
     getDepartmentName, isScheduleApprover, sendNotifications, weekDays, isTodaySelected,
     now, currentMinutes, startLimit, endLimit, duration, isWithinWorkingHours, currentTimePercent,
     conflicts, resourceConflicts, fetchData, findParticipantConflicts,
-    handleStatusUpdate, handleAssignVehicle, handleDeleteSchedule, handleUpdateEndTime, handleUpdateSchedule, handleCreateSchedule, handleSelectSchedule
+    handleStatusUpdate, handleAssignVehicle, handleDeleteSchedule, handleUpdateEndTime, handleUpdateSchedule, handleResubmitSchedule, handleCreateSchedule, handleSelectSchedule
   };
 }

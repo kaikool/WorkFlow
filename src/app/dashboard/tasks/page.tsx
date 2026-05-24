@@ -118,26 +118,26 @@ function TasksContent() {
         action={
           <div className="flex items-center gap-2">
             {showRecurringLink && (
-              <Button variant="outline" asChild className="min-h-11 rounded-xl font-medium">
+              <Button variant="outline" asChild>
                 <Link href="/dashboard/tasks/recurring">
                   <CalendarClock className="icon-sm" />
-                  <span className="hidden sm:inline ml-1.5">Định kỳ</span>
+                  <span>Định kỳ</span>
                 </Link>
               </Button>
             )}
             {showAnalyticsLink && (
-              <Button variant="outline" asChild className="min-h-11 rounded-xl font-medium">
+              <Button variant="outline" asChild>
                 <Link href="/dashboard/tasks/analytics">
                   <BarChart3 className="icon-sm" />
-                  <span className="hidden sm:inline ml-1.5">Báo cáo</span>
+                  <span>Thống kê</span>
                 </Link>
               </Button>
             )}
             <Button
               onClick={handleOpenCreate}
-              className="bg-primary hover:bg-primary/90 min-h-11 px-5 rounded-xl font-semibold shadow-sm"
+              className="px-5 font-semibold shadow-sm"
             >
-              <Plus className="mr-2 icon-sm" /> Tạo mới
+              <Plus className="icon-sm" /> Tạo mới
             </Button>
           </div>
         }
@@ -147,16 +147,16 @@ function TasksContent() {
       {(showRecurringLink || showAnalyticsLink) && (
         <div className="flex gap-2 sm:hidden">
           {showRecurringLink && (
-            <Button variant="outline" asChild className="flex-1 min-h-11 rounded-xl font-medium">
+            <Button variant="outline" asChild className="flex-1">
               <Link href="/dashboard/tasks/recurring">
-                <CalendarClock className="icon-sm mr-1.5" /> Định kỳ
+                <CalendarClock className="icon-sm" /> Định kỳ
               </Link>
             </Button>
           )}
           {showAnalyticsLink && (
-            <Button variant="outline" asChild className="flex-1 min-h-11 rounded-xl font-medium">
+            <Button variant="outline" asChild className="flex-1">
               <Link href="/dashboard/tasks/analytics">
-                <BarChart3 className="icon-sm mr-1.5" /> Báo cáo
+                <BarChart3 className="icon-sm" /> Thống kê
               </Link>
             </Button>
           )}
@@ -168,9 +168,9 @@ function TasksContent() {
           {isManagerPlus && (
             <TabsTrigger value="inbox" className="rounded-lg py-1.5 font-semibold text-[13px] flex items-center justify-center gap-1.5">
               <Inbox className="icon-sm" />
-              <span>Chờ tôi duyệt</span>
+              <span>Chờ duyệt</span>
               {dash.counts.awaiting_approval + dash.counts.extensions_pending > 0 && (
-                <span className="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold">
+                <span className="ml-1 inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-red-500 text-white text-meta font-bold leading-none">
                   {dash.counts.awaiting_approval + dash.counts.extensions_pending}
                 </span>
               )}
@@ -182,7 +182,7 @@ function TasksContent() {
           {isManagerPlus && (
             <TabsTrigger value={isAdminOrDirector ? 'branch' : 'dept'} className="rounded-lg py-1.5 font-semibold text-[13px] flex items-center justify-center gap-1.5">
               {isAdminOrDirector ? <Globe className="icon-sm" /> : <Building2 className="icon-sm" />}
-              <span>{isAdminOrDirector ? 'Toàn chi nhánh' : 'Phòng tôi'}</span>
+              <span>{isAdminOrDirector ? 'Chi nhánh' : 'Phòng tôi'}</span>
             </TabsTrigger>
           )}
         </TabsList>

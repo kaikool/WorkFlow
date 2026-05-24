@@ -125,7 +125,7 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
           <div className="grid grid-cols-1 gap-4 min-[420px]:grid-cols-2">
             <div className="space-y-2">
               <Label className="text-[13px] font-medium text-slate-500 whitespace-nowrap">Từ ngày</Label>
-              <Popover open={isStartOpen} onOpenChange={setIsStartOpen}>
+              <Popover modal open={isStartOpen} onOpenChange={setIsStartOpen}>
                 <PopoverTrigger asChild>
                   <Button variant="outline" className="w-full h-11 bg-slate-50 border-none rounded-xl font-medium justify-start text-left text-[14px] active:scale-[0.98] transition-all duration-300 ease-in-out truncate">
                     <CalendarIcon className="mr-2 h-4 w-4 text-primary shrink-0" />
@@ -173,7 +173,7 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
           <div className="grid grid-cols-1 gap-4 min-[420px]:grid-cols-2">
             <div className="space-y-2">
               <Label className="text-[13px] font-medium text-slate-500 whitespace-nowrap">Đến ngày</Label>
-              <Popover open={isEndOpen} onOpenChange={setIsEndOpen}>
+              <Popover modal open={isEndOpen} onOpenChange={setIsEndOpen}>
                 <PopoverTrigger asChild>
                   <Button variant="outline" className="w-full h-11 bg-slate-50 border-none rounded-xl font-medium justify-start text-left text-[14px] active:scale-[0.98] transition-all duration-300 ease-in-out truncate">
                     <CalendarIcon className="mr-2 h-4 w-4 text-primary shrink-0" />

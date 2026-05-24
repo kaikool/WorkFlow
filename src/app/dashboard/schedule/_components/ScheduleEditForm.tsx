@@ -28,7 +28,6 @@ interface ScheduleEditFormProps {
   schedule: any;
   vehicles: any[];
   rooms: any[];
-  isTCTH: boolean;
   allProfiles: any[];
   departments: any[];
   detail: any;
@@ -36,8 +35,12 @@ interface ScheduleEditFormProps {
 
 // Form chỉnh sửa lịch trình — hiển thị toàn cửa sổ Dialog
 export default function ScheduleEditForm({
-  isOpen, setIsOpen, schedule, vehicles, rooms, isTCTH, allProfiles, departments, detail
+  isOpen, setIsOpen, schedule, vehicles, rooms, allProfiles, departments, detail
 }: ScheduleEditFormProps) {
+  const isResubmit = detail.editMode === 'resubmit';
+  const reasonLen = (detail.changeReason || '').trim().length;
+  const reasonValid = reasonLen >= 10;
+  const canCoord = !!detail.canCoord;
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="app-dialog-sheet app-dialog-sheet--2xl shadow-2xl">
@@ -57,7 +60,9 @@ export default function ScheduleEditForm({
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div className="min-w-0">
-            <p className="text-[15px] font-bold text-slate-900 truncate">Sửa lịch trình</p>
+            <p className="text-[15px] font-bold text-slate-900 truncate">
+              {isResubmit ? 'Đẩy lại duyệt lịch trình' : 'Sửa lịch trình'}
+            </p>
             <p className="text-[12px] text-slate-500 font-medium truncate">{schedule.title}</p>
           </div>
         </div>
@@ -65,6 +70,29 @@ export default function ScheduleEditForm({
         {/* Nội dung form sửa */}
         <ScrollArea className="app-dialog-sheet-body">
           <div className="space-y-5 p-[var(--app-page-x)]">
+            {/* Lý do thay đổi — bắt buộc khi đẩy lại duyệt */}
+            {isResubmit && (
+              <div className="status-danger-bg border rounded-2xl p-4 item-stack">
+                <Label className="text-[12px] font-semibold pl-0.5">Lý do thay đổi (bắt buộc)</Label>
+                <Textarea
+                  value={detail.changeReason || ''}
+                  onChange={(e) => detail.setChangeReason(e.target.value)}
+                  rows={3}
+                  className="min-h-20 bg-white/70 border-none rounded-xl font-medium text-sm resize-none"
+                  placeholder="Vd: Đã đổi giờ sang chiều để tránh trùng lịch BGĐ, đề nghị duyệt lại..."
+                  autoFocus
+                />
+                <p className={cn(
+                  "text-xs font-medium",
+                  reasonValid ? "opacity-75" : "text-amber-700"
+                )}>
+                  {reasonValid
+                    ? `${reasonLen} ký tự · TCTH sẽ nhận được lý do này khi bạn gửi.`
+                    : `Cần thêm ${10 - reasonLen} ký tự (tối thiểu 10).`}
+                </p>
+              </div>
+            )}
+
             {/* Tiêu đề */}
             <div className="space-y-3">
               <Label className="text-[12px] font-medium text-slate-500 pl-0.5">Tiêu đề lịch trình</Label>
@@ -117,7 +145,7 @@ export default function ScheduleEditForm({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-3">
                 <Label className="text-[12px] font-medium text-slate-500 pl-0.5">Từ ngày</Label>
-                <Popover open={detail.isStartOpen} onOpenChange={detail.setIsStartOpen}>
+                <Popover modal open={detail.isStartOpen} onOpenChange={detail.setIsStartOpen}>
                   <PopoverTrigger asChild>
                     <Button type="button" variant="outline" className="w-full min-h-11 bg-slate-50 border-none rounded-xl font-medium justify-start text-left text-base md:text-sm active:scale-95 transition-all">
                       <CalendarIcon className="mr-2 h-4 w-4 text-primary shrink-0" />
@@ -159,7 +187,7 @@ export default function ScheduleEditForm({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-3">
                 <Label className="text-[12px] font-medium text-slate-500 pl-0.5">Đến ngày</Label>
-                <Popover open={detail.isEndOpen} onOpenChange={detail.setIsEndOpen}>
+                <Popover modal open={detail.isEndOpen} onOpenChange={detail.setIsEndOpen}>
                   <PopoverTrigger asChild>
                     <Button type="button" variant="outline" className="w-full min-h-11 bg-slate-50 border-none rounded-xl font-medium justify-start text-left text-base md:text-sm active:scale-95 transition-all">
                       <CalendarIcon className="mr-2 h-4 w-4 text-primary shrink-0" />
@@ -228,7 +256,7 @@ export default function ScheduleEditForm({
                         <SelectItem value="Khác" className="text-base md:text-sm py-3 md:py-2">Loại khác</SelectItem>
                       </SelectContent>
                     </Select>
-                    {isTCTH && (
+                    {canCoord && (
                       <Select value={detail.editData.vehicle_id || 'none'} onValueChange={(v) => detail.setEditData({ ...detail.editData, vehicle_id: v })}>
                         <SelectTrigger className="min-h-11 bg-white border-none rounded-xl font-medium text-sm shadow-sm"><SelectValue placeholder="Xe cụ thể" /></SelectTrigger>
                         <SelectContent className="rounded-xl border-none shadow-2xl">
@@ -287,11 +315,16 @@ export default function ScheduleEditForm({
                 "min-h-11 px-4 rounded-xl font-medium text-sm shadow-lg active:scale-95 transition-all whitespace-nowrap",
                 detail.editData.type !== 'leave' && detail.conflicts.length > 0
                   ? "bg-amber-500 hover:bg-amber-600 text-white shadow-amber-500/20"
-                  : "bg-primary hover:bg-primary/90 text-white shadow-primary/20"
+                  : isResubmit
+                    ? "bg-red-600 hover:bg-red-700 text-white shadow-red-600/20"
+                    : "bg-primary hover:bg-primary/90 text-white shadow-primary/20"
               )}
               onClick={detail.handleSaveSchedule}
+              disabled={isResubmit && !reasonValid}
             >
-              {detail.editData.type !== 'leave' && detail.conflicts.length > 0 ? 'Vẫn tiếp tục lưu?' : 'Lưu lịch trình'}
+              {isResubmit
+                ? 'Gửi lại để duyệt'
+                : (detail.editData.type !== 'leave' && detail.conflicts.length > 0 ? 'Vẫn tiếp tục lưu?' : 'Lưu lịch trình')}
             </Button>
           </div>
       </DialogContent>

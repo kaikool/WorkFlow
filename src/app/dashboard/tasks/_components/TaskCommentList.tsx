@@ -15,9 +15,10 @@ interface Props {
   taskId: string;
   comments: TaskDetail['comments'];
   onAdded: () => void;
+  canCompose?: boolean;
 }
 
-export function TaskCommentList({ taskId, comments, onAdded }: Props) {
+export function TaskCommentList({ taskId, comments, onAdded, canCompose = true }: Props) {
   const [body, setBody] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -72,27 +73,33 @@ export function TaskCommentList({ taskId, comments, onAdded }: Props) {
       </div>
 
       <div className="relative pt-3 border-t border-slate-100">
-        <Textarea
-          rows={2}
-          value={body}
-          onChange={(e) => setBody(e.target.value)}
-          placeholder="Viết bình luận..."
-          className="rounded-2xl bg-slate-50 border-none focus-visible:ring-0 resize-none pr-12 pl-4 py-3"
-        />
-        <button
-          type="button"
-          onClick={handleSubmit}
-          disabled={disabled}
-          aria-label="Gửi bình luận"
-          className={cn(
-            'absolute right-2 bottom-2 w-9 h-9 inline-flex items-center justify-center rounded-full transition-all',
-            disabled
-              ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
-              : 'bg-primary text-white hover:bg-primary/90 active:scale-90',
-          )}
-        >
-          {busy ? <Loader2 className="icon-sm animate-spin" /> : <Send className="icon-sm" />}
-        </button>
+        {canCompose ? (
+          <>
+            <Textarea
+              rows={2}
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              placeholder="Viết bình luận..."
+              className="rounded-2xl bg-slate-50 border-none focus-visible:ring-0 resize-none pr-12 pl-4 py-3"
+            />
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={disabled}
+              aria-label="Gửi bình luận"
+              className={cn(
+                'absolute right-2 bottom-2 w-9 h-9 inline-flex items-center justify-center rounded-full transition-all',
+                disabled
+                  ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                  : 'bg-primary text-white hover:bg-primary/90 active:scale-90',
+              )}
+            >
+              {busy ? <Loader2 className="icon-sm animate-spin" /> : <Send className="icon-sm" />}
+            </button>
+          </>
+        ) : (
+          <p className="text-meta italic">Bạn đang ở chế độ quản trị hệ thống — chỉ xem.</p>
+        )}
       </div>
     </section>
   );

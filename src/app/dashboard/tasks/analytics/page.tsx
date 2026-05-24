@@ -1,9 +1,8 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ChevronLeft, Download, BarChart3, Loader2 } from 'lucide-react';
+import { Download, BarChart3, Loader2 } from 'lucide-react';
 import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
@@ -77,15 +76,6 @@ export default function AnalyticsPage() {
 
   return (
     <div className="page-container group-stack animate-fade-in-up">
-      <div>
-        <Button variant="ghost" asChild className="p-0 hover:bg-transparent text-slate-500 hover:text-slate-900">
-          <Link href="/dashboard/tasks" className="flex items-center gap-2 min-h-11">
-            <ChevronLeft className="icon-sm" />
-            <span className="text-subtitle font-medium">Công việc</span>
-          </Link>
-        </Button>
-      </div>
-
       <PageHeader
         title="Báo cáo tổng hợp"
         description={`Từ ${format(from, 'dd/MM', { locale: vi })} đến ${format(to, 'dd/MM/yyyy', { locale: vi })}`}
@@ -94,9 +84,9 @@ export default function AnalyticsPage() {
             variant="outline"
             onClick={handleExport}
             disabled={!data || loading}
-            className="min-h-11 px-5 rounded-xl font-medium"
+            className="px-5"
           >
-            <Download className="icon-sm mr-1.5" /> Tải Excel
+            <Download className="icon-sm" /> Tải Excel
           </Button>
         }
       />

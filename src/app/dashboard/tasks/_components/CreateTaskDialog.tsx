@@ -267,7 +267,7 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
                     className={cn(
                       'min-h-16 p-3 rounded-xl border text-left transition-all',
                       reportTarget === 'department'
-                        ? 'bg-primary/5 border-primary/30 ring-2 ring-primary/30'
+                        ? 'bg-primary/10 border-primary'
                         : 'bg-white border-slate-200 hover:bg-slate-50',
                     )}
                   >
@@ -275,7 +275,6 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
                       <Building2 className="icon-md text-amber-500" />
                       <span className="heading-card">Cả phòng ban</span>
                     </div>
-                    <p className="text-meta mt-1">TP phòng tự phân công cán bộ.</p>
                   </button>
                   <button
                     type="button"
@@ -283,7 +282,7 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
                     className={cn(
                       'min-h-16 p-3 rounded-xl border text-left transition-all',
                       reportTarget === 'profile'
-                        ? 'bg-primary/5 border-primary/30 ring-2 ring-primary/30'
+                        ? 'bg-primary/10 border-primary'
                         : 'bg-white border-slate-200 hover:bg-slate-50',
                     )}
                   >
@@ -291,7 +290,6 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
                       <UserIcon className="icon-md text-primary" />
                       <span className="heading-card">Cán bộ cụ thể</span>
                     </div>
-                    <p className="text-meta mt-1">Đích danh cán bộ tự nộp.</p>
                   </button>
                 </div>
               )}
@@ -327,7 +325,7 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="tight-stack">
                 <Label className="text-label">Hạn hoàn thành</Label>
-                <Popover>
+                <Popover modal>
                   <PopoverTrigger asChild>
                     <Button
                       variant="outline"

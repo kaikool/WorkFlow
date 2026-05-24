@@ -91,6 +91,14 @@ export default function MemberDetailPage() {
  const isAdmin = myProfileData?.role === 'admin';
  const isSelf = profile.id === myProfileData?.id;
 
+ // Admin là quản trị hệ thống — không hiển thị như thành viên chi nhánh.
+ // Chỉ chính admin xem được trang của admin khác (debug).
+ if (profile.role === 'admin' && !isAdmin && !isSelf) {
+   notifyError(null, "Không tìm thấy thông tin cán bộ.");
+   router.push('/dashboard/team');
+   return;
+ }
+
  if (!isAdmin && !isSameDept && !isSelf) {
  notifyError(null, "Bạn không có quyền xem thông tin cán bộ thuộc đơn vị khác.");
  router.push('/dashboard/team');
@@ -160,13 +168,13 @@ export default function MemberDetailPage() {
  scope: recognitionScope, type: recognitionType
  });
 
- // Lấy danh sách những người cần nhận thông báo
+ // Lấy danh sách những người cần nhận thông báo (loại admin — không phải user chi nhánh)
  let targetUserIds: string[] = [];
  if (recognitionScope === 'branch') {
- const { data: allProfiles } = await supabase.from('profiles').select('id');
+ const { data: allProfiles } = await supabase.from('profiles').select('id').neq('role', 'admin');
   targetUserIds = allProfiles?.map((p: any) => p.id) || [];
  } else if (recognitionScope === 'department') {
- const { data: deptProfiles } = await supabase.from('profiles').select('id').eq('department_id', member.department_id);
+ const { data: deptProfiles } = await supabase.from('profiles').select('id').eq('department_id', member.department_id).neq('role', 'admin');
   targetUserIds = deptProfiles?.map((p: any) => p.id) || [];
  } else {
  targetUserIds = [id as string]; // Mặc định chỉ gửi cho người nhận

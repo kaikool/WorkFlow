@@ -100,6 +100,7 @@ export function useHandover(): UseHandoverState {
           supabase
             .from("profiles")
             .select("id, full_name, avatar_url, role, department_id, departments ( id, name, code )")
+            .neq("role", "admin")
             .order("full_name"),
           fetchAllDocuments(),
           fetchCategories(),

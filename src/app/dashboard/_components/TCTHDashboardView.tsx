@@ -153,7 +153,6 @@ export default function TCTHDashboardView(props: TCTHViewProps) {
         schedules={schedules}
         vehicles={vehicles}
         rooms={rooms}
-        isTCTH={true}
         allProfiles={allProfiles}
         departments={departments}
         currentProfile={profile}

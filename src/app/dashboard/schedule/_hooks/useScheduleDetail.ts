@@ -4,6 +4,7 @@ import React from "react";
 import { format } from "date-fns";
 import { filterBGD, filterStaff, resolveParticipantIds, checkConflicts, checkResourceConflicts } from "../_lib/utils";
 import { confirmDialog } from "@/components/ui/confirm-dialog";
+import { canCoordinateSharedResources } from "@/lib/permissions";
 
 interface UseScheduleDetailProps {
   isOpen: boolean;
@@ -13,19 +14,21 @@ interface UseScheduleDetailProps {
   rooms: any[];
   allProfiles: any[];
   currentProfile: any;
-  isTCTH: boolean;
   onAssignVehicle: (scheduleId: string, vehicleId: string | null, driverId: string | null) => void;
   onUpdateEndTime: (scheduleId: string, newEndTime: string) => void;
   onUpdateSchedule: (scheduleId: string, updates: any) => void;
+  onResubmitSchedule?: (scheduleId: string, changeReason: string, editedPayload: any) => void;
 }
 
 export function useScheduleDetail({
-  isOpen, schedule, schedules, vehicles, rooms, allProfiles, currentProfile, isTCTH,
-  onAssignVehicle, onUpdateEndTime, onUpdateSchedule
+  isOpen, schedule, schedules, vehicles, rooms, allProfiles, currentProfile,
+  onAssignVehicle, onUpdateEndTime, onUpdateSchedule, onResubmitSchedule
 }: UseScheduleDetailProps) {
   // --- Trạng thái chỉnh sửa ---
   const [isEditingTime, setIsEditingTime] = React.useState(false);
   const [isEditingSchedule, setIsEditingSchedule] = React.useState(false);
+  const [editMode, setEditMode] = React.useState<'edit' | 'resubmit'>('edit');
+  const [changeReason, setChangeReason] = React.useState("");
   const [newEndTime, setNewEndTime] = React.useState("");
   const [editData, setEditData] = React.useState<any>({});
 
@@ -55,6 +58,8 @@ export function useScheduleDetail({
       setNewEndTime(format(new Date(schedule.end_time), "yyyy-MM-dd'T'HH:mm"));
       setIsEditingTime(false);
       setIsEditingSchedule(false);
+      setEditMode('edit');
+      setChangeReason("");
       setTempVehicleId(schedule.vehicle_id || null);
       setTempDriverId(schedule.driver_id || null);
 
@@ -154,6 +159,13 @@ export function useScheduleDetail({
   const isParticipant = schedule?.participants?.some((p: any) => p.profile?.id === currentProfile?.id);
   const isCreator = schedule?.created_by === currentProfile?.id;
   const isLeave = schedule?.type === 'leave';
+  const canCoord = canCoordinateSharedResources(currentProfile);
+
+  const openEditMode = (mode: 'edit' | 'resubmit' = 'edit') => {
+    setEditMode(mode);
+    setChangeReason("");
+    setIsEditingSchedule(true);
+  };
 
   // --- Hàm xử lý ---
   const handleSaveTime = async () => {
@@ -192,6 +204,8 @@ export function useScheduleDetail({
     if (!isLeaveType && isBranchLocation && (!editData.room_id || editData.room_id === 'none')) return;
     if (!isLeaveType && !isBranchLocation && !editData.location?.trim()) return;
 
+    if (editMode === 'resubmit' && changeReason.trim().length < 10) return;
+
     const finalParticipantIds = isLeaveType
       ? [currentProfile?.id].filter(Boolean)
       : resolveParticipantIds({ selectedParticipants, bgdMode, selectedBGD, deptMode, filterDepts, participantMode, allProfiles });
@@ -199,7 +213,7 @@ export function useScheduleDetail({
     const startString = `${format(editStartDate || new Date(), 'yyyy-MM-dd')}T${editStartTime}`;
     const endString = `${format(editEndDate || new Date(), 'yyyy-MM-dd')}T${editEndTime}`;
 
-    onUpdateSchedule(schedule.id, {
+    const payload = {
       title: editData.title,
       description: editData.description || null,
       type: editData.type,
@@ -211,7 +225,13 @@ export function useScheduleDetail({
       vehicle_id: !isLeaveType && editData.vehicle_id !== 'none' ? editData.vehicle_id : null,
       requested_vehicle_type: !isLeaveType && editData.use_vehicle ? editData.requested_vehicle_type : null,
       participant_ids: finalParticipantIds
-    });
+    };
+
+    if (editMode === 'resubmit' && onResubmitSchedule) {
+      onResubmitSchedule(schedule.id, changeReason.trim(), payload);
+    } else {
+      onUpdateSchedule(schedule.id, payload);
+    }
   };
 
   const handleStartTimeChange = (v: string) => {
@@ -231,6 +251,8 @@ export function useScheduleDetail({
     // Trạng thái chỉnh sửa
     isEditingTime, setIsEditingTime,
     isEditingSchedule, setIsEditingSchedule,
+    editMode, setEditMode, openEditMode,
+    changeReason, setChangeReason,
     newEndTime, setNewEndTime,
     editData, setEditData,
     // Điều phối xe
@@ -252,7 +274,7 @@ export function useScheduleDetail({
     selectedParticipants, setSelectedParticipants,
     // Tính toán phái sinh
     conflicts, matchedVehicle, headerBg, badgeColor,
-    isParticipant, isCreator, isLeave,
+    isParticipant, isCreator, isLeave, canCoord,
     // Hàm xử lý
     handleSaveTime, handleEndNow, handleSaveSchedule,
     handleStartTimeChange, handleVehicleSelect,

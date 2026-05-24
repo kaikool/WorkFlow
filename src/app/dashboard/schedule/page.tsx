@@ -33,7 +33,7 @@ export default function SchedulePage() {
     sendNotifications, weekDays, isTodaySelected,
     currentTimePercent, startLimit, duration,
     conflicts, resourceConflicts, fetchData,
-    handleStatusUpdate, handleUpdateEndTime, handleUpdateSchedule, handleCreateSchedule, handleSelectSchedule
+    handleStatusUpdate, handleUpdateEndTime, handleUpdateSchedule, handleResubmitSchedule, handleCreateSchedule, handleSelectSchedule
   } = scheduleProps;
 
   if (!mounted) {
@@ -101,7 +101,6 @@ export default function SchedulePage() {
         schedules={schedules} vehicles={vehicles} rooms={rooms}
         selectedDate={selectedDate}
         profile={profile} allProfiles={allProfiles}
-        isTCTH={canCoordinateResources}
         canApproveLeavePermission={canApproveLeave(profile)}
         pendingVehicleCount={pendingVehicleCount}
         pendingLeavesCount={pendingLeavesCount}
@@ -116,7 +115,7 @@ export default function SchedulePage() {
       <ScheduleDetailDialog
         isOpen={isDetailOpen} setIsOpen={setIsDetailOpen}
         schedule={selectedSchedule} schedules={schedules} vehicles={vehicles} rooms={rooms}
-        isTCTH={canCoordinateResources} allProfiles={allProfiles} departments={departments}
+        allProfiles={allProfiles} departments={departments}
         currentProfile={profile}
         onAssignVehicle={async (id, vId, dId) => {
           try {
@@ -150,6 +149,7 @@ export default function SchedulePage() {
         }}
         onUpdateEndTime={handleUpdateEndTime}
         onUpdateSchedule={handleUpdateSchedule}
+        onResubmitSchedule={handleResubmitSchedule}
       />
     </div>
   );

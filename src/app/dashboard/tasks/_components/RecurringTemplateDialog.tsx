@@ -12,12 +12,16 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { Loader2, Flag } from 'lucide-react';
+import { Loader2, Flag, Building2, User as UserIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/utils/supabase/client';
 import { fetchCurrentProfile } from '@/lib/fetch-profile';
 import { notifyError, notifyValidation, notifySuccess } from '@/lib/notify';
-import { canAssignTaskToOthers, getProfileDepartmentCode } from '@/lib/permissions';
+import {
+  canAssignTaskToOthers,
+  canRequestReport,
+  getProfileDepartmentCode,
+} from '@/lib/permissions';
 import { upsertRecurringTemplate } from '../_lib/recurringActions';
 import { fetchAssignableProfiles, fetchDepartments } from '../_lib/fetchTasks';
 import { PeoplePicker } from '@/components/ui/people-picker';
@@ -62,7 +66,7 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
       setProfile(p);
       const [list, depts] = await Promise.all([
         fetchAssignableProfiles({
-          context: 'create-report',
+          context: taskType === 'task' ? 'create-task' : 'create-report',
           caller: {
             id: p.id,
             role: p.role,
@@ -75,7 +79,7 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
       setProfiles(list);
       setDepartments(depts);
     })();
-  }, [isOpen, supabase]);
+  }, [isOpen, supabase, taskType]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -104,14 +108,34 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
   }, [isOpen, editing]);
 
   const canAssign = canAssignTaskToOthers(profile);
+  const canMakeReport = canRequestReport(profile);
+  // Tab "Giao việc": admin/director/manager. Tab "Báo cáo": + staff hub.
+  const showTaskTab = canAssign;
+  const showReportTab = canMakeReport;
+
+  // Task chỉ giao cho cá nhân (không qua phòng) — auto-lock target khi đổi type.
+  useEffect(() => {
+    if (taskType === 'task') setTarget('profile');
+  }, [taskType]);
+
+  // Khi mở dialog mới (không edit) — chọn tab mặc định theo quyền.
+  useEffect(() => {
+    if (!isOpen || editing) return;
+    if (!canAssign && canMakeReport) setTaskType('report');
+    else if (canAssign && !canMakeReport) setTaskType('task');
+  }, [isOpen, editing, canAssign, canMakeReport]);
 
   const handleSave = async () => {
     if (!title.trim()) { notifyValidation('Vui lòng nhập tiêu đề'); return; }
-    if (target === 'department' && deptIds.length === 0 && userIds.length === 0) {
+    if (taskType === 'task' && userIds.length === 0) {
+      notifyValidation('Vui lòng chọn người nhận');
+      return;
+    }
+    if (taskType === 'report' && target === 'department' && deptIds.length === 0) {
       notifyValidation('Vui lòng chọn phòng ban nhận');
       return;
     }
-    if (target === 'profile' && userIds.length === 0) {
+    if (taskType === 'report' && target === 'profile' && userIds.length === 0) {
       notifyValidation('Vui lòng chọn cán bộ nhận');
       return;
     }
@@ -131,8 +155,9 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
       description: description.trim() || null,
       task_type: taskType,
       priority,
-      target_department_ids: target === 'department' ? deptIds : [],
-      target_user_ids: target === 'profile' ? userIds : [],
+      // Task: luôn theo cá nhân. Report: theo lựa chọn target.
+      target_department_ids: taskType === 'report' && target === 'department' ? deptIds : [],
+      target_user_ids: taskType === 'task' || target === 'profile' ? userIds : [],
       schedule_kind: kind,
       weekly_dow: kind === 'weekly' ? weeklyDow : null,
       weekly_time: kind === 'weekly' ? weeklyTime : null,
@@ -153,21 +178,39 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
       <DialogContent className="app-dialog-sheet app-dialog-sheet--2xl shadow-2xl">
         <DialogHeader className="app-dialog-sheet-header">
           <DialogTitle className="heading-section">
-            {editing ? 'Sửa lịch định kỳ' : 'Tạo lịch định kỳ'}
+            {editing
+              ? (taskType === 'task' ? 'Sửa lịch giao việc định kỳ' : 'Sửa lịch báo cáo định kỳ')
+              : (taskType === 'task' ? 'Lịch giao việc định kỳ' : 'Lịch báo cáo định kỳ')}
           </DialogTitle>
           <DialogDescription className="text-subtitle">
-            Máy sẽ tự sinh task theo lịch — không cần thao tác lại mỗi lần.
+            {taskType === 'task'
+              ? 'Máy tự giao việc cho cán bộ theo lịch — không cần nhắc lại mỗi kỳ.'
+              : 'Máy tự yêu cầu báo cáo theo lịch — không cần thao tác lại mỗi lần.'}
           </DialogDescription>
         </DialogHeader>
 
         <div className="app-dialog-sheet-body">
           <div className="px-[var(--app-page-x)] py-4 group-stack">
+            {/* Tabs A/B — chỉ hiện khi có cả 2 quyền và không edit (edit khoá type) */}
+            {!editing && showTaskTab && showReportTab && (
+              <Tabs value={taskType} onValueChange={(v) => setTaskType(v as TaskType)}>
+                <TabsList className="grid grid-cols-2 min-h-11">
+                  <TabsTrigger value="task" className="rounded-lg font-semibold data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                    Giao việc
+                  </TabsTrigger>
+                  <TabsTrigger value="report" className="rounded-lg font-semibold data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                    Yêu cầu báo cáo
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            )}
+
             <div className="tight-stack">
               <Label className="text-label">Tiêu đề</Label>
               <Input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="Tên task sinh ra mỗi kỳ..."
+                placeholder={taskType === 'task' ? 'Tên công việc sinh ra mỗi kỳ...' : 'Tên báo cáo sinh ra mỗi kỳ...'}
                 className="min-h-11 rounded-xl bg-slate-50 border-none"
               />
             </div>
@@ -178,21 +221,51 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
                 rows={2}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
+                placeholder={taskType === 'task'
+                  ? 'Kế hoạch, yêu cầu, mục tiêu công việc...'
+                  : 'Số liệu, biểu mẫu, lưu ý khi nộp...'}
                 className="rounded-xl bg-slate-50 border-none resize-none"
               />
             </div>
 
             <div className="group-stack">
-              <Label className="text-label">Đối tượng nhận</Label>
-              {canAssign && (
-                <Tabs value={target} onValueChange={(v) => setTarget(v as any)}>
-                  <TabsList className="grid grid-cols-2 min-h-10">
-                    <TabsTrigger value="department" className="rounded-lg font-semibold">Cả phòng ban</TabsTrigger>
-                    <TabsTrigger value="profile" className="rounded-lg font-semibold">Cán bộ cụ thể</TabsTrigger>
-                  </TabsList>
-                </Tabs>
+              <Label className="text-label">{taskType === 'task' ? 'Người nhận' : 'Đối tượng nhận'}</Label>
+              {/* Report: cho chọn cả phòng / cán bộ. Task: luôn theo cá nhân. */}
+              {taskType === 'report' && (
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setTarget('department')}
+                    className={cn(
+                      'min-h-16 p-3 rounded-xl border text-left transition-all',
+                      target === 'department'
+                        ? 'bg-primary/10 border-primary'
+                        : 'bg-white border-slate-200 hover:bg-slate-50',
+                    )}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Building2 className="icon-md text-amber-500" />
+                      <span className="heading-card">Cả phòng ban</span>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTarget('profile')}
+                    className={cn(
+                      'min-h-16 p-3 rounded-xl border text-left transition-all',
+                      target === 'profile'
+                        ? 'bg-primary/10 border-primary'
+                        : 'bg-white border-slate-200 hover:bg-slate-50',
+                    )}
+                  >
+                    <div className="flex items-center gap-2">
+                      <UserIcon className="icon-md text-primary" />
+                      <span className="heading-card">Cán bộ cụ thể</span>
+                    </div>
+                  </button>
+                </div>
               )}
-              {target === 'department' ? (
+              {taskType === 'report' && target === 'department' ? (
                 <DepartmentPicker
                   items={departments}
                   selected={deptIds}
@@ -230,7 +303,9 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
 
             <div className="grid grid-cols-2 gap-3">
               <div className="tight-stack">
-                <Label className="text-label">Hạn task = sau N ngày</Label>
+                <Label className="text-label">
+                  {taskType === 'task' ? 'Hạn làm xong = sau N ngày' : 'Hạn nộp = sau N ngày'}
+                </Label>
                 <Input
                   type="number"
                   min={1}

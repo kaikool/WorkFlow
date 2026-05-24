@@ -86,7 +86,7 @@ export function DepartmentPicker({
                     className={cn(
                       'flex items-center gap-3 min-h-11 px-3 py-2 rounded-full border text-left transition-all',
                       isSelected
-                        ? 'bg-primary/10 border-primary/30 ring-2 ring-primary/30'
+                        ? 'bg-primary/10 border-primary'
                         : 'bg-white border-slate-200 hover:bg-slate-50',
                     )}
                   >
