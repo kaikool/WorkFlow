@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Mail, Camera, Loader2, LogOut, History, Phone, Calendar,
-  Briefcase, MapPin, Hash, Pencil, CheckCircle2, Cake, IdCard, UserCog,
+  Briefcase, Pencil, CheckCircle2, Cake, IdCard, UserCog,
   ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -121,7 +121,11 @@ export default function ProfilePage() {
   const statusMeta = STATUS_BADGES[status];
   const years = getYearsOfService(profile.branch_join_date);
   const deptName = profile.departments?.name ?? null;
-  const mailto = profile.ad_account ? `mailto:${profile.ad_account}@agribank.com.vn` : null;
+  // Email: legacy lưu username (không có @), mới user tự nhập đầy đủ. Fallback auth email nếu rỗng.
+  const emailAddress = profile.ad_account
+    ? (profile.ad_account.includes('@') ? profile.ad_account : `${profile.ad_account}@agribank.com.vn`)
+    : (profile.email ?? null);
+  const mailto = emailAddress ? `mailto:${emailAddress}` : null;
 
   const heroBg = (() => {
     if (status === 'on_leave') return 'bg-amber-50/50';
@@ -224,10 +228,7 @@ export default function ProfilePage() {
       <div className="group-stack">
         {/* CONTACT — thông tin hiển thị trong danh bạ Nhân sự */}
         <section className="premium-card p-4 sm:p-5 item-stack">
-          <div className="flex items-center justify-between">
-            <h4 className="heading-card">Thông tin liên hệ</h4>
-            <span className="text-meta">Hiển thị trong danh bạ Nhân sự</span>
-          </div>
+          <h4 className="heading-card">Thông tin liên hệ</h4>
             <div className="flex flex-col">
               <ContactRow
                 icon={Briefcase}
@@ -237,9 +238,9 @@ export default function ProfilePage() {
               <ContactRow
                 icon={Mail}
                 label="Email"
-                value={profile.email ?? '—'}
-                href={profile.email ? `mailto:${profile.email}` : undefined}
-                accent={!!profile.email}
+                value={emailAddress ?? '—'}
+                href={mailto ?? undefined}
+                accent={!!mailto}
                 valueClassName="truncate"
               />
               <ContactRow
@@ -248,18 +249,6 @@ export default function ProfilePage() {
                 value={profile.phone ?? '—'}
                 href={profile.phone ? `tel:${profile.phone}` : undefined}
                 accent={!!profile.phone}
-              />
-              <ContactRow
-                icon={Hash}
-                label="Số nội bộ"
-                value={profile.extension ?? '—'}
-                href={profile.extension ? `tel:${profile.extension}` : undefined}
-                accent={!!profile.extension}
-              />
-              <ContactRow
-                icon={MapPin}
-                label="Vị trí chỗ ngồi"
-                value={profile.seat_location ?? '—'}
               />
               <ContactRow
                 icon={Calendar}
@@ -274,10 +263,7 @@ export default function ProfilePage() {
 
           {/* SENSITIVE — thông tin nhân sự (chỉ self thấy ở đây) */}
           <section className="premium-card p-4 sm:p-5 item-stack">
-            <div className="flex items-center justify-between">
-              <h4 className="heading-card">Thông tin nhân sự</h4>
-              <span className="text-meta">Chỉ bạn và bộ phận Nhân sự thấy</span>
-            </div>
+            <h4 className="heading-card">Thông tin nhân sự</h4>
             <div className="flex flex-col">
               <ContactRow
                 icon={Cake}

@@ -57,17 +57,12 @@ export function AppDataProvider({ currentUserId, children }: Props) {
  const supabase = useMemo(() => createClient(), []);
  const scope = currentUserId;
 
- // Hydrate ngay từ localStorage — render trước cả khi network response về
- const [profiles, setProfiles] = useState<Profile[]>(
- () => getCached<Profile[]>(scope, 'profiles', TTL.profiles) ?? []
- );
- const [departments, setDepartments] = useState<Department[]>(
- () => getCached<Department[]>(scope, 'departments', TTL.departments) ?? []
- );
- const [outOfOffice, setOutOfOffice] = useState<Record<string, OutOfOfficeRecord>>(
- () => getCached<Record<string, OutOfOfficeRecord>>(scope, 'ooo', TTL.ooo) ?? {}
- );
- const [hydrating, setHydrating] = useState(profiles.length === 0);
+ // SSR/first client render LUÔN dùng state rỗng để khớp HTML server gửi xuống.
+ // Sau khi mount mới đọc localStorage trong useEffect — tránh hydration mismatch.
+ const [profiles, setProfiles] = useState<Profile[]>([]);
+ const [departments, setDepartments] = useState<Department[]>([]);
+ const [outOfOffice, setOutOfOffice] = useState<Record<string, OutOfOfficeRecord>>({});
+ const [hydrating, setHydrating] = useState(true);
 
  const fetchProfiles = useCallback(async () => {
  const { data, error } = await supabase
@@ -118,6 +113,15 @@ export function AppDataProvider({ currentUserId, children }: Props) {
  // Initial fetch + realtime subscribe
  useEffect(() => {
  let mounted = true;
+
+ // Hydrate từ localStorage SAU mount để không phá hydration SSR
+ const cachedProfiles = getCached<Profile[]>(scope, 'profiles', TTL.profiles);
+ const cachedDepts = getCached<Department[]>(scope, 'departments', TTL.departments);
+ const cachedOoo = getCached<Record<string, OutOfOfficeRecord>>(scope, 'ooo', TTL.ooo);
+ if (cachedProfiles) setProfiles(cachedProfiles);
+ if (cachedDepts) setDepartments(cachedDepts);
+ if (cachedOoo) setOutOfOffice(cachedOoo);
+
  void Promise.all([fetchProfiles(), fetchDepartments(), fetchOutOfOffice()]).finally(() => {
  if (mounted) setHydrating(false);
  });

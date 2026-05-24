@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useMemo, useState } from "react";
-import { Phone, Mail, Award, Pencil, Briefcase, MapPin, Hash, Calendar, ChevronRight } from "lucide-react";
+import { Phone, Mail, Award, Pencil, Briefcase, Calendar, ChevronRight } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -66,7 +66,12 @@ export default function ProfileDetailDialog({
   const statusMeta = STATUS_BADGES[status];
   const years = target ? getYearsOfService(target.branch_join_date) : null;
   const deptName = target?.departments?.name ?? (Array.isArray(target?.departments) ? target?.departments[0]?.name : null);
-  const mailto = target?.ad_account ? `mailto:${target.ad_account}@agribank.com.vn` : null;
+  // Email: dữ liệu legacy lưu username (không có @), dữ liệu mới user tự nhập đầy đủ.
+  // Hiển thị + mailto đều phải xử lý cả 2 dạng.
+  const emailAddress = target?.ad_account
+    ? (target.ad_account.includes('@') ? target.ad_account : `${target.ad_account}@yourbank.com.vn`)
+    : null;
+  const mailto = emailAddress ? `mailto:${emailAddress}` : null;
 
   const scrollToRecog = () => {
     document.getElementById('recognitions-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -125,7 +130,7 @@ export default function ProfileDetailDialog({
                       <Button
                         size="icon"
                         variant="ghost"
-                        className="h-9 w-9 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-white shrink-0"
+                        className="h-9 w-9 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-white shrink-0 mr-9"
                         onClick={() => setEditOpen(true)}
                         aria-label="Sửa hồ sơ"
                       >
@@ -164,24 +169,12 @@ export default function ProfileDetailDialog({
                         accent={!!target.phone}
                       />
                       <ContactRow
-                        icon={Hash}
-                        label="Số nội bộ"
-                        value={target.extension ?? '—'}
-                        href={target.extension ? `tel:${target.extension}` : undefined}
-                        accent={!!target.extension}
-                      />
-                      <ContactRow
                         icon={Mail}
                         label="Email"
-                        value={target.ad_account ? `${target.ad_account}@agribank.com.vn` : '—'}
+                        value={emailAddress ?? '—'}
                         href={mailto ?? undefined}
                         accent={!!mailto}
                         valueClassName="truncate"
-                      />
-                      <ContactRow
-                        icon={MapPin}
-                        label="Vị trí"
-                        value={target.seat_location ?? '—'}
                       />
                       <ContactRow
                         icon={Calendar}

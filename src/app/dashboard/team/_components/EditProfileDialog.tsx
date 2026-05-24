@@ -16,10 +16,10 @@ import { notifyError, notifySuccess, notifyValidation } from "@/lib/notify";
 import { useAppData } from "@/hooks/use-app-data";
 
 // Form sửa hồ sơ — 2 mode:
-//  - Self: chỉnh phone, extension, seat_location, avatar_url, birthday, gender, birthday_notify_optout.
+//  - Self: chỉnh phone, ad_account (email free-text), avatar_url, birthday, gender, birthday_notify_optout.
 //  - Admin/HR: thêm full_name, title, department_id, role, is_department_head,
-//              branch_join_date, ad_account, employee_code.
-// Validation: phone VN, extension 3-6 ký tự số.
+//              branch_join_date, employee_code.
+// Validation: phone VN, ad_account check email format (cho phép full email do user tự nhập).
 // Avatar upload đi qua AvatarCropDialog để user căn khung mặt.
 interface EditProfileDialogProps {
   open: boolean;
@@ -30,7 +30,8 @@ interface EditProfileDialogProps {
 }
 
 const PHONE_VN_RE = /^(0|\+?84)(\d){9}$/;
-const EXTENSION_RE = /^\d{3,6}$/;
+// Email regex đủ chặt để bắt typo, đủ lỏng cho mọi domain (không cứng @agribank.com.vn)
+const EMAIL_RE = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/i;
 
 export default function EditProfileDialog({ open, onOpenChange, target, viewer, onSaved }: EditProfileDialogProps) {
   const supabase = useMemo(() => createClient(), []);
@@ -49,8 +50,6 @@ export default function EditProfileDialog({ open, onOpenChange, target, viewer, 
     setForm({
       full_name: target.full_name ?? '',
       phone: target.phone ?? '',
-      extension: target.extension ?? '',
-      seat_location: target.seat_location ?? '',
       avatar_url: target.avatar_url ?? '',
       title: target.title ?? '',
       department_id: target.department_id ?? '',
@@ -100,15 +99,17 @@ export default function EditProfileDialog({ open, onOpenChange, target, viewer, 
 
   const submit = async () => {
     if (form.phone && !PHONE_VN_RE.test(form.phone)) { notifyValidation("Số điện thoại không hợp lệ"); return; }
-    if (form.extension && !EXTENSION_RE.test(form.extension)) { notifyValidation("Số nội bộ 3-6 chữ số"); return; }
+    if (form.ad_account && !EMAIL_RE.test(form.ad_account)) {
+      notifyValidation("Email không hợp lệ");
+      return;
+    }
     if (isAdminMode && !form.full_name?.trim()) { notifyValidation("Họ tên không được trống"); return; }
 
     setSaving(true);
     try {
       const payload: any = {
         phone: form.phone || null,
-        extension: form.extension || null,
-        seat_location: form.seat_location || null,
+        ad_account: form.ad_account || null,
         avatar_url: form.avatar_url || null,
         birthday: form.birthday || null,
         gender: form.gender || null,
@@ -121,7 +122,6 @@ export default function EditProfileDialog({ open, onOpenChange, target, viewer, 
         payload.department_id = form.department_id || null;
         payload.is_department_head = !!form.is_department_head;
         payload.branch_join_date = form.branch_join_date || null;
-        payload.ad_account = form.ad_account || null;
         payload.employee_code = form.employee_code || null;
         // Chỉ admin được sửa role (hr_officer không leo quyền)
         if (viewer.role === 'admin') payload.role = form.role;
@@ -186,23 +186,25 @@ export default function EditProfileDialog({ open, onOpenChange, target, viewer, 
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="item-stack !gap-2">
-                  <Label className="text-label">Số điện thoại</Label>
-                  <Input value={form.phone} onChange={(e) => setField('phone', e.target.value)} placeholder="09xx…" className="min-h-11 rounded-xl" />
-                </div>
-                <div className="item-stack !gap-2">
-                  <Label className="text-label">Số nội bộ</Label>
-                  <Input value={form.extension} onChange={(e) => setField('extension', e.target.value)} placeholder="1234" className="min-h-11 rounded-xl" />
-                </div>
+              <div className="item-stack !gap-2">
+                <Label className="text-label">Số điện thoại</Label>
+                <Input value={form.phone} onChange={(e) => setField('phone', e.target.value)} placeholder="09xx…" className="min-h-11 rounded-xl" />
               </div>
 
               <div className="item-stack !gap-2">
-                <Label className="text-label">Vị trí chỗ ngồi</Label>
-                <Input value={form.seat_location} onChange={(e) => setField('seat_location', e.target.value)} placeholder="Tầng 2 — bàn 12" className="min-h-11 rounded-xl" />
+                <Label className="text-label">Email</Label>
+                <Input
+                  type="email"
+                  value={form.ad_account}
+                  onChange={(e) => setField('ad_account', e.target.value)}
+                  placeholder="ten@agribank.com.vn"
+                  className="min-h-11 rounded-xl"
+                  autoComplete="email"
+                  inputMode="email"
+                />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="item-stack !gap-2">
                   <Label className="text-label">Ngày sinh</Label>
                   <Input type="date" value={form.birthday} onChange={(e) => setField('birthday', e.target.value)} className="min-h-11 rounded-xl" />
@@ -222,7 +224,7 @@ export default function EditProfileDialog({ open, onOpenChange, target, viewer, 
 
               {isAdminMode && (
                 <>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="item-stack !gap-2">
                       <Label className="text-label">Chức danh</Label>
                       <Input value={form.title} onChange={(e) => setField('title', e.target.value)} className="min-h-11 rounded-xl" />
@@ -233,7 +235,7 @@ export default function EditProfileDialog({ open, onOpenChange, target, viewer, 
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="item-stack !gap-2">
                       <Label className="text-label">Phòng ban</Label>
                       <Select value={form.department_id} onValueChange={(v) => setField('department_id', v)}>
@@ -267,15 +269,9 @@ export default function EditProfileDialog({ open, onOpenChange, target, viewer, 
                     <Switch checked={form.is_department_head} onCheckedChange={(v) => setField('is_department_head', v)} />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="item-stack !gap-2">
-                      <Label className="text-label">Ngày vào chi nhánh</Label>
-                      <Input type="date" value={form.branch_join_date} onChange={(e) => setField('branch_join_date', e.target.value)} className="min-h-11 rounded-xl" />
-                    </div>
-                    <div className="item-stack !gap-2">
-                      <Label className="text-label">AD account</Label>
-                      <Input value={form.ad_account} onChange={(e) => setField('ad_account', e.target.value)} className="min-h-11 rounded-xl" />
-                    </div>
+                  <div className="item-stack !gap-2">
+                    <Label className="text-label">Ngày vào chi nhánh</Label>
+                    <Input type="date" value={form.branch_join_date} onChange={(e) => setField('branch_join_date', e.target.value)} className="min-h-11 rounded-xl" />
                   </div>
                 </>
               )}

@@ -38,10 +38,7 @@ export default function ProfileSensitiveSection({ target }: ProfileSensitiveSect
 
   return (
     <section className="rounded-2xl bg-amber-50/40 border border-amber-100 p-4 group-stack">
-      <div>
-        <h4 className="heading-card text-amber-900">Thông tin nhân sự</h4>
-        <p className="text-meta text-amber-700/80 mt-0.5">Chỉ hiển thị cho chính chủ và bộ phận Nhân sự</p>
-      </div>
+      <h4 className="heading-card text-amber-900">Thông tin nhân sự</h4>
       <div className="grid grid-cols-2 gap-3">
         {items.map(({ icon: Icon, label, value }) => (
           <div key={label} className="item-stack !gap-1">

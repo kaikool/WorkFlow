@@ -39,6 +39,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { createClient } from "@/utils/supabase/client";
 import { flushCache } from "@/lib/local-cache";
+import { useAppData } from "@/hooks/use-app-data";
 import { NotificationsDropdown } from "@/components/notifications-dropdown";
 import { canManageResourceCatalog } from "@/lib/permissions";
 import { ConfirmDialogProvider } from "@/components/ui/confirm-dialog";
@@ -239,6 +240,10 @@ function TopNavActions() {
 export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
  const pathname = usePathname();
  const router = useRouter();
+  const { currentProfile } = useAppData();
+  // Avatar topnav phải reactive — sau khi user crop xong, context cập nhật ngay
+  // Fallback về prop server-fetched nếu context chưa hydrate.
+  const avatarUrl = currentProfile?.avatar_url ?? profile?.avatar_url;
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
  const [mounted, setMounted] = useState(false);
  const [isAnniversaryDialogOpen, setIsAnniversaryDialogOpen] = useState(false);
@@ -372,7 +377,7 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
  <DropdownMenuTrigger asChild>
  <Button variant="ghost" size="icon" className="h-11 w-11 rounded-full p-0" aria-label="Mở menu tài khoản">
  <Avatar className="h-11 w-11 border-2 border-white shadow-sm cursor-pointer hover:scale-[1.02] transition-transform">
- <AvatarImage src={profile?.avatar_url} className="object-cover" />
+ <AvatarImage src={avatarUrl} className="object-cover" />
  <AvatarFallback className="bg-primary text-primary-foreground font-bold">{profile?.full_name?.[0]}</AvatarFallback>
  </Avatar>
  </Button>
@@ -390,7 +395,7 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
  </DropdownMenu>
  ) : (
  <Avatar className="h-11 w-11 border-2 border-white shadow-sm">
- <AvatarImage src={profile?.avatar_url} className="object-cover" />
+ <AvatarImage src={avatarUrl} className="object-cover" />
  <AvatarFallback className="bg-primary text-primary-foreground font-bold">{profile?.full_name?.[0]}</AvatarFallback>
  </Avatar>
  )}

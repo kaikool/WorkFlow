@@ -22,11 +22,18 @@ Avatar.displayName = AvatarPrimitive.Root.displayName
 
 // Bọc URL bucket `avatars` qua Supabase Image Transformation để serve variant nhỏ
 // thay vì file gốc (có ảnh legacy ~10MB). Bỏ qua URL ngoài bucket / data URI.
+// Giữ nguyên query string sẵn có (vd ?v=cacheBust) — chỉ merge thêm width/height/resize.
 function transformAvatarUrl(url?: string, size: number = 128): string | undefined {
  if (!url) return url;
  if (!url.includes('/storage/v1/object/public/avatars/')) return url;
  const transformed = url.replace('/object/public/', '/render/image/public/');
- return `${transformed}?width=${size}&height=${size}&resize=cover&quality=80`;
+ const [base, existingQuery] = transformed.split('?');
+ const params = new URLSearchParams(existingQuery ?? '');
+ params.set('width', String(size));
+ params.set('height', String(size));
+ params.set('resize', 'cover');
+ params.set('quality', '80');
+ return `${base}?${params.toString()}`;
 }
 
 type AvatarImageProps = React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Image> & {
