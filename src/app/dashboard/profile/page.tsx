@@ -56,11 +56,16 @@ export default function ProfilePage() {
       if (!user) return;
 
       const todayIso = new Date().toISOString();
-      const [activityRes, scheduleRes] = await Promise.all([
+      // Fetch profile trực tiếp từ DB — không dùng currentProfile từ context vì
+      // sau khi save EditProfileDialog, context có thể chưa cập nhật xong khi
+      // onSaved fire → tránh ghi data cũ vào local state.
+      const [profileRes, activityRes, scheduleRes] = await Promise.all([
+        supabase.from('profiles').select('*, departments(*)').eq('id', user.id).maybeSingle(),
         supabase.from('task_comments').select('*, task:tasks(title)').eq('user_id', user.id).order('created_at', { ascending: false }).limit(5),
         supabase.from('schedules').select('id, type, status, start_time, end_time, created_by').eq('created_by', user.id).lte('start_time', todayIso).gte('end_time', todayIso),
       ]);
-      setProfile({ ...currentProfile, email: user.email });
+      const fresh = profileRes.data ?? currentProfile;
+      setProfile({ ...fresh, email: user.email });
       setActivities(activityRes.data ?? []);
       setTodaySchedules(scheduleRes.data ?? []);
     } catch (error) {
@@ -90,13 +95,19 @@ export default function ProfilePage() {
       if (upErr) throw upErr;
       const { data } = supabase.storage.from('avatars').getPublicUrl(path);
       const busted = `${data.publicUrl}?v=${Date.now()}`;
-      const { error: updErr } = await supabase.from('profiles').update({ avatar_url: busted }).eq('id', profile.id);
+      // .select() để phát hiện RLS chặn (0 row affected không return error).
+      const { data: updated, error: updErr } = await supabase
+        .from('profiles')
+        .update({ avatar_url: busted })
+        .eq('id', profile.id)
+        .select('id')
+        .maybeSingle();
       if (updErr) throw updErr;
+      if (!updated) throw new Error('Không có quyền cập nhật avatar (RLS chặn)');
       setProfile((p: any) => ({ ...p, avatar_url: busted }));
-      // Cập nhật cache shared để header/sidebar avatar nhảy theo
-      void refresh();
+      // Await refresh để cache shared (sidebar/topnav/danh bạ) cập nhật trước khi tiếp tục
+      await refresh();
       notifySuccess("Đã cập nhật ảnh đại diện");
-      router.refresh();
     } catch (error) {
       notifyError(error, "Không tải lên được ảnh");
     } finally {

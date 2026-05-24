@@ -87,7 +87,22 @@ export default function EditProfileDialog({ open, onOpenChange, target, viewer, 
       const { data } = supabase.storage.from('avatars').getPublicUrl(path);
       // Bust cache để hiện ngay ảnh mới (Supabase CDN giữ public URL cố định)
       const busted = `${data.publicUrl}?v=${Date.now()}`;
+      // Persist ngay vào DB — không chờ user bấm "Lưu". Avatar là thay đổi atomic,
+      // UX rõ ràng hơn + tránh trường hợp user đóng dialog làm mất ảnh đã chọn.
+      // .select() để phát hiện RLS chặn (0 row affected không return error).
+      const { data: updated, error: updErr } = await supabase
+        .from('profiles')
+        .update({ avatar_url: busted })
+        .eq('id', target.id)
+        .select('id')
+        .maybeSingle();
+      if (updErr) throw updErr;
+      if (!updated) throw new Error('Không có quyền cập nhật avatar (RLS chặn)');
       setField('avatar_url', busted);
+      // Await refresh để context cập nhật trước khi parent re-fetch.
+      await refresh();
+      // Trigger parent refetch để profile state local đồng bộ với DB
+      onSaved?.();
       notifySuccess("Đã cập nhật ảnh đại diện");
     } catch (error) {
       notifyError(error, "Không tải được ảnh");
@@ -127,10 +142,18 @@ export default function EditProfileDialog({ open, onOpenChange, target, viewer, 
         if (viewer.role === 'admin') payload.role = form.role;
       }
 
-      const { error } = await supabase.from('profiles').update(payload).eq('id', target.id);
+      // .select() để phát hiện RLS chặn (0 row affected không return error).
+      const { data: updated, error } = await supabase
+        .from('profiles')
+        .update(payload)
+        .eq('id', target.id)
+        .select('id')
+        .maybeSingle();
       if (error) throw error;
-      // Invalidate cache shared để các consumer (sidebar, danh bạ, picker) cập nhật ngay
-      void refresh();
+      if (!updated) throw new Error('Không có quyền cập nhật hồ sơ (RLS chặn). Liên hệ admin để cấp quyền.');
+      // Await refresh để context cập nhật trước khi parent re-fetch — tránh race
+      // condition khi onSaved() đọc currentProfile từ context stale.
+      await refresh();
       notifySuccess("Đã lưu hồ sơ");
       onSaved?.();
       onOpenChange(false);

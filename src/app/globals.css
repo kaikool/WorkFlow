@@ -524,6 +524,17 @@ main > div[class*="max-w-5xl"][class*="mx-auto"] {
 .item-stack    { display: flex; flex-direction: column; gap: 0.75rem; }    /* 12px — giữa các item nhỏ */
 .tight-stack   { display: flex; flex-direction: column; gap: 0.5rem; }     /* 8px — label-input */
 
+/* Native date input — Webkit có intrinsic min-width theo sub-fields "dd/mm/yyyy"
+   + picker icon, gây overflow lề phải trong grid 2 cột hẹp.
+   Ép box-sizing + display block + max-width: 100% để input luôn nằm gọn trong cell. */
+input[type="date"],
+input[type="datetime-local"],
+input[type="time"] {
+  box-sizing: border-box;
+  max-width: 100%;
+  min-width: 0;
+}
+
 /* Card token tập trung (kế thừa premium-card) */
 .card-base {
   background-color: rgb(255 255 255);

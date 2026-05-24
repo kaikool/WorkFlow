@@ -194,14 +194,25 @@ CREATE TABLE IF NOT EXISTS schedules (
 );
 
 -- 10. Tạo bảng Recognitions (Vinh danh)
+-- type: 4 giá trị enum khớp với RECOGNITION_TYPES trong src/app/dashboard/team/_lib/constants.ts
 CREATE TABLE IF NOT EXISTS recognitions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     sender_id UUID REFERENCES profiles(id),
     receiver_id UUID REFERENCES profiles(id),
     content TEXT NOT NULL,
-    type TEXT DEFAULT 'praise',
+    type TEXT NOT NULL DEFAULT 'great_work'
+        CHECK (type IN ('great_work', 'team_player', 'innovation', 'mentor')),
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Migration cho DB đã tồn tại từ trước (column type chưa có / không khớp enum mới)
+ALTER TABLE recognitions
+    ADD COLUMN IF NOT EXISTS type TEXT NOT NULL DEFAULT 'great_work';
+ALTER TABLE recognitions
+    DROP CONSTRAINT IF EXISTS recognitions_type_check;
+ALTER TABLE recognitions
+    ADD CONSTRAINT recognitions_type_check
+    CHECK (type IN ('great_work', 'team_player', 'innovation', 'mentor'));
 
 -- 11. Bảng trung gian Người tham gia lịch trình
 CREATE TABLE IF NOT EXISTS schedule_participants (
@@ -276,6 +287,7 @@ ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Public read departments" ON departments;
 DROP POLICY IF EXISTS "Users can view all profiles" ON profiles;
 DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
+DROP POLICY IF EXISTS "Admin and HR can update any profile" ON profiles;
 DROP POLICY IF EXISTS "Staff see assigned tasks" ON tasks;
 DROP POLICY IF EXISTS "Anyone can create tasks" ON tasks;
 DROP POLICY IF EXISTS "Managers, Directors and Admin can update tasks" ON tasks;
@@ -284,6 +296,22 @@ DROP POLICY IF EXISTS "Managers, Directors and Admin can update tasks" ON tasks;
 CREATE POLICY "Public read departments" ON departments FOR SELECT USING (true);
 CREATE POLICY "Users can view all profiles" ON profiles FOR SELECT USING (true);
 CREATE POLICY "Users can update own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
+-- Helper function: SECURITY DEFINER để bypass RLS khi check role, tránh recursion
+-- (policy đọc lại profiles → trigger policy → infinite recursion).
+CREATE OR REPLACE FUNCTION public.is_admin_or_hr()
+RETURNS BOOLEAN
+LANGUAGE SQL
+SECURITY DEFINER
+STABLE
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid() AND role IN ('admin', 'hr_officer')
+  );
+$$;
+-- Admin & HR officer được sửa hồ sơ của bất kỳ ai (toàn diện danh bạ)
+CREATE POLICY "Admin and HR can update any profile" ON profiles FOR UPDATE
+USING (public.is_admin_or_hr());
 
 CREATE POLICY "Tasks read access" ON tasks FOR SELECT 
 USING (
@@ -500,12 +528,19 @@ ON CONFLICT (id) DO NOTHING;
 CREATE POLICY "Avatar Public Access" ON storage.objects FOR SELECT USING (bucket_id = 'avatars');
 
 -- Cho phép người dùng tải lên ảnh của chính mình
-CREATE POLICY "Users can upload their own avatar" ON storage.objects FOR INSERT 
+CREATE POLICY "Users can upload their own avatar" ON storage.objects FOR INSERT
 WITH CHECK (bucket_id = 'avatars' AND auth.uid() = (storage.foldername(name))[1]::uuid);
 
 -- Cho phép người dùng cập nhật ảnh của chính mình
-CREATE POLICY "Users can update their own avatar" ON storage.objects FOR UPDATE 
+CREATE POLICY "Users can update their own avatar" ON storage.objects FOR UPDATE
 USING (bucket_id = 'avatars' AND auth.uid() = (storage.foldername(name))[1]::uuid);
+
+-- Admin/HR được upload + cập nhật avatar cho bất kỳ user nào (sửa hồ sơ toàn diện danh bạ)
+CREATE POLICY "Admin and HR can upload any avatar" ON storage.objects FOR INSERT
+WITH CHECK (bucket_id = 'avatars' AND public.is_admin_or_hr());
+
+CREATE POLICY "Admin and HR can update any avatar" ON storage.objects FOR UPDATE
+USING (bucket_id = 'avatars' AND public.is_admin_or_hr());
 */
 
 -- 12. Tạo bảng Push Subscriptions (Lưu đăng ký thông báo PWA)

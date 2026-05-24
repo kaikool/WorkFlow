@@ -20,11 +20,15 @@ const Avatar = React.forwardRef<
 ))
 Avatar.displayName = AvatarPrimitive.Root.displayName
 
-// Bọc URL bucket `avatars` qua Supabase Image Transformation để serve variant nhỏ
-// thay vì file gốc (có ảnh legacy ~10MB). Bỏ qua URL ngoài bucket / data URI.
-// Giữ nguyên query string sẵn có (vd ?v=cacheBust) — chỉ merge thêm width/height/resize.
+// Supabase Image Transformation (`/render/image/public/`) chỉ có trên Pro plan.
+// Free plan trả 403 FeatureNotEnabled — kích hoạt khi flag bật + dự án có Pro.
+// Default tắt: serve URL gốc `/object/public/`. Resize đã được handle phía upload
+// (avatar crop dialog → 384px JPEG ~100KB) nên không cần CDN transform.
+const IMAGE_TRANSFORM_ENABLED = process.env.NEXT_PUBLIC_SUPABASE_IMAGE_TRANSFORM === 'true';
+
 function transformAvatarUrl(url?: string, size: number = 128): string | undefined {
  if (!url) return url;
+ if (!IMAGE_TRANSFORM_ENABLED) return url;
  if (!url.includes('/storage/v1/object/public/avatars/')) return url;
  const transformed = url.replace('/object/public/', '/render/image/public/');
  const [base, existingQuery] = transformed.split('?');
