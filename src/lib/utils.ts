@@ -27,13 +27,15 @@ export function sortProfilesByHierarchy<T extends { role?: string | null; is_dep
   return [...profiles].sort(compareProfilesByHierarchy)
 }
 
+// Title hiển thị topnav/fallback: ưu tiên field title (admin đã nhập đủ chức danh).
+// Chỉ fallback role label khi title rỗng — không tự ghép "Trưởng phòng" theo
+// is_department_head vì sẽ trùng với title (tạo duplicate badge).
 export function getProfileDisplayTitle(profile: any) {
   const title = typeof profile?.title === "string" ? profile.title.trim() : "";
   if (title) return title;
 
   if (profile?.role === "admin") return "Quản trị hệ thống";
   if (profile?.role === "director") return "Ban giám đốc";
-  if (profile?.is_department_head === true) return "Trưởng phòng";
   if (profile?.role === "manager") return "Lãnh đạo đơn vị";
   if (profile?.role === "hr_officer") return "Cán bộ Nhân sự";
   if (profile?.role === "driver") return "Lái xe cơ quan";

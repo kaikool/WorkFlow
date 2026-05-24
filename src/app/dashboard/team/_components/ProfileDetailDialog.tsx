@@ -118,9 +118,6 @@ export default function ProfileDetailDialog({
                         {role && (
                           <Badge className={cn("font-bold rounded-md border-none", role.color)}>{role.label}</Badge>
                         )}
-                        {target.is_department_head && (
-                          <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 font-bold">Trưởng phòng</Badge>
-                        )}
                         {status !== 'available' && (
                           <Badge className={cn("font-bold rounded-md border", statusMeta.chipClass)}>{statusMeta.label}</Badge>
                         )}

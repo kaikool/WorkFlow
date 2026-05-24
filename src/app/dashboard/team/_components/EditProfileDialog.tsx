@@ -205,14 +205,14 @@ export default function EditProfileDialog({ open, onOpenChange, target, viewer, 
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="item-stack !gap-2">
+                <div className="item-stack !gap-2 min-w-0">
                   <Label className="text-label">Ngày sinh</Label>
-                  <Input type="date" value={form.birthday} onChange={(e) => setField('birthday', e.target.value)} className="min-h-11 rounded-xl" />
+                  <Input type="date" value={form.birthday} onChange={(e) => setField('birthday', e.target.value)} className="min-h-11 rounded-xl w-full" />
                 </div>
-                <div className="item-stack !gap-2">
+                <div className="item-stack !gap-2 min-w-0">
                   <Label className="text-label">Giới tính</Label>
                   <Select value={form.gender} onValueChange={(v) => setField('gender', v)}>
-                    <SelectTrigger className="min-h-11 rounded-xl"><SelectValue placeholder="Chọn" /></SelectTrigger>
+                    <SelectTrigger className="min-h-11 rounded-xl w-full"><SelectValue placeholder="Chọn" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="male">Nam</SelectItem>
                       <SelectItem value="female">Nữ</SelectItem>
@@ -225,31 +225,31 @@ export default function EditProfileDialog({ open, onOpenChange, target, viewer, 
               {isAdminMode && (
                 <>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="item-stack !gap-2">
+                    <div className="item-stack !gap-2 min-w-0">
                       <Label className="text-label">Chức danh</Label>
-                      <Input value={form.title} onChange={(e) => setField('title', e.target.value)} className="min-h-11 rounded-xl" />
+                      <Input value={form.title} onChange={(e) => setField('title', e.target.value)} className="min-h-11 rounded-xl w-full" />
                     </div>
-                    <div className="item-stack !gap-2">
+                    <div className="item-stack !gap-2 min-w-0">
                       <Label className="text-label">Mã CBNV</Label>
-                      <Input value={form.employee_code} onChange={(e) => setField('employee_code', e.target.value)} className="min-h-11 rounded-xl" />
+                      <Input value={form.employee_code} onChange={(e) => setField('employee_code', e.target.value)} className="min-h-11 rounded-xl w-full" />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="item-stack !gap-2">
+                    <div className="item-stack !gap-2 min-w-0">
                       <Label className="text-label">Phòng ban</Label>
                       <Select value={form.department_id} onValueChange={(v) => setField('department_id', v)}>
-                        <SelectTrigger className="min-h-11 rounded-xl"><SelectValue placeholder="Chọn phòng" /></SelectTrigger>
+                        <SelectTrigger className="min-h-11 rounded-xl w-full"><SelectValue placeholder="Chọn phòng" /></SelectTrigger>
                         <SelectContent>
                           {departments.map((d) => (<SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>))}
                         </SelectContent>
                       </Select>
                     </div>
                     {viewer.role === 'admin' && (
-                      <div className="item-stack !gap-2">
+                      <div className="item-stack !gap-2 min-w-0">
                         <Label className="text-label">Phân quyền</Label>
                         <Select value={form.role} onValueChange={(v) => setField('role', v)}>
-                          <SelectTrigger className="min-h-11 rounded-xl"><SelectValue /></SelectTrigger>
+                          <SelectTrigger className="min-h-11 rounded-xl w-full"><SelectValue /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="admin">Quản trị</SelectItem>
                             <SelectItem value="director">Giám đốc</SelectItem>
