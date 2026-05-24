@@ -64,16 +64,21 @@ export function useAdmin() {
  const fetchData = async () => {
  try {
  const { count: memberCount } = await supabase.from('profiles').select('*', { count: 'estimated', head: true });
+ // Admin cần thấy CẢ inactive (để có thể kích hoạt lại) → vẫn fetch riêng,
+ // không dùng useAppData (filter is_active=true).
  const { data: userList } = await supabase.from('profiles').select('*, departments (name)').order('full_name');
  const { data: roomList } = await supabase.from('rooms').select('*').order('name');
  const { data: vehicleList } = await supabase.from('vehicles').select('*, driver:profiles!vehicles_driver_id_fkey(id, full_name, phone)').order('name');
- const { data: driverList } = await supabase.from('profiles').select('id, full_name, phone').eq('role', 'driver');
+ // Drivers cho dropdown — derive từ userList (đã có), khỏi fetch lại
+ const driverList = (userList || []).filter((u: any) => u.role === 'driver').map((u: any) => ({
+   id: u.id, full_name: u.full_name, phone: u.phone
+ }));
 
  setStats({ tasks: 0, goals: 0, members: memberCount || 0 });
  setUsers(sortProfilesByHierarchy(userList || []));
  setRooms(roomList || []);
  setVehicles(vehicleList || []);
- setDrivers(driverList || []);
+ setDrivers(driverList);
  } catch (error) {
  notifyError(error, "Không tải được dữ liệu quản trị");
  }

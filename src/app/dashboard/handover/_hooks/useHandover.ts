@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAppData } from "@/hooks/use-app-data";
 import { canViewAllDocuments } from "@/lib/permissions";
 import {
   fetchAllDocuments,
@@ -38,9 +39,15 @@ export function useHandover(): UseHandoverState {
   const router = useRouter();
   const pathname = usePathname();
 
+  // currentProfile + profiles từ AppDataProvider — không tự fetch nữa (tiết kiệm 2 request/nav)
+  const { currentProfile, profiles } = useAppData();
+  const profile = currentProfile; // giữ alias để code dưới + consumer không phải đổi
+  const allProfiles = useMemo(
+    () => profiles.filter((p) => p.role !== 'admin'),
+    [profiles]
+  );
+
   const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState<any>(null);
-  const [allProfiles, setAllProfiles] = useState<any[]>([]);
   const [documents, setDocuments] = useState<DocumentRow[]>([]);
   const [categories, setCategories] = useState<DocumentCategory[]>([]);
 
@@ -82,33 +89,20 @@ export function useHandover(): UseHandoverState {
     }, 250);
   }, [refetch]);
 
-  // Initial load
+  // Initial load — chỉ fetch documents + categories, profile/profiles từ AppDataProvider
   useEffect(() => {
     let active = true;
     (async () => {
       setLoading(true);
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
+        if (!currentProfile) return; // chờ provider hydrate
 
-        const [profileRes, profilesRes, docs, cats] = await Promise.all([
-          supabase
-            .from("profiles")
-            .select("*, departments ( id, name, code )")
-            .eq("id", user.id)
-            .single(),
-          supabase
-            .from("profiles")
-            .select("id, full_name, avatar_url, role, department_id, departments ( id, name, code )")
-            .neq("role", "admin")
-            .order("full_name"),
+        const [docs, cats] = await Promise.all([
           fetchAllDocuments(),
           fetchCategories(),
         ]);
 
         if (!active) return;
-        setProfile(profileRes.data);
-        setAllProfiles(profilesRes.data || []);
         setDocuments(docs);
         setCategories(cats);
       } finally {
@@ -116,7 +110,7 @@ export function useHandover(): UseHandoverState {
       }
     })();
     return () => { active = false; };
-  }, [supabase]);
+  }, [currentProfile?.id]);
 
   // Realtime subscribe — bám sát pattern useSchedule
   useEffect(() => {

@@ -14,7 +14,6 @@ import { useTaskAnalytics } from '../_hooks/useTaskAnalytics';
 import { AnalyticsKpiCards } from '../_components/analytics/AnalyticsKpiCards';
 import { OverdueByDeptChart } from '../_components/analytics/OverdueByDeptChart';
 import { TopPeopleList } from '../_components/analytics/TopPeopleList';
-import { fetchDepartments } from '../_lib/fetchTasks';
 import { rowsToCsv, downloadCsv } from '../_lib/analyticsHelpers';
 import { DepartmentPicker } from '@/components/ui/department-picker';
 
@@ -22,10 +21,9 @@ type Range = 'week' | 'month';
 
 export default function AnalyticsPage() {
   const router = useRouter();
-  const { currentProfile } = useAppData();
+  const { currentProfile, departments } = useAppData();
   const profile = currentProfile;
   const [range, setRange] = useState<Range>('week');
-  const [departments, setDepartments] = useState<any[]>([]);
   const [deptFilter, setDeptFilter] = useState<string[]>([]);
 
   useEffect(() => {
@@ -33,9 +31,6 @@ export default function AnalyticsPage() {
     if (!canViewTaskAnalytics(profile)) {
       router.replace('/dashboard/tasks');
       return;
-    }
-    if (canViewBranchAnalytics(profile)) {
-      void fetchDepartments().then(setDepartments);
     }
   }, [profile?.id, router]);
 
