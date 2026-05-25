@@ -34,7 +34,7 @@
 
 App là một **PWA** (cài được như app native), được xây trên Next.js 15 App Router + Supabase (Postgres + RLS + Edge Functions + Realtime + Storage). Module trọng tâm là **Sổ giao nhận điện tử** (truy vết hồ sơ vật lý theo thời gian thực).
 
-→ Đọc [`PRODUCT_OVERVIEW.md`](PRODUCT_OVERVIEW.md) để hiểu nghiệp vụ chi tiết.
+→ Đọc [`docs/PRODUCT_OVERVIEW.md`](docs/PRODUCT_OVERVIEW.md) để hiểu nghiệp vụ chi tiết.
 
 ## 2. Tech Stack
 
@@ -62,8 +62,9 @@ App là một **PWA** (cài được như app native), được xây trên Next.
 WorkFlow/
 ├── docs/
 │   ├── ARCHITECTURE.md          # ⭐ Quy chuẩn code (đọc trước khi commit)
-│   └── TECHNICAL_RULES.md       # ⭐ UI/UX (Apple HIG) + RLS + business rules
-├── public/                      # Static (icon, manifest assets)
+│   ├── DATABASE_SCHEMA.md       # Entities, RLS, RPC, SLA, storage, cronjobs
+│   └── PRODUCT_OVERVIEW.md      # Bối cảnh nghiệp vụ + module + role matrix
+├── public/                      # Static (icon-192/512, sw.js)
 ├── supabase/
 │   ├── config.toml              # Local dev config (supabase CLI)
 │   ├── migration_*.sql          # Migration flat-files (chạy theo thứ tự thời gian)
@@ -180,18 +181,17 @@ npx web-push generate-vapid-keys
 2. **SQL Editor → New query**, chạy theo thứ tự:
 
    ```
-   1. schema.sql                                      # Core (profiles, tasks, schedules…)
-   2. supabase/fix_security_and_logic_patch.sql       # Thắt RLS chống spoofing
-   3. supabase/migration_security_and_integrity.sql   # Thêm is_active, integrity checks
-   4. supabase/migration_leave_privacy.sql            # RLS riêng cho nội dung nghỉ phép
-   5. supabase/migration_handover_module.sql          # ⭐ Module hồ sơ vật lý
-   6. supabase/migration_handover_rls_fix.sql
-   7. supabase/migration_handover_short_code_fix_2.sql
-   8. supabase/migration_driver_assignment.sql
-   9. supabase/migration_rls_optimize.sql
-   10. supabase/migration_reset_passwords.sql         # Thêm must_change_password
-   11. supabase/migration_drop_kpi_module.sql         # Dọn module cũ
+   1. schema.sql                                              # Snapshot core (profiles, departments, documents, schedules, leaves, recognitions…)
+   2. supabase/migration_handover_module.sql                  # ⭐ Module hồ sơ vật lý (luân chuyển + truy vết)
+   3. supabase/migration_dashboard_summary_fix_pending_docs.sql
+   4. supabase/migration_dashboard_counters_batch_aware.sql   # KPI counter trang chủ — gộp batch
+   5. supabase/migration_tasks_standardize.sql                # ⭐ Tasks: chuẩn hoá 5-state status + Luồng A/B
+   6. supabase/migration_tasks_default_assignee.sql           # ⭐ Auto-fill TP làm assignee mặc định
+   7. supabase/migration_tasks_edit_delete.sql                # task_edit + cửa sổ xoá nháp 10 phút
+   8. supabase/migration_task_scope.sql                       # ⭐ Siết scope quyền giao việc / báo cáo theo phòng đầu mối (hub)
    ```
+
+   > **Lưu ý:** Các migration cũ (security/RLS/leave-privacy/handover fixes/RLS-optimize/reset-passwords/drop-kpi) đã gộp vào `schema.sql` snapshot — không còn file rời.
 
 3. Chạy `NOTIFY pgrst, 'reload schema';` để PostgREST refresh cache.
 
@@ -333,8 +333,7 @@ npm run dev
 
 Đọc kỹ trước khi PR:
 
-- **[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)** — quy chuẩn code, naming, fetch pattern, RPC, RLS, realtime, workflow thêm module mới (9 phase).
-- **[`docs/TECHNICAL_RULES.md`](docs/TECHNICAL_RULES.md)** — UI/UX (Apple HIG), palette, touch target 44px, RLS rules, business logic.
+- **[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)** — quy chuẩn code, naming, fetch pattern, RPC, RLS, realtime, workflow thêm module mới (9 phase), UI/UX (Apple HIG), palette, touch target 44px, business rules.
 
 Checklist tối thiểu trước commit (chi tiết tại `ARCHITECTURE.md §8 Phase 8`):
 
@@ -371,13 +370,12 @@ Quy ước:
 
 | File | Nội dung |
 |------|----------|
-| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Quy chuẩn code: folder, naming, fetch pattern, RSC vs Client, RPC, RLS, realtime, 9 phase thêm module mới |
-| [`docs/TECHNICAL_RULES.md`](docs/TECHNICAL_RULES.md) | Quy tắc UI/UX (Apple HIG), palette, RLS business rules |
-| [`PRODUCT_OVERVIEW.md`](PRODUCT_OVERVIEW.md) | Bối cảnh nghiệp vụ + chi tiết các module (đặc biệt luồng luân chuyển hồ sơ) |
-| [`DATABASE_SCHEMA.md`](DATABASE_SCHEMA.md) | Sơ đồ entities, RLS strategy, SLA logic, storage, cronjobs |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Quy chuẩn code: folder, naming, fetch pattern, RSC vs Client, RPC, RLS, realtime, 9 phase thêm module mới, UI/UX (Apple HIG), palette, RLS business rules |
+| [`docs/PRODUCT_OVERVIEW.md`](docs/PRODUCT_OVERVIEW.md) | Bối cảnh nghiệp vụ + chi tiết các module (đặc biệt luồng luân chuyển hồ sơ + Tasks 2 luồng A/B) |
+| [`docs/DATABASE_SCHEMA.md`](docs/DATABASE_SCHEMA.md) | Sơ đồ entities, RLS strategy, RPC, SLA logic, storage, cronjobs |
 | [`schema.sql`](schema.sql) | Snapshot DB (truth source) |
 
 ---
 
 **Liên hệ kỹ thuật:** Tech Lead — xem `docs/ARCHITECTURE.md` "Người duyệt".
-**Phiên bản README:** 1.1 — bổ sung folder structure, Supabase setup chi tiết, troubleshooting.
+**Phiên bản README:** 1.2 — 2026-05-26 — refresh migration list (7 file thực tế trong `supabase/`), gộp tham chiếu `TECHNICAL_RULES.md` vào `ARCHITECTURE.md`, sửa path docs/.

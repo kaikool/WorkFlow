@@ -268,20 +268,22 @@ CREATE TABLE document_handovers (
 
 ```sql
 CREATE TABLE tasks (
-    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    title           TEXT NOT NULL,
-    description     TEXT,
-    status          task_status DEFAULT 'todo',     -- todo|doing|submitted|done|canceled
-    priority        task_priority DEFAULT 'medium', -- low|medium|high
-    task_type       TEXT DEFAULT 'task',            -- 'task' | 'report'
-    assignee_id     UUID REFERENCES profiles(id),   -- "primary" assignee (denormalized)
-    created_by      UUID REFERENCES profiles(id),
-    department_id   UUID REFERENCES departments(id),
-    due_date        TIMESTAMPTZ,
-    metadata        JSONB DEFAULT '{}'::jsonb,
-    is_archived     BOOLEAN DEFAULT FALSE,
-    created_at      TIMESTAMPTZ DEFAULT NOW(),
-    updated_at      TIMESTAMPTZ DEFAULT NOW()
+    id                 UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title              TEXT NOT NULL,
+    description        TEXT,
+    status             task_status DEFAULT 'todo',     -- todo|doing|submitted|done|canceled
+    priority           task_priority DEFAULT 'medium', -- low|medium|high
+    task_type          TEXT DEFAULT 'task',            -- 'task' | 'report'
+    assignee_id        UUID REFERENCES profiles(id),   -- "primary" assignee (denormalized)
+    created_by         UUID REFERENCES profiles(id),
+    department_id      UUID REFERENCES departments(id),
+    due_date           TIMESTAMPTZ,
+    metadata           JSONB DEFAULT '{}'::jsonb,
+    is_archived        BOOLEAN DEFAULT FALSE,
+    requires_approval  BOOLEAN DEFAULT FALSE,          -- Luồng B: TRUE → cần TP duyệt submitted→done
+    batch_id           UUID,                           -- gộp nhiều phòng/người trong 1 lần tạo (cho counter)
+    created_at         TIMESTAMPTZ DEFAULT NOW(),
+    updated_at         TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- Indexes:
@@ -290,11 +292,14 @@ CREATE TABLE tasks (
 -- idx_tasks_assignee (assignee_id)
 -- idx_tasks_created_by (created_by)
 -- idx_tasks_updated (updated_at DESC) WHERE is_archived = FALSE
+-- idx_tasks_batch (batch_id) WHERE batch_id IS NOT NULL
 ```
 
 **LƯU Ý**:
 - 4 cột KPI cũ (`target_value`, `current_value`, `unit`, `progress`) đã **DROP**.
 - Status `late`/`closed` legacy vẫn tồn tại trong enum (Postgres không cho drop value) nhưng UI map về `doing`/`done+archived`.
+- `requires_approval`: chỉ áp cho `task_type='report'`. Default FALSE → submitted = done luôn; TRUE → cần `task_status_change` của TP.
+- `batch_id`: dùng để counter dashboard gom chính xác (1 lần gửi "cho 3 phòng" hiện trên dashboard là 1 batch, không phải 3 task rời). Xem `migration_dashboard_counters_batch_aware.sql`.
 - RLS: DENY direct INSERT/UPDATE/DELETE — buộc qua RPC SECURITY DEFINER.
 
 #### `task_assignees` (junction multi-assignee)
@@ -372,6 +377,7 @@ CREATE TABLE task_recurring_templates (
     priority              task_priority DEFAULT 'medium',
     target_department_ids UUID[] DEFAULT '{}',
     target_user_ids       UUID[] DEFAULT '{}',
+    default_assignee_id   UUID REFERENCES profiles(id) ON DELETE SET NULL,
     schedule_kind         TEXT CHECK (schedule_kind IN ('weekly','monthly')),
     weekly_dow            SMALLINT,        -- 0=Sunday..6=Saturday
     weekly_time           TIME,
@@ -388,14 +394,18 @@ CREATE TABLE task_recurring_templates (
 );
 ```
 
+`default_assignee_id` — override TP mặc định khi giao qua phòng (`target_department_ids` non-empty). NULL → fallback Trưởng phòng đang active của phòng đích (xem RPC `_resolve_default_assignee`). Tránh case "TP phải chia lại task mỗi kỳ".
+
 Engine fire: `recurring_fire_due()` quét `WHERE is_active AND next_run_at <= now()` → sinh task + cập `next_run_at`. Schedule qua **pg_cron** (`*/15 * * * *`) nếu enabled, fallback Vercel cron `/api/cron/notifications` daily 8h ICT.
 
 #### Vòng đời migration Tasks
 
-1. `migration_tasks_revamp.sql` — schema cốt lõi + 9 RPC (P0).
-2. `migration_tasks_attachments.sql` — bảng attachments + RPC + Storage policies (P2).
-3. `migration_tasks_recurring.sql` — recurring + pg_cron schedule (P3).
-4. `migration_tasks_analytics.sql` — RPC `tasks_analytics` (P4).
+1. `migration_tasks_standardize.sql` — schema cốt lõi + 5-state status + Luồng A/B + `task_create`/`task_status_change`/`task_delegate`/`tasks_analytics`.
+2. `migration_tasks_default_assignee.sql` — helper `_resolve_default_assignee(p_dept_id, p_override)` + `_is_hub_department(p_dept_id)` + auto-fill TP làm assignee mặc định cho cả task ad-hoc lẫn recurring.
+3. `migration_tasks_edit_delete.sql` — RPC `task_edit` + cửa sổ xoá nháp 10 phút cho creator.
+4. `migration_task_scope.sql` — siết scope quyền giao việc / yêu cầu báo cáo theo phòng đầu mối (hub): cập `task_create` + `recurring_template_upsert`.
+
+> Recurring fire engine + analytics đã gộp trong `migration_tasks_standardize.sql` — không còn file rời.
 
 ### 4.5 Module Lịch trình
 
@@ -654,17 +664,54 @@ public.cleanup_expired_ooo()       -- RETURNS integer (số row bị xoá)
 
 ## 8. RPC list đầy đủ (các callable từ `supabase.rpc(...)`)
 
+### 8.1 Hồ sơ vật lý (handover)
+
 | RPC | Params | Returns | Caller có thể là | Mục đích |
 |-----|--------|---------|------------------|----------|
 | `transfer_document` | `p_document_id UUID, p_receiver_id UUID, p_note TEXT` | `UUID` (handover id) | creator (lần đầu) hoặc current_assignee | Chuyển hồ sơ — insert handover PENDING + status `PENDING_RECEIPT` + notification |
 | `acknowledge_document` | `p_handover_id UUID` | `VOID` | receiver của handover | Nhận hồ sơ — status `IN_REVIEW`, update `current_assignee_id` |
 | `reject_document` | `p_handover_id UUID, p_reason TEXT` | `VOID` | receiver của handover | Trả về sender — status `RETURNED`, revert `current_assignee_id` |
 | `complete_document` | `p_document_id UUID` | `VOID` | current_assignee | Đóng luồng — status `COMPLETED` |
+
+### 8.2 Công việc (Tasks — 2 luồng A/B)
+
+| RPC | Params | Returns | Caller có thể là | Mục đích |
+|-----|--------|---------|------------------|----------|
+| `task_create` | `p_title, p_description, p_task_type, p_priority, p_due_date, p_dept_id, p_assignee_ids UUID[], p_metadata JSONB, p_requires_approval BOOLEAN, p_batch_id UUID` | `UUID` (task id) | admin/director (mọi cán bộ) — manager (phòng mình + qua phòng) — staff hub (Luồng B + qua phòng) — staff non-hub (chỉ tự ghi chú) | Tạo task ad-hoc. Auto-fill TP làm assignee khi giao qua phòng (assignees rỗng + dept non-null). Block hub user khỏi cá nhân cross-dept (phải chọn "Cả phòng ban") |
+| `task_status_change` | `p_task_id UUID, p_new_status task_status, p_comment TEXT` | `VOID` | assignee (cho `doing/submitted`); TP cùng phòng + admin/director (cho `done/canceled/reopen`) | Chuyển trạng thái + audit comment `[Hệ thống]` vào timeline. Bao trùm submit/approve/reject/reopen/cancel |
+| `task_delegate` | `p_task_id UUID, p_new_assignee_ids UUID[]` | `VOID` | TP cùng phòng + admin/director | Phân công lại (Luồng B). Replace `task_assignees` + denote `assignee_id` (primary) + notification |
+| `task_edit` | `p_task_id UUID, p_title TEXT, p_description TEXT, p_priority task_priority, p_due_date TIMESTAMPTZ` | `VOID` | creator + admin/director (không cho khi canceled/archived) | Sửa nội dung. Field bất biến (dept/assignee/task_type/requires_approval) phải đi qua RPC chuyên biệt |
+| `task_delete_draft` | `p_task_id UUID` | `VOID` | creator (status=todo, 0 comment user, 0 file, ≤10 phút sau tạo) | Escape hatch xoá nháp ngay sau tạo |
+| `task_extension_request_create` | `p_task_id UUID, p_new_due_date TIMESTAMPTZ, p_reason TEXT` | `UUID` (request id) | assignee | Xin gia hạn (status=`pending`) |
+| `task_extension_request_decide` | `p_request_id UUID, p_approve BOOLEAN, p_comment TEXT` | `VOID` | TP cùng phòng + admin/director + creator task | Duyệt / từ chối + (nếu approve) cập `tasks.due_date` |
+| `recurring_template_upsert` | `p_id UUID, p_title, p_description, p_task_type, p_priority, p_target_department_ids UUID[], p_target_user_ids UUID[], p_schedule_kind, p_weekly_dow, p_weekly_time, p_monthly_dom, p_monthly_time, p_timezone, p_due_days_after_fire INT, p_is_active BOOLEAN, p_default_assignee_id UUID` | `UUID` (template id) | cùng matrix `task_create` | Tạo / cập template định kỳ. Tính `next_run_at` từ schedule. `default_assignee_id` override TP mặc định |
+| `recurring_template_set_active` | `p_id UUID, p_is_active BOOLEAN` | `VOID` | creator + admin/director | Bật/tắt template |
+| `recurring_template_fire_now` | `p_id UUID` | `UUID` (task id sinh ra) | creator + admin/director | Fire thủ công 1 lần (test) — không đụng `next_run_at` |
+| `recurring_fire_due` | — | `INTEGER` (số task sinh) | service role (cron) | Worker quét template due → sinh task. Áp đúng matrix scope như ad-hoc qua `_resolve_default_assignee` |
+| `tasks_analytics` | `p_from TIMESTAMPTZ, p_to TIMESTAMPTZ, p_department_id UUID` | TABLE(các metric) | admin/director (toàn nhánh) — manager (phòng mình hoặc toàn nhánh nếu Coordinator) — staff Coordinator (toàn nhánh) | Số liệu Analytics: SLA, overdue, breakdown by status/priority/dept |
+
+**Helper nội bộ (SECURITY DEFINER, không expose ra client):**
+
+| Function | Returns | Mục đích |
+|---|---|---|
+| `_is_hub_department(p_dept_id UUID)` | `BOOLEAN` | True nếu dept thuộc 5 mã hub (13618/13602/13605/13609/13603). Single source cho cả backend và `isHubDepartment(profile)` ở client |
+| `_resolve_default_assignee(p_dept_id UUID, p_override UUID)` | `UUID` | Resolve assignee mặc định: override > TP `is_department_head=true` > manager active đầu tiên. Dùng chung bởi `task_create` (auto-fill TP) và `recurring_fire_due` |
+| `_recurring_next_run(p_kind TEXT, p_weekly_dow INT, p_weekly_time TEXT, p_monthly_dom INT, p_monthly_time TEXT, p_tz TEXT, p_now TIMESTAMPTZ)` | `TIMESTAMPTZ` | Tính `next_run_at` cho template — Asia/Ho_Chi_Minh anchored |
+
+### 8.3 Lịch trình + nghỉ phép + danh bạ
+
+| RPC | Params | Returns | Caller có thể là | Mục đích |
+|-----|--------|---------|------------------|----------|
 | `check_schedule_participant_conflicts` | `p_participant_ids UUID[], p_start TIMESTAMPTZ, p_end TIMESTAMPTZ, p_ignore_schedule_id UUID` | TABLE(`schedule_id, title, start_time, end_time, status, profile_id, full_name`) | bất kỳ authenticated | Kiểm tra xung đột lịch trước khi tạo |
 | `get_leave_safe` | `p_schedule_id UUID` | TABLE(schedule + creator info) hoặc empty | bất kỳ authenticated | Lấy detail đơn nghỉ phép với check quyền nội dung (kết hợp `can_view_leave_detail`) |
 | `current_user_role` | — | `TEXT` | bất kỳ authenticated | Helper cached cho RLS (cũng gọi được từ client) |
 | `current_user_department` | — | `UUID` | bất kỳ authenticated | Helper cached cho RLS |
 | `current_user_is_head` | — | `BOOLEAN` | bất kỳ authenticated | Helper cached cho RLS |
+
+### 8.4 Maintenance (cron)
+
+| RPC | Params | Returns | Caller có thể là | Mục đích |
+|-----|--------|---------|------------------|----------|
 | `auto_archive_and_cleanup` | — | `VOID` | gọi qua cron (service role) | Archive task cũ + xoá notification cũ |
 | `cleanup_expired_ooo` | — | `INTEGER` | gọi qua cron (service role) | Xoá row `out_of_office` đã hết hạn — trả về số row đã xoá |
 
@@ -1018,33 +1065,24 @@ NOTIFY pgrst, 'reload schema';
 
 ### 15.1 Thứ tự chạy migration cho setup mới
 
-1. `schema.sql` — toàn bộ core (profiles, tasks, schedules, recognitions, notifications, rooms, vehicles, push_subscriptions, account_requests + RLS cơ bản).
-2. `supabase/fix_security_and_logic_patch.sql` — thắt RLS chống spoofing + thêm enum `schedule_type='leave'`.
-3. `supabase/migration_security_and_integrity.sql` — thêm `is_active`, drop password plaintext, guard_tasks_update trigger, indexes.
-4. `supabase/migration_leave_privacy.sql` — RLS riêng cho nội dung đơn nghỉ phép.
-5. `supabase/migration_handover_module.sql` — toàn bộ module hồ sơ vật lý (categories, documents, handovers, RPCs, RLS).
-6. `supabase/migration_handover_rls_fix.sql` — fix RLS handovers nếu cần.
-7. `supabase/migration_handover_short_code_fix_2.sql` — fix `SECURITY DEFINER` cho trigger short_code.
-8. `supabase/migration_driver_assignment.sql` — bổ sung `driver_id` cho schedules + vehicles.
-9. `supabase/migration_rls_optimize.sql` — cached helper + siết profiles RLS.
-10. `supabase/migration_reset_passwords.sql` — RPC reset password + thêm `must_change_password`.
-11. `supabase/migration_drop_kpi_module.sql` — dọn module KPI cũ (đã loại bỏ).
-12. `supabase/fix_schedule_notifications_conflicts.sql` — refresh `check_schedule_participant_conflicts` RPC.
-13. `supabase/migration_schedule_rejection.sql` — thêm `rejection_reason/rejected_by/rejected_at/change_reason` vào `schedules`.
-14. `supabase/migration_tasks_analytics_tcth_only.sql` — `tasks_analytics()` RPC scope toàn nhánh chỉ cho phòng điều phối (code `13602`).
-15. `supabase/migration_team_phase2.sql` — module Cán bộ Phase 2: thêm `extension/seat_location/employee_code/birthday_notify_optout` vào `profiles` + tạo bảng `out_of_office` + RPC `cleanup_expired_ooo`.
+1. `schema.sql` — snapshot core: profiles, departments, schedules, recognitions, notifications, rooms, vehicles, push_subscriptions, account_requests, `out_of_office`, leaves + RLS + helper RPC + chống spoofing. Các migration cũ (security/integrity/leave-privacy/handover-fixes/RLS-optimize/reset-passwords/drop-kpi/schedule-rejection/team-phase2) đã gộp hết vào snapshot này — không còn file rời.
+2. `supabase/migration_handover_module.sql` — module hồ sơ vật lý: categories, documents, handovers, 4 RPC (`transfer/acknowledge/reject/complete`), RLS + short_code generator.
+3. `supabase/migration_dashboard_summary_fix_pending_docs.sql` — fix `dashboard_summary` RPC đếm sai pending docs.
+4. `supabase/migration_dashboard_counters_batch_aware.sql` — counter dashboard gom theo `batch_id` (1 lần gửi cho N phòng = 1 batch, không phải N task rời).
+5. `supabase/migration_tasks_standardize.sql` — module Tasks: schema cốt lõi (tasks + task_assignees + task_comments + task_extension_requests + task_attachments + task_recurring_templates) + 5-state status + Luồng A/B + 9 RPC (`task_create/task_status_change/task_delegate/task_edit/task_extension_*/recurring_template_*/recurring_fire_due/tasks_analytics`).
+6. `supabase/migration_tasks_default_assignee.sql` — helper `_resolve_default_assignee` + `_is_hub_department` + auto-fill TP làm assignee mặc định cho cả ad-hoc lẫn recurring (`task_assignees` không bao giờ rỗng).
+7. `supabase/migration_tasks_edit_delete.sql` — RPC `task_edit` đầy đủ + cửa sổ xoá nháp 10 phút cho creator.
+8. `supabase/migration_task_scope.sql` — ⭐ siết scope quyền giao việc / yêu cầu báo cáo theo phòng đầu mối (hub): cập `task_create` + `recurring_template_upsert` với ma trận 6-role × 2-luồng. Hub user cross-dept phải đi qua "Cả phòng ban" toggle.
 
 Sau migration cuối: `NOTIFY pgrst, 'reload schema';`
 
 ### 15.2 Backup before destructive migration
 
-`migration_drop_kpi_module.sql` có cảnh báo:
-
-> ⚠️ **KHÔNG THỂ HOÀN TÁC**. Trước khi chạy:
+> ⚠️ Mọi migration có `DROP TABLE`, `DROP COLUMN`, hoặc `DELETE FROM` quy mô lớn — chạy backup trước:
 > 1. Supabase Dashboard → Database → Backups → **Manual snapshot**.
-> 2. Export data nếu cần (Table Editor → kpis → Export CSV).
-
-Áp dụng nguyên tắc này cho mọi migration có `DROP TABLE`, `DROP COLUMN`, hoặc `DELETE FROM` quy mô lớn.
+> 2. Export data nếu cần (Table Editor → Export CSV).
+>
+> `migration_task_scope.sql` chỉ `CREATE OR REPLACE FUNCTION` (idempotent) — không destructive, không cần backup riêng.
 
 ### 15.3 Verify sau migration
 
@@ -1081,4 +1119,4 @@ npx supabase gen types typescript --project-id <ref> > src/types/database.types.
 
 ---
 
-**Phiên bản:** 1.2 — 2026-05-24 (sync mã nguồn: ghi chú RLS `recognitions` chưa khớp `canRecognize`, gỡ tham chiếu `TECHNICAL_RULES.md`).
+**Phiên bản:** 1.3 — 2026-05-26 (bổ sung Tasks: `requires_approval` + `batch_id` vào `tasks`; `default_assignee_id` vào `task_recurring_templates`; §8 chia nhóm RPC + thêm 12 RPC Tasks; helper nội bộ `_is_hub_department` / `_resolve_default_assignee`; §15 refresh migration order khớp 7 file thực tế trong `supabase/`).
