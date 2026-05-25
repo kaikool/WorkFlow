@@ -12,6 +12,7 @@ export interface UpsertTemplateInput {
   priority: TaskPriority;
   target_department_ids: string[];
   target_user_ids: string[];
+  default_assignee_id?: string | null;
   schedule_kind: ScheduleKind;
   weekly_dow?: number | null;
   weekly_time?: string | null;
@@ -39,6 +40,7 @@ export async function upsertRecurringTemplate(input: UpsertTemplateInput): Promi
     p_timezone: input.timezone ?? 'Asia/Ho_Chi_Minh',
     p_due_days_after_fire: input.due_days_after_fire ?? 7,
     p_is_active: input.is_active ?? true,
+    p_default_assignee_id: input.default_assignee_id ?? null,
   } as any);
   if (error) return { ok: false, error: error.message };
   return { ok: true, data: data as string };

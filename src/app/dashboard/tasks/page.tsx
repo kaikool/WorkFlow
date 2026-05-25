@@ -206,6 +206,7 @@ function TasksContent() {
                 onOpenBatch={setOpenBatchId}
                 onSwipeDone={handleSwipeDone}
                 canSwipeDone
+                currentProfile={profile}
               />
             </div>
             {isManagerPlus && (tab === 'dept' || tab === 'branch') && dash.resourceView.length > 0 && (

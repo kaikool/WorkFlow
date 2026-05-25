@@ -81,13 +81,13 @@ function isHubCaller(caller: CallerProfile): boolean {
  *
  *   create-task (Luồng A):
  *     - Staff (any, kể cả hub): chỉ chính mình.
- *     - Manager (any): chỉ phòng mình.
+ *     - Manager (any, kể cả hub): chỉ phòng mình.
  *     - Admin/Director: toàn nhánh.
  *
  *   create-report (Luồng B):
  *     - Staff non-hub: empty (UI ẩn tab).
- *     - Staff hub / Manager hub: toàn nhánh.
- *     - Manager non-hub: chỉ phòng mình.
+ *     - Manager / Staff (any role) trong phạm vi cá nhân: CHỈ phòng mình.
+ *       Cross-dept phải đi qua DepartmentPicker (giao cho phòng → TP nhận).
  *     - Admin/Director: toàn nhánh.
  *
  *   delegate: theo task.department_id.
@@ -124,15 +124,17 @@ export async function fetchAssignableProfiles(opts: AssignOpts) {
     if (!taskDepartmentId) return [];
     q = q.eq('department_id', taskDepartmentId);
   } else if (context === 'create-task' && caller.role === 'manager') {
-    // Manager (kể cả hub) chỉ giao task trong phòng mình
+    // Manager (kể cả hub) giao task đích danh: chỉ trong phòng mình.
+    // Hub manager muốn giao cho phòng khác → đi qua DepartmentPicker (auto-fill TP).
     if (!caller.department_id) return [];
     q = q.eq('department_id', caller.department_id);
-  } else if (context === 'create-report' && caller.role === 'manager' && !isHub) {
-    // Manager non-hub: chỉ yêu cầu báo cáo trong phòng mình
+  } else if (context === 'create-report' && !['admin', 'director'].includes(caller.role ?? '')) {
+    // Mọi role (manager/staff, kể cả hub) chọn cán bộ cụ thể: chỉ phòng mình.
+    // Cross-dept đi qua DepartmentPicker → TP phòng nhận tự phân công.
     if (!caller.department_id) return [];
     q = q.eq('department_id', caller.department_id);
   }
-  // Còn lại: admin/director hoặc hub → toàn nhánh
+  // Còn lại: admin/director → toàn nhánh
 
   q = q
     .order('is_department_head', { ascending: false, nullsFirst: false })

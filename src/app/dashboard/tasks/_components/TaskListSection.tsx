@@ -13,6 +13,7 @@ interface Props {
   onOpenBatch?: (batchId: string) => void;
   onSwipeDone?: (taskId: string) => void;
   canSwipeDone?: boolean;
+  currentProfile?: { id: string; role: string; department_id: string | null } | null;
 }
 
 function classifyTask(item: TaskListItem): DateGroup {
@@ -30,7 +31,7 @@ function classifyTask(item: TaskListItem): DateGroup {
 
 const GROUP_ORDER: DateGroup[] = ['overdue', 'today', 'this_week', 'later', 'no_deadline'];
 
-export function TaskListSection({ items, onOpen, onOpenBatch, onSwipeDone, canSwipeDone }: Props) {
+export function TaskListSection({ items, onOpen, onOpenBatch, onSwipeDone, canSwipeDone, currentProfile }: Props) {
   const entries = useMemo(() => groupByBatch(items), [items]);
 
   const grouped = useMemo(() => {
@@ -69,6 +70,7 @@ export function TaskListSection({ items, onOpen, onOpenBatch, onSwipeDone, canSw
                   onOpen={onOpen}
                   onSwipeDone={onSwipeDone}
                   canSwipeDone={canSwipeDone}
+                  currentProfile={currentProfile}
                 />
               ))}
             </div>

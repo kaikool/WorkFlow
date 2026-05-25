@@ -1,15 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
-  Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
-} from '@/components/ui/tooltip';
-import {
   Calendar, Play, CheckCircle2, Send, Clock, Users, Archive,
-  AlertTriangle, Loader2, Building2, UserPlus, Undo2, X,
+  AlertTriangle, Loader2, Building2, UserPlus, Undo2, X, RotateCcw,
+  Pencil, Trash2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -22,13 +20,21 @@ import {
   PRIORITY_BADGE_CLASS,
   TASK_TYPE_LABEL,
 } from '../_lib/constants';
-import { canApproveReport, canDelegateTask, canReturnTask } from '@/lib/permissions';
-import { updateTaskStatus, archiveTask } from '../_lib/taskActions';
+import {
+  canApproveReport, canDelegateTask,
+  canRejectSubmission, canReopenDone,
+  canEditTask, canDeleteDraft,
+} from '@/lib/permissions';
+import { updateTaskStatus, archiveTask, deleteDraftTask } from '../_lib/taskActions';
+import { fetchTaskAttachments } from '../_lib/attachmentHelpers';
 import { TaskDelegateDialog } from './TaskDelegateDialog';
 import { TaskRequestExtensionDialog } from './TaskRequestExtensionDialog';
 import { TaskSubmitReportDialog } from './TaskSubmitReportDialog';
 import { TaskReturnDialog } from './TaskReturnDialog';
+import { TaskReopenDialog } from './TaskReopenDialog';
+import { TaskApproveDialog } from './TaskApproveDialog';
 import { TaskCancelDialog } from './TaskCancelDialog';
+import { TaskEditDialog } from './TaskEditDialog';
 import { TaskCommentList } from './TaskCommentList';
 import { TaskTimeline } from './TaskTimeline';
 import { TaskAttachmentManager } from './TaskAttachmentManager';
@@ -48,7 +54,13 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, showArchive =
   const [openExtension, setOpenExtension] = useState(false);
   const [openSubmit, setOpenSubmit] = useState(false);
   const [openReturn, setOpenReturn] = useState(false);
+  const [openReopen, setOpenReopen] = useState(false);
+  const [openApprove, setOpenApprove] = useState(false);
   const [openCancel, setOpenCancel] = useState(false);
+  const [openEdit, setOpenEdit] = useState(false);
+  // Đếm attachment để gate "Xoá nháp" (chỉ cho xoá khi 0 file + 0 comment user).
+  // Tự fetch vì TaskDetail không kèm attachments — chỉ probe trong cửa sổ 10 phút.
+  const [attachmentCount, setAttachmentCount] = useState<number | null>(null);
 
   if (!currentProfile) return null;
 
@@ -80,15 +92,19 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, showArchive =
     onChanged();
   };
 
-  const canStart = (isAssignee || isManagerOfTask) && task.status === 'todo';
-
   // TP/PP tự nộp báo cáo của chính mình → tự ghi nhận luôn (có audit comment ở RPC)
   const isReportSelfApprove = isReport && isAssignee && isManagerOfTask;
 
+  // ─── Action gates ─────────────────────────────────────────────────
+  // Bắt đầu (todo → doing): chỉ assignee. Manager-ngoài-assignee không cần "đập" Bắt đầu
+  // (Phân công lại đã tự move sang doing). Cho cả task lẫn report.
+  const canStart = isAssignee && task.status === 'todo';
+
+  // Hoàn thành — chỉ hiện khi đang Đang làm (todo phải Bắt đầu trước cho rõ ý)
   const canMarkDoneTask = !isReport && (isAssignee || isManagerOfTask)
-    && (task.status === 'todo' || task.status === 'doing');
+    && task.status === 'doing';
   const canMarkDoneReport = isReport && isAssignee
-    && (task.status === 'todo' || task.status === 'doing')
+    && task.status === 'doing'
     && (!task.requires_approval || isReportSelfApprove);
   const canMarkDone = canMarkDoneTask || canMarkDoneReport;
 
@@ -98,12 +114,53 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, showArchive =
     && !isReportSelfApprove;
 
   const canApproveSubmission = isReport && isManagerApprove && task.status === 'submitted';
-  const canReturn = canReturnTask(currentProfile, task);
+  const canReject = canRejectSubmission(currentProfile, task);
+  const canReopen = canReopenDone(currentProfile, task);
   const canRequestExtension = isAssignee && task.status !== 'done' && task.status !== 'canceled';
   const canDelegate = isManagerOfTask && task.status !== 'done' && task.status !== 'canceled';
-  const canCancel = (isCreator || isAssignee || isManagerOfTask)
+  const canCancel = (isCreator || isManagerOfTask)
     && task.status !== 'done' && task.status !== 'canceled';
-  const isReadOnly = task.is_archived || task.status === 'canceled';
+
+  // done là trạng thái chốt — chỉ admin/director mở lại, không ai khác sửa được nữa.
+  const isReadOnly = task.is_archived || task.status === 'canceled' || task.status === 'done';
+
+  // Sửa nội dung — creator/admin/director, mọi status trừ canceled/archived.
+  const canEdit = canEditTask(currentProfile, task);
+
+  // Xoá nháp — creator + status=todo + tuổi <=10 phút + 0 comment user + 0 file.
+  // Fetch attachment count chỉ khi đang ở trong cửa sổ (todo + tuổi <=10 phút + creator).
+  const userCommentCount = task.comments.filter(c => !c.content.startsWith('[Hệ thống]')).length;
+  const ageMs = task.created_at ? Date.now() - new Date(task.created_at).getTime() : Infinity;
+  const inDeleteWindow = isCreator && task.status === 'todo' && ageMs <= 10 * 60 * 1000 && userCommentCount === 0;
+  const canDelete = inDeleteWindow
+    && attachmentCount !== null
+    && canDeleteDraft(currentProfile, task, userCommentCount, attachmentCount);
+
+  useEffect(() => {
+    if (!inDeleteWindow) { setAttachmentCount(null); return; }
+    let alive = true;
+    fetchTaskAttachments(task.id).then(list => {
+      if (alive) setAttachmentCount(list.length);
+    });
+    return () => { alive = false; };
+  }, [inDeleteWindow, task.id]);
+
+  const runDelete = async () => {
+    if (!confirm(`Xoá nháp "${task.title}"? Hành động này không thể quay lại.`)) return;
+    setBusy('delete');
+    const res = await deleteDraftTask(task.id);
+    setBusy(null);
+    if (!res.ok) { notifyError(res.error, 'Không xoá được'); return; }
+    notifySuccess('Đã xoá nháp');
+    onChanged();
+  };
+
+  // Cờ "Báo cáo bị trả về" — banner đỏ cam cho người được giao
+  const lastReturnedAt = (task as any).last_returned_at as string | null | undefined;
+  const lastReturnReason = (task as any).last_return_reason as string | null | undefined;
+  const showReturnedBanner = !!(lastReturnedAt && lastReturnReason
+    && task.status === 'doing'
+    && (isAssignee || isManagerOfTask));
 
   return (
     <div className="group-stack">
@@ -143,6 +200,20 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, showArchive =
           </Button>
         )}
       </div>
+
+      {/* Banner "Đã bị trả về" — gắn rõ lý do cho người được giao, có CTA Nộp lại */}
+      {showReturnedBanner && (
+        <div className="flex items-start gap-3 p-3 rounded-2xl bg-amber-50 border border-amber-200">
+          <Undo2 className="icon-md text-amber-600 shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <p className="text-label text-amber-800">Báo cáo bị trả về để sửa</p>
+            <p className="text-subtitle text-amber-900 mt-0.5 whitespace-pre-wrap">{lastReturnReason}</p>
+            <p className="text-meta text-amber-700 mt-1">
+              {format(new Date(lastReturnedAt!), 'EEEE, dd/MM/yyyy HH:mm', { locale: vi })}
+            </p>
+          </div>
+        </div>
+      )}
 
       {task.description && (
         <p className="text-slate-700 whitespace-pre-wrap leading-relaxed">
@@ -195,7 +266,9 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, showArchive =
             <Users className="icon-sm" />
             <span>{isReport ? 'Cán bộ được phân công' : 'Người nhận'}</span>
           </div>
-          {task.assignees && task.assignees.length > 0 ? (
+          {/* task_assignees không bao giờ rỗng — RPC auto-fill TP khi report giao cho phòng.
+              Đoạn fallback "Chưa phân công" cũ đã bỏ. */}
+          {task.assignees && task.assignees.length > 0 && (
             <SelectionPill
               avatars={task.assignees}
               countLabel={
@@ -204,10 +277,6 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, showArchive =
                   : `${task.assignees.length} người`
               }
             />
-          ) : (
-            <p className="text-subtitle text-amber-700 font-medium italic">
-              Chưa phân công — chờ Trưởng phòng phân công cán bộ
-            </p>
           )}
           {isReportSelfApprove && task.requires_approval && task.status === 'doing' && (
             <p className="text-subtitle text-amber-700 font-medium italic flex items-center gap-2">
@@ -222,95 +291,120 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, showArchive =
           )}
         </div>
       </div>
+
+      {/* Action bar — dùng label-bên-cạnh-icon cho rõ, ưu tiên action chính lên trước.
+          Action phụ (gia hạn, phân công) gom thành ghost button. Cancel/Reopen dồn về phải. */}
       {!isReadOnly && (
-        <TooltipProvider delayDuration={200}>
-          <div className="flex flex-wrap gap-2 items-center">
-            {canSubmit && (
-              <IconCTA
-                tooltip="Nộp báo cáo"
-                tone="primary"
-                onClick={() => setOpenSubmit(true)}
-                disabled={busy !== null}
-                icon={<Send className="icon-md" />}
-              />
-            )}
-            {canApproveSubmission && (
-              <IconCTA
-                tooltip="Duyệt báo cáo"
-                tone="amber"
-                onClick={() => runStatus('done', 'approve', 'Không duyệt được')}
-                disabled={busy !== null}
-                icon={busy === 'approve' ? <Loader2 className="icon-md animate-spin" /> : <CheckCircle2 className="icon-md" />}
-              />
-            )}
-            {canStart && !canSubmit && !canApproveSubmission && (
-              <IconCTA
-                tooltip="Bắt đầu"
-                tone="primary"
-                onClick={() => runStatus('doing', 'start', 'Không bắt đầu được')}
-                disabled={busy !== null}
-                icon={busy === 'start' ? <Loader2 className="icon-md animate-spin" /> : <Play className="icon-md" />}
-              />
-            )}
-            {canMarkDone && !canSubmit && !canApproveSubmission && (
-              <IconCTA
-                tooltip="Hoàn thành"
-                tone="primary"
-                onClick={() => runStatus('done', 'done', 'Không hoàn thành được')}
-                disabled={busy !== null}
-                icon={busy === 'done' ? <Loader2 className="icon-md animate-spin" /> : <CheckCircle2 className="icon-md" />}
-              />
-            )}
+        <div className="flex flex-wrap gap-2 items-center">
+          {canSubmit && (
+            <PrimaryAction
+              label="Nộp báo cáo"
+              tone="primary"
+              icon={<Send className="icon-md" />}
+              onClick={() => setOpenSubmit(true)}
+              disabled={busy !== null}
+            />
+          )}
+          {canApproveSubmission && (
+            <PrimaryAction
+              label="Duyệt"
+              tone="amber"
+              icon={<CheckCircle2 className="icon-md" />}
+              onClick={() => setOpenApprove(true)}
+              disabled={busy !== null}
+            />
+          )}
+          {canStart && !canSubmit && !canApproveSubmission && (
+            <PrimaryAction
+              label="Bắt đầu"
+              tone="primary"
+              icon={busy === 'start' ? <Loader2 className="icon-md animate-spin" /> : <Play className="icon-md" />}
+              onClick={() => runStatus('doing', 'start', 'Không bắt đầu được')}
+              disabled={busy !== null}
+            />
+          )}
+          {canMarkDone && !canSubmit && !canApproveSubmission && (
+            <PrimaryAction
+              label="Hoàn thành"
+              tone="primary"
+              icon={busy === 'done' ? <Loader2 className="icon-md animate-spin" /> : <CheckCircle2 className="icon-md" />}
+              onClick={() => runStatus('done', 'done', 'Không hoàn thành được')}
+              disabled={busy !== null}
+            />
+          )}
 
-            {canApproveSubmission && (
-              <IconCTA
-                tooltip="Trả về sửa lại"
-                tone="outline"
-                onClick={() => setOpenReturn(true)}
-                disabled={busy !== null}
-                icon={<Undo2 className="icon-md" />}
-              />
-            )}
-            {!canApproveSubmission && canReturn && (
-              <IconCTA
-                tooltip={task.status === 'done' ? 'Trả lại báo cáo đã hoàn thành' : 'Trả lại'}
-                tone="outline"
-                onClick={() => setOpenReturn(true)}
-                disabled={busy !== null}
-                icon={<Undo2 className="icon-md" />}
-              />
-            )}
-            {canDelegate && (
-              <IconCTA
-                tooltip={(task.assignees?.length ?? 0) === 0 ? 'Phân công' : 'Phân công lại'}
-                tone="outline"
-                onClick={() => setOpenDelegate(true)}
-                disabled={busy !== null}
-                icon={<UserPlus className="icon-md" />}
-              />
-            )}
-            {canRequestExtension && (
-              <IconCTA
-                tooltip="Xin gia hạn"
-                tone="outline"
-                onClick={() => setOpenExtension(true)}
-                disabled={busy !== null}
-                icon={<Clock className="icon-md" />}
-              />
-            )}
+          {canApproveSubmission && (
+            <SecondaryAction
+              label="Trả về sửa"
+              icon={<Undo2 className="icon-md" />}
+              onClick={() => setOpenReturn(true)}
+              disabled={busy !== null}
+            />
+          )}
+          {!canApproveSubmission && canReject && (
+            <SecondaryAction
+              label="Trả về"
+              icon={<Undo2 className="icon-md" />}
+              onClick={() => setOpenReturn(true)}
+              disabled={busy !== null}
+            />
+          )}
+          {canDelegate && (
+            <SecondaryAction
+              label={(task.assignees?.length ?? 0) === 0 ? 'Phân công' : 'Phân công lại'}
+              icon={<UserPlus className="icon-md" />}
+              onClick={() => setOpenDelegate(true)}
+              disabled={busy !== null}
+            />
+          )}
+          {canEdit && (
+            <SecondaryAction
+              label="Sửa"
+              icon={<Pencil className="icon-md" />}
+              onClick={() => setOpenEdit(true)}
+              disabled={busy !== null}
+            />
+          )}
+          {canRequestExtension && (
+            <SecondaryAction
+              label="Xin gia hạn"
+              icon={<Clock className="icon-md" />}
+              onClick={() => setOpenExtension(true)}
+              disabled={busy !== null}
+            />
+          )}
 
-            {canCancel && (
-              <IconCTA
-                tooltip="Huỷ công việc"
-                tone="danger"
-                onClick={() => setOpenCancel(true)}
-                disabled={busy !== null}
-                icon={<X className="icon-md" />}
-                className="ml-auto"
-              />
-            )}
-          </div>
-        </TooltipProvider>
+          {canDelete && (
+            <DangerAction
+              label="Xoá nháp"
+              icon={busy === 'delete' ? <Loader2 className="icon-md animate-spin" /> : <Trash2 className="icon-md" />}
+              onClick={runDelete}
+              disabled={busy !== null}
+              className="ml-auto"
+            />
+          )}
+          {canCancel && (
+            <DangerAction
+              label="Huỷ"
+              icon={<X className="icon-md" />}
+              onClick={() => setOpenCancel(true)}
+              disabled={busy !== null}
+              className={canDelete ? '' : 'ml-auto'}
+            />
+          )}
+        </div>
+      )}
+
+      {/* Done là readonly với mọi người — admin/director có 1 nút Mở lại riêng để cảnh báo */}
+      {!task.is_archived && task.status === 'done' && canReopen && (
+        <div className="flex flex-wrap gap-2 items-center">
+          <SecondaryAction
+            label="Mở lại để sửa"
+            icon={<RotateCcw className="icon-md" />}
+            onClick={() => setOpenReopen(true)}
+            disabled={busy !== null}
+          />
+        </div>
       )}
 
       {(task.extension_requests.length > 0 || task.comments.some(c => c.content.startsWith('[Hệ thống]'))) && (
@@ -358,18 +452,49 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, showArchive =
           onChanged={() => { setOpenSubmit(false); onChanged(); }}
         />
       )}
+      {openApprove && (
+        <TaskApproveDialog
+          task={{ id: task.id, title: task.title }}
+          onClose={() => setOpenApprove(false)}
+          onChanged={() => { setOpenApprove(false); onChanged(); }}
+        />
+      )}
       {openReturn && (
         <TaskReturnDialog
-          task={{ id: task.id, title: task.title, status: task.status }}
+          task={{ id: task.id, title: task.title }}
           onClose={() => setOpenReturn(false)}
           onChanged={() => { setOpenReturn(false); onChanged(); }}
         />
       )}
+      {openReopen && (
+        <TaskReopenDialog
+          task={{ id: task.id, title: task.title }}
+          onClose={() => setOpenReopen(false)}
+          onChanged={() => { setOpenReopen(false); onChanged(); }}
+        />
+      )}
       {openCancel && (
         <TaskCancelDialog
-          task={{ id: task.id, title: task.title }}
+          task={{
+            id: task.id,
+            title: task.title,
+            assigneeCount: task.assignees?.length ?? 0,
+          }}
           onClose={() => setOpenCancel(false)}
           onChanged={() => { setOpenCancel(false); onChanged(); }}
+        />
+      )}
+      {openEdit && (
+        <TaskEditDialog
+          task={{
+            id: task.id,
+            title: task.title,
+            description: task.description,
+            priority: task.priority,
+            due_date: task.due_date,
+          }}
+          onClose={() => setOpenEdit(false)}
+          onChanged={() => { setOpenEdit(false); onChanged(); }}
         />
       )}
     </div>
@@ -390,44 +515,75 @@ function MetaRow({
   );
 }
 
-type CTATone = 'primary' | 'amber' | 'outline' | 'danger';
+// Action button có label — tránh icon-only khó hiểu trên mobile.
+// Touch ≥44px (min-h-11). Tone: primary (blue), amber (duyệt), outline (phụ), danger (huỷ).
+type Tone = 'primary' | 'amber' | 'outline' | 'danger';
 
-function IconCTA({
-  tooltip, icon, onClick, disabled, tone, className,
-}: {
-  tooltip: string;
+interface ActionProps {
+  label: string;
   icon: React.ReactNode;
   onClick: () => void;
   disabled?: boolean;
-  tone: CTATone;
   className?: string;
-}) {
-  const toneClass: Record<CTATone, string> = {
-    primary: 'bg-primary text-white hover:bg-primary/90 border-transparent',
-    amber: 'bg-amber-600 text-white hover:bg-amber-700 border-transparent',
-    outline: 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50',
-    danger: 'bg-transparent text-red-600 hover:bg-red-50 border-transparent',
-  };
+}
+
+function PrimaryAction({ label, icon, onClick, disabled, tone = 'primary', className }: ActionProps & { tone?: 'primary' | 'amber' }) {
+  const toneClass =
+    tone === 'amber'
+      ? 'bg-amber-600 text-white hover:bg-amber-700 border-transparent'
+      : 'bg-primary text-white hover:bg-primary/90 border-transparent';
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <button
-          type="button"
-          onClick={onClick}
-          disabled={disabled}
-          aria-label={tooltip}
-          className={cn(
-            'h-11 w-11 inline-flex items-center justify-center rounded-full transition-all',
-            'disabled:opacity-50 disabled:pointer-events-none',
-            'active:scale-95',
-            toneClass[tone],
-            className,
-          )}
-        >
-          {icon}
-        </button>
-      </TooltipTrigger>
-      <TooltipContent>{tooltip}</TooltipContent>
-    </Tooltip>
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={cn(
+        'min-h-11 px-4 inline-flex items-center gap-2 rounded-full font-medium transition-all',
+        'disabled:opacity-50 disabled:pointer-events-none active:scale-95',
+        toneClass,
+        className,
+      )}
+    >
+      {icon}
+      <span className="text-[14px]">{label}</span>
+    </button>
+  );
+}
+
+function SecondaryAction({ label, icon, onClick, disabled, className }: ActionProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={cn(
+        'min-h-11 px-4 inline-flex items-center gap-2 rounded-full font-medium transition-all',
+        'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50',
+        'disabled:opacity-50 disabled:pointer-events-none active:scale-95',
+        className,
+      )}
+    >
+      {icon}
+      <span className="text-[14px]">{label}</span>
+    </button>
+  );
+}
+
+function DangerAction({ label, icon, onClick, disabled, className }: ActionProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={cn(
+        'min-h-11 px-4 inline-flex items-center gap-2 rounded-full font-medium transition-all',
+        'bg-transparent text-red-600 hover:bg-red-50 border-transparent',
+        'disabled:opacity-50 disabled:pointer-events-none active:scale-95',
+        className,
+      )}
+    >
+      {icon}
+      <span className="text-[14px]">{label}</span>
+    </button>
   );
 }

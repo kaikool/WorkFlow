@@ -2,6 +2,7 @@
 
 // TaskCard — list item mobile-first. Click → mở dialog detail.
 // Hỗ trợ swipe-right để bấm "Done" (optimistic). _pending = đang đồng bộ.
+// Dot đỏ "Chờ bạn duyệt" cho TP/BGĐ khi báo cáo đang submitted — kéo attention từ list.
 
 import React, { useRef, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
@@ -9,6 +10,7 @@ import { Calendar, Flag, Users, CheckCircle2, AlertTriangle, FileText, ListTodo 
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
+import { canApproveReport } from '@/lib/permissions';
 import {
   STATUS_LABEL,
   STATUS_BADGE_CLASS,
@@ -25,11 +27,13 @@ interface Props {
   // Swipe-done callback
   onSwipeDone?: (taskId: string) => void;
   canSwipeDone?: boolean;
+  // Để chấm dot "Chờ bạn duyệt"
+  currentProfile?: { id: string; role: string; department_id: string | null } | null;
 }
 
 const SWIPE_THRESHOLD = 0.4;
 
-export function TaskCard({ task, onOpen, onSwipeDone, canSwipeDone }: Props) {
+export function TaskCard({ task, onOpen, onSwipeDone, canSwipeDone, currentProfile }: Props) {
   const cardRef = useRef<HTMLDivElement>(null);
   const startXRef = useRef<number | null>(null);
   const [dragOffset, setDragOffset] = useState(0);
@@ -38,6 +42,13 @@ export function TaskCard({ task, onOpen, onSwipeDone, canSwipeDone }: Props) {
 
   const isPending = !!task._pending;
   const canSwipe = canSwipeDone && !isPending && !['done', 'canceled'].includes(task.status);
+
+  // Báo cáo đang chờ user (TP/BGĐ) duyệt — show dot đỏ + label nhỏ
+  const isPendingApprove =
+    task.task_type === 'report'
+    && task.status === 'submitted'
+    && task.requires_approval
+    && canApproveReport(currentProfile ?? null, task);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     if (!canSwipe) return;
@@ -106,7 +117,15 @@ export function TaskCard({ task, onOpen, onSwipeDone, canSwipeDone }: Props) {
           }}
         >
           <div className="flex items-start gap-2">
-            <TypeIcon className="icon-sm text-slate-400 shrink-0 mt-0.5" />
+            <div className="relative shrink-0">
+              <TypeIcon className="icon-sm text-slate-400 mt-0.5" />
+              {isPendingApprove && (
+                <span
+                  className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-red-500 ring-2 ring-white"
+                  aria-label="Chờ bạn duyệt"
+                />
+              )}
+            </div>
             <p className="text-[14px] font-semibold text-slate-900 leading-snug flex-1 line-clamp-2">
               {task.title}
             </p>
@@ -116,6 +135,12 @@ export function TaskCard({ task, onOpen, onSwipeDone, canSwipeDone }: Props) {
               </span>
             )}
           </div>
+
+          {isPendingApprove && (
+            <p className="text-[12px] font-semibold text-red-600">
+              Chờ bạn duyệt
+            </p>
+          )}
 
           <div className="flex flex-wrap items-center gap-1.5">
             <Badge

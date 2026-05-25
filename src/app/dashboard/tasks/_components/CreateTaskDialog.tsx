@@ -23,7 +23,7 @@ import { vi } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { useAppData } from '@/hooks/use-app-data';
 import { notifyError, notifyValidation, notifySuccess } from '@/lib/notify';
-import { canAssignTaskToOthers, canRequestReport, getProfileDepartmentCode, isHubDepartment } from '@/lib/permissions';
+import { canAssignTaskToOthers, canRequestReport, canTargetCrossDepartment, getProfileDepartmentCode, isHubDepartment } from '@/lib/permissions';
 import { createTask } from '../_lib/taskActions';
 import { fetchAssignableProfiles, fetchDepartments } from '../_lib/fetchTasks';
 import { PeoplePicker } from '@/components/ui/people-picker';
@@ -106,9 +106,17 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
   const isLockedToSelf = isStaff;
   const canAssignTask = canAssignTaskToOthers(profile);
   const canMakeReport = canRequestReport(profile);
+  // "Cả phòng ban" toggle: admin/director + hub manager/staff.
+  // Non-hub manager bị siết về phòng mình → không có nhu cầu chọn phòng.
+  const canCrossDept = canTargetCrossDepartment(profile);
   // Hiện tab "Giao việc": admin/director/manager. Hiện tab "Báo cáo": + staff hub.
   const showTaskTab = canAssignTask || isStaff; // staff vẫn thấy tab task (self-assign)
   const showReportTab = canMakeReport;
+
+  // Nếu không cross-dept thì force chọn cá nhân (PeoplePicker đã filter sẵn phòng mình).
+  useEffect(() => {
+    if (!canCrossDept) setReportTarget('profile');
+  }, [canCrossDept]);
 
   const resetForm = () => {
     setTitle(''); setDescription('');
@@ -131,7 +139,36 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
 
     setLoading(true);
     try {
-      if (formType === 'task') {
+      if (reportTarget === 'department') {
+        // Cả phòng ban — áp cho cả Luồng A (hub manager) lẫn Luồng B.
+        // RPC auto-fill TP làm đầu mối; không cần gửi assignee_ids.
+        if (selectedDepartments.length === 0) {
+          notifyValidation('Vui lòng chọn ít nhất một phòng ban');
+          setLoading(false); return;
+        }
+        const batchId = selectedDepartments.length > 1 ? crypto.randomUUID() : null;
+        for (const deptId of selectedDepartments) {
+          const res = await createTask({
+            title: title.trim(),
+            description: description.trim() || null,
+            task_type: formType,
+            priority,
+            due_date: dueDate.toISOString(),
+            dept_id: deptId,
+            assignee_ids: null,
+            requires_approval: formType === 'report' ? requiresApproval : false,
+            batch_id: batchId,
+          });
+          if (!res.ok) {
+            notifyError(res.error, formType === 'task' ? 'Không tạo được công việc' : 'Không tạo được báo cáo');
+            setLoading(false); return;
+          }
+        }
+        notifySuccess(
+          formType === 'task' ? 'Đã giao việc cho phòng' : 'Đã gửi yêu cầu',
+          `${selectedDepartments.length} phòng — Trưởng phòng sẽ phân công lại`,
+        );
+      } else if (formType === 'task') {
         if (selectedAssignees.length === 0) {
           notifyValidation('Vui lòng chọn người nhận');
           setLoading(false); return;
@@ -149,27 +186,6 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
         });
         if (!res.ok) { notifyError(res.error, 'Không tạo được công việc'); setLoading(false); return; }
         notifySuccess('Đã giao việc', `${selectedAssignees.length} người sẽ nhận thông báo`);
-      } else if (reportTarget === 'department') {
-        if (selectedDepartments.length === 0) {
-          notifyValidation('Vui lòng chọn ít nhất một phòng ban');
-          setLoading(false); return;
-        }
-        const batchId = selectedDepartments.length > 1 ? crypto.randomUUID() : null;
-        for (const deptId of selectedDepartments) {
-          const res = await createTask({
-            title: title.trim(),
-            description: description.trim() || null,
-            task_type: 'report',
-            priority,
-            due_date: dueDate.toISOString(),
-            dept_id: deptId,
-            assignee_ids: null,
-            requires_approval: requiresApproval,
-            batch_id: batchId,
-          });
-          if (!res.ok) { notifyError(res.error, 'Không tạo được báo cáo'); setLoading(false); return; }
-        }
-        notifySuccess('Đã gửi yêu cầu', `${selectedDepartments.length} phòng sẽ nhận yêu cầu báo cáo`);
       } else {
         if (selectedAssignees.length === 0) {
           notifyValidation('Vui lòng chọn người nhận');
@@ -213,7 +229,9 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
           </DialogTitle>
           <DialogDescription className="text-subtitle">
             {formType === 'task'
-              ? 'Đích danh người nhận và đặt hạn hoàn thành.'
+              ? (canCrossDept
+                  ? 'Đích danh cán bộ phòng mình hoặc giao cho cả phòng (Trưởng phòng tự phân công).'
+                  : 'Đích danh người nhận và đặt hạn hoàn thành.')
               : 'Gửi đến cả phòng (Trưởng phòng tự phân công) hoặc cán bộ cụ thể.'}
           </DialogDescription>
         </DialogHeader>
@@ -260,9 +278,13 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
             </div>
 
             <div className="group-stack">
-              <Label className="text-label">{formType === 'task' ? 'Người nhận' : 'Đối tượng nhận'}</Label>
+              <Label className="text-label">
+                {isLockedToSelf && formType === 'task' ? 'Người nhận' : 'Đối tượng nhận'}
+              </Label>
 
-              {formType === 'report' && canMakeReport && (
+              {/* Toggle "Cả phòng ban / Cán bộ cụ thể" — hiện cho hub user + admin/director.
+                  Áp cho cả Luồng A (hub manager giao task qua phòng → TP nhận) lẫn Luồng B. */}
+              {!isLockedToSelf && canCrossDept && (
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
@@ -305,7 +327,14 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
                 <p className="text-subtitle italic px-1 py-2 bg-slate-50 rounded-xl">
                   Bạn đang tự ghi chú việc cho chính mình.
                 </p>
-              ) : formType === 'task' || reportTarget === 'profile' ? (
+              ) : reportTarget === 'department' ? (
+                <DepartmentPicker
+                  items={departments}
+                  selected={selectedDepartments}
+                  onChange={setSelectedDepartments}
+                  triggerLabel={formType === 'task' ? 'Chọn phòng ban nhận việc' : 'Chọn phòng ban nhận báo cáo'}
+                />
+              ) : (
                 <PeoplePicker
                   profiles={profiles}
                   currentUserId={profile?.id}
@@ -314,13 +343,6 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
                   selected={selectedAssignees}
                   onChange={setSelectedAssignees}
                   mode="multiple"
-                />
-              ) : (
-                <DepartmentPicker
-                  items={departments}
-                  selected={selectedDepartments}
-                  onChange={setSelectedDepartments}
-                  triggerLabel="Chọn phòng ban nhận báo cáo"
                 />
               )}
             </div>

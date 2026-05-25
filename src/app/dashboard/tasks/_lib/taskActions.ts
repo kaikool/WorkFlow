@@ -48,6 +48,30 @@ export async function updateTaskStatus(
   return { ok: true };
 }
 
+// Duyệt báo cáo (submitted → done). Nhận xét optional — nếu có sẽ vào timeline.
+export async function approveTask(
+  taskId: string,
+  comment?: string,
+): Promise<ActionResult> {
+  return updateTaskStatus(taskId, 'done', comment);
+}
+
+// Trả về sửa lại (submitted → doing). Bắt buộc lý do.
+export async function rejectSubmission(
+  taskId: string,
+  reason: string,
+): Promise<ActionResult> {
+  return updateTaskStatus(taskId, 'doing', reason);
+}
+
+// Mở lại báo cáo đã hoàn thành (done → doing). Chỉ admin/director, bắt buộc lý do.
+export async function reopenDone(
+  taskId: string,
+  reason: string,
+): Promise<ActionResult> {
+  return updateTaskStatus(taskId, 'doing', reason);
+}
+
 export async function delegateTask(taskId: string, assigneeIds: string[]): Promise<ActionResult> {
   const { error } = await supabase.rpc('task_delegate', {
     p_task_id: taskId,
@@ -103,6 +127,38 @@ export async function cancelTask(taskId: string, reason?: string): Promise<Actio
   const { error } = await supabase.rpc('task_cancel', {
     p_task_id: taskId,
     p_reason: reason ?? null,
+  } as any);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+// Sửa nội dung task. Chỉ sửa được title/description/priority/due_date —
+// department/assignee/task_type/requires_approval đã chốt từ lúc tạo.
+export async function updateTask(
+  taskId: string,
+  input: {
+    title: string;
+    description?: string | null;
+    priority: TaskPriority;
+    due_date: string;
+  },
+): Promise<ActionResult> {
+  const { error } = await supabase.rpc('task_update', {
+    p_task_id: taskId,
+    p_title: input.title,
+    p_description: input.description ?? null,
+    p_priority: input.priority,
+    p_due_date: input.due_date,
+  } as any);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+// Xoá nháp — RPC tự gate (creator + 10 phút + chưa có comment/attachment).
+// Error message từ RPC sẽ giải thích rõ tại sao không xoá được.
+export async function deleteDraftTask(taskId: string): Promise<ActionResult> {
+  const { error } = await supabase.rpc('task_delete_draft', {
+    p_task_id: taskId,
   } as any);
   if (error) return { ok: false, error: error.message };
   return { ok: true };

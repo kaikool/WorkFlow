@@ -123,6 +123,8 @@ export interface Database {
           is_archived: boolean;
           requires_approval: boolean;
           batch_id: Uuid | null;
+          last_returned_at: Timestamp | null;
+          last_return_reason: string | null;
           created_at: Timestamp;
           updated_at: Timestamp;
         };
@@ -141,6 +143,8 @@ export interface Database {
           is_archived?: boolean;
           requires_approval?: boolean;
           batch_id?: Uuid | null;
+          last_returned_at?: Timestamp | null;
+          last_return_reason?: string | null;
           created_at?: Timestamp;
           updated_at?: Timestamp;
         };
@@ -228,6 +232,7 @@ export interface Database {
           priority: TaskPriority;
           target_department_ids: Uuid[];
           target_user_ids: Uuid[];
+          default_assignee_id: Uuid | null;
           schedule_kind: "weekly" | "monthly";
           weekly_dow: number | null;
           weekly_time: string | null;
@@ -727,6 +732,7 @@ export interface Database {
           p_timezone?: string;
           p_due_days_after_fire?: number;
           p_is_active?: boolean;
+          p_default_assignee_id?: Uuid | null;
         };
         Returns: Uuid;
       };

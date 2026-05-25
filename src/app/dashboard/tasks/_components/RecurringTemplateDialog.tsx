@@ -19,6 +19,7 @@ import { notifyError, notifyValidation, notifySuccess } from '@/lib/notify';
 import {
   canAssignTaskToOthers,
   canRequestReport,
+  canTargetCrossDepartment,
   getProfileDepartmentCode,
 } from '@/lib/permissions';
 import { upsertRecurringTemplate } from '../_lib/recurringActions';
@@ -49,6 +50,9 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
   const [target, setTarget] = useState<'department' | 'profile'>('department');
   const [deptIds, setDeptIds] = useState<string[]>([]);
   const [userIds, setUserIds] = useState<string[]>([]);
+  // Cán bộ mặc định nhận task sinh từ template (chỉ áp dụng khi giao báo cáo cho phòng).
+  // NULL → fallback Trưởng phòng — đúng hành vi của task ad-hoc.
+  const [defaultAssigneeId, setDefaultAssigneeId] = useState<string | null>(null);
   const [kind, setKind] = useState<ScheduleKind>('weekly');
   const [weeklyDow, setWeeklyDow] = useState<number | null>(5);
   const [weeklyTime, setWeeklyTime] = useState('15:00');
@@ -87,6 +91,7 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
       setDeptIds(editing.target_department_ids ?? []);
       setUserIds(editing.target_user_ids ?? []);
       setTarget(editing.target_user_ids?.length > 0 ? 'profile' : 'department');
+      setDefaultAssigneeId(editing.default_assignee_id ?? null);
       setKind(editing.schedule_kind);
       setWeeklyDow(editing.weekly_dow);
       setWeeklyTime(editing.weekly_time?.slice(0, 5) ?? '15:00');
@@ -97,6 +102,7 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
       setTitle(''); setDescription('');
       setTaskType('report'); setPriority('medium');
       setTarget('department'); setDeptIds([]); setUserIds([]);
+      setDefaultAssigneeId(null);
       setKind('weekly'); setWeeklyDow(5); setWeeklyTime('15:00');
       setMonthlyDom(1); setMonthlyTime('09:00');
       setDueDays(7);
@@ -105,14 +111,25 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
 
   const canAssign = canAssignTaskToOthers(profile);
   const canMakeReport = canRequestReport(profile);
+  // "Cả phòng ban" toggle — hub manager/staff + admin/director. Non-hub manager
+  // bị siết về phòng mình nên không có nhu cầu chọn phòng (chỉ phòng mình → vô nghĩa).
+  const canCrossDept = canTargetCrossDepartment(profile);
   // Tab "Giao việc": admin/director/manager. Tab "Báo cáo": + staff hub.
   const showTaskTab = canAssign;
   const showReportTab = canMakeReport;
 
-  // Task chỉ giao cho cá nhân (không qua phòng) — auto-lock target khi đổi type.
+  // Nếu không cross-dept thì force chọn cá nhân (cá nhân đã filter sẵn phòng mình).
   useEffect(() => {
-    if (taskType === 'task') setTarget('profile');
-  }, [taskType]);
+    if (!canCrossDept) setTarget('profile');
+  }, [canCrossDept]);
+
+  // default_assignee_id chỉ có nghĩa khi giao cho phòng (target='department').
+  // Khi target='profile' → mỗi cán bộ chỉ định trực tiếp, không cần override TP.
+  useEffect(() => {
+    if (target === 'profile') {
+      setDefaultAssigneeId(null);
+    }
+  }, [target]);
 
   // Khi mở dialog mới (không edit) — chọn tab mặc định theo quyền.
   useEffect(() => {
@@ -123,15 +140,11 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
 
   const handleSave = async () => {
     if (!title.trim()) { notifyValidation('Vui lòng nhập tiêu đề'); return; }
-    if (taskType === 'task' && userIds.length === 0) {
-      notifyValidation('Vui lòng chọn người nhận');
-      return;
-    }
-    if (taskType === 'report' && target === 'department' && deptIds.length === 0) {
+    if (target === 'department' && deptIds.length === 0) {
       notifyValidation('Vui lòng chọn phòng ban nhận');
       return;
     }
-    if (taskType === 'report' && target === 'profile' && userIds.length === 0) {
+    if (target === 'profile' && userIds.length === 0) {
       notifyValidation('Vui lòng chọn cán bộ nhận');
       return;
     }
@@ -151,9 +164,12 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
       description: description.trim() || null,
       task_type: taskType,
       priority,
-      // Task: luôn theo cá nhân. Report: theo lựa chọn target.
-      target_department_ids: taskType === 'report' && target === 'department' ? deptIds : [],
-      target_user_ids: taskType === 'task' || target === 'profile' ? userIds : [],
+      // Hub manager Luồng A: giao việc qua phòng → reuse auto-fill TP của recurring_fire_due.
+      // Cá nhân hay phòng đều dùng chung target — không còn ràng buộc theo task_type.
+      target_department_ids: target === 'department' ? deptIds : [],
+      target_user_ids: target === 'profile' ? userIds : [],
+      // default_assignee_id chỉ có nghĩa khi giao qua phòng (target='department').
+      default_assignee_id: target === 'department' ? defaultAssigneeId : null,
       schedule_kind: kind,
       weekly_dow: kind === 'weekly' ? weeklyDow : null,
       weekly_time: kind === 'weekly' ? weeklyTime : null,
@@ -180,8 +196,8 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
           </DialogTitle>
           <DialogDescription className="text-subtitle">
             {taskType === 'task'
-              ? 'Máy tự giao việc cho cán bộ theo lịch — không cần nhắc lại mỗi kỳ.'
-              : 'Máy tự yêu cầu báo cáo theo lịch — không cần thao tác lại mỗi lần.'}
+              ? 'Giao việc định kỳ.'
+              : 'Giao báo cáo định kỳ.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -225,9 +241,10 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
             </div>
 
             <div className="group-stack">
-              <Label className="text-label">{taskType === 'task' ? 'Người nhận' : 'Đối tượng nhận'}</Label>
-              {/* Report: cho chọn cả phòng / cán bộ. Task: luôn theo cá nhân. */}
-              {taskType === 'report' && (
+              <Label className="text-label">{target === 'profile' ? 'Người nhận' : 'Đối tượng nhận'}</Label>
+              {/* Toggle "Cả phòng ban / Cán bộ cụ thể" — chỉ hiện cho user được phép cross-dept.
+                  Áp cho cả Luồng A (hub manager giao task qua phòng → TP nhận) lẫn Luồng B. */}
+              {canCrossDept && (
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
@@ -261,7 +278,7 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
                   </button>
                 </div>
               )}
-              {taskType === 'report' && target === 'department' ? (
+              {target === 'department' ? (
                 <DepartmentPicker
                   items={departments}
                   selected={deptIds}
@@ -280,6 +297,37 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
                 />
               )}
             </div>
+
+            {/* Cán bộ mặc định — chỉ hiện khi giao qua phòng (cả task lẫn report).
+                Để trống = Trưởng phòng nhận (đúng hành vi task ad-hoc).
+                Có người = mỗi kỳ giao thẳng cho người này, TP đỡ phải phân công lại.
+                Dùng chung PeoplePicker thay vì Select riêng — đồng bộ pattern với Giao việc. */}
+            {target === 'department' && (
+              <div className="tight-stack">
+                <Label className="text-label">Cán bộ mặc định (tuỳ chọn)</Label>
+                <p className="text-meta italic">
+                  Để trống: TP của phòng nhận. Chọn người: mỗi kỳ giao thẳng — không cần TP phân công lại.
+                </p>
+                <PeoplePicker
+                  profiles={profiles}
+                  currentUserId={profile?.id}
+                  myDepartmentId={profile?.department_id ?? null}
+                  myDepartmentName={profile?.departments?.name ?? null}
+                  selected={defaultAssigneeId ? [defaultAssigneeId] : []}
+                  onChange={(ids) => setDefaultAssigneeId(ids[0] ?? null)}
+                  mode="single"
+                />
+                {defaultAssigneeId && (
+                  <button
+                    type="button"
+                    onClick={() => setDefaultAssigneeId(null)}
+                    className="text-meta text-primary self-start hover:underline min-h-9"
+                  >
+                    Bỏ chọn — về TP mặc định
+                  </button>
+                )}
+              </div>
+            )}
 
             <div className="group-stack">
               <Label className="text-label">Lịch sinh task</Label>
@@ -318,7 +366,7 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
                     <div className="flex items-center gap-2">
                       <Flag className={cn('icon-sm',
                         priority === 'high' ? 'text-red-500' :
-                        priority === 'low' ? 'text-slate-400' : 'text-slate-500')} />
+                          priority === 'low' ? 'text-slate-400' : 'text-slate-500')} />
                       <SelectValue />
                     </div>
                   </SelectTrigger>
@@ -335,9 +383,9 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
 
         <DialogFooter className="app-dialog-sheet-footer flex flex-row justify-between gap-2">
           <Button variant="ghost" onClick={() => setIsOpen(false)} disabled={loading}
-                  className="min-h-11 px-4 rounded-xl text-slate-500">Huỷ</Button>
+            className="min-h-11 px-4 rounded-xl text-slate-500">Huỷ</Button>
           <Button onClick={handleSave} disabled={loading}
-                  className="min-h-11 px-5 rounded-xl bg-primary hover:bg-primary/90 text-white font-semibold">
+            className="min-h-11 px-5 rounded-xl bg-primary hover:bg-primary/90 text-white font-semibold">
             {loading ? <Loader2 className="icon-sm animate-spin" /> : (editing ? 'Cập nhật' : 'Tạo')}
           </Button>
         </DialogFooter>

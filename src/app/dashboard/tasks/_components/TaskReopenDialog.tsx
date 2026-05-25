@@ -7,9 +7,9 @@ import {
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertTriangle } from 'lucide-react';
 import { notifyError, notifySuccess, notifyValidation } from '@/lib/notify';
-import { rejectSubmission } from '../_lib/taskActions';
+import { reopenDone } from '../_lib/taskActions';
 
 interface Props {
   task: { id: string; title: string };
@@ -17,25 +17,25 @@ interface Props {
   onChanged: () => void;
 }
 
-// Trả về sửa lại (submitted → doing). Lý do bắt buộc. Áp dụng cho TP/creator/BGĐ.
-// Mở lại done → doing tách sang TaskReopenDialog.
-export function TaskReturnDialog({ task, onClose, onChanged }: Props) {
+// Mở lại báo cáo đã hoàn thành (done → doing). Chỉ admin/director.
+// Tách riêng khỏi TaskReturnDialog để cảnh báo rõ "đảo ngược quyết định đã chốt".
+export function TaskReopenDialog({ task, onClose, onChanged }: Props) {
   const [reason, setReason] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
     if (!reason.trim()) {
-      notifyValidation('Vui lòng nhập lý do trả về');
+      notifyValidation('Vui lòng nhập lý do mở lại');
       return;
     }
     setLoading(true);
-    const res = await rejectSubmission(task.id, reason.trim());
+    const res = await reopenDone(task.id, reason.trim());
     setLoading(false);
     if (!res.ok) {
-      notifyError(res.error, 'Không trả về được');
+      notifyError(res.error, 'Không mở lại được');
       return;
     }
-    notifySuccess('Đã trả về sửa', 'Người được giao sẽ nhận thông báo và làm lại.');
+    notifySuccess('Đã mở lại báo cáo', 'Người được giao sẽ nhận thông báo và làm lại.');
     onChanged();
   };
 
@@ -43,18 +43,26 @@ export function TaskReturnDialog({ task, onClose, onChanged }: Props) {
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="app-dialog-sheet shadow-2xl">
         <DialogHeader className="app-dialog-sheet-header">
-          <DialogTitle className="heading-section">Trả về sửa lại</DialogTitle>
+          <DialogTitle className="heading-section">Mở lại báo cáo đã hoàn thành</DialogTitle>
           <DialogDescription className="text-subtitle line-clamp-1">{task.title}</DialogDescription>
         </DialogHeader>
 
         <div className="app-dialog-sheet-body">
           <div className="px-[var(--app-page-x)] py-4 tight-stack">
-            <Label className="text-label">Lý do trả về (bắt buộc)</Label>
+            <div className="flex items-start gap-2 p-3 rounded-xl bg-amber-50 border border-amber-200">
+              <AlertTriangle className="icon-sm text-amber-700 shrink-0 mt-0.5" />
+              <p className="text-subtitle text-amber-800">
+                Báo cáo đang ở trạng thái <b>Hoàn thành</b>. Mở lại sẽ đưa về <b>Đang làm</b> để
+                người được giao sửa, và ghi vào nhật ký truy vết.
+              </p>
+            </div>
+
+            <Label className="text-label">Lý do mở lại (bắt buộc)</Label>
             <Textarea
               rows={4}
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder="VD: Số liệu chưa khớp, vui lòng sửa lại phần..."
+              placeholder="VD: Phát hiện sai số liệu sau khi duyệt, cần sửa lại phần..."
               className="rounded-xl bg-slate-50 border-none focus-visible:ring-0"
               autoFocus
             />
@@ -66,7 +74,7 @@ export function TaskReturnDialog({ task, onClose, onChanged }: Props) {
             Huỷ
           </Button>
           <Button onClick={handleSubmit} disabled={loading} className="rounded-xl bg-amber-600 hover:bg-amber-700">
-            {loading ? <Loader2 className="icon-sm animate-spin" /> : 'Trả về'}
+            {loading ? <Loader2 className="icon-sm animate-spin" /> : 'Mở lại'}
           </Button>
         </DialogFooter>
       </DialogContent>

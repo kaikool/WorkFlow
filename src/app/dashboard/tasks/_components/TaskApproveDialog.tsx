@@ -8,8 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
-import { notifyError, notifySuccess, notifyValidation } from '@/lib/notify';
-import { rejectSubmission } from '../_lib/taskActions';
+import { notifyError, notifySuccess } from '@/lib/notify';
+import { approveTask } from '../_lib/taskActions';
 
 interface Props {
   task: { id: string; title: string };
@@ -17,25 +17,20 @@ interface Props {
   onChanged: () => void;
 }
 
-// Trả về sửa lại (submitted → doing). Lý do bắt buộc. Áp dụng cho TP/creator/BGĐ.
-// Mở lại done → doing tách sang TaskReopenDialog.
-export function TaskReturnDialog({ task, onClose, onChanged }: Props) {
-  const [reason, setReason] = useState('');
+// Duyệt báo cáo (submitted → done). Nhận xét tuỳ chọn — nếu nhập sẽ vào timeline.
+export function TaskApproveDialog({ task, onClose, onChanged }: Props) {
+  const [comment, setComment] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
-    if (!reason.trim()) {
-      notifyValidation('Vui lòng nhập lý do trả về');
-      return;
-    }
     setLoading(true);
-    const res = await rejectSubmission(task.id, reason.trim());
+    const res = await approveTask(task.id, comment.trim() || undefined);
     setLoading(false);
     if (!res.ok) {
-      notifyError(res.error, 'Không trả về được');
+      notifyError(res.error, 'Không duyệt được');
       return;
     }
-    notifySuccess('Đã trả về sửa', 'Người được giao sẽ nhận thông báo và làm lại.');
+    notifySuccess('Đã duyệt báo cáo', 'Người được giao sẽ nhận thông báo.');
     onChanged();
   };
 
@@ -43,21 +38,24 @@ export function TaskReturnDialog({ task, onClose, onChanged }: Props) {
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="app-dialog-sheet shadow-2xl">
         <DialogHeader className="app-dialog-sheet-header">
-          <DialogTitle className="heading-section">Trả về sửa lại</DialogTitle>
+          <DialogTitle className="heading-section">Duyệt báo cáo</DialogTitle>
           <DialogDescription className="text-subtitle line-clamp-1">{task.title}</DialogDescription>
         </DialogHeader>
 
         <div className="app-dialog-sheet-body">
           <div className="px-[var(--app-page-x)] py-4 tight-stack">
-            <Label className="text-label">Lý do trả về (bắt buộc)</Label>
+            <Label className="text-label">Nhận xét (tuỳ chọn)</Label>
             <Textarea
               rows={4}
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              placeholder="VD: Số liệu chưa khớp, vui lòng sửa lại phần..."
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              placeholder="Ghi nhận, lời khen hoặc lưu ý cho người báo cáo..."
               className="rounded-xl bg-slate-50 border-none focus-visible:ring-0"
               autoFocus
             />
+            <p className="text-meta italic">
+              Bỏ trống nếu không cần ghi chú. Duyệt sẽ chốt báo cáo ở trạng thái Hoàn thành.
+            </p>
           </div>
         </div>
 
@@ -66,7 +64,7 @@ export function TaskReturnDialog({ task, onClose, onChanged }: Props) {
             Huỷ
           </Button>
           <Button onClick={handleSubmit} disabled={loading} className="rounded-xl bg-amber-600 hover:bg-amber-700">
-            {loading ? <Loader2 className="icon-sm animate-spin" /> : 'Trả về'}
+            {loading ? <Loader2 className="icon-sm animate-spin" /> : 'Duyệt'}
           </Button>
         </DialogFooter>
       </DialogContent>
