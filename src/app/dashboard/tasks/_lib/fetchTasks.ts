@@ -149,3 +149,27 @@ export async function fetchAssignableProfiles(opts: AssignOpts) {
   return data ?? [];
 }
 
+// Lấy danh sách task cùng batch (kể cả task hiện tại). Caller tự filter theo
+// status/is_archived tuỳ nghiệp vụ (edit cho phép mọi status trừ canceled,
+// cancel chỉ áp todo/doing/submitted, delete-draft chỉ áp todo + 10 phút).
+export interface BatchSibling {
+  id: string;
+  status: string;
+  is_archived: boolean;
+  created_at: string;
+  department: { name: string | null } | null;
+}
+
+export async function fetchBatchSiblings(batchId: string): Promise<BatchSibling[]> {
+  const { data, error } = await supabase
+    .from('tasks')
+    .select('id, status, is_archived, created_at, department:departments(name)')
+    .eq('batch_id', batchId)
+    .order('created_at', { ascending: true });
+  if (error) {
+    console.error('fetchBatchSiblings error:', error);
+    return [];
+  }
+  return (data ?? []) as unknown as BatchSibling[];
+}
+

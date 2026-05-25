@@ -43,6 +43,7 @@ import { useAppData } from "@/hooks/use-app-data";
 import { NotificationsDropdown } from "@/components/notifications-dropdown";
 import { canManageResourceCatalog } from "@/lib/permissions";
 import { ConfirmDialogProvider } from "@/components/ui/confirm-dialog";
+import { BatchScopeDialogProvider } from "@/components/ui/batch-scope-dialog";
 import AnniversaryDialog from "./AnniversaryDialog";
 import DesktopSidebar from "./DesktopSidebar";
 import MobileBottomNav from "./MobileBottomNav";
@@ -314,6 +315,7 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
  return (
  <div className="flex min-h-screen bg-background">
  <ConfirmDialogProvider />
+ <BatchScopeDialogProvider />
  <AnniversaryDialog
    isOpen={isAnniversaryDialogOpen}
    setIsOpen={setIsAnniversaryDialogOpen}

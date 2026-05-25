@@ -27,6 +27,9 @@ import {
 } from '@/lib/permissions';
 import { updateTaskStatus, archiveTask, deleteDraftTask } from '../_lib/taskActions';
 import { fetchTaskAttachments } from '../_lib/attachmentHelpers';
+import { fetchBatchSiblings } from '../_lib/fetchTasks';
+import { confirmDialog } from '@/components/ui/confirm-dialog';
+import { batchScopeDialog } from '@/components/ui/batch-scope-dialog';
 import { TaskDelegateDialog } from './TaskDelegateDialog';
 import { TaskRequestExtensionDialog } from './TaskRequestExtensionDialog';
 import { TaskSubmitReportDialog } from './TaskSubmitReportDialog';
@@ -146,12 +149,63 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, showArchive =
   }, [inDeleteWindow, task.id]);
 
   const runDelete = async () => {
-    if (!confirm(`Xoá nháp "${task.title}"? Hành động này không thể quay lại.`)) return;
+    // Batch: nếu task thuộc lô, hỏi user áp cả lô hay chỉ task này.
+    // Delete chỉ áp được cho task status='todo', cùng creator, tuổi ≤10 phút (RPC tự gate).
+    // Mình filter trước theo status để UX hiện đúng số task có thể xoá.
+    if (task.batch_id) {
+      setBusy('delete');
+      const siblings = await fetchBatchSiblings(task.batch_id);
+      setBusy(null);
+      const deletable = siblings.filter(s => s.status === 'todo' && !s.is_archived);
+
+      if (deletable.length > 1) {
+        const scope = await batchScopeDialog({
+          title: 'Xoá cả lô nháp?',
+          description: `Việc nháp này nằm trong một lô gửi đến ${deletable.length} phòng. Xoá cả lô — hay chỉ task này?`,
+          batchSize: deletable.length,
+          destructive: true,
+        });
+        if (scope === null) return;
+        const ids = scope === 'batch' ? deletable.map(s => s.id) : [task.id];
+        await runDeleteIds(ids);
+        return;
+      }
+    }
+
+    const ok = await confirmDialog({
+      title: 'Xoá nháp công việc?',
+      description: `Bạn có chắc muốn xoá "${task.title}"? Hành động này không thể quay lại.`,
+      confirmText: 'Xoá nháp',
+      danger: true,
+    });
+    if (!ok) return;
+    await runDeleteIds([task.id]);
+  };
+
+  const runDeleteIds = async (taskIds: string[]) => {
     setBusy('delete');
-    const res = await deleteDraftTask(task.id);
+    let okCount = 0;
+    let firstError: string | null = null;
+    for (const id of taskIds) {
+      const res = await deleteDraftTask(id);
+      if (res.ok) okCount += 1;
+      else if (!firstError) firstError = res.error;
+    }
     setBusy(null);
-    if (!res.ok) { notifyError(res.error, 'Không xoá được'); return; }
-    notifySuccess('Đã xoá nháp');
+
+    if (okCount === 0) {
+      notifyError(firstError ?? 'Lỗi không xác định', 'Không xoá được');
+      return;
+    }
+    if (taskIds.length === 1) {
+      notifySuccess('Đã xoá nháp');
+    } else {
+      const skipped = taskIds.length - okCount;
+      notifySuccess(
+        `Đã xoá ${okCount}/${taskIds.length} nháp trong lô`,
+        skipped > 0 ? `${skipped} task bỏ qua do lỗi quyền hoặc trạng thái` : undefined,
+      );
+    }
     onChanged();
   };
 
@@ -479,6 +533,7 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, showArchive =
             id: task.id,
             title: task.title,
             assigneeCount: task.assignees?.length ?? 0,
+            batch_id: task.batch_id,
           }}
           onClose={() => setOpenCancel(false)}
           onChanged={() => { setOpenCancel(false); onChanged(); }}
@@ -492,6 +547,7 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, showArchive =
             description: task.description,
             priority: task.priority,
             due_date: task.due_date,
+            batch_id: task.batch_id,
           }}
           onClose={() => setOpenEdit(false)}
           onChanged={() => { setOpenEdit(false); onChanged(); }}

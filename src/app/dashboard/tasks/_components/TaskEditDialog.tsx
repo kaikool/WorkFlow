@@ -4,6 +4,7 @@
 // Department/assignee/task_type/requires_approval đã chốt từ lúc tạo, không cho sửa
 // (đổi assignee → Phân công lại; đổi loại → tạo mới).
 // Gate: creator + admin/director, mọi status trừ canceled/archived.
+// Batch: nếu task thuộc lô (batch_id), hỏi user áp cho cả lô hay chỉ task này.
 // Audit comment [Hệ thống] tự tạo trong RPC khi có thay đổi thực sự.
 
 import React, { useState } from 'react';
@@ -25,6 +26,8 @@ import { vi } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { notifyError, notifySuccess, notifyValidation } from '@/lib/notify';
 import { updateTask } from '../_lib/taskActions';
+import { fetchBatchSiblings } from '../_lib/fetchTasks';
+import { batchScopeDialog } from '@/components/ui/batch-scope-dialog';
 import { TimePicker } from '@/components/ui/time-picker';
 import type { TaskPriority } from '../_lib/types';
 
@@ -35,6 +38,7 @@ interface Props {
     description: string | null;
     priority: TaskPriority;
     due_date: string | null;
+    batch_id: string | null;
   };
   onClose: () => void;
   onChanged: () => void;
@@ -54,16 +58,69 @@ export function TaskEditDialog({ task, onClose, onChanged }: Props) {
     if (!title.trim()) { notifyValidation('Vui lòng nhập tiêu đề'); return; }
     if (!dueDate) { notifyValidation('Vui lòng chọn hạn hoàn thành'); return; }
 
-    setLoading(true);
-    const res = await updateTask(task.id, {
+    const payload = {
       title: title.trim(),
       description: description.trim() || null,
       priority,
       due_date: dueDate.toISOString(),
-    });
+    };
+
+    // Task thuộc lô (gửi nhiều phòng cùng lúc) → hỏi user áp cả lô hay chỉ task này.
+    if (task.batch_id) {
+      setLoading(true);
+      const siblings = await fetchBatchSiblings(task.batch_id);
+      // Chỉ áp được task còn 'sống' — bỏ canceled, archived. Done/submitted vẫn cho sửa
+      // (TP có thể chỉnh hạn/tiêu đề cho audit, RPC tự gate).
+      const editable = siblings.filter(s => s.status !== 'canceled' && !s.is_archived);
+      setLoading(false);
+
+      if (editable.length <= 1) {
+        // Lô bị huỷ/đóng hết, chỉ còn task hiện tại → coi như task đơn.
+        await runSave([task.id], payload);
+        return;
+      }
+
+      const scope = await batchScopeDialog({
+        title: 'Áp thay đổi cho cả lô?',
+        description: `Công việc này nằm trong một lô gửi đến ${editable.length} phòng. Áp thay đổi cho cả lô — hay chỉ task này?`,
+        batchSize: editable.length,
+      });
+      if (scope === null) return;
+      const ids = scope === 'batch' ? editable.map(s => s.id) : [task.id];
+      await runSave(ids, payload);
+      return;
+    }
+
+    await runSave([task.id], payload);
+  };
+
+  const runSave = async (
+    taskIds: string[],
+    payload: { title: string; description: string | null; priority: TaskPriority; due_date: string },
+  ) => {
+    setLoading(true);
+    let okCount = 0;
+    let firstError: string | null = null;
+    for (const id of taskIds) {
+      const res = await updateTask(id, payload);
+      if (res.ok) okCount += 1;
+      else if (!firstError) firstError = res.error;
+    }
     setLoading(false);
-    if (!res.ok) { notifyError(res.error, 'Không lưu được'); return; }
-    notifySuccess('Đã cập nhật');
+
+    if (okCount === 0) {
+      notifyError(firstError ?? 'Lỗi không xác định', 'Không lưu được');
+      return;
+    }
+    if (taskIds.length === 1) {
+      notifySuccess('Đã cập nhật');
+    } else {
+      const skipped = taskIds.length - okCount;
+      notifySuccess(
+        `Đã cập nhật ${okCount}/${taskIds.length} task trong lô`,
+        skipped > 0 ? `${skipped} task bỏ qua do lỗi quyền hoặc trạng thái` : undefined,
+      );
+    }
     onChanged();
   };
 
