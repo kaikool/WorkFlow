@@ -29,6 +29,7 @@ export function TaskRequestExtensionDialog({ task, onClose, onChanged }: Props) 
   );
   const [reason, setReason] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isDateOpen, setIsDateOpen] = useState(false);
 
   const handleSubmit = async () => {
     if (!newDate) {
@@ -66,7 +67,7 @@ export function TaskRequestExtensionDialog({ task, onClose, onChanged }: Props) 
           <div className="space-y-4 px-[var(--app-page-x)] py-4">
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-500">Hạn mới</label>
-              <Popover modal>
+              <Popover modal open={isDateOpen} onOpenChange={setIsDateOpen}>
                 <PopoverTrigger asChild>
                   <Button variant="outline" className={cn(
                     'w-full min-h-11 rounded-xl bg-slate-50 border-none font-bold text-slate-900 justify-start px-4 shadow-sm',
@@ -76,8 +77,18 @@ export function TaskRequestExtensionDialog({ task, onClose, onChanged }: Props) 
                     {newDate ? format(newDate, 'dd/MM/yyyy', { locale: vi }) : 'Chọn ngày'}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0 rounded-xl border border-slate-200 shadow-lg" align="start">
-                  <CalendarPicker mode="single" selected={newDate} onSelect={setNewDate} initialFocus locale={vi} />
+                <PopoverContent
+                  className="w-auto p-0 rounded-2xl border-none shadow-2xl z-[9999] pointer-events-auto"
+                  align="start"
+                  onOpenAutoFocus={(e) => e.preventDefault()}
+                >
+                  <CalendarPicker
+                    mode="single"
+                    selected={newDate}
+                    onSelect={(d) => { setNewDate(d); setIsDateOpen(false); }}
+                    initialFocus
+                    locale={vi}
+                  />
                 </PopoverContent>
               </Popover>
               {task.due_date && (

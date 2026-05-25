@@ -76,6 +76,7 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
   const [requiresApproval, setRequiresApproval] = useState(false);
 
   const [loading, setLoading] = useState(false);
+  const [isDateOpen, setIsDateOpen] = useState(false);
 
   useEffect(() => {
     if (!isOpen || !profile) return;
@@ -351,7 +352,7 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
               <div className="tight-stack">
                 <Label className="text-label">Hạn hoàn thành</Label>
                 <div className="grid grid-cols-2 gap-2">
-                  <Popover>
+                  <Popover modal open={isDateOpen} onOpenChange={setIsDateOpen}>
                     <PopoverTrigger asChild>
                       <Button
                         variant="outline"
@@ -364,7 +365,11 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
                         {dueDate ? format(dueDate, 'dd/MM/yyyy', { locale: vi }) : 'Chọn ngày'}
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0 rounded-2xl border border-slate-200 shadow-lg bg-white" align="start">
+                    <PopoverContent
+                      className="w-auto p-0 rounded-2xl border-none shadow-2xl z-[9999] pointer-events-auto"
+                      align="start"
+                      onOpenAutoFocus={(e) => e.preventDefault()}
+                    >
                       <CalendarPicker
                         mode="single"
                         selected={dueDate}
@@ -378,6 +383,7 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
                             0, 0,
                           );
                           setDueDate(next);
+                          setIsDateOpen(false);
                         }}
                         initialFocus
                         locale={vi}

@@ -48,6 +48,7 @@ export function TaskEditDialog({ task, onClose, onChanged }: Props) {
     task.due_date ? new Date(task.due_date) : undefined,
   );
   const [loading, setLoading] = useState(false);
+  const [isDateOpen, setIsDateOpen] = useState(false);
 
   const handleSubmit = async () => {
     if (!title.trim()) { notifyValidation('Vui lòng nhập tiêu đề'); return; }
@@ -103,7 +104,7 @@ export function TaskEditDialog({ task, onClose, onChanged }: Props) {
               <div className="tight-stack">
                 <Label className="text-label">Hạn hoàn thành</Label>
                 <div className="grid grid-cols-2 gap-2">
-                  <Popover>
+                  <Popover modal open={isDateOpen} onOpenChange={setIsDateOpen}>
                     <PopoverTrigger asChild>
                       <Button
                         variant="outline"
@@ -116,7 +117,11 @@ export function TaskEditDialog({ task, onClose, onChanged }: Props) {
                         {dueDate ? format(dueDate, 'dd/MM/yyyy', { locale: vi }) : 'Chọn ngày'}
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0 rounded-2xl border border-slate-200 shadow-lg bg-white" align="start">
+                    <PopoverContent
+                      className="w-auto p-0 rounded-2xl border-none shadow-2xl z-[9999] pointer-events-auto"
+                      align="start"
+                      onOpenAutoFocus={(e) => e.preventDefault()}
+                    >
                       <CalendarPicker
                         mode="single"
                         selected={dueDate}
@@ -129,6 +134,7 @@ export function TaskEditDialog({ task, onClose, onChanged }: Props) {
                             0, 0,
                           );
                           setDueDate(next);
+                          setIsDateOpen(false);
                         }}
                         initialFocus
                         locale={vi}
