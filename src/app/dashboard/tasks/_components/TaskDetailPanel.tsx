@@ -164,7 +164,7 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, showArchive =
           label="Hạn hoàn thành"
           value={
             <span className={cn('heading-card', dueOverdue && 'text-red-700')}>
-              {task.due_date ? format(new Date(task.due_date), 'EEEE, dd/MM/yyyy', { locale: vi }) : '—'}
+              {task.due_date ? format(new Date(task.due_date), 'EEEE, dd/MM/yyyy HH:mm', { locale: vi }) : '—'}
             </span>
           }
         />

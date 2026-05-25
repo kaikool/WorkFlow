@@ -2,18 +2,35 @@
 
 // PendingDocsWidget — tách từ TaskOverview cũ.
 // Hiển thị hồ sơ vật lý đang chờ tôi nhận hoặc đang ở bàn tôi.
+// KHÔNG hiển thị hồ sơ tôi đã chuyển đi (có outgoing PENDING từ tôi) —
+// chúng đang chờ người khác hành động, không phải tôi.
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import Link from 'next/link';
 import { FolderOpen, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { EmptyState } from '@/components/ui/empty-state';
-import type { PendingDocItem } from '../_lib/types';
+import type { PendingDocItem, PendingDocHandover } from '../_lib/types';
+
+type DocLevel = 'incoming' | 'safe' | 'warn' | 'danger';
+
+// Tìm handover PENDING liên quan tới user hiện tại trong handovers của 1 doc.
+function findUserPendingHandover(doc: PendingDocItem, userId: string | null) {
+  if (!userId) return null;
+  const handovers = doc.handovers || [];
+  return handovers.find(
+    (h: PendingDocHandover) =>
+      h.status === 'PENDING' && (h.receiver_id === userId || h.sender_id === userId),
+  ) || null;
+}
 
 // Tính nhanh SLA cho 1 doc — không import từ module handover để tránh vòng tròn.
-function getDocSlaLevel(doc: PendingDocItem): 'pending' | 'safe' | 'warn' | 'danger' {
-  if (doc.status === 'PENDING_RECEIPT') return 'pending';
+function getDocSlaLevel(doc: PendingDocItem, userId: string | null): DocLevel {
+  // Có người chuyển cho tôi đang chờ tôi nhận → ưu tiên hiển thị "Chờ tôi nhận"
+  const pending = findUserPendingHandover(doc, userId);
+  if (pending && pending.receiver_id === userId) return 'incoming';
+
   const slaHours = doc.category?.sla_hours;
   if (!slaHours || slaHours <= 0) return 'safe';
 
@@ -30,36 +47,52 @@ function getDocSlaLevel(doc: PendingDocItem): 'pending' | 'safe' | 'warn' | 'dan
   return 'safe';
 }
 
-const SLA_DOT_CLASS: Record<string, string> = {
-  pending: 'bg-amber-400 animate-pulse',
-  safe:    'bg-emerald-500',
-  warn:    'bg-amber-500',
-  danger:  'bg-red-500 animate-pulse',
+const SLA_DOT_CLASS: Record<DocLevel, string> = {
+  incoming: 'bg-amber-400 animate-pulse',
+  safe:     'bg-emerald-500',
+  warn:     'bg-amber-500',
+  danger:   'bg-red-500 animate-pulse',
 };
 
-const SLA_LABEL: Record<string, string> = {
-  pending: 'Chờ tôi nhận',
-  safe:    'Trong SLA',
-  warn:    'Sắp hết SLA',
-  danger:  'Quá hạn',
+const SLA_LABEL: Record<DocLevel, string> = {
+  incoming: 'Chờ tôi nhận',
+  safe:     'Trong SLA',
+  warn:     'Sắp hết SLA',
+  danger:   'Quá hạn',
 };
 
-export default function PendingDocsWidget({ docs }: { docs: PendingDocItem[] }) {
+interface Props {
+  docs: PendingDocItem[];
+  currentUserId: string | null;
+}
+
+export default function PendingDocsWidget({ docs, currentUserId }: Props) {
+  // Phòng trường hợp DB chưa migrate: lọc bỏ doc tôi đã chuyển đi (có outgoing PENDING từ tôi)
+  // và không có incoming PENDING cho tôi.
+  const visibleDocs = useMemo(() => {
+    if (!currentUserId) return docs;
+    return docs.filter((doc) => {
+      const pending = findUserPendingHandover(doc, currentUserId);
+      if (!pending) return true;
+      return pending.receiver_id === currentUserId;
+    });
+  }, [docs, currentUserId]);
+
   return (
     <div className="item-stack">
       <div className="flex items-center justify-between px-2">
         <h3 className="heading-card flex items-center gap-2 truncate whitespace-nowrap">
           <FolderOpen className="icon-md text-primary" /> Hồ sơ cần xử lý
         </h3>
-        {docs.length > 0 && (
+        {visibleDocs.length > 0 && (
           <span className="inline-flex items-center justify-center min-w-[22px] h-[22px] px-2 rounded-full bg-primary/10 text-primary text-[11px] font-bold">
-            {docs.length}
+            {visibleDocs.length}
           </span>
         )}
       </div>
 
       <div className="premium-card p-4 border-none tight-stack">
-        {docs.length === 0 ? (
+        {visibleDocs.length === 0 ? (
           <EmptyState
             icon={<FolderOpen className="icon-lg" />}
             title="Bàn của bạn đang trống"
@@ -68,8 +101,8 @@ export default function PendingDocsWidget({ docs }: { docs: PendingDocItem[] }) 
           />
         ) : (
           <>
-            {docs.map((doc) => {
-              const level = getDocSlaLevel(doc);
+            {visibleDocs.map((doc) => {
+              const level = getDocSlaLevel(doc, currentUserId);
               return (
                 <Link
                   key={doc.id}

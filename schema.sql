@@ -3845,13 +3845,13 @@ BEGIN
       )
   )
   SELECT jsonb_build_object(
-    'todo',              COUNT(*) FILTER (WHERE status = 'todo'),
-    'doing',             COUNT(*) FILTER (WHERE status = 'doing'),
-    'submitted',         COUNT(*) FILTER (WHERE status = 'submitted'),
-    'done',              COUNT(*) FILTER (WHERE status = 'done'),
-    'canceled',          COUNT(*) FILTER (WHERE status = 'canceled'),
-    'overdue',           COUNT(*) FILTER (WHERE due_date < v_now AND status NOT IN ('done','canceled')),
-    'awaiting_approval', COUNT(*) FILTER (WHERE status = 'submitted'),
+    'todo',              COUNT(DISTINCT COALESCE(batch_id, id)) FILTER (WHERE status = 'todo'),
+    'doing',             COUNT(DISTINCT COALESCE(batch_id, id)) FILTER (WHERE status = 'doing'),
+    'submitted',         COUNT(DISTINCT COALESCE(batch_id, id)) FILTER (WHERE status = 'submitted'),
+    'done',              COUNT(DISTINCT COALESCE(batch_id, id)) FILTER (WHERE status = 'done'),
+    'canceled',          COUNT(DISTINCT COALESCE(batch_id, id)) FILTER (WHERE status = 'canceled'),
+    'overdue',           COUNT(DISTINCT COALESCE(batch_id, id)) FILTER (WHERE due_date < v_now AND status NOT IN ('done','canceled')),
+    'awaiting_approval', COUNT(DISTINCT COALESCE(batch_id, id)) FILTER (WHERE status = 'submitted'),
     'extensions_pending', (
       SELECT COUNT(*) FROM task_extension_requests er
       WHERE er.status = 'pending'
@@ -4550,9 +4550,9 @@ BEGIN
 
   v_is_power := v_role IN ('admin', 'director');
 
-  -- 1) Counts: 1 CTE quét visible task duy nhất, COUNT FILTER trên cùng tập hợp.
+  -- 1) Counts — batch-aware: 1 batch chỉ tính 1.
   WITH visible AS (
-    SELECT t.id, t.status, t.priority, t.due_date, t.updated_at
+    SELECT t.id, t.batch_id, t.status, t.priority, t.due_date, t.updated_at
       FROM tasks t
      WHERE t.is_archived = FALSE
        AND (
@@ -4565,42 +4565,54 @@ BEGIN
        )
   )
   SELECT jsonb_build_object(
-    'active',     COUNT(*) FILTER (WHERE status IN ('todo','doing','submitted')),
-    'urgent',     COUNT(*) FILTER (WHERE status IN ('todo','doing','submitted') AND priority = 'high'),
-    'overdue',    COUNT(*) FILTER (WHERE due_date < v_now AND status NOT IN ('done','canceled')),
-    'done_today', COUNT(*) FILTER (WHERE status = 'done' AND updated_at >= date_trunc('day', v_now))
+    'active',     COUNT(DISTINCT COALESCE(batch_id, id)) FILTER (WHERE status IN ('todo','doing','submitted')),
+    'urgent',     COUNT(DISTINCT COALESCE(batch_id, id)) FILTER (WHERE status IN ('todo','doing','submitted') AND priority = 'high'),
+    'overdue',    COUNT(DISTINCT COALESCE(batch_id, id)) FILTER (WHERE due_date < v_now AND status NOT IN ('done','canceled')),
+    'done_today', COUNT(DISTINCT COALESCE(batch_id, id)) FILTER (WHERE status = 'done' AND updated_at >= date_trunc('day', v_now))
   )
     INTO v_counts
     FROM visible;
 
-  -- 2) Việc cần làm hôm nay: top 10 task của tôi (creator hoặc assignee) còn mở + due_date <= cuối ngày.
-  SELECT COALESCE(jsonb_agg(row_to_json(r.*)), '[]'::jsonb)
+  -- 2) Việc cần làm hôm nay: top 10 batch/task của tôi — DISTINCT ON batch để không lặp.
+  SELECT COALESCE(jsonb_agg(row_to_json(top.*)
+                            ORDER BY top.due_date ASC NULLS LAST,
+                                     CASE top.priority WHEN 'high' THEN 0 WHEN 'medium' THEN 1 ELSE 2 END),
+                  '[]'::jsonb)
     INTO v_today
     FROM (
-      SELECT t.id,
-             t.title,
-             t.task_type,
-             t.status,
-             t.priority,
-             t.due_date,
-             (t.due_date < v_now) AS is_overdue
-        FROM tasks t
-       WHERE t.is_archived = FALSE
-         AND t.status IN ('todo','doing','submitted')
-         AND (t.due_date IS NULL OR t.due_date < v_today_end)
-         AND (
-           t.created_by = v_uid
-           OR EXISTS (
-             SELECT 1 FROM task_assignees ta
-              WHERE ta.task_id = t.id AND ta.user_id = v_uid
+      SELECT * FROM (
+        SELECT DISTINCT ON (COALESCE(t.batch_id, t.id))
+               t.id,
+               t.title,
+               t.task_type,
+               t.status,
+               t.priority,
+               t.due_date,
+               (t.due_date < v_now) AS is_overdue
+          FROM tasks t
+         WHERE t.is_archived = FALSE
+           AND t.status IN ('todo','doing','submitted')
+           AND (t.due_date IS NULL OR t.due_date < v_today_end)
+           AND (
+             t.created_by = v_uid
+             OR EXISTS (
+               SELECT 1 FROM task_assignees ta
+                WHERE ta.task_id = t.id AND ta.user_id = v_uid
+             )
            )
-         )
-       ORDER BY t.due_date ASC NULLS LAST,
-                CASE t.priority WHEN 'high' THEN 0 WHEN 'medium' THEN 1 ELSE 2 END
-       LIMIT 10
-    ) r;
+         ORDER BY COALESCE(t.batch_id, t.id),
+                  t.due_date ASC NULLS LAST,
+                  CASE t.priority WHEN 'high' THEN 0 WHEN 'medium' THEN 1 ELSE 2 END
+      ) deduped
+      ORDER BY deduped.due_date ASC NULLS LAST,
+               CASE deduped.priority WHEN 'high' THEN 0 WHEN 'medium' THEN 1 ELSE 2 END
+      LIMIT 10
+    ) top;
 
-  -- 3) Pending docs: hồ sơ tôi đang giữ hoặc đang chờ tôi nhận, chưa hoàn tất.
+  -- 3) Pending docs: hồ sơ cần tôi hành động — KHÔNG bao gồm doc tôi đã chuyển đi.
+  --    Điều kiện match:
+  --      (a) Tôi đang giữ trên bàn (current_assignee_id = me) VÀ không có outgoing PENDING từ tôi.
+  --      (b) Có người chuyển cho tôi (incoming PENDING với receiver = me).
   SELECT COALESCE(jsonb_agg(row_to_json(d.*)), '[]'::jsonb)
     INTO v_docs
     FROM (
@@ -4631,7 +4643,15 @@ BEGIN
         FROM documents d
        WHERE d.status <> 'COMPLETED'
          AND (
-           d.current_assignee_id = v_uid
+           (
+             d.current_assignee_id = v_uid
+             AND NOT EXISTS (
+               SELECT 1 FROM document_handovers h
+                WHERE h.document_id = d.id
+                  AND h.sender_id = v_uid
+                  AND h.status = 'PENDING'
+             )
+           )
            OR EXISTS (
              SELECT 1 FROM document_handovers h
               WHERE h.document_id = d.id

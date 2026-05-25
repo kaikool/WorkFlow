@@ -18,10 +18,11 @@ type CreateAction =
 
 // Map route → hành động tạo mới tương ứng
 const CREATE_ACTIONS: Record<string, CreateAction> = {
-  '/dashboard/tasks':    { kind: 'param', param: 'create' },
-  '/dashboard/schedule': { kind: 'param', param: 'create' },
-  '/dashboard/team':     { kind: 'param', param: 'create' },
-  '/dashboard/handover': { kind: 'param', param: 'create' },
+  '/dashboard/tasks':           { kind: 'param', param: 'create' },
+  '/dashboard/tasks/recurring': { kind: 'param', param: 'create' },
+  '/dashboard/schedule':        { kind: 'param', param: 'create' },
+  '/dashboard/team':            { kind: 'param', param: 'create' },
+  '/dashboard/handover':        { kind: 'param', param: 'create' },
 };
 
 export default function MobileCreateFab() {

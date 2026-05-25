@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { Suspense, useEffect, useMemo, useState } from 'react';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { Plus, CalendarClock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -17,8 +17,12 @@ import type { RecurringTemplate } from '../_lib/recurringHelpers';
 
 type TypeFilter = 'all' | 'task' | 'report';
 
-export default function RecurringPage() {
+function RecurringContent() {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const createParam = searchParams.get('create') === '1';
+
   const { currentProfile } = useAppData();
   const profile = currentProfile;
   const [editing, setEditing] = useState<RecurringTemplate | null>(null);
@@ -29,6 +33,11 @@ export default function RecurringPage() {
     if (!profile) return;
     if (!canCreateRecurringTemplate(profile)) router.replace('/dashboard/tasks');
   }, [profile?.id, router]);
+
+  // Mobile FAB / deep-link: mở dialog khi URL có ?create=1
+  useEffect(() => {
+    if (createParam && !open) { setEditing(null); setOpen(true); }
+  }, [createParam]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { loading, items, refetch } = useRecurringTemplates(!!profile);
 
@@ -47,8 +56,20 @@ export default function RecurringPage() {
   const showReportFilter = canRequestReport(profile);
   const showFilterTabs = showTaskFilter && showReportFilter;
 
+  const cleanCreateParam = () => {
+    if (!createParam) return;
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete('create');
+    const qs = params.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  };
+
   const handleNew = () => { setEditing(null); setOpen(true); };
   const handleEdit = (t: RecurringTemplate) => { setEditing(t); setOpen(true); };
+  const handleSetOpen = (v: boolean) => {
+    setOpen(v);
+    if (!v) cleanCreateParam();
+  };
 
   return (
     <div className="page-container group-stack animate-fade-in-up">
@@ -105,10 +126,18 @@ export default function RecurringPage() {
 
       <RecurringTemplateDialog
         isOpen={open}
-        setIsOpen={setOpen}
+        setIsOpen={handleSetOpen}
         editing={editing}
         onSaved={refetch}
       />
     </div>
+  );
+}
+
+export default function RecurringPage() {
+  return (
+    <Suspense fallback={<div className="page-container py-10"><ListSkeleton rows={4} variant="card" /></div>}>
+      <RecurringContent />
+    </Suspense>
   );
 }

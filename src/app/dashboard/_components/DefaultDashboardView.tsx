@@ -165,7 +165,7 @@ export default function DefaultDashboardView({ profile }: { profile: any }) {
           <TodayTaskList tasks={today_tasks} />
         </div>
         <div className="lg:col-span-4">
-          <PendingDocsWidget docs={pending_docs} />
+          <PendingDocsWidget docs={pending_docs} currentUserId={profile?.id ?? null} />
         </div>
       </div>
 

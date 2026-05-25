@@ -38,7 +38,8 @@ export function useDashboardSummary(opts: UseDashboardSummaryOptions = {}) {
     if (!enabled) return;
     const { data: res, error } = await supabase.rpc('dashboard_summary');
     if (error) {
-      console.error('dashboard_summary error:', error);
+      // Log đầy đủ vì PostgrestError không stringify mặc định
+      console.error('dashboard_summary error:', error.message, error.code, error.details, error.hint);
       return;
     }
     const r = res as unknown as DashboardSummary;

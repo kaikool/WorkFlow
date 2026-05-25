@@ -16,6 +16,7 @@ import {
   PRIORITY_BADGE_CLASS,
 } from '../_lib/constants';
 import type { TaskListItem } from '../_lib/types';
+import { TaskDueProgress } from './TaskDueProgress';
 
 interface Props {
   task: TaskListItem;
@@ -158,6 +159,12 @@ export function TaskCard({ task, onOpen, onSwipeDone, canSwipeDone }: Props) {
               </Badge>
             )}
           </div>
+
+          <TaskDueProgress
+            createdAt={task.created_at}
+            dueDate={task.due_date}
+            status={task.status}
+          />
 
           <div className="flex items-center justify-between text-[12px] text-slate-500 font-medium">
             <span className="truncate">{task.department?.name ?? '—'}</span>

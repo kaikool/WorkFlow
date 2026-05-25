@@ -2,11 +2,11 @@
 
 import React from 'react';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
+import { TimePicker } from '@/components/ui/time-picker';
 import type { ScheduleKind } from '../_lib/recurringHelpers';
 import { DOW_OPTIONS } from '../_lib/recurringHelpers';
 
@@ -39,13 +39,13 @@ export function CronScheduleSelector({
 
       {kind === 'weekly' ? (
         <div className="grid grid-cols-2 gap-3">
-          <div className="tight-stack">
+          <div className="tight-stack min-w-0">
             <Label className="text-label">Thứ trong tuần</Label>
             <Select
               value={weeklyDow !== null ? String(weeklyDow) : ''}
               onValueChange={(v) => onWeeklyDowChange(Number(v))}
             >
-              <SelectTrigger className="min-h-11 rounded-xl bg-slate-50 border-none">
+              <SelectTrigger className="w-full min-h-11 rounded-xl bg-slate-50 border-none">
                 <SelectValue placeholder="Chọn thứ" />
               </SelectTrigger>
               <SelectContent className="rounded-xl">
@@ -55,25 +55,20 @@ export function CronScheduleSelector({
               </SelectContent>
             </Select>
           </div>
-          <div className="tight-stack">
+          <div className="tight-stack min-w-0">
             <Label className="text-label">Giờ</Label>
-            <Input
-              type="time"
-              value={weeklyTime}
-              onChange={(e) => onWeeklyTimeChange(e.target.value)}
-              className="min-h-11 rounded-xl bg-slate-50 border-none"
-            />
+            <TimePicker value={weeklyTime} onChange={onWeeklyTimeChange} />
           </div>
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-3">
-          <div className="tight-stack">
+          <div className="tight-stack min-w-0">
             <Label className="text-label">Ngày trong tháng</Label>
             <Select
               value={monthlyDom !== null ? String(monthlyDom) : ''}
               onValueChange={(v) => onMonthlyDomChange(Number(v))}
             >
-              <SelectTrigger className="min-h-11 rounded-xl bg-slate-50 border-none">
+              <SelectTrigger className="w-full min-h-11 rounded-xl bg-slate-50 border-none">
                 <SelectValue placeholder="Chọn ngày" />
               </SelectTrigger>
               <SelectContent className="rounded-xl max-h-72">
@@ -83,14 +78,9 @@ export function CronScheduleSelector({
               </SelectContent>
             </Select>
           </div>
-          <div className="tight-stack">
+          <div className="tight-stack min-w-0">
             <Label className="text-label">Giờ</Label>
-            <Input
-              type="time"
-              value={monthlyTime}
-              onChange={(e) => onMonthlyTimeChange(e.target.value)}
-              className="min-h-11 rounded-xl bg-slate-50 border-none"
-            />
+            <TimePicker value={monthlyTime} onChange={onMonthlyTimeChange} />
           </div>
         </div>
       )}

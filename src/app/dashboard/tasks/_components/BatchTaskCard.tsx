@@ -12,6 +12,7 @@ import {
 } from '../_lib/constants';
 import { batchProgress } from '../_lib/batchHelpers';
 import type { TaskListItem } from '../_lib/types';
+import { TaskDueProgress } from './TaskDueProgress';
 
 interface Props {
   representative: TaskListItem;
@@ -49,6 +50,12 @@ export function BatchTaskCard({ representative, children, onOpen }: Props) {
         </div>
 
         <SegmentedProgressBar progress={p} />
+
+        <TaskDueProgress
+          createdAt={representative.created_at}
+          dueDate={representative.due_date}
+          status={representative.status}
+        />
 
         <div className="flex items-center justify-between text-meta">
           <span className="font-semibold text-slate-700">

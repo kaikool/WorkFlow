@@ -28,6 +28,7 @@ import { createTask } from '../_lib/taskActions';
 import { fetchAssignableProfiles, fetchDepartments } from '../_lib/fetchTasks';
 import { PeoplePicker } from '@/components/ui/people-picker';
 import { DepartmentPicker } from '@/components/ui/department-picker';
+import { TimePicker } from '@/components/ui/time-picker';
 import type { TaskType, TaskPriority } from '../_lib/types';
 
 interface ProfileItem {
@@ -42,6 +43,13 @@ interface ProfileItem {
 }
 
 interface Department { id: string; name: string; code?: string | null }
+
+// Mặc định deadline = cuối giờ làm (17:00) cùng ngày để không bị 00:00 vô nghĩa.
+function defaultDueDate(): Date {
+  const d = new Date();
+  d.setHours(17, 0, 0, 0);
+  return d;
+}
 
 interface Props {
   isOpen: boolean;
@@ -59,7 +67,7 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
   const [formType, setFormType] = useState<TaskType>('task');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [dueDate, setDueDate] = useState<Date | undefined>(new Date());
+  const [dueDate, setDueDate] = useState<Date | undefined>(() => defaultDueDate());
   const [priority, setPriority] = useState<TaskPriority>('medium');
 
   const [reportTarget, setReportTarget] = useState<'profile' | 'department'>('department');
@@ -106,7 +114,7 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
     setTitle(''); setDescription('');
     setSelectedAssignees(isLockedToSelf && profile ? [profile.id] : []);
     setSelectedDepartments([]);
-    setDueDate(new Date());
+    setDueDate(defaultDueDate());
     setPriority('medium');
     setRequiresApproval(false);
   };
@@ -320,23 +328,53 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="tight-stack">
                 <Label className="text-label">Hạn hoàn thành</Label>
-                <Popover modal>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        'w-full min-h-11 rounded-xl bg-slate-50 border-none font-medium justify-start px-4 shadow-none hover:bg-slate-100',
-                        !dueDate && 'text-slate-400',
-                      )}
-                    >
-                      <Calendar className="icon-sm mr-2 text-slate-500" />
-                      {dueDate ? format(dueDate, 'dd/MM/yyyy', { locale: vi }) : 'Chọn ngày'}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0 rounded-2xl border border-slate-200 shadow-lg" align="start">
-                    <CalendarPicker mode="single" selected={dueDate} onSelect={setDueDate} initialFocus locale={vi} />
-                  </PopoverContent>
-                </Popover>
+                <div className="grid grid-cols-2 gap-2">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          'w-full min-h-11 rounded-xl bg-slate-50 border-none font-medium justify-start px-4 shadow-none hover:bg-slate-100 text-slate-900',
+                          !dueDate && 'text-slate-400',
+                        )}
+                      >
+                        <Calendar className="icon-sm mr-2 text-slate-500" />
+                        {dueDate ? format(dueDate, 'dd/MM/yyyy', { locale: vi }) : 'Chọn ngày'}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0 rounded-2xl border border-slate-200 shadow-lg bg-white" align="start">
+                      <CalendarPicker
+                        mode="single"
+                        selected={dueDate}
+                        onSelect={(d) => {
+                          if (!d) { setDueDate(undefined); return; }
+                          // Giữ HH:mm hiện tại, chỉ đổi ngày
+                          const next = new Date(d);
+                          next.setHours(
+                            dueDate?.getHours() ?? 17,
+                            dueDate?.getMinutes() ?? 0,
+                            0, 0,
+                          );
+                          setDueDate(next);
+                        }}
+                        initialFocus
+                        locale={vi}
+                      />
+                    </PopoverContent>
+                  </Popover>
+
+                  <TimePicker
+                    value={dueDate ? format(dueDate, 'HH:mm') : '17:00'}
+                    onChange={(v) => {
+                      const [h, m] = v.split(':').map(Number);
+                      const base = dueDate ?? new Date();
+                      const next = new Date(base);
+                      next.setHours(h, m, 0, 0);
+                      setDueDate(next);
+                    }}
+                    triggerClassName="w-full"
+                  />
+                </div>
               </div>
 
               <div className="tight-stack">
