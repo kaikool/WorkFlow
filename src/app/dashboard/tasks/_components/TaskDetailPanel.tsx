@@ -24,6 +24,7 @@ import {
   canApproveReport, canDelegateTask,
   canRejectSubmission, canReopenDone,
   canEditTask, canDeleteTask, canForceCompleteTask,
+  canApproveExtension,
 } from '@/lib/permissions';
 import { updateTaskStatus, archiveTask, deleteTask } from '../_lib/taskActions';
 import { fetchTaskAttachments } from '../_lib/attachmentHelpers';
@@ -31,6 +32,7 @@ import { fetchBatchSiblings } from '../_lib/fetchTasks';
 import { confirmDialog } from '@/components/ui/confirm-dialog';
 import { batchScopeDialog } from '@/components/ui/batch-scope-dialog';
 import { TaskDelegateDialog } from './TaskDelegateDialog';
+import { TaskApproveExtensionDialog } from './TaskApproveExtensionDialog';
 import { TaskRequestExtensionDialog } from './TaskRequestExtensionDialog';
 import { TaskSubmitReportDialog } from './TaskSubmitReportDialog';
 import { TaskReturnDialog } from './TaskReturnDialog';
@@ -59,6 +61,7 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, showArchive =
   const [openReopen, setOpenReopen] = useState(false);
   const [openApprove, setOpenApprove] = useState(false);
   const [openEdit, setOpenEdit] = useState(false);
+  const [openApproveExtension, setOpenApproveExtension] = useState<any>(null);
   // Đếm attachment để gate "Xoá nháp" (chỉ cho xoá khi 0 file + 0 comment user).
   // Tự fetch vì TaskDetail không kèm attachments — chỉ probe trong cửa sổ 10 phút.
   const [attachmentCount, setAttachmentCount] = useState<number | null>(null);
@@ -70,6 +73,8 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, showArchive =
   const isAssignee = (task.assignees ?? []).some(a => a.id === myId);
   const isManagerOfTask = canDelegateTask(currentProfile, task);
   const isManagerApprove = canApproveReport(currentProfile, task);
+  const isApproveExtensionManager = canApproveExtension(currentProfile, task);
+  const pendingExtension = (task.extension_requests ?? []).find(e => e.status === 'pending');
   const isAdminOrDirector = ['admin', 'director'].includes(currentProfile.role);
   const isReport = task.task_type === 'report';
   const dueOverdue = !!(task.due_date && new Date(task.due_date) < new Date()
@@ -263,6 +268,44 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, showArchive =
             <p className="text-meta text-amber-700 mt-1">
               {format(new Date(lastReturnedAt!), 'EEEE, dd/MM/yyyy HH:mm', { locale: vi })}
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* Banner "Xin gia hạn đang chờ duyệt" — hiển thị cho Trưởng phòng xử lý hoặc NV theo dõi */}
+      {pendingExtension && (
+        <div className="flex items-start gap-3 p-4 rounded-2xl bg-blue-50 border border-blue-200">
+          <Clock className="icon-md text-blue-600 shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <p className="text-label text-blue-800 font-semibold">Yêu cầu gia hạn đang chờ duyệt</p>
+            <p className="text-subtitle text-slate-800 mt-1">
+              <strong>{pendingExtension.requester?.full_name ?? 'Cán bộ'}</strong> xin gia hạn từ{' '}
+              {task.due_date ? format(new Date(task.due_date), 'dd/MM/yyyy', { locale: vi }) : '—'}{' '}
+              sang{' '}
+              <span className="text-blue-700 font-bold">
+                {format(new Date(pendingExtension.new_due_date), 'dd/MM/yyyy', { locale: vi })}
+              </span>
+            </p>
+            {pendingExtension.reason && (
+              <p className="text-[13px] text-slate-600 mt-1 italic">
+                Lý do: "{pendingExtension.reason}"
+              </p>
+            )}
+            {isApproveExtensionManager ? (
+              <div className="flex items-center gap-2 mt-3">
+                <Button
+                  size="sm"
+                  onClick={() => setOpenApproveExtension(pendingExtension)}
+                  className="min-h-9 rounded-xl text-[13px] font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-none px-4"
+                >
+                  Xử lý yêu cầu
+                </Button>
+              </div>
+            ) : (
+              <p className="text-meta text-slate-500 mt-2">
+                Đang chờ Trưởng phòng hoặc Ban Giám đốc phê duyệt.
+              </p>
+            )}
           </div>
         </div>
       )}
@@ -537,6 +580,16 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, showArchive =
           }}
           onClose={() => setOpenEdit(false)}
           onChanged={() => { setOpenEdit(false); onChanged(); }}
+        />
+      )}
+      {openApproveExtension && (
+        <TaskApproveExtensionDialog
+          extension={{
+            ...openApproveExtension,
+            task: { title: task.title }
+          }}
+          onClose={() => setOpenApproveExtension(null)}
+          onChanged={() => { setOpenApproveExtension(null); onChanged(); }}
         />
       )}
     </div>

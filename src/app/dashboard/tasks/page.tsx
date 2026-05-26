@@ -19,7 +19,6 @@ import { useTasksDashboard } from './_hooks/useTasksDashboard';
 import { useOptimisticAction } from './_hooks/useOptimisticAction';
 import { TaskListSection } from './_components/TaskListSection';
 import { ResourceView } from './_components/ResourceView';
-import { ManagerInboxView } from './_components/ManagerInboxView';
 import { TaskDetailDialog } from './_components/TaskDetailDialog';
 import { BatchTaskDetailDialog } from './_components/BatchTaskDetailDialog';
 import { CreateTaskDialog } from './_components/CreateTaskDialog';
@@ -27,10 +26,10 @@ import { updateTaskStatus } from './_lib/taskActions';
 import { canAccessTasksModule, canViewTaskAnalytics, canCreateRecurringTemplate } from '@/lib/permissions';
 import type { TaskScope } from './_lib/types';
 
-type TabValue = 'inbox' | 'mine' | 'dept' | 'branch';
+type TabValue = 'mine' | 'dept' | 'branch';
 
 function tabToScope(tab: TabValue): TaskScope {
-  if (tab === 'mine' || tab === 'inbox') return 'mine';
+  if (tab === 'mine') return 'mine';
   if (tab === 'dept') return 'dept';
   return 'branch';
 }
@@ -59,7 +58,7 @@ function TasksContent() {
       return;
     }
     if (currentProfile.role === 'admin' || currentProfile.role === 'director') setTab('branch');
-    else if (currentProfile.role === 'manager') setTab('inbox');
+    else if (currentProfile.role === 'manager') setTab('dept');
     else setTab('mine');
   }, [currentProfile?.id, router]);
 
@@ -166,18 +165,7 @@ function TasksContent() {
       )}
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as TabValue)} className="w-full">
-        <TabsList className={`min-h-11 ${isManagerPlus ? 'grid grid-cols-3' : ''}`}>
-          {isManagerPlus && (
-            <TabsTrigger value="inbox" className="rounded-lg py-1.5 font-semibold text-[13px] flex items-center justify-center gap-1.5">
-              <Inbox className="icon-sm" />
-              <span>Chờ duyệt</span>
-              {dash.counts.awaiting_approval + dash.counts.extensions_pending > 0 && (
-                <span className="ml-1 inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-red-500 text-white text-meta font-bold leading-none">
-                  {dash.counts.awaiting_approval + dash.counts.extensions_pending}
-                </span>
-              )}
-            </TabsTrigger>
-          )}
+        <TabsList className={`min-h-11 ${isManagerPlus ? 'grid grid-cols-2' : ''}`}>
           <TabsTrigger value="mine" className="rounded-lg py-1.5 font-semibold text-[13px] flex items-center justify-center gap-1.5">
             <span>Của tôi</span>
           </TabsTrigger>
@@ -192,8 +180,6 @@ function TasksContent() {
 
       {dash.loading ? (
         <ListSkeleton rows={6} variant="card" />
-      ) : tab === 'inbox' ? (
-        <ManagerInboxView items={dash.items} onOpen={handleOpenTask} onChanged={dash.refetch} />
       ) : filteredItems.length === 0 ? (
         <EmptyState
           icon={<Inbox className="icon-lg" />}
