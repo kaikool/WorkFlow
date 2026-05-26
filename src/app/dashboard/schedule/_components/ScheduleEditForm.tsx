@@ -145,7 +145,7 @@ export default function ScheduleEditForm({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-3">
                 <Label className="text-[12px] font-medium text-slate-500 pl-0.5">Từ ngày</Label>
-                <Popover modal open={detail.isStartOpen} onOpenChange={detail.setIsStartOpen}>
+                <Popover open={detail.isStartOpen} onOpenChange={detail.setIsStartOpen}>
                   <PopoverTrigger asChild>
                     <Button type="button" variant="outline" className="w-full min-h-11 bg-slate-50 border-none rounded-xl font-medium justify-start text-left text-base md:text-sm active:scale-95 transition-all">
                       <CalendarIcon className="mr-2 h-4 w-4 text-primary shrink-0" />
@@ -187,7 +187,7 @@ export default function ScheduleEditForm({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-3">
                 <Label className="text-[12px] font-medium text-slate-500 pl-0.5">Đến ngày</Label>
-                <Popover modal open={detail.isEndOpen} onOpenChange={detail.setIsEndOpen}>
+                <Popover open={detail.isEndOpen} onOpenChange={detail.setIsEndOpen}>
                   <PopoverTrigger asChild>
                     <Button type="button" variant="outline" className="w-full min-h-11 bg-slate-50 border-none rounded-xl font-medium justify-start text-left text-base md:text-sm active:scale-95 transition-all">
                       <CalendarIcon className="mr-2 h-4 w-4 text-primary shrink-0" />

@@ -67,7 +67,7 @@ export function TaskRequestExtensionDialog({ task, onClose, onChanged }: Props) 
           <div className="space-y-4 px-[var(--app-page-x)] py-4">
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-500">Hạn mới</label>
-              <Popover modal open={isDateOpen} onOpenChange={setIsDateOpen}>
+              <Popover open={isDateOpen} onOpenChange={setIsDateOpen}>
                 <PopoverTrigger asChild>
                   <Button variant="outline" className={cn(
                     'w-full min-h-11 rounded-xl bg-slate-50 border-none font-bold text-slate-900 justify-start px-4 shadow-sm',

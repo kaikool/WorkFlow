@@ -161,7 +161,7 @@ export function TaskEditDialog({ task, onClose, onChanged }: Props) {
               <div className="tight-stack">
                 <Label className="text-label">Hạn hoàn thành</Label>
                 <div className="grid grid-cols-2 gap-2">
-                  <Popover modal open={isDateOpen} onOpenChange={setIsDateOpen}>
+                  <Popover open={isDateOpen} onOpenChange={setIsDateOpen}>
                     <PopoverTrigger asChild>
                       <Button
                         variant="outline"
