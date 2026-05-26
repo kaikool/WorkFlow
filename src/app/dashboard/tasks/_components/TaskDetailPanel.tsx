@@ -23,9 +23,9 @@ import {
 import {
   canApproveReport, canDelegateTask,
   canRejectSubmission, canReopenDone,
-  canEditTask, canDeleteDraft,
+  canEditTask, canDeleteTask, canForceCompleteTask,
 } from '@/lib/permissions';
-import { updateTaskStatus, archiveTask, deleteDraftTask } from '../_lib/taskActions';
+import { updateTaskStatus, archiveTask, deleteTask } from '../_lib/taskActions';
 import { fetchTaskAttachments } from '../_lib/attachmentHelpers';
 import { fetchBatchSiblings } from '../_lib/fetchTasks';
 import { confirmDialog } from '@/components/ui/confirm-dialog';
@@ -36,7 +36,6 @@ import { TaskSubmitReportDialog } from './TaskSubmitReportDialog';
 import { TaskReturnDialog } from './TaskReturnDialog';
 import { TaskReopenDialog } from './TaskReopenDialog';
 import { TaskApproveDialog } from './TaskApproveDialog';
-import { TaskCancelDialog } from './TaskCancelDialog';
 import { TaskEditDialog } from './TaskEditDialog';
 import { TaskCommentList } from './TaskCommentList';
 import { TaskTimeline } from './TaskTimeline';
@@ -59,7 +58,6 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, showArchive =
   const [openReturn, setOpenReturn] = useState(false);
   const [openReopen, setOpenReopen] = useState(false);
   const [openApprove, setOpenApprove] = useState(false);
-  const [openCancel, setOpenCancel] = useState(false);
   const [openEdit, setOpenEdit] = useState(false);
   // Đếm attachment để gate "Xoá nháp" (chỉ cho xoá khi 0 file + 0 comment user).
   // Tự fetch vì TaskDetail không kèm attachments — chỉ probe trong cửa sổ 10 phút.
@@ -121,8 +119,6 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, showArchive =
   const canReopen = canReopenDone(currentProfile, task);
   const canRequestExtension = isAssignee && task.status !== 'done' && task.status !== 'canceled';
   const canDelegate = isManagerOfTask && task.status !== 'done' && task.status !== 'canceled';
-  const canCancel = (isCreator || isManagerOfTask)
-    && task.status !== 'done' && task.status !== 'canceled';
 
   // done là trạng thái chốt — chỉ admin/director mở lại, không ai khác sửa được nữa.
   const isReadOnly = task.is_archived || task.status === 'canceled' || task.status === 'done';
@@ -130,38 +126,41 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, showArchive =
   // Sửa nội dung — creator/admin/director, mọi status trừ canceled/archived.
   const canEdit = canEditTask(currentProfile, task);
 
-  // Xoá nháp — creator + status=todo + tuổi <=10 phút + 0 comment user + 0 file.
-  // Fetch attachment count chỉ khi đang ở trong cửa sổ (todo + tuổi <=10 phút + creator).
-  const userCommentCount = task.comments.filter(c => !c.content.startsWith('[Hệ thống]')).length;
-  const ageMs = task.created_at ? Date.now() - new Date(task.created_at).getTime() : Infinity;
-  const inDeleteWindow = isCreator && task.status === 'todo' && ageMs <= 10 * 60 * 1000 && userCommentCount === 0;
-  const canDelete = inDeleteWindow
-    && attachmentCount !== null
-    && canDeleteDraft(currentProfile, task, userCommentCount, attachmentCount);
+  // Chủ động ghi nhận (Force Complete)
+  const canForceComplete = !isReadOnly && canForceCompleteTask(currentProfile, task);
 
-  useEffect(() => {
-    if (!inDeleteWindow) { setAttachmentCount(null); return; }
-    let alive = true;
-    fetchTaskAttachments(task.id).then(list => {
-      if (alive) setAttachmentCount(list.length);
+  // Xoá công việc hoàn toàn
+  const canDelete = canDeleteTask(currentProfile, task);
+
+  const runForceComplete = async () => {
+    const ok = await confirmDialog({
+      title: 'Xác nhận ghi nhận hoàn thành công việc/báo cáo?',
+      description: 'Bạn có chắc chắn muốn ghi nhận hoàn thành? Việc này sẽ đóng công việc dù người nhận chưa nộp.',
+      confirmText: 'Xác nhận',
+      variant: 'default',
     });
-    return () => { alive = false; };
-  }, [inDeleteWindow, task.id]);
+    if (!ok) return;
+    
+    setBusy('forceComplete');
+    const res = await updateTaskStatus(task.id, 'done', '[Hệ thống] Đã ghi nhận hoàn thành.');
+    setBusy(null);
+    if (!res.ok) { notifyError(res.error, 'Không thể ghi nhận hoàn thành'); return; }
+    notifySuccess('Đã cập nhật trạng thái');
+    onChanged();
+  };
 
   const runDelete = async () => {
     // Batch: nếu task thuộc lô, hỏi user áp cả lô hay chỉ task này.
-    // Delete chỉ áp được cho task status='todo', cùng creator, tuổi ≤10 phút (RPC tự gate).
-    // Mình filter trước theo status để UX hiện đúng số task có thể xoá.
     if (task.batch_id) {
       setBusy('delete');
       const siblings = await fetchBatchSiblings(task.batch_id);
       setBusy(null);
-      const deletable = siblings.filter(s => s.status === 'todo' && !s.is_archived);
+      const deletable = siblings.filter(s => canDeleteTask(currentProfile, s));
 
       if (deletable.length > 1) {
         const scope = await batchScopeDialog({
-          title: 'Xoá cả lô nháp?',
-          description: `Việc nháp này nằm trong một lô gửi đến ${deletable.length} phòng. Xoá cả lô — hay chỉ task này?`,
+          title: 'Xoá cả lô công việc?',
+          description: `Việc này nằm trong một lô gửi đến ${deletable.length} phòng. Xoá cả lô — hay chỉ task này?`,
           batchSize: deletable.length,
           destructive: true,
         });
@@ -173,9 +172,9 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, showArchive =
     }
 
     const ok = await confirmDialog({
-      title: 'Xoá nháp công việc?',
-      description: `Bạn có chắc muốn xoá "${task.title}"? Hành động này không thể quay lại.`,
-      confirmText: 'Xoá nháp',
+      title: 'Xoá công việc?',
+      description: `Bạn có chắc muốn xoá "${task.title}"? Hành động này không thể quay lại và sẽ xoá luôn các file đính kèm.`,
+      confirmText: 'Xoá',
       danger: true,
     });
     if (!ok) return;
@@ -187,7 +186,7 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, showArchive =
     let okCount = 0;
     let firstError: string | null = null;
     for (const id of taskIds) {
-      const res = await deleteDraftTask(id);
+      const res = await deleteTask(id);
       if (res.ok) okCount += 1;
       else if (!firstError) firstError = res.error;
     }
@@ -198,11 +197,11 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, showArchive =
       return;
     }
     if (taskIds.length === 1) {
-      notifySuccess('Đã xoá nháp');
+      notifySuccess('Đã xoá công việc');
     } else {
       const skipped = taskIds.length - okCount;
       notifySuccess(
-        `Đã xoá ${okCount}/${taskIds.length} nháp trong lô`,
+        `Đã xoá ${okCount}/${taskIds.length} việc trong lô`,
         skipped > 0 ? `${skipped} task bỏ qua do lỗi quyền hoặc trạng thái` : undefined,
       );
     }
@@ -386,6 +385,15 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, showArchive =
               disabled={busy !== null}
             />
           )}
+          {canForceComplete && (
+            <PrimaryAction
+              label="Đã nhận"
+              tone="primary"
+              icon={busy === 'forceComplete' ? <Loader2 className="icon-md animate-spin" /> : <CheckCircle2 className="icon-md" />}
+              onClick={runForceComplete}
+              disabled={busy !== null}
+            />
+          )}
 
           {canApproveSubmission && (
             <SecondaryAction
@@ -430,26 +438,17 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, showArchive =
 
           {canDelete && (
             <DangerAction
-              label="Xoá nháp"
+              label="Xoá"
               icon={busy === 'delete' ? <Loader2 className="icon-md animate-spin" /> : <Trash2 className="icon-md" />}
               onClick={runDelete}
               disabled={busy !== null}
               className="ml-auto"
             />
           )}
-          {canCancel && (
-            <DangerAction
-              label="Huỷ"
-              icon={<X className="icon-md" />}
-              onClick={() => setOpenCancel(true)}
-              disabled={busy !== null}
-              className={canDelete ? '' : 'ml-auto'}
-            />
-          )}
         </div>
       )}
 
-      {/* Done là readonly với mọi người — admin/director có 1 nút Mở lại riêng để cảnh báo */}
+      {/* Done là readonly với mọi người — người tạo/admin có 1 nút Mở lại riêng để cảnh báo */}
       {!task.is_archived && task.status === 'done' && canReopen && (
         <div className="flex flex-wrap gap-2 items-center">
           <SecondaryAction
@@ -525,18 +524,6 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, showArchive =
           task={{ id: task.id, title: task.title }}
           onClose={() => setOpenReopen(false)}
           onChanged={() => { setOpenReopen(false); onChanged(); }}
-        />
-      )}
-      {openCancel && (
-        <TaskCancelDialog
-          task={{
-            id: task.id,
-            title: task.title,
-            assigneeCount: task.assignees?.length ?? 0,
-            batch_id: task.batch_id,
-          }}
-          onClose={() => setOpenCancel(false)}
-          onChanged={() => { setOpenCancel(false); onChanged(); }}
         />
       )}
       {openEdit && (

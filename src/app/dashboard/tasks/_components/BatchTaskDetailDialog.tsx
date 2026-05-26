@@ -6,7 +6,15 @@ import {
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Building2, AlertTriangle, Calendar, UserPlus } from 'lucide-react';
+import { Building2, AlertTriangle, Calendar, UserPlus, Pencil, Trash2, MoreHorizontal, CheckCircle2 } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
+import { TaskEditDialog } from './TaskEditDialog';
+import { confirmDialog } from '@/components/ui/confirm-dialog';
+import { deleteTask, updateTaskStatus } from '../_lib/taskActions';
+import { notifyError, notifySuccess } from '@/lib/notify';
+import { canEditTask, canDeleteTask, canForceCompleteTask } from '@/lib/permissions';
+import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -23,6 +31,8 @@ interface Props {
   batchId: string | null;
   children: TaskListItem[];
   onOpenTask: (taskId: string) => void;
+  currentProfile?: any;
+  onChanged?: () => void;
 }
 
 const BADGE_BASE = 'px-2 py-0.5 rounded-full';
@@ -35,20 +45,107 @@ const STATUS_ORDER: Record<TaskStatus, number> = {
   canceled: 4,
 };
 
-export function BatchTaskDetailDialog({ isOpen, setIsOpen, batchId, children, onOpenTask }: Props) {
-  if (!isOpen || !batchId || children.length === 0) return null;
-  const representative = children[0];
-  const p = batchProgress(children);
+export function BatchTaskDetailDialog({ isOpen, setIsOpen, batchId, children, onOpenTask, currentProfile, onChanged }: Props) {
+  const [openEdit, setOpenEdit] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+
+
+  const [cachedChildren, setCachedChildren] = React.useState(children);
+  const [cachedBatchId, setCachedBatchId] = React.useState(batchId);
+
+  React.useEffect(() => {
+    if (isOpen && children.length > 0) {
+      setCachedChildren(children);
+      setCachedBatchId(batchId);
+    }
+  }, [isOpen, children, batchId]);
+
+  const displayChildren = isOpen ? children : cachedChildren;
+  const displayBatchId = isOpen ? batchId : cachedBatchId;
 
   const sortedChildren = useMemo(() => {
-    return [...children].sort((a, b) => {
+    return [...displayChildren].sort((a, b) => {
       if (a.is_overdue !== b.is_overdue) return a.is_overdue ? -1 : 1;
       const sa = STATUS_ORDER[a.status] ?? 99;
       const sb = STATUS_ORDER[b.status] ?? 99;
       if (sa !== sb) return sa - sb;
       return (a.department?.name ?? '').localeCompare(b.department?.name ?? '');
     });
-  }, [children]);
+  }, [displayChildren]);
+
+  if (!displayBatchId || displayChildren.length === 0) return null;
+  const representative = displayChildren[0];
+  const p = batchProgress(displayChildren);
+
+  const canEdit = currentProfile && representative && canEditTask(currentProfile, representative as any);
+  const canDelete = currentProfile && representative && canDeleteTask(currentProfile, representative as any);
+  const canForceComplete = currentProfile && representative && canForceCompleteTask(currentProfile, representative as any);
+
+  const pendingChildren = children.filter(c => c.status !== 'done' && c.status !== 'canceled');
+  const hasPending = pendingChildren.length > 0;
+
+  const runForceCompleteBatch = async () => {
+    const ok = await confirmDialog({
+      title: 'Xác nhận ghi nhận hoàn thành lô công việc/báo cáo?',
+      description: `Bạn có chắc chắn muốn chủ động ghi nhận hoàn thành cho ${pendingChildren.length} công việc chưa nộp trong lô này? Việc này sẽ đóng tất cả công việc.`,
+      confirmText: 'Xác nhận',
+      variant: 'default',
+    });
+    if (!ok) return;
+
+    setDeleting(true); // dùng chung state busy cho nhanh
+    let okCount = 0;
+    let firstError: string | null = null;
+    for (const child of pendingChildren) {
+      const res = await updateTaskStatus(child.id, 'done', '[Hệ thống] Đã ghi nhận hoàn thành.');
+      if (res.ok) okCount += 1;
+      else if (!firstError) firstError = res.error;
+    }
+    setDeleting(false);
+
+    if (okCount === 0) {
+      notifyError(firstError ?? 'Lỗi không xác định', 'Không thể ghi nhận hoàn thành');
+      return;
+    }
+    notifySuccess(`Đã ghi nhận hoàn thành ${okCount}/${pendingChildren.length} công việc`);
+    setIsOpen(false);
+    onChanged?.();
+    setTimeout(() => { document.body.style.pointerEvents = ''; }, 500);
+  };
+
+  const runDelete = async () => {
+    const ok = await confirmDialog({
+      title: 'Xoá lô công việc?',
+      description: `Bạn có chắc chắn muốn xoá hoàn toàn ${children.length} công việc trong lô này không? Thao tác này không thể hoàn tác.`,
+      confirmText: 'Xoá lô',
+      variant: 'destructive',
+    });
+    if (!ok) return;
+
+    setDeleting(true);
+    let okCount = 0;
+    let firstError: string | null = null;
+    for (const child of children) {
+      const res = await deleteTask(child.id);
+      if (res.ok) okCount += 1;
+      else if (!firstError) firstError = res.error;
+    }
+    setDeleting(false);
+
+    if (okCount === 0) {
+      notifyError(firstError ?? 'Lỗi không xác định', 'Không xoá được');
+      return;
+    }
+    notifySuccess(`Đã xoá ${okCount}/${children.length} công việc trong lô`);
+    setIsOpen(false);
+    onChanged?.();
+    
+    // Fallback: Xoá khoá màn hình do lỗi Radix Dialog unmount đồng thời với DropdownMenu
+    setTimeout(() => { document.body.style.pointerEvents = ''; }, 500);
+  };
+
+
 
   const dueLabel = representative.due_date
     ? format(new Date(representative.due_date), 'dd/MM/yyyy', { locale: vi })
@@ -58,12 +155,45 @@ export function BatchTaskDetailDialog({ isOpen, setIsOpen, batchId, children, on
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="app-dialog-sheet app-dialog-sheet--xl shadow-2xl">
         <DialogHeader className="app-dialog-sheet-header">
-          <DialogTitle className="heading-section pr-8">{representative.title}</DialogTitle>
-          <DialogDescription className="text-subtitle">
-            Báo cáo giao {children.length} phòng
-            {representative.creator?.full_name && ` · ${representative.creator.full_name} giao`}
-            {dueLabel && ` · hạn ${dueLabel}`}
-          </DialogDescription>
+          <div className="flex items-start justify-between gap-4 pr-8">
+            <div>
+              <DialogTitle className="heading-section">{representative.title}</DialogTitle>
+              <DialogDescription className="text-subtitle">
+                Báo cáo giao {children.length} phòng
+                {representative.creator?.full_name && ` · ${representative.creator.full_name} giao`}
+                {dueLabel && ` · hạn ${dueLabel}`}
+              </DialogDescription>
+            </div>
+            {(canEdit || canDelete) && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="rounded-full shrink-0 -mt-1 -mr-1" disabled={deleting}>
+                    <MoreHorizontal className="icon-md text-slate-500" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48 rounded-xl shadow-lg border border-slate-100 z-[9999]">
+                  {canEdit && (
+                    <DropdownMenuItem onClick={() => setOpenEdit(true)} className="gap-2 py-2 cursor-pointer font-medium">
+                      <Pencil className="icon-sm text-slate-500" /> Sửa thông tin lô
+                    </DropdownMenuItem>
+                  )}
+                  {canForceComplete && hasPending && (
+                    <DropdownMenuItem onClick={runForceCompleteBatch} className="gap-2 py-2 cursor-pointer font-medium text-primary">
+                      <CheckCircle2 className="icon-sm" /> Đã nhận lô
+                    </DropdownMenuItem>
+                  )}
+                  {canDelete && (
+                    <DropdownMenuItem 
+                      onClick={runDelete} 
+                      className="gap-2 py-2 cursor-pointer font-medium text-red-600 focus:text-red-700 focus:bg-red-50"
+                    >
+                      <Trash2 className="icon-sm" /> Xoá toàn bộ lô
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
         </DialogHeader>
 
         <ScrollArea className="app-dialog-sheet-body">
@@ -100,7 +230,7 @@ export function BatchTaskDetailDialog({ isOpen, setIsOpen, batchId, children, on
                     <li key={child.id}>
                       <button
                         type="button"
-                        onClick={() => { setIsOpen(false); onOpenTask(child.id); }}
+                        onClick={() => { onOpenTask(child.id); }}
                         className={cn(
                           'w-full text-left flex items-center gap-3 min-h-14 px-3 py-2 rounded-xl border transition-colors',
                           child.is_overdue
@@ -150,6 +280,20 @@ export function BatchTaskDetailDialog({ isOpen, setIsOpen, batchId, children, on
             </div>
           </div>
         </ScrollArea>
+        {openEdit && representative && (
+          <TaskEditDialog
+            task={{
+              id: representative.id,
+              title: representative.title,
+              description: representative.description,
+              priority: representative.priority,
+              due_date: representative.due_date,
+              batch_id: representative.batch_id,
+            }}
+            onClose={() => setOpenEdit(false)}
+            onChanged={() => { setOpenEdit(false); onChanged?.(); }}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );

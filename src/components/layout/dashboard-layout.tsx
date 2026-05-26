@@ -306,7 +306,7 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
 
   const navItems = [
    { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-   { name: 'Công việc', href: '/dashboard/tasks', icon: ListTodo, hideFor: ['driver', 'secretary'] },
+   { name: 'Công việc', href: '/dashboard/tasks', icon: ListTodo, hideFor: ['driver', 'secretary', 'hr_officer'] },
    { name: 'Lịch trình', href: '/dashboard/schedule', icon: CalendarDays },
    { name: 'Hồ sơ', href: '/dashboard/handover', icon: FolderOpen, hideFor: ['driver'] },
    { name: 'Cán bộ', href: '/dashboard/team', icon: Users, hideFor: ['driver'] },

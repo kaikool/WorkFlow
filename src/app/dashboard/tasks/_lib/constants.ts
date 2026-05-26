@@ -11,11 +11,11 @@ export const STATUS_LABEL: Record<TaskStatus, string> = {
 
 // Class màu badge theo token globals.css
 export const STATUS_BADGE_CLASS: Record<TaskStatus, string> = {
-  todo: 'bg-slate-100 text-slate-600 border-slate-200',
-  doing: 'bg-amber-50 text-amber-700 border-amber-100',
-  submitted: 'bg-blue-50 text-blue-700 border-blue-100',
-  done: 'bg-emerald-50 text-emerald-700 border-emerald-100',
-  canceled: 'bg-slate-100 text-slate-500 border-slate-200',
+  todo: 'status-neutral-bg',
+  doing: 'status-warning-bg',
+  submitted: 'status-info-bg',
+  done: 'status-success-bg',
+  canceled: 'status-neutral-bg',
 };
 
 export const PRIORITY_LABEL: Record<TaskPriority, string> = {
@@ -25,9 +25,9 @@ export const PRIORITY_LABEL: Record<TaskPriority, string> = {
 };
 
 export const PRIORITY_BADGE_CLASS: Record<TaskPriority, string> = {
-  low: 'bg-slate-50 text-slate-500 border-slate-200',
-  medium: 'bg-blue-50 text-blue-600 border-blue-100',
-  high: 'bg-red-50 text-red-600 border-red-100',
+  low: 'status-neutral-bg',
+  medium: 'status-info-bg',
+  high: 'status-danger-bg',
 };
 
 export const TASK_TYPE_LABEL: Record<TaskType, string> = {

@@ -12,33 +12,11 @@
 //
 // KHÔNG dùng SWR/TanStack (architecture rule).
 
-import React, { createContext, useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Profile, Department } from '@/types/profile';
 import { createClient } from '@/utils/supabase/client';
 import { getCached, setCached } from '@/lib/local-cache';
-
-export interface OutOfOfficeRecord {
- id: string;
- user_id: string;
- message: string;
- ends_at: string;
- created_at: string;
-}
-
-interface AppDataValue {
- profiles: Profile[];
- // Profile của user đang đăng nhập — derive từ profiles theo currentUserId
- currentProfile: Profile | null;
- departments: Department[];
- // Map theo user_id để O(1) lookup
- outOfOffice: Record<string, OutOfOfficeRecord>;
- // Hydrating = lần đầu chưa có cache + chưa fetch xong (rất ngắn, < 1s)
- hydrating: boolean;
- // Force refetch — gọi sau khi sửa hồ sơ, tạo phòng ban,…
- refresh: () => Promise<void>;
-}
-
-const AppDataContext = createContext<AppDataValue | null>(null);
+import { AppDataContext, AppDataValue, OutOfOfficeRecord } from '@/hooks/use-app-data';
 
 const TTL = {
  profiles: 60 * 60 * 1000, // 1h
@@ -161,4 +139,4 @@ export function AppDataProvider({ currentUserId, children }: Props) {
  return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;
 }
 
-export { AppDataContext };
+ 

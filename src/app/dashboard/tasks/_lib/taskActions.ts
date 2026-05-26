@@ -64,7 +64,7 @@ export async function rejectSubmission(
   return updateTaskStatus(taskId, 'doing', reason);
 }
 
-// Mở lại báo cáo đã hoàn thành (done → doing). Chỉ admin/director, bắt buộc lý do.
+// Mở lại báo cáo đã hoàn thành (done → doing). Chỉ người tạo/admin, bắt buộc lý do.
 export async function reopenDone(
   taskId: string,
   reason: string,
@@ -154,10 +154,8 @@ export async function updateTask(
   return { ok: true };
 }
 
-// Xoá nháp — RPC tự gate (creator + 10 phút + chưa có comment/attachment).
-// Error message từ RPC sẽ giải thích rõ tại sao không xoá được.
-export async function deleteDraftTask(taskId: string): Promise<ActionResult> {
-  const { error } = await supabase.rpc('task_delete_draft', {
+export async function deleteTask(taskId: string): Promise<{ ok: boolean; error?: string }> {
+  const { error } = await supabase.rpc('task_delete', {
     p_task_id: taskId,
   } as any);
   if (error) return { ok: false, error: error.message };

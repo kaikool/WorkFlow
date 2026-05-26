@@ -27,7 +27,9 @@ export async function fetchTaskDetail(taskId: string): Promise<TaskDetail | null
     .eq('id', taskId)
     .single();
   if (error) {
-    console.error('fetchTaskDetail error:', error);
+    if (error.code !== 'PGRST116') {
+      console.error('fetchTaskDetail error:', error);
+    }
     return null;
   }
   const raw = data as any;
@@ -92,7 +94,7 @@ function isHubCaller(caller: CallerProfile): boolean {
  *
  *   delegate: theo task.department_id.
  *
- * Tất cả: loại admin/director/driver khỏi candidate list.
+ * Tất cả: loại admin/director/driver/secretary/hr_officer khỏi candidate list.
  * Sort: TP → PP → Cán bộ → alphabet.
  */
 export async function fetchAssignableProfiles(opts: AssignOpts) {
@@ -118,7 +120,7 @@ export async function fetchAssignableProfiles(opts: AssignOpts) {
     .from('profiles')
     .select('id, full_name, avatar_url, role, title, department_id, is_department_head, is_active, departments(name, code)')
     .eq('is_active', true)
-    .not('role', 'in', '(admin,director,driver)');
+    .not('role', 'in', '(admin,director,driver,secretary,hr_officer)');
 
   if (context === 'delegate') {
     if (!taskDepartmentId) return [];
@@ -172,4 +174,3 @@ export async function fetchBatchSiblings(batchId: string): Promise<BatchSibling[
   }
   return (data ?? []) as unknown as BatchSibling[];
 }
-

@@ -62,7 +62,7 @@ BEGIN
   FROM profiles WHERE id = v_uid;
   v_is_hub := _is_hub_department(v_dept);
 
-  IF v_role IN ('driver', 'secretary') THEN
+  IF v_role IN ('driver', 'secretary', 'hr_officer') THEN
     RAISE EXCEPTION 'Vai trò của bạn không có quyền tạo công việc';
   END IF;
   IF p_title IS NULL OR length(trim(p_title)) = 0 THEN

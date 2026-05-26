@@ -41,7 +41,11 @@ export function TaskCard({ task, onOpen, onSwipeDone, canSwipeDone, currentProfi
   const draggedRef = useRef(false);
 
   const isPending = !!task._pending;
-  const canSwipe = canSwipeDone && !isPending && !['done', 'canceled'].includes(task.status);
+  // Swipe chỉ hoàn thành việc đang làm. `todo` phải bấm "Bắt đầu" trước để giữ đúng workflow.
+  const canSwipe = canSwipeDone
+    && !isPending
+    && task.status === 'doing'
+    && task.task_type !== 'report';
 
   // Báo cáo đang chờ user (TP/BGĐ) duyệt — show dot đỏ + label nhỏ
   const isPendingApprove =

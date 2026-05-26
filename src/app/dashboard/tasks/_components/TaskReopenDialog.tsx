@@ -17,7 +17,7 @@ interface Props {
   onChanged: () => void;
 }
 
-// Mở lại báo cáo đã hoàn thành (done → doing). Chỉ admin/director.
+// Mở lại báo cáo đã hoàn thành (done → doing). Chỉ người tạo/admin.
 // Tách riêng khỏi TaskReturnDialog để cảnh báo rõ "đảo ngược quyết định đã chốt".
 export function TaskReopenDialog({ task, onClose, onChanged }: Props) {
   const [reason, setReason] = useState('');

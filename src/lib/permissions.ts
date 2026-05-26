@@ -118,7 +118,7 @@ export function canCreateDocument(profile: any): boolean {
 
 // Phòng đầu mối — code đặc biệt được phép yêu cầu báo cáo cho phòng khác,
 // kể cả cán bộ staff. Theo nghiệp vụ chi nhánh (phòng điều phối + 4 phòng đầu mối khác).
-const HUB_DEPARTMENT_CODES = ['13618', '13602', '13605', '13609', '13603'];
+const HUB_DEPARTMENT_CODES = ['13618', '13601', '13602', '13605', '13609', '13603'];
 
 // Trích code phòng từ profile — Supabase có thể trả `departments` dưới dạng
 // object hoặc array (1-1 vs ambiguous FK). Helper này xử lý cả 2 case.
@@ -134,10 +134,10 @@ export function isHubDepartment(profile: any): boolean {
   return !!code && HUB_DEPARTMENT_CODES.includes(code);
 }
 
-// Lái xe + lễ tân (role secretary trong tổ chức này) không thấy module Tasks
+// Lái xe, lễ tân và nhân sự không thấy module Tasks.
 export function canAccessTasksModule(profile: any): boolean {
   if (!profile) return false;
-  return !['driver', 'secretary'].includes(profile.role);
+  return !['driver', 'secretary', 'hr_officer'].includes(profile.role);
 }
 
 // Giao việc (Luồng A — task_type='task') cho người khác.
@@ -191,51 +191,53 @@ export function canRejectSubmission(
   return profile.role === 'manager' && profile.department_id === task.department_id;
 }
 
-// Mở lại báo cáo đã hoàn thành (done → doing) — CHỈ admin/director.
-// Đã siết quyền: TP cùng phòng và người tạo KHÔNG được reopen để tránh
-// vòng lặp "duyệt rồi mở lại" vô hạn — leo lên BGĐ là biên cuối.
+// Mở lại báo cáo đã hoàn thành (done → doing) — người tạo + admin + manager của người tạo.
 export function canReopenDone(
   profile: any,
-  task: { status?: string | null } | null,
+  task: { status?: string | null; created_by?: string | null; creator?: { department_id?: string | null } } | null,
 ): boolean {
   if (!profile || !task) return false;
   if (task.status !== 'done') return false;
-  return profile.role === 'admin' || profile.role === 'director';
+  if (profile.role === 'admin' || profile.role === 'director') return true;
+  if (task.created_by === profile.id) return true;
+  return profile.role === 'manager' && profile.department_id === task.creator?.department_id;
 }
 
-// Sửa nội dung công việc (title/description/priority/due_date) — creator + admin/director.
-// Cho sửa BẤT KỲ LÚC NÀO trừ canceled/archived. Đảm bảo các field bất biến
-// (department/assignee/task_type/requires_approval) chỉ thay đổi qua RPC chuyên biệt
-// (task_delegate, không có RPC đổi task_type — phải tạo mới).
+// Sửa nội dung công việc (title/description/priority/due_date) — creator + manager của creator + admin/director.
 export function canEditTask(
   profile: any,
-  task: { created_by?: string | null; status?: string | null; is_archived?: boolean | null } | null,
+  task: { created_by?: string | null; status?: string | null; is_archived?: boolean | null; creator?: { department_id?: string | null } } | null,
 ): boolean {
   if (!profile || !task) return false;
   if (task.status === 'canceled' || task.is_archived) return false;
   if (profile.role === 'admin' || profile.role === 'director') return true;
-  return task.created_by === profile.id;
+  if (task.created_by === profile.id) return true;
+  return profile.role === 'manager' && profile.department_id === task.creator?.department_id;
 }
 
-// Xoá nháp — CHỈ creator, cửa sổ 10 phút sau khi tạo, status=todo, 0 comment user, 0 file.
-// Là escape hatch cho lỗi gõ nhầm/tạo nhầm ngay sau khi tạo. Sau ngưỡng dùng Huỷ.
-export function canDeleteDraft(
+// Xoá hoàn toàn công việc — creator + manager của creator + admin/director.
+export function canDeleteTask(
   profile: any,
   task: {
     created_by?: string | null;
-    status?: string | null;
-    created_at?: string | null;
+    creator?: { department_id?: string | null };
   } | null,
-  commentCount: number,
-  attachmentCount: number,
 ): boolean {
   if (!profile || !task) return false;
-  if (task.created_by !== profile.id) return false;
-  if (task.status !== 'todo') return false;
-  if (commentCount > 0 || attachmentCount > 0) return false;
-  if (!task.created_at) return false;
-  const ageMs = Date.now() - new Date(task.created_at).getTime();
-  return ageMs <= 10 * 60 * 1000;
+  if (profile.role === 'admin' || profile.role === 'director') return true;
+  if (task.created_by === profile.id) return true;
+  return profile.role === 'manager' && profile.department_id === task.creator?.department_id;
+}
+
+// Chủ động ghi nhận hoàn thành (Force Complete) — creator + manager của creator + admin/director.
+export function canForceCompleteTask(
+  profile: any,
+  task: {
+    created_by?: string | null;
+    creator?: { department_id?: string | null };
+  } | null,
+): boolean {
+  return canDeleteTask(profile, task);
 }
 
 // Duyệt xin gia hạn — TP cùng phòng + BGĐ + admin + người tạo task.

@@ -1,6 +1,9 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@/components/ui/dialog';
@@ -23,7 +26,12 @@ import { vi } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { useAppData } from '@/hooks/use-app-data';
 import { notifyError, notifyValidation, notifySuccess } from '@/lib/notify';
-import { canAssignTaskToOthers, canRequestReport, canTargetCrossDepartment, getProfileDepartmentCode, isHubDepartment } from '@/lib/permissions';
+import {
+  canAssignTaskToOthers,
+  canRequestReport,
+  canTargetCrossDepartment,
+  getProfileDepartmentCode,
+} from '@/lib/permissions';
 import { createTask } from '../_lib/taskActions';
 import { fetchAssignableProfiles, fetchDepartments } from '../_lib/fetchTasks';
 import { PeoplePicker } from '@/components/ui/people-picker';
@@ -44,11 +52,39 @@ interface ProfileItem {
 
 interface Department { id: string; name: string; code?: string | null }
 
+const createTaskSchema = z.object({
+  formType: z.enum(['task', 'report']),
+  title: z.string().trim().min(1, 'Vui lòng nhập tiêu đề'),
+  description: z.string(),
+  dueDate: z.date({ required_error: 'Vui lòng chọn hạn hoàn thành' }),
+  priority: z.enum(['low', 'medium', 'high']),
+  reportTarget: z.enum(['profile', 'department']),
+  selectedAssignees: z.array(z.string()),
+  selectedDepartments: z.array(z.string()),
+  requiresApproval: z.boolean(),
+});
+
+type CreateTaskFormValues = z.infer<typeof createTaskSchema>;
+
 // Mặc định deadline = cuối giờ làm (17:00) cùng ngày để không bị 00:00 vô nghĩa.
 function defaultDueDate(): Date {
   const d = new Date();
   d.setHours(17, 0, 0, 0);
   return d;
+}
+
+function defaultValues(profile?: { id: string; role?: string | null } | null): CreateTaskFormValues {
+  return {
+    formType: 'task',
+    title: '',
+    description: '',
+    dueDate: defaultDueDate(),
+    priority: 'medium',
+    reportTarget: 'department',
+    selectedAssignees: profile?.role === 'staff' ? [profile.id] : [],
+    selectedDepartments: [],
+    requiresApproval: false,
+  };
 }
 
 interface Props {
@@ -63,23 +99,38 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
   const [profiles, setProfiles] = useState<ProfileItem[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [fetching, setFetching] = useState(true);
-
-  const [formType, setFormType] = useState<TaskType>('task');
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [dueDate, setDueDate] = useState<Date | undefined>(() => defaultDueDate());
-  const [priority, setPriority] = useState<TaskPriority>('medium');
-
-  const [reportTarget, setReportTarget] = useState<'profile' | 'department'>('department');
-  const [selectedAssignees, setSelectedAssignees] = useState<string[]>([]);
-  const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
-  const [requiresApproval, setRequiresApproval] = useState(false);
-
   const [loading, setLoading] = useState(false);
   const [isDateOpen, setIsDateOpen] = useState(false);
 
+  const form = useForm<CreateTaskFormValues>({
+    resolver: zodResolver(createTaskSchema),
+    defaultValues: defaultValues(profile),
+  });
+
+  const formType = form.watch('formType');
+  const dueDate = form.watch('dueDate');
+  const priority = form.watch('priority');
+  const reportTarget = form.watch('reportTarget');
+  const selectedAssignees = form.watch('selectedAssignees');
+  const selectedDepartments = form.watch('selectedDepartments');
+  const requiresApproval = form.watch('requiresApproval');
+
+  const isStaff = profile?.role === 'staff';
+  const isLockedToSelf = isStaff;
+  const canAssignTask = canAssignTaskToOthers(profile);
+  const canMakeReport = canRequestReport(profile);
+  const canCrossDept = canTargetCrossDepartment(profile);
+  const showTaskTab = canAssignTask || isStaff;
+  const showReportTab = canMakeReport;
+
+  useEffect(() => {
+    if (!isOpen) return;
+    form.reset(defaultValues(profile));
+  }, [isOpen, profile?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     if (!isOpen || !profile) return;
+    let active = true;
     setFetching(true);
     (async () => {
       const list = await fetchAssignableProfiles({
@@ -91,42 +142,23 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
           department_code: getProfileDepartmentCode(profile),
         },
       });
-      setProfiles(list as ProfileItem[]);
-
-      if (profile.role === 'staff') setSelectedAssignees([profile.id]);
-
       const depts = await fetchDepartments();
+      if (!active) return;
+      setProfiles(list as ProfileItem[]);
       setDepartments(depts);
+      if (profile.role === 'staff') {
+        form.setValue('selectedAssignees', [profile.id], { shouldValidate: true });
+      }
       setFetching(false);
     })();
-  }, [isOpen, profile?.id, formType]);
+    return () => { active = false; };
+  }, [isOpen, profile?.id, formType]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const isStaff = profile?.role === 'staff';
-  const isHub = isHubDepartment(profile);
-  // Staff (kể cả hub) khoá tự-ghi-chú khi giao "task". Tab Báo cáo mới mở rộng cho hub.
-  const isLockedToSelf = isStaff;
-  const canAssignTask = canAssignTaskToOthers(profile);
-  const canMakeReport = canRequestReport(profile);
-  // "Cả phòng ban" toggle: admin/director + hub manager/staff.
-  // Non-hub manager bị siết về phòng mình → không có nhu cầu chọn phòng.
-  const canCrossDept = canTargetCrossDepartment(profile);
-  // Hiện tab "Giao việc": admin/director/manager. Hiện tab "Báo cáo": + staff hub.
-  const showTaskTab = canAssignTask || isStaff; // staff vẫn thấy tab task (self-assign)
-  const showReportTab = canMakeReport;
-
-  // Nếu không cross-dept thì force chọn cá nhân (PeoplePicker đã filter sẵn phòng mình).
   useEffect(() => {
-    if (!canCrossDept) setReportTarget('profile');
-  }, [canCrossDept]);
+    if (!canCrossDept) form.setValue('reportTarget', 'profile');
+  }, [canCrossDept, form]);
 
-  const resetForm = () => {
-    setTitle(''); setDescription('');
-    setSelectedAssignees(isLockedToSelf && profile ? [profile.id] : []);
-    setSelectedDepartments([]);
-    setDueDate(defaultDueDate());
-    setPriority('medium');
-    setRequiresApproval(false);
-  };
+  const resetForm = () => form.reset(defaultValues(profile));
 
   const handleClose = () => {
     if (loading) return;
@@ -134,82 +166,86 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
     setIsOpen(false);
   };
 
-  const handleSubmit = async () => {
-    if (!title.trim()) { notifyValidation('Vui lòng nhập tiêu đề'); return; }
-    if (!dueDate) { notifyValidation('Vui lòng chọn hạn hoàn thành'); return; }
+  const handleInvalid = (errors: typeof form.formState.errors) => {
+    const first = errors.title?.message || errors.dueDate?.message;
+    notifyValidation(first ? String(first) : 'Vui lòng kiểm tra lại thông tin');
+  };
 
+  const handleSubmit = async (values: CreateTaskFormValues) => {
     setLoading(true);
     try {
-      if (reportTarget === 'department') {
-        // Cả phòng ban — áp cho cả Luồng A (hub manager) lẫn Luồng B.
-        // RPC auto-fill TP làm đầu mối; không cần gửi assignee_ids.
-        if (selectedDepartments.length === 0) {
+      const actualTarget = (isLockedToSelf && values.formType === 'task')
+        ? 'profile'
+        : values.reportTarget;
+
+      if (actualTarget === 'department') {
+        if (values.selectedDepartments.length === 0) {
           notifyValidation('Vui lòng chọn ít nhất một phòng ban');
           setLoading(false); return;
         }
-        const batchId = selectedDepartments.length > 1 ? crypto.randomUUID() : null;
-        for (const deptId of selectedDepartments) {
+        const batchId = values.selectedDepartments.length > 1 ? crypto.randomUUID() : null;
+        for (const deptId of values.selectedDepartments) {
           const res = await createTask({
-            title: title.trim(),
-            description: description.trim() || null,
-            task_type: formType,
-            priority,
-            due_date: dueDate.toISOString(),
+            title: values.title.trim(),
+            description: values.description.trim() || null,
+            task_type: values.formType,
+            priority: values.priority,
+            due_date: values.dueDate.toISOString(),
             dept_id: deptId,
             assignee_ids: null,
-            requires_approval: formType === 'report' ? requiresApproval : false,
+            requires_approval: values.formType === 'report' ? values.requiresApproval : false,
             batch_id: batchId,
           });
           if (!res.ok) {
-            notifyError(res.error, formType === 'task' ? 'Không tạo được công việc' : 'Không tạo được báo cáo');
+            notifyError(res.error, values.formType === 'task' ? 'Không tạo được công việc' : 'Không tạo được báo cáo');
             setLoading(false); return;
           }
         }
         notifySuccess(
-          formType === 'task' ? 'Đã giao việc cho phòng' : 'Đã gửi yêu cầu',
-          `${selectedDepartments.length} phòng — Trưởng phòng sẽ phân công lại`,
+          values.formType === 'task' ? 'Đã giao việc cho phòng' : 'Đã gửi yêu cầu',
+          `${values.selectedDepartments.length} phòng — Trưởng phòng sẽ phân công lại`,
         );
-      } else if (formType === 'task') {
-        if (selectedAssignees.length === 0) {
+      } else if (values.formType === 'task') {
+        if (values.selectedAssignees.length === 0) {
           notifyValidation('Vui lòng chọn người nhận');
           setLoading(false); return;
         }
-        const firstAssignee = profiles.find(p => p.id === selectedAssignees[0]);
+        const firstAssignee = profiles.find(p => p.id === values.selectedAssignees[0]);
         const deptId = firstAssignee?.department_id ?? profile?.department_id ?? null;
         const res = await createTask({
-          title: title.trim(),
-          description: description.trim() || null,
+          title: values.title.trim(),
+          description: values.description.trim() || null,
           task_type: 'task',
-          priority,
-          due_date: dueDate.toISOString(),
+          priority: values.priority,
+          due_date: values.dueDate.toISOString(),
           dept_id: deptId,
-          assignee_ids: selectedAssignees,
+          assignee_ids: values.selectedAssignees,
         });
         if (!res.ok) { notifyError(res.error, 'Không tạo được công việc'); setLoading(false); return; }
-        notifySuccess('Đã giao việc', `${selectedAssignees.length} người sẽ nhận thông báo`);
+        notifySuccess('Đã giao việc', `${values.selectedAssignees.length} người sẽ nhận thông báo`);
       } else {
-        if (selectedAssignees.length === 0) {
+        if (values.selectedAssignees.length === 0) {
           notifyValidation('Vui lòng chọn người nhận');
           setLoading(false); return;
         }
-        const batchId = selectedAssignees.length > 1 ? crypto.randomUUID() : null;
-        for (const userId of selectedAssignees) {
+        const batchId = values.selectedAssignees.length > 1 ? crypto.randomUUID() : null;
+        for (const userId of values.selectedAssignees) {
           const assignee = profiles.find(x => x.id === userId);
           const deptId = assignee?.department_id ?? profile?.department_id ?? null;
           const res = await createTask({
-            title: title.trim(),
-            description: description.trim() || null,
+            title: values.title.trim(),
+            description: values.description.trim() || null,
             task_type: 'report',
-            priority,
-            due_date: dueDate.toISOString(),
+            priority: values.priority,
+            due_date: values.dueDate.toISOString(),
             dept_id: deptId,
             assignee_ids: [userId],
-            requires_approval: requiresApproval,
+            requires_approval: values.requiresApproval,
             batch_id: batchId,
           });
           if (!res.ok) { notifyError(res.error, 'Không tạo được báo cáo'); setLoading(false); return; }
         }
-        notifySuccess('Đã gửi yêu cầu', `${selectedAssignees.length} cán bộ sẽ nhận yêu cầu báo cáo`);
+        notifySuccess('Đã gửi yêu cầu', `${values.selectedAssignees.length} cán bộ sẽ nhận yêu cầu báo cáo`);
       }
       resetForm();
       setIsOpen(false);
@@ -237,234 +273,230 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="app-dialog-sheet-body">
-          <div className="px-[var(--app-page-x)] py-4 group-stack">
-            {/* Tabs A/B — chỉ hiện khi có cả 2 lựa chọn */}
-            {showTaskTab && showReportTab && (
-              <Tabs value={formType} onValueChange={(v) => setFormType(v as TaskType)}>
-                <TabsList className="grid grid-cols-2 min-h-11">
-                  <TabsTrigger value="task" className="rounded-lg font-semibold data-[state=active]:bg-white data-[state=active]:shadow-sm">
-                    Giao việc
-                  </TabsTrigger>
-                  <TabsTrigger value="report" className="rounded-lg font-semibold data-[state=active]:bg-white data-[state=active]:shadow-sm">
-                    Yêu cầu báo cáo
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
-            )}
-
-            <div className="tight-stack">
-              <Label className="text-label">Tiêu đề</Label>
-              <Input
-                placeholder={formType === 'task' ? 'Tên công việc cần làm...' : 'Tên báo cáo yêu cầu...'}
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="min-h-11 rounded-xl bg-slate-50 border-none px-4"
-              />
-            </div>
-
-            <div className="tight-stack">
-              <Label className="text-label">Mô tả</Label>
-              <Textarea
-                rows={3}
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder={
-                  formType === 'task'
-                    ? 'Kế hoạch, yêu cầu, mục tiêu công việc...'
-                    : 'Số liệu, biểu mẫu, lưu ý khi nộp...'
-                }
-                className="rounded-xl bg-slate-50 border-none resize-none px-4 py-3"
-              />
-            </div>
-
-            <div className="group-stack">
-              <Label className="text-label">
-                {isLockedToSelf && formType === 'task' ? 'Người nhận' : 'Đối tượng nhận'}
-              </Label>
-
-              {/* Toggle "Cả phòng ban / Cán bộ cụ thể" — hiện cho hub user + admin/director.
-                  Áp cho cả Luồng A (hub manager giao task qua phòng → TP nhận) lẫn Luồng B. */}
-              {!isLockedToSelf && canCrossDept && (
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setReportTarget('department')}
-                    className={cn(
-                      'min-h-16 p-3 rounded-xl border text-left transition-all',
-                      reportTarget === 'department'
-                        ? 'bg-primary/10 border-primary'
-                        : 'bg-white border-slate-200 hover:bg-slate-50',
-                    )}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Building2 className="icon-md text-amber-500" />
-                      <span className="heading-card">Cả phòng ban</span>
-                    </div>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setReportTarget('profile')}
-                    className={cn(
-                      'min-h-16 p-3 rounded-xl border text-left transition-all',
-                      reportTarget === 'profile'
-                        ? 'bg-primary/10 border-primary'
-                        : 'bg-white border-slate-200 hover:bg-slate-50',
-                    )}
-                  >
-                    <div className="flex items-center gap-2">
-                      <UserIcon className="icon-md text-primary" />
-                      <span className="heading-card">Cán bộ cụ thể</span>
-                    </div>
-                  </button>
-                </div>
+        <form onSubmit={form.handleSubmit(handleSubmit, handleInvalid)} className="contents">
+          <div className="app-dialog-sheet-body">
+            <div className="px-[var(--app-page-x)] py-4 group-stack">
+              {showTaskTab && showReportTab && (
+                <Tabs
+                  value={formType}
+                  onValueChange={(v) => form.setValue('formType', v as TaskType, { shouldValidate: true })}
+                >
+                  <TabsList className="grid grid-cols-2 min-h-11">
+                    <TabsTrigger value="task" className="rounded-lg font-semibold data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                      Giao việc
+                    </TabsTrigger>
+                    <TabsTrigger value="report" className="rounded-lg font-semibold data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                      Yêu cầu báo cáo
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
               )}
 
-              {fetching ? (
-                <div className="flex items-center justify-center py-6">
-                  <Loader2 className="icon-md animate-spin text-slate-400" />
-                </div>
-              ) : isLockedToSelf && formType === 'task' ? (
-                <p className="text-subtitle italic px-1 py-2 bg-slate-50 rounded-xl">
-                  Bạn đang tự ghi chú việc cho chính mình.
-                </p>
-              ) : reportTarget === 'department' ? (
-                <DepartmentPicker
-                  items={departments}
-                  selected={selectedDepartments}
-                  onChange={setSelectedDepartments}
-                  triggerLabel={formType === 'task' ? 'Chọn phòng ban nhận việc' : 'Chọn phòng ban nhận báo cáo'}
-                />
-              ) : (
-                <PeoplePicker
-                  profiles={profiles}
-                  currentUserId={profile?.id}
-                  myDepartmentId={profile?.department_id ?? null}
-                  myDepartmentName={profile?.departments?.name ?? null}
-                  selected={selectedAssignees}
-                  onChange={setSelectedAssignees}
-                  mode="multiple"
-                />
-              )}
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="tight-stack">
-                <Label className="text-label">Hạn hoàn thành</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  <Popover modal open={isDateOpen} onOpenChange={setIsDateOpen}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          'w-full min-h-11 rounded-xl bg-slate-50 border-none font-medium justify-start px-4 shadow-none hover:bg-slate-100 text-slate-900',
-                          !dueDate && 'text-slate-400',
-                        )}
-                      >
-                        <Calendar className="icon-sm mr-2 text-slate-500" />
-                        {dueDate ? format(dueDate, 'dd/MM/yyyy', { locale: vi }) : 'Chọn ngày'}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent
-                      className="w-auto p-0 rounded-2xl border-none shadow-2xl z-[9999] pointer-events-auto"
-                      align="start"
-                      onOpenAutoFocus={(e) => e.preventDefault()}
+                <Label className="text-label">Tiêu đề</Label>
+                <Input
+                  placeholder={formType === 'task' ? 'Tên công việc cần làm...' : 'Tên báo cáo yêu cầu...'}
+                  {...form.register('title')}
+                  className="min-h-11 rounded-xl bg-slate-50 border-none px-4"
+                />
+              </div>
+
+              <div className="tight-stack">
+                <Label className="text-label">Mô tả</Label>
+                <Textarea
+                  rows={3}
+                  {...form.register('description')}
+                  placeholder={
+                    formType === 'task'
+                      ? 'Kế hoạch, yêu cầu, mục tiêu công việc...'
+                      : 'Số liệu, biểu mẫu, lưu ý khi nộp...'
+                  }
+                  className="rounded-xl bg-slate-50 border-none resize-none px-4 py-3"
+                />
+              </div>
+
+              <div className="group-stack">
+                <Label className="text-label">
+                  {isLockedToSelf && formType === 'task' ? 'Người nhận' : 'Đối tượng nhận'}
+                </Label>
+
+                {!isLockedToSelf && canCrossDept && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => form.setValue('reportTarget', 'department', { shouldValidate: true })}
+                      className={cn(
+                        'min-h-16 p-3 rounded-xl border text-left transition-all',
+                        reportTarget === 'department'
+                          ? 'bg-primary/10 border-primary'
+                          : 'bg-white border-slate-200 hover:bg-slate-50',
+                      )}
                     >
-                      <CalendarPicker
-                        mode="single"
-                        selected={dueDate}
-                        onSelect={(d) => {
-                          if (!d) { setDueDate(undefined); return; }
-                          // Giữ HH:mm hiện tại, chỉ đổi ngày
-                          const next = new Date(d);
-                          next.setHours(
-                            dueDate?.getHours() ?? 17,
-                            dueDate?.getMinutes() ?? 0,
-                            0, 0,
-                          );
-                          setDueDate(next);
-                          setIsDateOpen(false);
-                        }}
-                        initialFocus
-                        locale={vi}
-                      />
-                    </PopoverContent>
-                  </Popover>
+                      <div className="flex items-center gap-2">
+                        <Building2 className="icon-md text-amber-500" />
+                        <span className="heading-card">Cả phòng ban</span>
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => form.setValue('reportTarget', 'profile', { shouldValidate: true })}
+                      className={cn(
+                        'min-h-16 p-3 rounded-xl border text-left transition-all',
+                        reportTarget === 'profile'
+                          ? 'bg-primary/10 border-primary'
+                          : 'bg-white border-slate-200 hover:bg-slate-50',
+                      )}
+                    >
+                      <div className="flex items-center gap-2">
+                        <UserIcon className="icon-md text-primary" />
+                        <span className="heading-card">Cán bộ cụ thể</span>
+                      </div>
+                    </button>
+                  </div>
+                )}
 
-                  <TimePicker
-                    value={dueDate ? format(dueDate, 'HH:mm') : '17:00'}
-                    onChange={(v) => {
-                      const [h, m] = v.split(':').map(Number);
-                      const base = dueDate ?? new Date();
-                      const next = new Date(base);
-                      next.setHours(h, m, 0, 0);
-                      setDueDate(next);
-                    }}
-                    triggerClassName="w-full"
-                  />
-                </div>
-              </div>
-
-              <div className="tight-stack">
-                <Label className="text-label">Mức độ ưu tiên</Label>
-                <Select value={priority} onValueChange={(v) => setPriority(v as TaskPriority)}>
-                  <SelectTrigger className="min-h-11 rounded-xl bg-slate-50 border-none font-medium px-4">
-                    <div className="flex items-center gap-2">
-                      <Flag className={cn(
-                        'icon-sm',
-                        priority === 'high' ? 'text-red-500' :
-                          priority === 'low' ? 'text-slate-400' : 'text-slate-500',
-                      )} />
-                      <SelectValue />
-                    </div>
-                  </SelectTrigger>
-                  <SelectContent className="rounded-xl border border-slate-200 shadow-lg">
-                    <SelectItem value="low">Ưu tiên thấp</SelectItem>
-                    <SelectItem value="medium">Bình thường</SelectItem>
-                    <SelectItem value="high">Khẩn trương</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {formType === 'report' && (
-              <label className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 cursor-pointer">
-                <Switch
-                  checked={requiresApproval}
-                  onCheckedChange={setRequiresApproval}
-                  className="mt-0.5 shrink-0"
-                />
-                <div className="min-w-0 flex-1">
-                  <p className="text-subtitle font-semibold text-slate-900">Cần Trưởng phòng duyệt</p>
-                  <p className="text-meta">
-                    Mặc định tắt — nộp xong là ghi nhận hoàn thành luôn. Bật khi cần kiểm soát chặt.
+                {fetching ? (
+                  <div className="flex items-center justify-center py-6">
+                    <Loader2 className="icon-md animate-spin text-slate-400" />
+                  </div>
+                ) : isLockedToSelf && formType === 'task' ? (
+                  <p className="text-subtitle italic px-1 py-2 bg-slate-50 rounded-xl">
+                    Bạn đang tự ghi chú việc cho chính mình.
                   </p>
-                </div>
-              </label>
-            )}
-          </div>
-        </div>
+                ) : reportTarget === 'department' ? (
+                  <DepartmentPicker
+                    items={departments}
+                    selected={selectedDepartments}
+                    onChange={(ids) => form.setValue('selectedDepartments', ids, { shouldValidate: true })}
+                    triggerLabel={formType === 'task' ? 'Chọn phòng ban nhận việc' : 'Chọn phòng ban nhận báo cáo'}
+                  />
+                ) : (
+                  <PeoplePicker
+                    profiles={profiles}
+                    currentUserId={profile?.id}
+                    myDepartmentId={profile?.department_id ?? null}
+                    myDepartmentName={profile?.departments?.name ?? null}
+                    selected={selectedAssignees}
+                    onChange={(ids) => form.setValue('selectedAssignees', ids, { shouldValidate: true })}
+                    mode="multiple"
+                  />
+                )}
+              </div>
 
-        <DialogFooter className="app-dialog-sheet-footer flex flex-row justify-between items-center gap-2">
-          <Button
-            variant="ghost"
-            onClick={handleClose}
-            disabled={loading}
-            className="min-h-11 px-4 rounded-xl font-medium text-slate-500"
-          >
-            Huỷ
-          </Button>
-          <Button
-            onClick={handleSubmit}
-            disabled={loading}
-            className="min-h-11 px-5 rounded-xl font-semibold bg-primary hover:bg-primary/90 text-white"
-          >
-            {loading ? <Loader2 className="icon-sm animate-spin" /> : (
-              isLockedToSelf && formType === 'task' ? 'Tạo công việc' :
-                formType === 'task' ? 'Giao việc' : 'Gửi yêu cầu'
-            )}
-          </Button>
-        </DialogFooter>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="tight-stack">
+                  <Label className="text-label">Hạn hoàn thành</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Popover modal open={isDateOpen} onOpenChange={setIsDateOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="w-full min-h-11 rounded-xl bg-slate-50 border-none font-medium justify-start px-4 shadow-none hover:bg-slate-100 text-slate-900"
+                        >
+                          <Calendar className="icon-sm mr-2 text-slate-500" />
+                          {format(dueDate, 'dd/MM/yyyy', { locale: vi })}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent
+                        className="w-auto p-0 rounded-2xl border-none shadow-2xl z-[9999] pointer-events-auto"
+                        align="start"
+                        onOpenAutoFocus={(e) => e.preventDefault()}
+                      >
+                        <CalendarPicker
+                          mode="single"
+                          selected={dueDate}
+                          onSelect={(d) => {
+                            if (!d) return;
+                            const next = new Date(d);
+                            next.setHours(dueDate.getHours(), dueDate.getMinutes(), 0, 0);
+                            form.setValue('dueDate', next, { shouldValidate: true });
+                            setIsDateOpen(false);
+                          }}
+                          initialFocus
+                          locale={vi}
+                        />
+                      </PopoverContent>
+                    </Popover>
+
+                    <TimePicker
+                      value={format(dueDate, 'HH:mm')}
+                      onChange={(v) => {
+                        const [h, m] = v.split(':').map(Number);
+                        const next = new Date(dueDate);
+                        next.setHours(h, m, 0, 0);
+                        form.setValue('dueDate', next, { shouldValidate: true });
+                      }}
+                      triggerClassName="w-full"
+                    />
+                  </div>
+                </div>
+
+                <div className="tight-stack">
+                  <Label className="text-label">Mức độ ưu tiên</Label>
+                  <Select
+                    value={priority}
+                    onValueChange={(v) => form.setValue('priority', v as TaskPriority, { shouldValidate: true })}
+                  >
+                    <SelectTrigger className="min-h-11 rounded-xl bg-slate-50 border-none font-medium px-4">
+                      <div className="flex items-center gap-2">
+                        <Flag className={cn(
+                          'icon-sm',
+                          priority === 'high' ? 'text-red-500' :
+                            priority === 'low' ? 'text-slate-400' : 'text-slate-500',
+                        )} />
+                        <SelectValue />
+                      </div>
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl border border-slate-200 shadow-lg">
+                      <SelectItem value="low">Ưu tiên thấp</SelectItem>
+                      <SelectItem value="medium">Bình thường</SelectItem>
+                      <SelectItem value="high">Khẩn trương</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {formType === 'report' && (
+                <label className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 cursor-pointer">
+                  <Switch
+                    checked={requiresApproval}
+                    onCheckedChange={(v) => form.setValue('requiresApproval', v, { shouldValidate: true })}
+                    className="mt-0.5 shrink-0"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-subtitle font-semibold text-slate-900">Cần Trưởng phòng duyệt</p>
+                    <p className="text-meta">
+                      Mặc định tắt — nộp xong là ghi nhận hoàn thành luôn. Bật khi cần kiểm soát chặt.
+                    </p>
+                  </div>
+                </label>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter className="app-dialog-sheet-footer flex flex-row justify-between items-center gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={handleClose}
+              disabled={loading}
+              className="min-h-11 px-4 rounded-xl font-medium text-slate-500"
+            >
+              Huỷ
+            </Button>
+            <Button
+              type="submit"
+              disabled={loading}
+              className="min-h-11 px-5 rounded-xl font-semibold bg-primary hover:bg-primary/90 text-white"
+            >
+              {loading ? <Loader2 className="icon-sm animate-spin" /> : (
+                isLockedToSelf && formType === 'task' ? 'Tạo công việc' :
+                  formType === 'task' ? 'Giao việc' : 'Gửi yêu cầu'
+              )}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );

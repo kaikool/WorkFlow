@@ -24,7 +24,7 @@ import { TaskDetailDialog } from './_components/TaskDetailDialog';
 import { BatchTaskDetailDialog } from './_components/BatchTaskDetailDialog';
 import { CreateTaskDialog } from './_components/CreateTaskDialog';
 import { updateTaskStatus } from './_lib/taskActions';
-import { canViewTaskAnalytics, canCreateRecurringTemplate } from '@/lib/permissions';
+import { canAccessTasksModule, canViewTaskAnalytics, canCreateRecurringTemplate } from '@/lib/permissions';
 import type { TaskScope } from './_lib/types';
 
 type TabValue = 'inbox' | 'mine' | 'dept' | 'branch';
@@ -54,10 +54,14 @@ function TasksContent() {
   useEffect(() => {
     if (!currentProfile) return;
     setProfile(currentProfile);
+    if (!canAccessTasksModule(currentProfile)) {
+      router.replace('/dashboard');
+      return;
+    }
     if (currentProfile.role === 'admin' || currentProfile.role === 'director') setTab('branch');
     else if (currentProfile.role === 'manager') setTab('inbox');
     else setTab('mine');
-  }, [currentProfile?.id]);
+  }, [currentProfile?.id, router]);
 
   const scope = tabToScope(tab);
   const dash = useTasksDashboard({ scope, enabled: !!profile });
@@ -256,6 +260,8 @@ function TasksContent() {
         batchId={openBatchId}
         children={openBatchId ? dash.items.filter(t => t.batch_id === openBatchId) : []}
         onOpenTask={handleOpenTask}
+        currentProfile={profile}
+        onChanged={() => dash.refetch()}
       />
     </div>
   );

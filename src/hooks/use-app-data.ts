@@ -1,8 +1,27 @@
 'use client'
 
-import { useContext, useMemo } from 'react';
-import { AppDataContext } from '@/components/providers/AppDataProvider';
+import { createContext, useContext, useMemo } from 'react';
 import type { Profile } from '@/types/profile';
+
+// Chuyển interface và context sang đây để tránh duplicate module context trong Turbopack
+export interface OutOfOfficeRecord {
+ id: string;
+ user_id: string;
+ message: string;
+ ends_at: string;
+ created_at: string;
+}
+
+export interface AppDataValue {
+ profiles: Profile[];
+ currentProfile: Profile | null;
+ departments: any[];
+ outOfOffice: Record<string, OutOfOfficeRecord>;
+ hydrating: boolean;
+ refresh: () => Promise<void>;
+}
+
+export const AppDataContext = createContext<AppDataValue | null>(null);
 
 export function useAppData() {
  const ctx = useContext(AppDataContext);
