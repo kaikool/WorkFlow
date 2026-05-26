@@ -194,7 +194,7 @@ export function canRejectSubmission(
 // Mở lại báo cáo đã hoàn thành (done → doing) — người tạo + admin + manager của người tạo.
 export function canReopenDone(
   profile: any,
-  task: { status?: string | null; created_by?: string | null; creator?: { department_id?: string | null } } | null,
+  task: { status?: string | null; created_by?: string | null; creator?: { department_id?: string | null } | null } | null,
 ): boolean {
   if (!profile || !task) return false;
   if (task.status !== 'done') return false;
@@ -206,7 +206,7 @@ export function canReopenDone(
 // Sửa nội dung công việc (title/description/priority/due_date) — creator + manager của creator + admin/director.
 export function canEditTask(
   profile: any,
-  task: { created_by?: string | null; status?: string | null; is_archived?: boolean | null; creator?: { department_id?: string | null } } | null,
+  task: { created_by?: string | null; status?: string | null; is_archived?: boolean | null; creator?: { department_id?: string | null } | null } | null,
 ): boolean {
   if (!profile || !task) return false;
   if (task.status === 'canceled' || task.is_archived) return false;
@@ -220,7 +220,7 @@ export function canDeleteTask(
   profile: any,
   task: {
     created_by?: string | null;
-    creator?: { department_id?: string | null };
+    creator?: { department_id?: string | null } | null;
   } | null,
 ): boolean {
   if (!profile || !task) return false;
@@ -234,7 +234,7 @@ export function canForceCompleteTask(
   profile: any,
   task: {
     created_by?: string | null;
-    creator?: { department_id?: string | null };
+    creator?: { department_id?: string | null } | null;
   } | null,
 ): boolean {
   return canDeleteTask(profile, task);

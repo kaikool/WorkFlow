@@ -137,7 +137,6 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, showArchive =
       title: 'Xác nhận ghi nhận hoàn thành công việc/báo cáo?',
       description: 'Bạn có chắc chắn muốn ghi nhận hoàn thành? Việc này sẽ đóng công việc dù người nhận chưa nộp.',
       confirmText: 'Xác nhận',
-      variant: 'default',
     });
     if (!ok) return;
     
@@ -188,7 +187,7 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, showArchive =
     for (const id of taskIds) {
       const res = await deleteTask(id);
       if (res.ok) okCount += 1;
-      else if (!firstError) firstError = res.error;
+      else if (!firstError) firstError = res.error ?? null;
     }
     setBusy(null);
 

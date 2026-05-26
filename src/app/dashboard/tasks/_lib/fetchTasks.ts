@@ -7,7 +7,7 @@ const supabase = createClient();
 const DETAIL_SELECT = `
   *,
   department:departments ( id, name ),
-  creator:profiles!tasks_created_by_fkey ( id, full_name, avatar_url ),
+  creator: profiles!tasks_created_by_fkey ( id, full_name, avatar_url, department_id ),
   assignees:task_assignees (
     user:profiles ( id, full_name, avatar_url )
   ),
@@ -159,13 +159,15 @@ export interface BatchSibling {
   status: string;
   is_archived: boolean;
   created_at: string;
+  created_by?: string | null;
+  creator?: { id: string; department_id: string | null } | null;
   department: { name: string | null } | null;
 }
 
 export async function fetchBatchSiblings(batchId: string): Promise<BatchSibling[]> {
   const { data, error } = await supabase
     .from('tasks')
-    .select('id, status, is_archived, created_at, department:departments(name)')
+    .select('id, status, is_archived, created_at, created_by, department:departments(name), creator:profiles!tasks_created_by_fkey(id, department_id)')
     .eq('batch_id', batchId)
     .order('created_at', { ascending: true });
   if (error) {

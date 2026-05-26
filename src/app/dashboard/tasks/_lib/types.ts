@@ -25,7 +25,7 @@ export interface TaskListItem {
   batch_id: string | null;
   is_overdue: boolean;
   department: { id: string; name: string } | null;
-  creator: { id: string; full_name: string | null; avatar_url: string | null } | null;
+  creator: { id: string; full_name: string | null; avatar_url: string | null; department_id?: string | null } | null;
   assignees: Array<{ id: string; full_name: string | null; avatar_url: string | null }> | null;
   _pending?: boolean;
 }
@@ -66,7 +66,7 @@ export type TaskExtensionRow = Tables<'task_extension_requests'>;
 
 export interface TaskDetail extends TaskRow {
   department: { id: string; name: string } | null;
-  creator: { id: string; full_name: string | null; avatar_url: string | null } | null;
+  creator: { id: string; full_name: string | null; avatar_url: string | null; department_id?: string | null } | null;
   assignees: Array<{ id: string; full_name: string | null; avatar_url: string | null }>;
   comments: Array<TaskCommentRow & {
     user: { id: string; full_name: string | null; avatar_url: string | null } | null;
