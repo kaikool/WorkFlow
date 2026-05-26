@@ -90,7 +90,6 @@ export function BatchTaskDetailDialog({ isOpen, setIsOpen, batchId, children, on
       title: 'Xác nhận ghi nhận hoàn thành lô công việc/báo cáo?',
       description: `Bạn có chắc chắn muốn chủ động ghi nhận hoàn thành cho ${pendingChildren.length} công việc chưa nộp trong lô này? Việc này sẽ đóng tất cả công việc.`,
       confirmText: 'Xác nhận',
-      variant: 'default',
     });
     if (!ok) return;
 
@@ -119,7 +118,7 @@ export function BatchTaskDetailDialog({ isOpen, setIsOpen, batchId, children, on
       title: 'Xoá lô công việc?',
       description: `Bạn có chắc chắn muốn xoá hoàn toàn ${children.length} công việc trong lô này không? Thao tác này không thể hoàn tác.`,
       confirmText: 'Xoá lô',
-      variant: 'destructive',
+      danger: true,
     });
     if (!ok) return;
 
