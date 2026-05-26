@@ -146,7 +146,7 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, showArchive =
     if (!ok) return;
     
     setBusy('forceComplete');
-    const res = await updateTaskStatus(task.id, 'done', '[Hệ thống] Đã ghi nhận hoàn thành.');
+    const res = await updateTaskStatus(task.id, 'done', '[sys] Đã hoàn thành.');
     setBusy(null);
     if (!res.ok) { notifyError(res.error, 'Không thể ghi nhận hoàn thành'); return; }
     notifySuccess('Đã cập nhật trạng thái');
@@ -376,7 +376,7 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, showArchive =
           {isReportSelfApprove && task.requires_approval && task.status === 'doing' && (
             <p className="text-subtitle text-amber-700 font-medium italic flex items-center gap-2">
               <AlertTriangle className="icon-sm" />
-              Bạn là người duyệt báo cáo của chính mình — bấm "Hoàn thành" sẽ tự ghi nhận có audit log.
+              Bạn là người duyệt báo cáo của chính mình — bấm "Hoàn thành" để hoàn thành.
             </p>
           )}
           {task.requires_approval && (
@@ -502,11 +502,27 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, showArchive =
         </div>
       )}
 
-      {(task.extension_requests.length > 0 || task.comments.some(c => c.content.startsWith('[Hệ thống]'))) && (
-        <div className="pt-2">
-          <TaskTimeline task={task} />
-        </div>
-      )}
+      {(() => {
+        const systemPatterns = [
+          /đã hoàn thành\.?$/,
+          /trả lại báo cáo đã hoàn thành\. Lý do:/,
+          /trả về báo cáo để sửa\. Lý do:/,
+          /đã sửa:/,
+          /^Đã hủy công việc/,
+          /^Đã hoàn thành\.?$/
+        ];
+        const hasSystemComment = task.comments.some(c => 
+          c.content.startsWith('[Hệ thống]') || 
+          c.content.startsWith('[sys]') ||
+          systemPatterns.some(regex => regex.test(c.content))
+        );
+
+        return (task.extension_requests.length > 0 || hasSystemComment) && (
+          <div className="pt-2">
+            <TaskTimeline task={task} />
+          </div>
+        );
+      })()}
 
       <div className="pt-2 item-stack">
         <h3 className="heading-card">File đính kèm</h3>
@@ -519,7 +535,20 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, showArchive =
       <div className="pt-2">
         <TaskCommentList
           taskId={task.id}
-          comments={task.comments.filter(c => !c.content.startsWith('[Hệ thống]'))}
+          comments={task.comments.filter(c => {
+            const systemPatterns = [
+              /đã hoàn thành\.?$/,
+              /trả lại báo cáo đã hoàn thành\. Lý do:/,
+              /trả về báo cáo để sửa\. Lý do:/,
+              /đã sửa:/,
+              /^Đã hủy công việc/,
+              /^Đã hoàn thành\.?$/
+            ];
+            const isSystem = c.content.startsWith('[Hệ thống]') || 
+                             c.content.startsWith('[sys]') ||
+                             systemPatterns.some(regex => regex.test(c.content));
+            return !isSystem;
+          })}
           onAdded={onChanged}
           canCompose={currentProfile.role !== 'admin'}
         />

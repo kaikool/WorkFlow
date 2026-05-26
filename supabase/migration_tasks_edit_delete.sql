@@ -103,7 +103,7 @@ BEGIN
 
   INSERT INTO task_comments (task_id, user_id, content)
   VALUES (p_task_id, v_uid,
-          '[Hệ thống] ' || v_actor_name || ' đã sửa: ' || array_to_string(v_changes, '; '));
+          v_actor_name || ' đã sửa: ' || array_to_string(v_changes, '; '));
 
   -- Notify người được giao (trừ chính người sửa)
   INSERT INTO notifications (user_id, title, content, type, link)

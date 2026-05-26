@@ -157,7 +157,7 @@ BEGIN
 
   INSERT INTO task_comments (task_id, user_id, content)
   VALUES (p_task_id, v_uid,
-          '[Hệ thống] ' || v_actor_name || ' đã sửa: ' || array_to_string(v_changes, '; '));
+          v_actor_name || ' đã sửa: ' || array_to_string(v_changes, '; '));
 
   INSERT INTO notifications (user_id, title, content, type, link)
   SELECT DISTINCT u,
@@ -326,20 +326,17 @@ BEGIN
   IF v_self_approve THEN
     INSERT INTO task_comments (task_id, user_id, content)
     VALUES (p_task_id, v_uid,
-            '[Hệ thống] ' || v_actor_name
-            || ' tự nộp và tự ghi nhận hoàn thành báo cáo của chính mình.');
+            v_actor_name || ' đã hoàn thành.');
   END IF;
 
   IF v_is_reopen THEN
     INSERT INTO task_comments (task_id, user_id, content)
     VALUES (p_task_id, v_uid,
-            '[Hệ thống] ' || v_actor_name
-            || ' trả lại báo cáo đã hoàn thành. Lý do: ' || p_comment);
+            v_actor_name || ' trả lại báo cáo đã hoàn thành. Lý do: ' || p_comment);
   ELSIF v_is_return_sub THEN
     INSERT INTO task_comments (task_id, user_id, content)
     VALUES (p_task_id, v_uid,
-            '[Hệ thống] ' || v_actor_name
-            || ' trả về báo cáo để sửa. Lý do: ' || p_comment);
+            v_actor_name || ' trả về báo cáo để sửa. Lý do: ' || p_comment);
   ELSIF p_comment IS NOT NULL AND length(trim(p_comment)) > 0 THEN
     INSERT INTO task_comments (task_id, user_id, content)
     VALUES (p_task_id, v_uid, p_comment);

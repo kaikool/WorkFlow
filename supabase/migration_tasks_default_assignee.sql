@@ -274,7 +274,7 @@ BEGIN
         INSERT INTO notifications (user_id, title, content, type, link)
         VALUES (v_target_id,
                 'Yêu cầu báo cáo định kỳ',
-                COALESCE(v_creator_name, '[Hệ thống]') || ' đã sinh tự động: ' || v_template.title,
+                COALESCE(v_creator_name, 'Hệ thống tự động') || ' đã sinh tự động: ' || v_template.title,
                 v_template.task_type,
                 '/dashboard/tasks?id=' || v_task_id::text);
 
@@ -302,7 +302,7 @@ BEGIN
           INSERT INTO notifications (user_id, title, content, type, link)
           VALUES (v_assignee,
                   'Công việc định kỳ',
-                  COALESCE(v_creator_name, '[Hệ thống]') || ' đã giao: ' || v_template.title,
+                  COALESCE(v_creator_name, 'Hệ thống tự động') || ' đã giao: ' || v_template.title,
                   v_template.task_type,
                   '/dashboard/tasks?id=' || v_task_id::text);
           v_count := v_count + 1;

@@ -330,20 +330,17 @@ BEGIN
   IF v_self_approve THEN
     INSERT INTO task_comments (task_id, user_id, content)
     VALUES (p_task_id, v_uid,
-            '[Hệ thống] ' || v_actor_name
-            || ' tự nộp và tự ghi nhận hoàn thành báo cáo của chính mình.');
+            v_actor_name || ' đã hoàn thành.');
   END IF;
 
   IF v_is_reopen THEN
     INSERT INTO task_comments (task_id, user_id, content)
     VALUES (p_task_id, v_uid,
-            '[Hệ thống] ' || v_actor_name
-            || ' trả lại báo cáo đã hoàn thành. Lý do: ' || p_comment);
+            v_actor_name || ' trả lại báo cáo đã hoàn thành. Lý do: ' || p_comment);
   ELSIF v_is_return_sub THEN
     INSERT INTO task_comments (task_id, user_id, content)
     VALUES (p_task_id, v_uid,
-            '[Hệ thống] ' || v_actor_name
-            || ' trả về báo cáo để sửa. Lý do: ' || p_comment);
+            v_actor_name || ' trả về báo cáo để sửa. Lý do: ' || p_comment);
   ELSIF p_comment IS NOT NULL AND length(trim(p_comment)) > 0 THEN
     INSERT INTO task_comments (task_id, user_id, content)
     VALUES (p_task_id, v_uid, p_comment);
@@ -410,7 +407,7 @@ BEGIN
 
   INSERT INTO task_comments (task_id, user_id, content)
   VALUES (p_task_id, v_uid,
-          '[Hệ thống] Đã hủy công việc' ||
+          'Đã hủy công việc' ||
           CASE WHEN p_reason IS NOT NULL AND length(trim(p_reason)) > 0
                THEN '. Lý do: ' || p_reason ELSE '' END);
 
@@ -510,7 +507,7 @@ BEGIN
         INSERT INTO notifications (user_id, title, content, type, link)
         VALUES (v_tp_id,
                 'Yêu cầu báo cáo định kỳ',
-                COALESCE(v_creator_name, '[Hệ thống]') || ' đã sinh tự động: ' || v_template.title,
+                COALESCE(v_creator_name, 'Hệ thống tự động') || ' đã sinh tự động: ' || v_template.title,
                 v_template.task_type,
                 '/dashboard/tasks?id=' || v_task_id::text);
 
@@ -538,7 +535,7 @@ BEGIN
           INSERT INTO notifications (user_id, title, content, type, link)
           VALUES (v_assignee,
                   'Công việc định kỳ',
-                  COALESCE(v_creator_name, '[Hệ thống]') || ' đã giao: ' || v_template.title,
+                  COALESCE(v_creator_name, 'Hệ thống tự động') || ' đã giao: ' || v_template.title,
                   v_template.task_type,
                   '/dashboard/tasks?id=' || v_task_id::text);
           v_count := v_count + 1;

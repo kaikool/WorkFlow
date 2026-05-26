@@ -54,13 +54,25 @@ export function TaskTimeline({ task }: Props) {
       });
     }
 
+    const systemPatterns = [
+      /đã hoàn thành\.?$/,
+      /trả lại báo cáo đã hoàn thành\. Lý do:/,
+      /trả về báo cáo để sửa\. Lý do:/,
+      /đã sửa:/,
+      /^Đã hủy công việc/,
+      /^Đã hoàn thành\.?$/
+    ];
+
     for (const c of task.comments ?? []) {
-      if (c.content.startsWith('[Hệ thống]')) {
+      const isSystem = c.content.startsWith('[Hệ thống]') || 
+                       c.content.startsWith('[sys]') ||
+                       systemPatterns.some(regex => regex.test(c.content));
+      if (isSystem) {
         list.push({
           time: c.created_at,
           icon: <AlertCircle className="icon-sm" />,
           tone: 'neutral',
-          text: <span className="italic">{c.content.replace('[Hệ thống]', '').trim()}</span>,
+          text: <span className="italic">{c.content.replace('[Hệ thống]', '').replace('[sys]', '').trim()}</span>,
         });
       }
     }

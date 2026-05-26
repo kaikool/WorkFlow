@@ -1,5 +1,7 @@
--- Bổ sung quyền Chủ động ghi nhận hoàn thành (Force Complete)
--- Cho phép Creator, Creator's Manager, Admin/Director được quyền chốt done từ mọi trạng thái (todo, doing, submitted)
+-- migration_tasks_self_approve_text_fix.sql
+-- Sửa đổi câu comment hệ thống khi Trưởng phòng tự nộp và tự duyệt báo cáo của chính mình,
+-- đồng thời loại bỏ hoàn toàn tiền tố "[Hệ thống]" ở tất cả comment audit tự động của hệ thống.
+-- Từ ngữ mới: "đã hoàn thành", "trả lại báo cáo...", "trả về báo cáo..." (không còn bất kỳ tiền tố nào).
 
 CREATE OR REPLACE FUNCTION task_update_status(
   p_task_id    UUID,
@@ -63,6 +65,7 @@ BEGIN
       v_is_return_sub := TRUE;
 
     ELSIF v_task.status = 'done' THEN
+      -- SỬA LUẬT: Lãnh đạo/Admin HOẶC Creator HOẶC Trưởng phòng Creator được quyền mở lại
       IF p_comment IS NULL OR length(trim(p_comment)) = 0 THEN
         RAISE EXCEPTION 'Vui lòng nhập lý do trả lại';
       END IF;
@@ -94,33 +97,28 @@ BEGIN
 
   ELSIF p_new_status = 'done' THEN
     IF v_task.task_type = 'task' THEN
-      IF NOT (v_is_assignee OR v_is_manager OR v_is_creator OR v_is_creator_manager OR v_is_top_admin) THEN
+      IF NOT (v_is_assignee OR v_is_manager) THEN
         RAISE EXCEPTION 'Bạn không có quyền hoàn thành công việc này';
       END IF;
       IF v_task.status NOT IN ('todo', 'doing') THEN
         RAISE EXCEPTION 'Không thể hoàn thành từ trạng thái hiện tại';
       END IF;
     ELSE
-      -- Report
       IF v_task.requires_approval = FALSE THEN
-        IF NOT (v_is_assignee OR v_is_creator OR v_is_creator_manager OR v_is_top_admin) THEN
-          RAISE EXCEPTION 'Bạn không có quyền ghi nhận hoàn thành báo cáo này';
+        IF NOT v_is_assignee THEN
+          RAISE EXCEPTION 'Chỉ người được giao mới được ghi nhận hoàn thành';
         END IF;
         IF v_task.status NOT IN ('todo', 'doing') THEN
           RAISE EXCEPTION 'Không thể hoàn thành từ trạng thái hiện tại';
         END IF;
         IF v_is_manager THEN v_self_approve := TRUE; END IF;
       ELSE
-        -- Report requires approval
         IF v_task.status = 'submitted' THEN
-          IF NOT (v_is_manager OR v_is_creator OR v_is_creator_manager OR v_is_top_admin) THEN
-            RAISE EXCEPTION 'Bạn không có quyền duyệt / ghi nhận báo cáo';
+          IF NOT v_is_manager THEN
+            RAISE EXCEPTION 'Chỉ Trưởng phòng được duyệt báo cáo';
           END IF;
         ELSIF v_task.status = 'doing' AND v_is_assignee AND v_is_manager THEN
           v_self_approve := TRUE;
-        ELSIF v_task.status IN ('todo', 'doing') AND (v_is_creator OR v_is_creator_manager OR v_is_top_admin) THEN
-          -- Force complete is allowed
-          v_self_approve := FALSE;
         ELSE
           RAISE EXCEPTION 'Báo cáo cần được nộp trước khi duyệt';
         END IF;

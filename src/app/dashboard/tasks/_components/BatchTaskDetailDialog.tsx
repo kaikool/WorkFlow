@@ -97,7 +97,7 @@ export function BatchTaskDetailDialog({ isOpen, setIsOpen, batchId, children, on
     let okCount = 0;
     let firstError: string | undefined;
     for (const child of pendingChildren) {
-      const res = await updateTaskStatus(child.id, 'done', '[Hệ thống] Đã ghi nhận hoàn thành.');
+      const res = await updateTaskStatus(child.id, 'done', '[sys] Đã hoàn thành.');
       if (res.ok) okCount += 1;
       else if (!firstError) firstError = res.error;
     }
