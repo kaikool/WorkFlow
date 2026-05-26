@@ -95,7 +95,7 @@ export function BatchTaskDetailDialog({ isOpen, setIsOpen, batchId, children, on
 
     setDeleting(true); // dùng chung state busy cho nhanh
     let okCount = 0;
-    let firstError: string | null = null;
+    let firstError: string | undefined;
     for (const child of pendingChildren) {
       const res = await updateTaskStatus(child.id, 'done', '[Hệ thống] Đã ghi nhận hoàn thành.');
       if (res.ok) okCount += 1;
@@ -124,7 +124,7 @@ export function BatchTaskDetailDialog({ isOpen, setIsOpen, batchId, children, on
 
     setDeleting(true);
     let okCount = 0;
-    let firstError: string | null = null;
+    let firstError: string | undefined;
     for (const child of children) {
       const res = await deleteTask(child.id);
       if (res.ok) okCount += 1;
