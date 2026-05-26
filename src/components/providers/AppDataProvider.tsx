@@ -42,17 +42,27 @@ export function AppDataProvider({ currentUserId, children }: Props) {
  const [outOfOffice, setOutOfOffice] = useState<Record<string, OutOfOfficeRecord>>({});
  const [hydrating, setHydrating] = useState(true);
 
- const fetchProfiles = useCallback(async () => {
- const { data, error } = await supabase
- .from('profiles')
- .select(PROFILES_SELECT)
- .eq('is_active', true)
- .order('full_name');
- if (error || !data) return;
- const list = data as unknown as Profile[];
- setProfiles(list);
- setCached(scope, 'profiles', list);
- }, [supabase, scope]);
+  const fetchProfiles = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select(PROFILES_SELECT)
+      .eq('is_active', true)
+      .order('full_name');
+    if (error || !data) return;
+    let list = data as unknown as Profile[];
+    
+    // Tìm profile của current user trong danh sách tải về
+    const me = list.find((p) => p.id === currentUserId);
+    const isMeAdmin = me?.role === 'admin';
+    
+    // Nếu tôi KHÔNG phải admin, ẩn toàn bộ các tài khoản Quản trị hệ thống (role = admin) khỏi danh sách tương tác
+    if (!isMeAdmin) {
+      list = list.filter((p) => p.role !== 'admin');
+    }
+    
+    setProfiles(list);
+    setCached(scope, 'profiles', list);
+  }, [supabase, scope, currentUserId]);
 
  const fetchDepartments = useCallback(async () => {
  const { data, error } = await supabase

@@ -2094,13 +2094,20 @@ CREATE OR REPLACE FUNCTION task_update_status(
 )
 RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE
-  v_uid          UUID := auth.uid();
-  v_role         TEXT;
-  v_dept         UUID;
-  v_task         tasks%ROWTYPE;
-  v_is_assignee  BOOLEAN;
-  v_is_manager   BOOLEAN;
-  v_actor_name   TEXT;
+  v_uid           UUID := auth.uid();
+  v_role          TEXT;
+  v_dept          UUID;
+  v_task          tasks%ROWTYPE;
+  v_creator_dept  UUID;
+  v_is_assignee   BOOLEAN;
+  v_is_manager    BOOLEAN;
+  v_is_top_admin  BOOLEAN;
+  v_is_creator    BOOLEAN;
+  v_is_creator_manager BOOLEAN;
+  v_actor_name    TEXT;
+  v_self_approve  BOOLEAN := FALSE;
+  v_is_reopen     BOOLEAN := FALSE;
+  v_is_return_sub BOOLEAN := FALSE;
 BEGIN
   IF v_uid IS NULL THEN RAISE EXCEPTION 'Chưa đăng nhập'; END IF;
   SELECT role, department_id, full_name INTO v_role, v_dept, v_actor_name
@@ -2112,37 +2119,58 @@ BEGIN
     RAISE EXCEPTION 'Bạn không có quyền với công việc này';
   END IF;
 
-  v_is_assignee := (v_task.assignee_id = v_uid)
-    OR EXISTS (SELECT 1 FROM task_assignees WHERE task_id = p_task_id AND user_id = v_uid);
-  v_is_manager  := v_role IN ('admin', 'director')
-    OR (v_role = 'manager' AND v_task.department_id = v_dept);
+  SELECT department_id INTO v_creator_dept FROM profiles WHERE id = v_task.created_by;
 
-  IF v_task.status = p_new_status THEN
-    RETURN;  -- no-op
-  END IF;
+  v_is_assignee  := (v_task.assignee_id = v_uid)
+    OR EXISTS (SELECT 1 FROM task_assignees WHERE task_id = p_task_id AND user_id = v_uid);
+  v_is_top_admin := v_role IN ('admin', 'director');
+  v_is_manager   := v_is_top_admin
+    OR (v_role = 'manager' AND v_task.department_id = v_dept);
+  v_is_creator   := v_task.created_by = v_uid;
+  v_is_creator_manager := (v_role = 'manager' AND v_dept = v_creator_dept);
+
+  IF v_task.status = p_new_status THEN RETURN; END IF;
 
   -- State machine
   IF p_new_status = 'canceled' THEN
     RAISE EXCEPTION 'Hãy dùng task_cancel để hủy công việc';
 
   ELSIF p_new_status = 'doing' THEN
-    IF NOT (v_is_assignee OR v_is_manager) THEN
-      RAISE EXCEPTION 'Bạn không có quyền chuyển trạng thái';
-    END IF;
-    IF v_task.status NOT IN ('todo', 'submitted') THEN
+    IF v_task.status NOT IN ('todo', 'submitted', 'done') THEN
       RAISE EXCEPTION 'Không thể chuyển sang Đang làm từ trạng thái hiện tại';
     END IF;
-    -- submitted → doing là "trả về", bắt buộc có comment
-    IF v_task.status = 'submitted' AND (p_comment IS NULL OR length(trim(p_comment)) = 0) THEN
-      RAISE EXCEPTION 'Vui lòng nhập lý do trả về';
-    END IF;
-    IF v_task.status = 'submitted' AND NOT v_is_manager THEN
-      RAISE EXCEPTION 'Chỉ Trưởng phòng được trả về báo cáo';
+
+    IF v_task.status = 'submitted' THEN
+      IF p_comment IS NULL OR length(trim(p_comment)) = 0 THEN
+        RAISE EXCEPTION 'Vui lòng nhập lý do trả về';
+      END IF;
+      IF NOT (v_is_manager OR v_is_creator OR v_is_creator_manager) THEN
+        RAISE EXCEPTION 'Bạn không có quyền trả về báo cáo này';
+      END IF;
+      v_is_return_sub := TRUE;
+
+    ELSIF v_task.status = 'done' THEN
+      IF p_comment IS NULL OR length(trim(p_comment)) = 0 THEN
+        RAISE EXCEPTION 'Vui lòng nhập lý do trả lại';
+      END IF;
+      IF NOT (v_is_manager OR v_is_creator OR v_is_creator_manager) THEN
+        RAISE EXCEPTION 'Chỉ người giao hoặc cấp có thẩm quyền mới được mở lại báo cáo.';
+      END IF;
+      v_is_reopen := TRUE;
+
+    ELSE
+      -- todo → doing
+      IF NOT (v_is_assignee OR v_is_manager) THEN
+        RAISE EXCEPTION 'Bạn không có quyền chuyển trạng thái';
+      END IF;
     END IF;
 
   ELSIF p_new_status = 'submitted' THEN
     IF v_task.task_type <> 'report' THEN
       RAISE EXCEPTION 'Chỉ báo cáo mới có trạng thái Đã nộp';
+    END IF;
+    IF NOT v_task.requires_approval THEN
+      RAISE EXCEPTION 'Báo cáo này không cần duyệt, hãy bấm Hoàn thành';
     END IF;
     IF NOT v_is_assignee THEN
       RAISE EXCEPTION 'Chỉ người được giao mới được nộp báo cáo';
@@ -2152,19 +2180,37 @@ BEGIN
     END IF;
 
   ELSIF p_new_status = 'done' THEN
-    IF v_task.task_type = 'report' THEN
-      IF v_task.status <> 'submitted' THEN
-        RAISE EXCEPTION 'Báo cáo cần được nộp trước khi duyệt';
-      END IF;
-      IF NOT v_is_manager THEN
-        RAISE EXCEPTION 'Chỉ Trưởng phòng được duyệt báo cáo';
-      END IF;
-    ELSE
-      IF NOT (v_is_assignee OR v_is_manager) THEN
+    IF v_task.task_type = 'task' THEN
+      IF NOT (v_is_assignee OR v_is_manager OR v_is_creator OR v_is_creator_manager OR v_is_top_admin) THEN
         RAISE EXCEPTION 'Bạn không có quyền hoàn thành công việc này';
       END IF;
       IF v_task.status NOT IN ('todo', 'doing') THEN
         RAISE EXCEPTION 'Không thể hoàn thành từ trạng thái hiện tại';
+      END IF;
+    ELSE
+      -- Report
+      IF v_task.requires_approval = FALSE THEN
+        IF NOT (v_is_assignee OR v_is_creator OR v_is_creator_manager OR v_is_top_admin) THEN
+          RAISE EXCEPTION 'Bạn không có quyền ghi nhận hoàn thành báo cáo này';
+        END IF;
+        IF v_task.status NOT IN ('todo', 'doing') THEN
+          RAISE EXCEPTION 'Không thể hoàn thành từ trạng thái hiện tại';
+        END IF;
+        IF v_is_manager THEN v_self_approve := TRUE; END IF;
+      ELSE
+        -- Report requires approval
+        IF v_task.status = 'submitted' THEN
+          IF NOT (v_is_manager OR v_is_creator OR v_is_creator_manager OR v_is_top_admin) THEN
+            RAISE EXCEPTION 'Bạn không có quyền duyệt / ghi nhận báo cáo';
+          END IF;
+        ELSIF v_task.status = 'doing' AND v_is_assignee AND v_is_manager THEN
+          v_self_approve := TRUE;
+        ELSIF v_task.status IN ('todo', 'doing') AND (v_is_creator OR v_is_creator_manager OR v_is_top_admin) THEN
+          -- Force complete
+          v_self_approve := FALSE;
+        ELSE
+          RAISE EXCEPTION 'Báo cáo cần được nộp trước khi duyệt';
+        END IF;
       END IF;
     END IF;
 
@@ -2177,10 +2223,39 @@ BEGIN
     RAISE EXCEPTION 'Trạng thái không hợp lệ: %', p_new_status;
   END IF;
 
-  UPDATE tasks SET status = p_new_status WHERE id = p_task_id;
+  -- Update trạng thái
+  IF v_is_reopen OR v_is_return_sub THEN
+    UPDATE tasks
+    SET status = p_new_status,
+        last_returned_at  = NOW(),
+        last_return_reason = p_comment
+    WHERE id = p_task_id;
+  ELSE
+    UPDATE tasks SET status = p_new_status WHERE id = p_task_id;
+  END IF;
 
-  -- System comment nếu có
-  IF p_comment IS NOT NULL AND length(trim(p_comment)) > 0 THEN
+  -- Ghi nhận lịch sử
+  IF v_self_approve THEN
+    INSERT INTO task_comments (task_id, user_id, content)
+    VALUES (p_task_id, v_uid,
+            v_actor_name || ' đã hoàn thành.');
+  ELSIF p_new_status = 'done' THEN
+    INSERT INTO task_comments (task_id, user_id, content)
+    VALUES (p_task_id, v_uid,
+            CASE WHEN v_task.task_type = 'report' AND v_task.status = 'submitted'
+                 THEN v_actor_name || ' đã duyệt báo cáo.'
+                 ELSE v_actor_name || ' đã hoàn thành.' END);
+  END IF;
+
+  IF v_is_reopen THEN
+    INSERT INTO task_comments (task_id, user_id, content)
+    VALUES (p_task_id, v_uid,
+            v_actor_name || ' trả lại báo cáo đã hoàn thành. Lý do: ' || p_comment);
+  ELSIF v_is_return_sub THEN
+    INSERT INTO task_comments (task_id, user_id, content)
+    VALUES (p_task_id, v_uid,
+            v_actor_name || ' trả về báo cáo để sửa. Lý do: ' || p_comment);
+  ELSIF p_comment IS NOT NULL AND length(trim(p_comment)) > 0 THEN
     INSERT INTO task_comments (task_id, user_id, content)
     VALUES (p_task_id, v_uid, p_comment);
   END IF;
@@ -2188,17 +2263,22 @@ BEGIN
   -- Notify (trừ actor + driver)
   INSERT INTO notifications (user_id, title, content, type, link)
   SELECT DISTINCT u,
-         'Trạng thái công việc đã đổi',
+         CASE WHEN v_is_reopen THEN 'Báo cáo bị trả lại'
+              WHEN v_is_return_sub THEN 'Báo cáo cần sửa lại'
+              ELSE 'Trạng thái công việc đã đổi' END,
          v_actor_name || ' → "' || v_task.title || '": ' ||
            CASE p_new_status
-             WHEN 'doing'     THEN 'Đang làm'
+             WHEN 'doing'     THEN
+               CASE WHEN v_is_reopen THEN 'Cần làm lại — ' || COALESCE(p_comment, '')
+                    WHEN v_is_return_sub THEN 'Trả về sửa — ' || COALESCE(p_comment, '')
+                    ELSE 'Đang làm' END
              WHEN 'submitted' THEN 'Đã nộp'
              WHEN 'done'      THEN 'Hoàn thành'
              WHEN 'todo'      THEN 'Chưa làm'
              ELSE p_new_status::text
            END,
          v_task.task_type,
-         '/dashboard/tasks/' || p_task_id::text
+         '/dashboard/tasks?id=' || p_task_id::text
   FROM (
     SELECT v_task.created_by AS u
     UNION
@@ -3396,14 +3476,20 @@ CREATE OR REPLACE FUNCTION task_update_status(
 )
 RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE
-  v_uid          UUID := auth.uid();
-  v_role         TEXT;
-  v_dept         UUID;
-  v_task         tasks%ROWTYPE;
-  v_is_assignee  BOOLEAN;
-  v_is_manager   BOOLEAN;
-  v_actor_name   TEXT;
-  v_self_approve BOOLEAN := FALSE;
+  v_uid           UUID := auth.uid();
+  v_role          TEXT;
+  v_dept          UUID;
+  v_task          tasks%ROWTYPE;
+  v_creator_dept  UUID;
+  v_is_assignee   BOOLEAN;
+  v_is_manager    BOOLEAN;
+  v_is_top_admin  BOOLEAN;
+  v_is_creator    BOOLEAN;
+  v_is_creator_manager BOOLEAN;
+  v_actor_name    TEXT;
+  v_self_approve  BOOLEAN := FALSE;
+  v_is_reopen     BOOLEAN := FALSE;
+  v_is_return_sub BOOLEAN := FALSE;
 BEGIN
   IF v_uid IS NULL THEN RAISE EXCEPTION 'Chưa đăng nhập'; END IF;
   SELECT role, department_id, full_name INTO v_role, v_dept, v_actor_name
@@ -3415,10 +3501,15 @@ BEGIN
     RAISE EXCEPTION 'Bạn không có quyền với công việc này';
   END IF;
 
-  v_is_assignee := (v_task.assignee_id = v_uid)
+  SELECT department_id INTO v_creator_dept FROM profiles WHERE id = v_task.created_by;
+
+  v_is_assignee  := (v_task.assignee_id = v_uid)
     OR EXISTS (SELECT 1 FROM task_assignees WHERE task_id = p_task_id AND user_id = v_uid);
-  v_is_manager  := v_role IN ('admin', 'director')
+  v_is_top_admin := v_role IN ('admin', 'director');
+  v_is_manager   := v_is_top_admin
     OR (v_role = 'manager' AND v_task.department_id = v_dept);
+  v_is_creator   := v_task.created_by = v_uid;
+  v_is_creator_manager := (v_role = 'manager' AND v_dept = v_creator_dept);
 
   IF v_task.status = p_new_status THEN RETURN; END IF;
 
@@ -3427,18 +3518,32 @@ BEGIN
     RAISE EXCEPTION 'Hãy dùng task_cancel để hủy công việc';
 
   ELSIF p_new_status = 'doing' THEN
-    IF NOT (v_is_assignee OR v_is_manager) THEN
-      RAISE EXCEPTION 'Bạn không có quyền chuyển trạng thái';
-    END IF;
-    IF v_task.status NOT IN ('todo', 'submitted') THEN
+    IF v_task.status NOT IN ('todo', 'submitted', 'done') THEN
       RAISE EXCEPTION 'Không thể chuyển sang Đang làm từ trạng thái hiện tại';
     END IF;
+
     IF v_task.status = 'submitted' THEN
       IF p_comment IS NULL OR length(trim(p_comment)) = 0 THEN
         RAISE EXCEPTION 'Vui lòng nhập lý do trả về';
       END IF;
-      IF NOT v_is_manager THEN
-        RAISE EXCEPTION 'Chỉ Trưởng phòng được trả về báo cáo';
+      IF NOT (v_is_manager OR v_is_creator OR v_is_creator_manager) THEN
+        RAISE EXCEPTION 'Bạn không có quyền trả về báo cáo này';
+      END IF;
+      v_is_return_sub := TRUE;
+
+    ELSIF v_task.status = 'done' THEN
+      IF p_comment IS NULL OR length(trim(p_comment)) = 0 THEN
+        RAISE EXCEPTION 'Vui lòng nhập lý do trả lại';
+      END IF;
+      IF NOT (v_is_manager OR v_is_creator OR v_is_creator_manager) THEN
+        RAISE EXCEPTION 'Chỉ người giao hoặc cấp có thẩm quyền mới được mở lại báo cáo.';
+      END IF;
+      v_is_reopen := TRUE;
+
+    ELSE
+      -- todo → doing
+      IF NOT (v_is_assignee OR v_is_manager) THEN
+        RAISE EXCEPTION 'Bạn không có quyền chuyển trạng thái';
       END IF;
     END IF;
 
@@ -3458,33 +3563,33 @@ BEGIN
 
   ELSIF p_new_status = 'done' THEN
     IF v_task.task_type = 'task' THEN
-      IF NOT (v_is_assignee OR v_is_manager) THEN
+      IF NOT (v_is_assignee OR v_is_manager OR v_is_creator OR v_is_creator_manager OR v_is_top_admin) THEN
         RAISE EXCEPTION 'Bạn không có quyền hoàn thành công việc này';
       END IF;
       IF v_task.status NOT IN ('todo', 'doing') THEN
         RAISE EXCEPTION 'Không thể hoàn thành từ trạng thái hiện tại';
       END IF;
     ELSE
-      -- Báo cáo
+      -- Report
       IF v_task.requires_approval = FALSE THEN
-        -- Không cần duyệt: assignee có thể done thẳng từ todo/doing
-        IF NOT v_is_assignee THEN
-          RAISE EXCEPTION 'Chỉ người được giao mới được ghi nhận hoàn thành';
+        IF NOT (v_is_assignee OR v_is_creator OR v_is_creator_manager OR v_is_top_admin) THEN
+          RAISE EXCEPTION 'Bạn không có quyền ghi nhận hoàn thành báo cáo này';
         END IF;
         IF v_task.status NOT IN ('todo', 'doing') THEN
           RAISE EXCEPTION 'Không thể hoàn thành từ trạng thái hiện tại';
         END IF;
-        -- Audit khi self-approve (assignee đồng thời là TP/admin/director của phòng)
         IF v_is_manager THEN v_self_approve := TRUE; END IF;
       ELSE
-        -- Có yêu cầu duyệt
+        -- Report requires approval
         IF v_task.status = 'submitted' THEN
-          IF NOT v_is_manager THEN
-            RAISE EXCEPTION 'Chỉ Trưởng phòng được duyệt báo cáo';
+          IF NOT (v_is_manager OR v_is_creator OR v_is_creator_manager OR v_is_top_admin) THEN
+            RAISE EXCEPTION 'Bạn không có quyền duyệt / ghi nhận báo cáo';
           END IF;
         ELSIF v_task.status = 'doing' AND v_is_assignee AND v_is_manager THEN
-          -- Self-approve: TP tự nộp + tự duyệt cùng lúc, có audit
           v_self_approve := TRUE;
+        ELSIF v_task.status IN ('todo', 'doing') AND (v_is_creator OR v_is_creator_manager OR v_is_top_admin) THEN
+          -- Force complete
+          v_self_approve := FALSE;
         ELSE
           RAISE EXCEPTION 'Báo cáo cần được nộp trước khi duyệt';
         END IF;
@@ -3500,25 +3605,54 @@ BEGIN
     RAISE EXCEPTION 'Trạng thái không hợp lệ: %', p_new_status;
   END IF;
 
-  UPDATE tasks SET status = p_new_status WHERE id = p_task_id;
+  -- Update trạng thái
+  IF v_is_reopen OR v_is_return_sub THEN
+    UPDATE tasks
+    SET status = p_new_status,
+        last_returned_at  = NOW(),
+        last_return_reason = p_comment
+    WHERE id = p_task_id;
+  ELSE
+    UPDATE tasks SET status = p_new_status WHERE id = p_task_id;
+  END IF;
 
+  -- Ghi nhận lịch sử
   IF v_self_approve THEN
     INSERT INTO task_comments (task_id, user_id, content)
     VALUES (p_task_id, v_uid,
             v_actor_name || ' đã hoàn thành.');
+  ELSIF p_new_status = 'done' THEN
+    INSERT INTO task_comments (task_id, user_id, content)
+    VALUES (p_task_id, v_uid,
+            CASE WHEN v_task.task_type = 'report' AND v_task.status = 'submitted'
+                 THEN v_actor_name || ' đã duyệt báo cáo.'
+                 ELSE v_actor_name || ' đã hoàn thành.' END);
   END IF;
 
-  IF p_comment IS NOT NULL AND length(trim(p_comment)) > 0 THEN
+  IF v_is_reopen THEN
+    INSERT INTO task_comments (task_id, user_id, content)
+    VALUES (p_task_id, v_uid,
+            v_actor_name || ' trả lại báo cáo đã hoàn thành. Lý do: ' || p_comment);
+  ELSIF v_is_return_sub THEN
+    INSERT INTO task_comments (task_id, user_id, content)
+    VALUES (p_task_id, v_uid,
+            v_actor_name || ' trả về báo cáo để sửa. Lý do: ' || p_comment);
+  ELSIF p_comment IS NOT NULL AND length(trim(p_comment)) > 0 THEN
     INSERT INTO task_comments (task_id, user_id, content)
     VALUES (p_task_id, v_uid, p_comment);
   END IF;
 
   INSERT INTO notifications (user_id, title, content, type, link)
   SELECT DISTINCT u,
-         'Trạng thái công việc đã đổi',
+         CASE WHEN v_is_reopen THEN 'Báo cáo bị trả lại'
+              WHEN v_is_return_sub THEN 'Báo cáo cần sửa lại'
+              ELSE 'Trạng thái công việc đã đổi' END,
          v_actor_name || ' → "' || v_task.title || '": ' ||
            CASE p_new_status
-             WHEN 'doing'     THEN 'Đang làm'
+             WHEN 'doing'     THEN
+               CASE WHEN v_is_reopen THEN 'Cần làm lại — ' || COALESCE(p_comment, '')
+                    WHEN v_is_return_sub THEN 'Trả về sửa — ' || COALESCE(p_comment, '')
+                    ELSE 'Đang làm' END
              WHEN 'submitted' THEN 'Đã nộp'
              WHEN 'done'      THEN 'Hoàn thành'
              WHEN 'todo'      THEN 'Chưa làm'
@@ -3960,16 +4094,20 @@ CREATE OR REPLACE FUNCTION task_update_status(
 )
 RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE
-  v_uid          UUID := auth.uid();
-  v_role         TEXT;
-  v_dept         UUID;
-  v_task         tasks%ROWTYPE;
-  v_is_assignee  BOOLEAN;
-  v_is_manager   BOOLEAN;
-  v_is_creator   BOOLEAN;
-  v_actor_name   TEXT;
-  v_self_approve BOOLEAN := FALSE;
-  v_is_reopen    BOOLEAN := FALSE;
+  v_uid           UUID := auth.uid();
+  v_role          TEXT;
+  v_dept          UUID;
+  v_task          tasks%ROWTYPE;
+  v_creator_dept  UUID;
+  v_is_assignee   BOOLEAN;
+  v_is_manager    BOOLEAN;
+  v_is_top_admin  BOOLEAN;
+  v_is_creator    BOOLEAN;
+  v_is_creator_manager BOOLEAN;
+  v_actor_name    TEXT;
+  v_self_approve  BOOLEAN := FALSE;
+  v_is_reopen     BOOLEAN := FALSE;
+  v_is_return_sub BOOLEAN := FALSE;
 BEGIN
   IF v_uid IS NULL THEN RAISE EXCEPTION 'Chưa đăng nhập'; END IF;
   SELECT role, department_id, full_name INTO v_role, v_dept, v_actor_name
@@ -3981,11 +4119,15 @@ BEGIN
     RAISE EXCEPTION 'Bạn không có quyền với công việc này';
   END IF;
 
-  v_is_assignee := (v_task.assignee_id = v_uid)
+  SELECT department_id INTO v_creator_dept FROM profiles WHERE id = v_task.created_by;
+
+  v_is_assignee  := (v_task.assignee_id = v_uid)
     OR EXISTS (SELECT 1 FROM task_assignees WHERE task_id = p_task_id AND user_id = v_uid);
-  v_is_manager  := v_role IN ('admin', 'director')
+  v_is_top_admin := v_role IN ('admin', 'director');
+  v_is_manager   := v_is_top_admin
     OR (v_role = 'manager' AND v_task.department_id = v_dept);
-  v_is_creator  := v_task.created_by = v_uid;
+  v_is_creator   := v_task.created_by = v_uid;
+  v_is_creator_manager := (v_role = 'manager' AND v_dept = v_creator_dept);
 
   IF v_task.status = p_new_status THEN RETURN; END IF;
 
@@ -3993,7 +4135,6 @@ BEGIN
     RAISE EXCEPTION 'Hãy dùng task_cancel để hủy công việc';
 
   ELSIF p_new_status = 'doing' THEN
-    -- Cho phép: todo → doing, submitted → doing (trả về), done → doing (reopen)
     IF v_task.status NOT IN ('todo', 'submitted', 'done') THEN
       RAISE EXCEPTION 'Không thể chuyển sang Đang làm từ trạng thái hiện tại';
     END IF;
@@ -4002,17 +4143,17 @@ BEGIN
       IF p_comment IS NULL OR length(trim(p_comment)) = 0 THEN
         RAISE EXCEPTION 'Vui lòng nhập lý do trả về';
       END IF;
-      IF NOT (v_is_manager OR v_is_creator) THEN
-        RAISE EXCEPTION 'Chỉ Trưởng phòng hoặc người tạo được trả về báo cáo';
+      IF NOT (v_is_manager OR v_is_creator OR v_is_creator_manager) THEN
+        RAISE EXCEPTION 'Bạn không có quyền trả về báo cáo này';
       END IF;
+      v_is_return_sub := TRUE;
 
     ELSIF v_task.status = 'done' THEN
-      -- Reopen: bắt buộc comment + chỉ creator/manager/admin/director
       IF p_comment IS NULL OR length(trim(p_comment)) = 0 THEN
         RAISE EXCEPTION 'Vui lòng nhập lý do trả lại';
       END IF;
-      IF NOT (v_is_manager OR v_is_creator) THEN
-        RAISE EXCEPTION 'Chỉ người tạo hoặc cấp duyệt được trả lại báo cáo đã hoàn thành';
+      IF NOT (v_is_manager OR v_is_creator OR v_is_creator_manager) THEN
+        RAISE EXCEPTION 'Chỉ người giao hoặc cấp có thẩm quyền mới được mở lại báo cáo.';
       END IF;
       v_is_reopen := TRUE;
 
@@ -4039,28 +4180,33 @@ BEGIN
 
   ELSIF p_new_status = 'done' THEN
     IF v_task.task_type = 'task' THEN
-      IF NOT (v_is_assignee OR v_is_manager) THEN
+      IF NOT (v_is_assignee OR v_is_manager OR v_is_creator OR v_is_creator_manager OR v_is_top_admin) THEN
         RAISE EXCEPTION 'Bạn không có quyền hoàn thành công việc này';
       END IF;
       IF v_task.status NOT IN ('todo', 'doing') THEN
         RAISE EXCEPTION 'Không thể hoàn thành từ trạng thái hiện tại';
       END IF;
     ELSE
+      -- Report
       IF v_task.requires_approval = FALSE THEN
-        IF NOT v_is_assignee THEN
-          RAISE EXCEPTION 'Chỉ người được giao mới được ghi nhận hoàn thành';
+        IF NOT (v_is_assignee OR v_is_creator OR v_is_creator_manager OR v_is_top_admin) THEN
+          RAISE EXCEPTION 'Bạn không có quyền ghi nhận hoàn thành báo cáo này';
         END IF;
         IF v_task.status NOT IN ('todo', 'doing') THEN
           RAISE EXCEPTION 'Không thể hoàn thành từ trạng thái hiện tại';
         END IF;
         IF v_is_manager THEN v_self_approve := TRUE; END IF;
       ELSE
+        -- Report requires approval
         IF v_task.status = 'submitted' THEN
-          IF NOT v_is_manager THEN
-            RAISE EXCEPTION 'Chỉ Trưởng phòng được duyệt báo cáo';
+          IF NOT (v_is_manager OR v_is_creator OR v_is_creator_manager OR v_is_top_admin) THEN
+            RAISE EXCEPTION 'Bạn không có quyền duyệt / ghi nhận báo cáo';
           END IF;
         ELSIF v_task.status = 'doing' AND v_is_assignee AND v_is_manager THEN
           v_self_approve := TRUE;
+        ELSIF v_task.status IN ('todo', 'doing') AND (v_is_creator OR v_is_creator_manager OR v_is_top_admin) THEN
+          -- Force complete
+          v_self_approve := FALSE;
         ELSE
           RAISE EXCEPTION 'Báo cáo cần được nộp trước khi duyệt';
         END IF;
@@ -4076,18 +4222,38 @@ BEGIN
     RAISE EXCEPTION 'Trạng thái không hợp lệ: %', p_new_status;
   END IF;
 
-  UPDATE tasks SET status = p_new_status WHERE id = p_task_id;
+  -- Update trạng thái
+  IF v_is_reopen OR v_is_return_sub THEN
+    UPDATE tasks
+    SET status = p_new_status,
+        last_returned_at  = NOW(),
+        last_return_reason = p_comment
+    WHERE id = p_task_id;
+  ELSE
+    UPDATE tasks SET status = p_new_status WHERE id = p_task_id;
+  END IF;
 
+  -- Ghi nhận lịch sử
   IF v_self_approve THEN
     INSERT INTO task_comments (task_id, user_id, content)
     VALUES (p_task_id, v_uid,
             v_actor_name || ' đã hoàn thành.');
+  ELSIF p_new_status = 'done' THEN
+    INSERT INTO task_comments (task_id, user_id, content)
+    VALUES (p_task_id, v_uid,
+            CASE WHEN v_task.task_type = 'report' AND v_task.status = 'submitted'
+                 THEN v_actor_name || ' đã duyệt báo cáo.'
+                 ELSE v_actor_name || ' đã hoàn thành.' END);
   END IF;
 
   IF v_is_reopen THEN
     INSERT INTO task_comments (task_id, user_id, content)
     VALUES (p_task_id, v_uid,
             v_actor_name || ' trả lại báo cáo đã hoàn thành. Lý do: ' || p_comment);
+  ELSIF v_is_return_sub THEN
+    INSERT INTO task_comments (task_id, user_id, content)
+    VALUES (p_task_id, v_uid,
+            v_actor_name || ' trả về báo cáo để sửa. Lý do: ' || p_comment);
   ELSIF p_comment IS NOT NULL AND length(trim(p_comment)) > 0 THEN
     INSERT INTO task_comments (task_id, user_id, content)
     VALUES (p_task_id, v_uid, p_comment);
@@ -4096,11 +4262,13 @@ BEGIN
   INSERT INTO notifications (user_id, title, content, type, link)
   SELECT DISTINCT u,
          CASE WHEN v_is_reopen THEN 'Báo cáo bị trả lại'
+              WHEN v_is_return_sub THEN 'Báo cáo cần sửa lại'
               ELSE 'Trạng thái công việc đã đổi' END,
          v_actor_name || ' → "' || v_task.title || '": ' ||
            CASE p_new_status
              WHEN 'doing'     THEN
                CASE WHEN v_is_reopen THEN 'Cần làm lại — ' || COALESCE(p_comment, '')
+                    WHEN v_is_return_sub THEN 'Trả về sửa — ' || COALESCE(p_comment, '')
                     ELSE 'Đang làm' END
              WHEN 'submitted' THEN 'Đã nộp'
              WHEN 'done'      THEN 'Hoàn thành'
@@ -5104,19 +5272,33 @@ CREATE TRIGGER trg_guard_task_assignee_role
 CREATE OR REPLACE FUNCTION guard_task_status_transition()
 RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE
-  v_uid  UUID := auth.uid();
-  v_role TEXT;
+  v_uid                 UUID := auth.uid();
+  v_role                TEXT;
+  v_dept                UUID;
+  v_creator_dept        UUID;
+  v_is_creator          BOOLEAN;
+  v_is_creator_manager  BOOLEAN;
+  v_is_assignee_manager BOOLEAN;
+  v_is_top_admin        BOOLEAN;
 BEGIN
   IF NEW.status IS DISTINCT FROM OLD.status THEN
-    SELECT role INTO v_role FROM profiles WHERE id = v_uid;
+    SELECT role, department_id INTO v_role, v_dept FROM profiles WHERE id = v_uid;
 
     IF OLD.status = 'todo' AND NEW.status = 'done' THEN
       RAISE EXCEPTION 'Công việc phải chuyển sang Đang làm trước khi hoàn thành';
     END IF;
 
-    IF OLD.status = 'done' AND NEW.status = 'doing'
-       AND NOT (v_role = 'admin' OR OLD.created_by = v_uid) THEN
-      RAISE EXCEPTION 'Chỉ người tạo hoặc Admin được mở lại công việc đã hoàn thành';
+    IF OLD.status = 'done' AND NEW.status = 'doing' THEN
+      SELECT department_id INTO v_creator_dept FROM profiles WHERE id = OLD.created_by;
+
+      v_is_creator          := (OLD.created_by = v_uid);
+      v_is_creator_manager  := (v_role = 'manager' AND v_dept = v_creator_dept);
+      v_is_assignee_manager := (v_role = 'manager' AND v_dept = OLD.department_id);
+      v_is_top_admin        := (v_role IN ('admin', 'director'));
+
+      IF NOT (v_is_creator OR v_is_creator_manager OR v_is_assignee_manager OR v_is_top_admin) THEN
+        RAISE EXCEPTION 'Chỉ người giao hoặc cấp có thẩm quyền mới được mở lại công việc.';
+      END IF;
     END IF;
   END IF;
 

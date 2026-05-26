@@ -76,19 +76,33 @@ CREATE TRIGGER trg_guard_task_assignee_role
 CREATE OR REPLACE FUNCTION guard_task_status_transition()
 RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE
-  v_uid  UUID := auth.uid();
-  v_role TEXT;
+  v_uid                 UUID := auth.uid();
+  v_role                TEXT;
+  v_dept                UUID;
+  v_creator_dept        UUID;
+  v_is_creator          BOOLEAN;
+  v_is_creator_manager  BOOLEAN;
+  v_is_assignee_manager BOOLEAN;
+  v_is_top_admin        BOOLEAN;
 BEGIN
   IF NEW.status IS DISTINCT FROM OLD.status THEN
-    SELECT role INTO v_role FROM profiles WHERE id = v_uid;
+    SELECT role, department_id INTO v_role, v_dept FROM profiles WHERE id = v_uid;
 
     IF OLD.status = 'todo' AND NEW.status = 'done' THEN
       RAISE EXCEPTION 'Công việc phải chuyển sang Đang làm trước khi hoàn thành';
     END IF;
 
-    IF OLD.status = 'done' AND NEW.status = 'doing'
-       AND NOT (v_role = 'admin' OR OLD.created_by = v_uid) THEN
-      RAISE EXCEPTION 'Chỉ người tạo hoặc Admin được mở lại công việc đã hoàn thành';
+    IF OLD.status = 'done' AND NEW.status = 'doing' THEN
+      SELECT department_id INTO v_creator_dept FROM profiles WHERE id = OLD.created_by;
+
+      v_is_creator          := (OLD.created_by = v_uid);
+      v_is_creator_manager  := (v_role = 'manager' AND v_dept = v_creator_dept);
+      v_is_assignee_manager := (v_role = 'manager' AND v_dept = OLD.department_id);
+      v_is_top_admin        := (v_role IN ('admin', 'director'));
+
+      IF NOT (v_is_creator OR v_is_creator_manager OR v_is_assignee_manager OR v_is_top_admin) THEN
+        RAISE EXCEPTION 'Chỉ người giao hoặc cấp có thẩm quyền mới được mở lại công việc.';
+      END IF;
     END IF;
   END IF;
 

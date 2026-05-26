@@ -1,8 +1,20 @@
--- migration_tasks_self_approve_text_fix.sql
--- Sửa đổi câu comment hệ thống khi Trưởng phòng tự nộp và tự duyệt báo cáo của chính mình,
--- đồng thời loại bỏ hoàn toàn tiền tố "[Hệ thống]" ở tất cả comment audit tự động của hệ thống.
--- Từ ngữ mới: "đã hoàn thành", "trả lại báo cáo...", "trả về báo cáo..." (không còn bất kỳ tiền tố nào).
+-- =====================================================================
+-- MIGRATION: REOPEN TASK LOGIC FIX & HIDE ALL USER-FACING ADMIN REFERENCES
+-- =====================================================================
+-- File: supabase/migration_tasks_reopen_and_hide_admin.sql
+--
+-- Nội dung:
+--  1) Cập nhật `task_update_status` (reopen done -> doing):
+--     - Cho phép: Creator, Trưởng phòng của Creator, Trưởng phòng của Assignee, Lãnh đạo/IT
+--     - Loại bỏ hoàn toàn nhãn "Admin" khỏi thông báo lỗi.
+--  2) Cập nhật Trigger function `guard_task_status_transition`:
+--     - Đồng bộ ma trận quyền mở lại (done -> doing).
+--     - Loại bỏ hoàn toàn nhãn "Admin" khỏi thông báo lỗi.
+--  3) Cập nhật `task_delete` và `task_edit`:
+--     - Loại bỏ hoàn toàn nhãn "Admin" khỏi thông báo lỗi.
+-- =====================================================================
 
+-- 1. Hàm cập nhật trạng thái công việc
 CREATE OR REPLACE FUNCTION task_update_status(
   p_task_id    UUID,
   p_new_status task_status,
@@ -65,7 +77,6 @@ BEGIN
       v_is_return_sub := TRUE;
 
     ELSIF v_task.status = 'done' THEN
-      -- SỬA LUẬT: LDP của Creator, LDP của Assignee, Creator được quyền mở lại
       IF p_comment IS NULL OR length(trim(p_comment)) = 0 THEN
         RAISE EXCEPTION 'Vui lòng nhập lý do trả lại';
       END IF;
@@ -122,7 +133,6 @@ BEGIN
         ELSIF v_task.status = 'doing' AND v_is_assignee AND v_is_manager THEN
           v_self_approve := TRUE;
         ELSIF v_task.status IN ('todo', 'doing') AND (v_is_creator OR v_is_creator_manager OR v_is_top_admin) THEN
-          -- Force complete
           v_self_approve := FALSE;
         ELSE
           RAISE EXCEPTION 'Báo cáo cần được nộp trước khi duyệt';
@@ -139,7 +149,7 @@ BEGIN
     RAISE EXCEPTION 'Trạng thái không hợp lệ: %', p_new_status;
   END IF;
 
-  -- Update trạng thái + (nếu return) gắn cờ truy vết
+  -- Update trạng thái
   IF v_is_reopen OR v_is_return_sub THEN
     UPDATE tasks
     SET status = p_new_status,
@@ -150,6 +160,7 @@ BEGIN
     UPDATE tasks SET status = p_new_status WHERE id = p_task_id;
   END IF;
 
+  -- Ghi nhận lịch sử
   IF v_self_approve THEN
     INSERT INTO task_comments (task_id, user_id, content)
     VALUES (p_task_id, v_uid,
@@ -203,6 +214,170 @@ BEGIN
     AND (SELECT role FROM profiles WHERE id = u) <> 'driver';
 END $$;
 
-GRANT EXECUTE ON FUNCTION task_update_status(UUID, task_status, TEXT) TO authenticated;
+
+-- 2. Hàm trigger bảo vệ trạng thái công việc
+CREATE OR REPLACE FUNCTION guard_task_status_transition()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  v_uid                 UUID := auth.uid();
+  v_role                TEXT;
+  v_dept                UUID;
+  v_creator_dept        UUID;
+  v_is_creator          BOOLEAN;
+  v_is_creator_manager  BOOLEAN;
+  v_is_assignee_manager BOOLEAN;
+  v_is_top_admin        BOOLEAN;
+BEGIN
+  IF NEW.status IS DISTINCT FROM OLD.status THEN
+    SELECT role, department_id INTO v_role, v_dept FROM profiles WHERE id = v_uid;
+
+    IF OLD.status = 'todo' AND NEW.status = 'done' THEN
+      RAISE EXCEPTION 'Công việc phải chuyển sang Đang làm trước khi hoàn thành';
+    END IF;
+
+    IF OLD.status = 'done' AND NEW.status = 'doing' THEN
+      SELECT department_id INTO v_creator_dept FROM profiles WHERE id = OLD.created_by;
+
+      v_is_creator          := (OLD.created_by = v_uid);
+      v_is_creator_manager  := (v_role = 'manager' AND v_dept = v_creator_dept);
+      v_is_assignee_manager := (v_role = 'manager' AND v_dept = OLD.department_id);
+      v_is_top_admin        := (v_role IN ('admin', 'director'));
+
+      IF NOT (v_is_creator OR v_is_creator_manager OR v_is_assignee_manager OR v_is_top_admin) THEN
+        RAISE EXCEPTION 'Chỉ người giao hoặc cấp có thẩm quyền mới được mở lại công việc.';
+      END IF;
+    END IF;
+  END IF;
+
+  RETURN NEW;
+END $$;
+
+
+-- 3. Hàm xóa công việc (hủy nhãn Admin)
+CREATE OR REPLACE FUNCTION task_delete(p_task_id UUID)
+RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  v_uid          UUID := auth.uid();
+  v_role         TEXT;
+  v_dept         UUID;
+  v_task         tasks%ROWTYPE;
+  v_creator_dept UUID;
+  v_is_top_admin BOOLEAN;
+  v_is_creator   BOOLEAN;
+  v_is_manager   BOOLEAN;
+  v_actor_name   TEXT;
+BEGIN
+  IF v_uid IS NULL THEN RAISE EXCEPTION 'Chưa đăng nhập'; END IF;
+  SELECT role, department_id, full_name INTO v_role, v_dept, v_actor_name FROM profiles WHERE id = v_uid;
+
+  SELECT * INTO v_task FROM tasks WHERE id = p_task_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Không tìm thấy công việc'; END IF;
+
+  SELECT department_id INTO v_creator_dept FROM profiles WHERE id = v_task.created_by;
+
+  v_is_top_admin := v_role IN ('admin', 'director');
+  v_is_creator   := v_task.created_by = v_uid;
+  v_is_manager   := v_role = 'manager' AND v_dept = v_creator_dept;
+
+  IF NOT (v_is_creator OR v_is_top_admin OR v_is_manager) THEN
+    RAISE EXCEPTION 'Chỉ người giao hoặc cấp có thẩm quyền mới được xoá công việc.';
+  END IF;
+
+  INSERT INTO notifications (user_id, title, content, type, link)
+  SELECT DISTINCT u,
+         'Công việc đã bị xóa',
+         v_actor_name || ' đã xóa: ' || v_task.title,
+         v_task.task_type,
+         '/dashboard/tasks'
+  FROM (
+    SELECT assignee_id AS u FROM tasks WHERE id = p_task_id
+    UNION
+    SELECT user_id FROM task_assignees WHERE task_id = p_task_id
+  ) tg
+  WHERE u IS NOT NULL AND u <> v_uid;
+
+  DELETE FROM task_extension_requests WHERE task_id = p_task_id;
+  DELETE FROM task_comments WHERE task_id = p_task_id;
+  DELETE FROM task_assignees WHERE task_id = p_task_id;
+  DELETE FROM tasks WHERE id = p_task_id;
+END $$;
+
+
+-- 4. Hàm sửa công việc (hủy nhãn Admin)
+CREATE OR REPLACE FUNCTION task_edit(
+  p_task_id     UUID,
+  p_title       TEXT,
+  p_description TEXT,
+  p_priority    task_priority,
+  p_due_date    TIMESTAMPTZ,
+  p_metadata    JSONB DEFAULT NULL
+)
+RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  v_uid          UUID := auth.uid();
+  v_role         TEXT;
+  v_dept         UUID;
+  v_task         tasks%ROWTYPE;
+  v_creator_dept UUID;
+  v_is_top_admin BOOLEAN;
+  v_is_creator   BOOLEAN;
+  v_is_manager   BOOLEAN;
+  v_actor_name   TEXT;
+BEGIN
+  IF v_uid IS NULL THEN RAISE EXCEPTION 'Chưa đăng nhập'; END IF;
+  SELECT role, department_id, full_name INTO v_role, v_dept, v_actor_name FROM profiles WHERE id = v_uid;
+
+  SELECT * INTO v_task FROM tasks WHERE id = p_task_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Không tìm thấy công việc'; END IF;
+
+  SELECT department_id INTO v_creator_dept FROM profiles WHERE id = v_task.created_by;
+
+  v_is_top_admin := v_role IN ('admin', 'director');
+  v_is_creator   := v_task.created_by = v_uid;
+  v_is_manager   := v_role = 'manager' AND v_dept = v_creator_dept;
+
+  IF NOT (v_is_creator OR v_is_top_admin OR v_is_manager) THEN
+    RAISE EXCEPTION 'Chỉ người giao hoặc cấp có thẩm quyền mới được sửa công việc.';
+  END IF;
+
+  IF v_task.status = 'canceled' THEN
+    RAISE EXCEPTION 'Không sửa được công việc đã huỷ';
+  END IF;
+  IF v_task.is_archived THEN
+    RAISE EXCEPTION 'Không sửa được công việc đã lưu trữ';
+  END IF;
+
+  IF p_title IS NULL OR length(trim(p_title)) = 0 THEN
+    RAISE EXCEPTION 'Tiêu đề không được trống';
+  END IF;
+  IF p_due_date IS NULL THEN
+    RAISE EXCEPTION 'Vui lòng chọn hạn hoàn thành';
+  END IF;
+
+  UPDATE tasks
+  SET title = p_title,
+      description = p_description,
+      priority = p_priority,
+      due_date = p_due_date,
+      metadata = COALESCE(p_metadata, metadata),
+      updated_at = NOW()
+  WHERE id = p_task_id;
+
+  INSERT INTO task_comments (task_id, user_id, content)
+  VALUES (p_task_id, v_uid, v_actor_name || ' đã cập nhật thông tin công việc.');
+
+  INSERT INTO notifications (user_id, title, content, type, link)
+  SELECT DISTINCT u,
+         'Công việc được cập nhật',
+         v_actor_name || ' đã cập nhật: ' || p_title,
+         v_task.task_type,
+         '/dashboard/tasks?id=' || p_task_id::text
+  FROM (
+    SELECT assignee_id AS u FROM tasks WHERE id = p_task_id
+    UNION
+    SELECT user_id FROM task_assignees WHERE task_id = p_task_id
+  ) tg
+  WHERE u IS NOT NULL AND u <> v_uid;
+END $$;
 
 NOTIFY pgrst, 'reload schema';

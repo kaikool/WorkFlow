@@ -205,10 +205,10 @@ export default function AdminPage() {
     <SelectValue />
     </SelectTrigger>
     <SelectContent className="rounded-xl border-none shadow-2xl">
-    <SelectItem value="admin">Admin</SelectItem>
-    <SelectItem value="director">Director</SelectItem>
-    <SelectItem value="manager">Manager</SelectItem>
-    <SelectItem value="staff">Staff</SelectItem>
+    <SelectItem value="admin">Quản trị hệ thống</SelectItem>
+    <SelectItem value="director">Ban Giám đốc</SelectItem>
+    <SelectItem value="manager">Trưởng phòng</SelectItem>
+    <SelectItem value="staff">Cán bộ</SelectItem>
     </SelectContent>
     </Select>
     </TableCell>

@@ -66,8 +66,8 @@ BEGIN
       IF p_comment IS NULL OR length(trim(p_comment)) = 0 THEN
         RAISE EXCEPTION 'Vui lòng nhập lý do trả lại';
       END IF;
-      IF NOT (v_is_top_admin OR v_is_creator OR v_is_creator_manager) THEN
-        RAISE EXCEPTION 'Chỉ Người tạo, Trưởng phòng người tạo hoặc Lãnh đạo/Admin được trả lại báo cáo đã hoàn thành';
+      IF NOT (v_is_manager OR v_is_creator OR v_is_creator_manager) THEN
+        RAISE EXCEPTION 'Chỉ người giao hoặc cấp có thẩm quyền mới được mở lại báo cáo.';
       END IF;
       v_is_reopen := TRUE;
 
@@ -151,6 +151,12 @@ BEGIN
     INSERT INTO task_comments (task_id, user_id, content)
     VALUES (p_task_id, v_uid,
             v_actor_name || ' đã hoàn thành.');
+  ELSIF p_new_status = 'done' THEN
+    INSERT INTO task_comments (task_id, user_id, content)
+    VALUES (p_task_id, v_uid,
+            CASE WHEN v_task.task_type = 'report' AND v_task.status = 'submitted'
+                 THEN v_actor_name || ' đã duyệt báo cáo.'
+                 ELSE v_actor_name || ' đã hoàn thành.' END);
   END IF;
 
   IF v_is_reopen THEN

@@ -33,7 +33,7 @@ BEGIN
   v_is_manager   := v_role = 'manager' AND v_dept = v_creator_dept;
 
   IF NOT (v_is_creator OR v_is_top_admin OR v_is_manager) THEN
-    RAISE EXCEPTION 'Chỉ người tạo, Trưởng phòng người tạo hoặc Lãnh đạo/Admin được xoá công việc';
+    RAISE EXCEPTION 'Chỉ người giao hoặc cấp có thẩm quyền mới được xoá công việc.';
   END IF;
 
   -- Bắn notification cho những người được giao trước khi hard delete (không trỏ link chi tiết vì task bị xóa)
@@ -99,7 +99,7 @@ BEGIN
   v_is_manager   := v_role = 'manager' AND v_dept = v_creator_dept;
 
   IF NOT (v_is_creator OR v_is_top_admin OR v_is_manager) THEN
-    RAISE EXCEPTION 'Chỉ người tạo, Trưởng phòng người tạo hoặc Lãnh đạo/Admin được sửa công việc';
+    RAISE EXCEPTION 'Chỉ người giao hoặc cấp có thẩm quyền mới được sửa công việc.';
   END IF;
 
   IF v_task.status = 'canceled' THEN
@@ -243,12 +243,12 @@ BEGIN
       v_is_return_sub := TRUE;
 
     ELSIF v_task.status = 'done' THEN
-      -- SỬA LUẬT: Lãnh đạo/Admin HOẶC Creator HOẶC Trưởng phòng Creator được quyền mở lại
+      -- SỬA LUẬT: LDP của Creator, LDP của Assignee, Creator được quyền mở lại
       IF p_comment IS NULL OR length(trim(p_comment)) = 0 THEN
         RAISE EXCEPTION 'Vui lòng nhập lý do trả lại';
       END IF;
-      IF NOT (v_is_top_admin OR v_is_creator OR v_is_creator_manager) THEN
-        RAISE EXCEPTION 'Chỉ Người tạo, Trưởng phòng người tạo hoặc Lãnh đạo/Admin được trả lại báo cáo đã hoàn thành';
+      IF NOT (v_is_manager OR v_is_creator OR v_is_creator_manager) THEN
+        RAISE EXCEPTION 'Chỉ người giao hoặc cấp có thẩm quyền mới được mở lại báo cáo.';
       END IF;
       v_is_reopen := TRUE;
 
@@ -275,28 +275,33 @@ BEGIN
 
   ELSIF p_new_status = 'done' THEN
     IF v_task.task_type = 'task' THEN
-      IF NOT (v_is_assignee OR v_is_manager) THEN
+      IF NOT (v_is_assignee OR v_is_manager OR v_is_creator OR v_is_creator_manager OR v_is_top_admin) THEN
         RAISE EXCEPTION 'Bạn không có quyền hoàn thành công việc này';
       END IF;
       IF v_task.status NOT IN ('todo', 'doing') THEN
         RAISE EXCEPTION 'Không thể hoàn thành từ trạng thái hiện tại';
       END IF;
     ELSE
+      -- Report
       IF v_task.requires_approval = FALSE THEN
-        IF NOT v_is_assignee THEN
-          RAISE EXCEPTION 'Chỉ người được giao mới được ghi nhận hoàn thành';
+        IF NOT (v_is_assignee OR v_is_creator OR v_is_creator_manager OR v_is_top_admin) THEN
+          RAISE EXCEPTION 'Bạn không có quyền ghi nhận hoàn thành báo cáo này';
         END IF;
         IF v_task.status NOT IN ('todo', 'doing') THEN
           RAISE EXCEPTION 'Không thể hoàn thành từ trạng thái hiện tại';
         END IF;
         IF v_is_manager THEN v_self_approve := TRUE; END IF;
       ELSE
+        -- Report requires approval
         IF v_task.status = 'submitted' THEN
-          IF NOT v_is_manager THEN
-            RAISE EXCEPTION 'Chỉ Trưởng phòng được duyệt báo cáo';
+          IF NOT (v_is_manager OR v_is_creator OR v_is_creator_manager OR v_is_top_admin) THEN
+            RAISE EXCEPTION 'Bạn không có quyền duyệt / ghi nhận báo cáo';
           END IF;
         ELSIF v_task.status = 'doing' AND v_is_assignee AND v_is_manager THEN
           v_self_approve := TRUE;
+        ELSIF v_task.status IN ('todo', 'doing') AND (v_is_creator OR v_is_creator_manager OR v_is_top_admin) THEN
+          -- Force complete: creator/creator_manager/admin ghi nhận hoàn thành
+          v_self_approve := FALSE;
         ELSE
           RAISE EXCEPTION 'Báo cáo cần được nộp trước khi duyệt';
         END IF;
@@ -327,6 +332,12 @@ BEGIN
     INSERT INTO task_comments (task_id, user_id, content)
     VALUES (p_task_id, v_uid,
             v_actor_name || ' đã hoàn thành.');
+  ELSIF p_new_status = 'done' THEN
+    INSERT INTO task_comments (task_id, user_id, content)
+    VALUES (p_task_id, v_uid,
+            CASE WHEN v_task.task_type = 'report' AND v_task.status = 'submitted'
+                 THEN v_actor_name || ' đã duyệt báo cáo.'
+                 ELSE v_actor_name || ' đã hoàn thành.' END);
   END IF;
 
   IF v_is_reopen THEN

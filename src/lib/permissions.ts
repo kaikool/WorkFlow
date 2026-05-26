@@ -191,16 +191,19 @@ export function canRejectSubmission(
   return profile.role === 'manager' && profile.department_id === task.department_id;
 }
 
-// Mở lại báo cáo đã hoàn thành (done → doing) — người tạo + admin + manager của người tạo.
 export function canReopenDone(
   profile: any,
-  task: { status?: string | null; created_by?: string | null; creator?: { department_id?: string | null } | null } | null,
+  task: { status?: string | null; created_by?: string | null; department_id?: string | null; creator?: { department_id?: string | null } | null } | null,
 ): boolean {
   if (!profile || !task) return false;
   if (task.status !== 'done') return false;
   if (profile.role === 'admin' || profile.role === 'director') return true;
   if (task.created_by === profile.id) return true;
-  return profile.role === 'manager' && profile.department_id === task.creator?.department_id;
+  // Trưởng phòng của Người giao (Creator)
+  if (profile.role === 'manager' && profile.department_id === task.creator?.department_id) return true;
+  // Trưởng phòng của Người nhận (Assignee)
+  if (profile.role === 'manager' && profile.department_id === task.department_id) return true;
+  return false;
 }
 
 // Sửa nội dung công việc (title/description/priority/due_date) — creator + manager của creator + admin/director.
