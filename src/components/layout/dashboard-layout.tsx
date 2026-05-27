@@ -404,11 +404,10 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
  </div>
  </header>
 
- <MustChangePasswordBanner show={profile?.must_change_password === true} />
-
  <main
  className="relative flex-1 max-w-full overflow-x-hidden p-4 pb-mobile-nav lg:p-8"
  >
+ <MustChangePasswordBanner show={profile?.must_change_password === true} />
  {children}
  </main>
  <MobileBottomNav navItems={navItems} pathname={pathname} />
