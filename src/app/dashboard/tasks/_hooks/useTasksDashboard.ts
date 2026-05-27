@@ -94,12 +94,18 @@ export function useTasksDashboard(opts: UseTasksDashboardOptions = {}) {
 
   useEffect(() => {
     if (!enabled) return;
+    // Realtime narrowing: tách INSERT/UPDATE/DELETE — tránh '*' (bao gồm TRUNCATE).
+    // task_comments KHÔNG còn invalidate dashboard — comment chỉ ảnh hưởng detail dialog
+    // (channel `task_${taskId}` đã tự subscribe). Tiết kiệm refetch khi user comment task khác.
     const channel = supabase
       .channel('tasks_realtime_sync')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, scheduleRefetch)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'task_assignees' }, scheduleRefetch)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'task_extension_requests' }, scheduleRefetch)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'task_comments' }, scheduleRefetch)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'tasks' }, scheduleRefetch)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'tasks' }, scheduleRefetch)
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'tasks' }, scheduleRefetch)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'task_assignees' }, scheduleRefetch)
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'task_assignees' }, scheduleRefetch)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'task_extension_requests' }, scheduleRefetch)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'task_extension_requests' }, scheduleRefetch)
       .subscribe();
     return () => {
       if (refetchTimer.current) clearTimeout(refetchTimer.current);

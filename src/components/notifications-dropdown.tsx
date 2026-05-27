@@ -14,6 +14,7 @@ import { createClient } from "@/utils/supabase/client";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { notifySuccess } from "@/lib/notify";
+import { useAppData } from "@/hooks/use-app-data";
 
 export function NotificationsDropdown() {
   const [mounted, setMounted] = useState(false);
@@ -22,6 +23,7 @@ export function NotificationsDropdown() {
   const [unreadCount, setUnreadCount] = useState(0);
   const supabase = createClient();
   const router = useRouter();
+  const { currentProfile } = useAppData();
 
   useEffect(() => {
     setMounted(true);
@@ -29,20 +31,20 @@ export function NotificationsDropdown() {
     let active = true;
     let channel: any;
 
-    const setupNotifications = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user || !active) return;
+    const setupNotifications = () => {
+      const userId = currentProfile?.id;
+      if (!userId || !active) return;
 
-      fetchNotifications(user.id);
+      fetchNotifications(userId);
 
       // Khởi tạo channel và đăng ký sự kiện Trước khi subscribe
       channel = supabase
-        .channel(`notifications_realtime_${user.id}`)
+        .channel(`notifications_realtime_${userId}`)
         .on('postgres_changes', {
           event: 'INSERT',
           schema: 'public',
           table: 'notifications',
-          filter: `user_id=eq.${user.id}`
+          filter: `user_id=eq.${userId}`
         }, (payload: any) => {
           setNotifications(prev => [payload.new, ...prev].slice(0, 10));
           setUnreadCount(prev => prev + 1);
@@ -52,7 +54,9 @@ export function NotificationsDropdown() {
       channel.subscribe();
     };
 
-    setupNotifications();
+    if (currentProfile) {
+      setupNotifications();
+    }
 
     return () => {
       active = false;
@@ -60,7 +64,7 @@ export function NotificationsDropdown() {
         supabase.removeChannel(channel);
       }
     };
-  }, [supabase]);
+  }, [supabase, currentProfile]);
 
   const fetchNotifications = async (userId: string) => {
     setLoading(true);

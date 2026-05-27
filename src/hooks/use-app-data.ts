@@ -17,6 +17,11 @@ export interface AppDataValue {
  currentProfile: Profile | null;
  departments: any[];
  outOfOffice: Record<string, OutOfOfficeRecord>;
+ // Tài nguyên dùng chung (ít thay đổi — cache 24h, realtime invalidate):
+ // - vehicles kèm default_driver join
+ // - rooms (đơn thuần)
+ vehicles: any[];
+ rooms: any[];
  hydrating: boolean;
  refresh: () => Promise<void>;
 }

@@ -582,6 +582,33 @@ const handleSubmit = async () => {
 
 **Cấm hiển thị page-level error UI cho lỗi fetch list** — luôn fallback về empty state. Lý do: lỗi fetch tạm thời thường tự khỏi qua realtime.
 
+### 5.6 Bộ nhớ đệm dữ liệu dùng chung (AppDataProvider) & Tối ưu hóa Middleware cache
+
+Để tối ưu hóa hiệu năng, giảm số lượng truy vấn dư thừa lên cơ sở dữ liệu và đảm bảo tốc độ phản hồi tức thì cho người dùng:
+
+1. **Bộ nhớ đệm dữ liệu dùng chung (`AppDataProvider`)**:
+   - Cung cấp cơ chế lưu trữ đệm client-side (Stale-While-Revalidate) cho các dữ liệu ít biến động hoặc dùng chung ở nhiều trang: `profiles`, `departments`, `out_of_office` (vắng mặt tạm thời), cùng với **`vehicles`** (xe) và **`rooms`** (phòng họp).
+   - **Cổng phân quyền (Gate)**: Để tránh lãng phí kết nối Websocket và chặn các lỗi RLS đối với nhân viên thông thường, việc fetch danh sách và subscribe realtime `vehicles` & `rooms` được **gate nghiêm ngặt** theo phân quyền. Chỉ tải và sync các bảng này khi user có quyền điều phối hoặc tài xế chuyên trách (`canCoordinateSharedResources` hoặc `canUseDriverWorkspace`). Nếu không có quyền, state được gán là mảng rỗng `[]` và không subscribe channel tài nguyên.
+   - **Thời gian sống (TTL)**:
+     - `profiles`: 1 giờ (1h)
+     - `departments`: 24 giờ (24h)
+     - `ooo` (Out of Office): 30 phút (30m)
+     - `vehicles`: 24 giờ (24h) - Invalidated realtime (chỉ cho user có quyền)
+     - `rooms`: 24 giờ (24h) - Invalidated realtime (chỉ cho user có quyền)
+   - **Cơ chế hoạt động**:
+     - *Bước 1*: Đọc đồng bộ dữ liệu từ `localStorage` khi mount (tránh hydration mismatch) để render ngay lập tức (0ms delay).
+     - *Bước 2*: Thực hiện background fetch ( profiles/depts/ooo, cộng thêm vehicles/rooms nếu cache cũ ghi nhận user có quyền) để cập nhật state.
+     - *Bước 3*: Subscribe realtime channel `app_data_sync` cho profiles/depts/ooo, và channel `app_resource_sync` riêng biệt cho vehicles/rooms (chỉ mount khi có quyền thực tế).
+     - *Bước 4*: Dynamic upgrade/downgrade: Nếu profiles thay đổi và user được nâng cấp quyền, AppDataProvider sẽ tự động kích hoạt background fetch và subscribe Websocket cho các tài nguyên bổ sung, đảm bảo trải nghiệm liền mạch mà vẫn an toàn tuyệt đối.
+   - **Quy tắc sử dụng**: Tuyệt đối không tự fetch lại danh sách phòng ban (`departments`), xe (`vehicles`), hay phòng (`rooms`) trong các dialog/component con mà bắt buộc phải đọc trực tiếp từ `useAppData()` để tối ưu hóa hiệu năng.
+
+2. **Cơ chế Cookie Cache trong Middleware**:
+   - Để tối ưu hóa hot path và giảm tải cho DB trên mọi navigation, Middleware sử dụng một signed cookie (`wf_active_v1`) để cache trạng thái kích hoạt `is_active` của user với thời gian TTL là 60 giây (60s).
+   - **Nguyên lý hoạt động**:
+     - *Cache hit*: Nếu cookie cache hợp lệ và khớp với trạng thái hiện tại (`id:1` cho active, `id:0` cho inactive), bypass truy vấn profile từ DB.
+     - *Cache miss*: Nếu cookie hết hạn hoặc chưa có, Middleware sẽ truy cập Supabase SELECT để kiểm tra `is_active` thực tế, sau đó ghi đè cookie cache với thời hạn 60 giây.
+     - *Bảo mật*: Mặc dù user bị vô hiệu hóa có thể truy cập dashboard trễ tối đa 60 giây do cookie cache, mọi thao tác ghi/sửa dữ liệu (mutation) đều đi qua RPC/RLS ở backend và sẽ bị chặn ngay lập tức, đảm bảo an toàn tuyệt đối.
+
 ---
 
 ## 6. QUY CHUẨN TÍCH HỢP SUPABASE

@@ -115,22 +115,18 @@ export function useHandover(): UseHandoverState {
   // Realtime subscribe — bám sát pattern useSchedule
   useEffect(() => {
     if (!profile) return;
+    // Tách INSERT/UPDATE/DELETE để tránh subscribe TRUNCATE/replication không cần thiết.
+    // documents thay đổi thường xuyên → chỉ cần INSERT/UPDATE/DELETE thay vì '*'.
     const channel = supabase
       .channel("handover_realtime_sync")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "documents" }, scheduleRefetch)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "documents" }, scheduleRefetch)
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "documents" }, scheduleRefetch)
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "documents" },
-        scheduleRefetch
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "document_handovers" },
+        { event: "INSERT", schema: "public", table: "document_handovers" },
         (payload: any) => {
-          // Toast riêng khi có handover INSERT với receiver = me
-          if (
-            payload.eventType === "INSERT" &&
-            (payload.new as any)?.receiver_id === profile.id
-          ) {
+          if ((payload.new as any)?.receiver_id === profile.id) {
             toast({
               title: "Có hồ sơ mới chờ nhận",
               description: "Mở tab \"Đang giữ\" để xem chi tiết.",
@@ -139,11 +135,10 @@ export function useHandover(): UseHandoverState {
           scheduleRefetch();
         }
       )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "document_categories" },
-        scheduleRefetch
-      )
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "document_handovers" }, scheduleRefetch)
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "document_handovers" }, scheduleRefetch)
+      // document_categories ít khi đổi (admin thêm/sửa) — vẫn giữ '*' để đơn giản.
+      .on("postgres_changes", { event: "*", schema: "public", table: "document_categories" }, scheduleRefetch)
       .subscribe();
 
     return () => {

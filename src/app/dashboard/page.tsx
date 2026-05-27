@@ -19,6 +19,7 @@ import {
   canUseHumanResourcesWorkspace,
 } from '@/lib/permissions';
 import { useAppData } from '@/hooks/use-app-data';
+import { fetchScheduleData } from './schedule/_lib/fetchScheduleData';
 import DriverDashboardView from './_components/DriverDashboardView';
 import HRDashboardView from './_components/HRDashboardView';
 import CoordinatorDashboardView from './_components/CoordinatorDashboardView';
@@ -27,25 +28,24 @@ import { StatsSkeleton, ListSkeleton } from '@/components/ui/list-skeleton';
 
 interface LegacyScheduleState {
   schedules: any[];
-  vehicles: any[];
-  rooms: any[];
-  allProfiles: any[];
-  departments: any[];
 }
 
 const EMPTY_SCHEDULE: LegacyScheduleState = {
   schedules: [],
-  vehicles: [],
-  rooms: [],
-  allProfiles: [],
-  departments: [],
 };
 
 export default function DashboardPage() {
   const supabase = useMemo(() => createClient(), []);
   const { toast } = useToast();
   // Profiles + departments + profile của user lấy từ AppDataProvider (shared cache)
-  const { profiles: cachedProfiles, departments: cachedDepartments, currentProfile, hydrating } = useAppData();
+  const {
+    profiles: cachedProfiles,
+    departments: cachedDepartments,
+    vehicles: cachedVehicles,
+    rooms: cachedRooms,
+    currentProfile,
+    hydrating,
+  } = useAppData();
 
   const profile = currentProfile;
   const profileLoading = hydrating && !currentProfile;
@@ -81,53 +81,11 @@ export default function DashboardPage() {
   // Step 1: profile lấy từ AppDataProvider — không còn fetch riêng tại đây.
 
   // Step 2: legacy schedule fetch — chỉ chạy khi profile yêu cầu.
+  // Dùng helper chung fetchScheduleData (đã gộp 1 SELECT với OR condition).
+  // Vehicles/rooms/profiles/departments lấy từ AppDataProvider (cache 24h, realtime invalidate).
   const fetchScheduleDashboardData = async (currentProfile: any) => {
-    const start = startOfWeek(selectedDate, { weekStartsOn: 1 });
-    const end = new Date(Math.max(
-      endOfWeek(selectedDate, { weekStartsOn: 1 }).getTime(),
-      endOfDay(addDays(selectedDate, 3)).getTime(),
-    ));
-    const canSeePendingQueue = canCoordinateSharedResources(currentProfile);
-
-    const schedulesQuery = supabase
-      .from('schedules')
-      .select(`*, creator:profiles!schedules_created_by_fkey(full_name, title, avatar_url, department_id, role, is_department_head, departments(name)), room:rooms(name), vehicle:vehicles(name, plate_number), driver:profiles!schedules_driver_id_fkey(id, full_name, title, phone, avatar_url), participants:schedule_participants(profile:profiles(id, full_name, title, avatar_url, role, is_department_head, departments(name)))`)
-      .gte('end_time', start.toISOString())
-      .lte('start_time', end.toISOString())
-      .order('start_time');
-
-    const pendingQueueQuery = canSeePendingQueue
-      ? supabase
-          .from('schedules')
-          .select(`*, creator:profiles!schedules_created_by_fkey(full_name, title, avatar_url, department_id, role, is_department_head, departments(name)), room:rooms(name), vehicle:vehicles(name, plate_number), driver:profiles!schedules_driver_id_fkey(id, full_name, title, phone, avatar_url), participants:schedule_participants(profile:profiles(id, full_name, title, avatar_url, role, is_department_head, departments(name)))`)
-          .or('status.eq.pending,and(use_vehicle.eq.true,vehicle_id.is.null)')
-          .order('start_time')
-      : Promise.resolve({ data: [] as any[], error: null });
-
-    const [
-      { data: scheds, error: scheduleError },
-      { data: pendingQueue, error: pendingError },
-      { data: vehicles },
-      { data: rooms },
-    ] = await Promise.all([
-      schedulesQuery,
-      pendingQueueQuery,
-      supabase.from('vehicles').select('*, default_driver:profiles!vehicles_driver_id_fkey(id, full_name, phone)'),
-      supabase.from('rooms').select('*'),
-    ]);
-
-    if (scheduleError) throw scheduleError;
-    if (pendingError) throw pendingError;
-
-    setScheduleData({
-      schedules: [...(scheds || []), ...(pendingQueue || [])].filter((item, index, arr) => (
-        arr.findIndex((x: any) => x.id === item.id) === index
-      )),
-      vehicles: vehicles || [],
-      rooms: rooms || [],
-      allProfiles: cachedProfiles.filter((p: any) => p.role !== 'admin'),
-      departments: cachedDepartments,
-    });
+    const result = await fetchScheduleData(supabase, selectedDate, currentProfile);
+    setScheduleData({ schedules: result.schedules });
   };
 
   useEffect(() => {
@@ -144,7 +102,9 @@ export default function DashboardPage() {
       }
     })();
 
-    // Realtime hẹp cho legacy view — chỉ subscribe các bảng liên quan schedule.
+    // Realtime hẹp cho legacy view — chỉ subscribe schedule + participants.
+    // vehicles/rooms đã được AppDataProvider subscribe → không cần lặp lại ở đây.
+    // Tách INSERT/UPDATE/DELETE để DB chỉ broadcast khi cần (event:'*' bao gồm cả TRUNCATE).
     let refetchTimer: any = null;
     const scheduleRefetch = () => {
       if (refetchTimer) clearTimeout(refetchTimer);
@@ -154,10 +114,11 @@ export default function DashboardPage() {
     };
     const channel = supabase
       .channel('dashboard_legacy_schedule_sync')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'schedules' }, scheduleRefetch)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'schedule_participants' }, scheduleRefetch)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'vehicles' }, scheduleRefetch)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms' }, scheduleRefetch)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'schedules' }, scheduleRefetch)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'schedules' }, scheduleRefetch)
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'schedules' }, scheduleRefetch)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'schedule_participants' }, scheduleRefetch)
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'schedule_participants' }, scheduleRefetch)
       .subscribe();
 
     return () => {
@@ -252,7 +213,7 @@ export default function DashboardPage() {
       if (error) throw error;
 
       if (vehicleId && driverId && schedule) {
-        const vehicle = scheduleData.vehicles.find(v => v.id === vehicleId);
+        const vehicle = cachedVehicles.find((v: any) => v.id === vehicleId);
         await sendNotifications([{
           user_id: driverId,
           title: 'Bạn được phân công lịch chạy xe',
@@ -269,8 +230,8 @@ export default function DashboardPage() {
     }
   };
 
-  // Render: chờ profile xong rồi mới quyết định view.
-  if (profileLoading) {
+  // Render: chờ profile và cache hydrate xong rồi mới quyết định view.
+  if (profileLoading || (hydrating && needsLegacySchedule)) {
     return (
       <div className="page-container section-stack py-6">
         <StatsSkeleton count={3} />
@@ -310,7 +271,7 @@ export default function DashboardPage() {
     return (
       <HRDashboardView
         schedules={scheduleData.schedules}
-        allProfiles={scheduleData.allProfiles}
+        allProfiles={cachedProfiles.filter((p: any) => p.role !== 'admin')}
       />
     );
   }
@@ -332,10 +293,10 @@ export default function DashboardPage() {
       <CoordinatorDashboardView
         profile={profile}
         schedules={scheduleData.schedules}
-        vehicles={scheduleData.vehicles}
-        rooms={scheduleData.rooms}
-        allProfiles={scheduleData.allProfiles}
-        departments={scheduleData.departments}
+        vehicles={cachedVehicles}
+        rooms={cachedRooms}
+        allProfiles={cachedProfiles.filter((p: any) => p.role !== 'admin')}
+        departments={cachedDepartments}
         selectedDate={selectedDate}
         isTodaySelected={isTodaySelected}
         currentTimePercent={currentTimePercent}

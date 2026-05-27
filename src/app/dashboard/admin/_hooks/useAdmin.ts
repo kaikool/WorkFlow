@@ -8,11 +8,14 @@ import { useAppData } from "@/hooks/use-app-data";
 export function useAdmin() {
  const router = useRouter();
  const supabase = createClient();
- const { currentProfile } = useAppData();
+ // Profile/vệ sinh trích từ provider — và vehicles/rooms dùng chung TTL 24h
+ const { currentProfile, vehicles: cachedVehicles, rooms: cachedRooms, refresh: refreshAppData } = useAppData();
 
  const [loading, setLoading] = useState(true);
  const [userProfile, setUserProfile] = useState<any>(null);
  const [users, setUsers] = useState<any[]>([]);
+ // Vẫn giữ state local để sync với từng action create/update/delete cho UX mượt,
+ // nhưng KHÔNG fetch riêng từ DB nữa — nguồn ban đầu từ provider.
  const [rooms, setRooms] = useState<any[]>([]);
  const [vehicles, setVehicles] = useState<any[]>([]);
  const [stats, setStats] = useState({ tasks: 0, goals: 0, members: 0 });
@@ -63,12 +66,10 @@ export function useAdmin() {
 
  const fetchData = async () => {
  try {
- const { count: memberCount } = await supabase.from('profiles').select('*', { count: 'estimated', head: true });
  // Admin cần thấy CẢ inactive (để có thể kích hoạt lại) → vẫn fetch riêng,
  // không dùng useAppData (filter is_active=true).
+ const { count: memberCount } = await supabase.from('profiles').select('*', { count: 'estimated', head: true });
  const { data: userList } = await supabase.from('profiles').select('*, departments (name)').order('full_name');
- const { data: roomList } = await supabase.from('rooms').select('*').order('name');
- const { data: vehicleList } = await supabase.from('vehicles').select('*, driver:profiles!vehicles_driver_id_fkey(id, full_name, phone)').order('name');
  // Drivers cho dropdown — derive từ userList (đã có), khỏi fetch lại
  const driverList = (userList || []).filter((u: any) => u.role === 'driver').map((u: any) => ({
    id: u.id, full_name: u.full_name, phone: u.phone
@@ -76,13 +77,20 @@ export function useAdmin() {
 
  setStats({ tasks: 0, goals: 0, members: memberCount || 0 });
  setUsers(sortProfilesByHierarchy(userList || []));
- setRooms(roomList || []);
- setVehicles(vehicleList || []);
+ // Rooms / vehicles lấy từ AppDataProvider (TTL 24h, realtime invalidate),
+ // không fetch thêm round-trip nào.
+ setRooms(cachedRooms || []);
+ setVehicles(cachedVehicles || []);
  setDrivers(driverList);
  } catch (error) {
  notifyError(error, "Không tải được dữ liệu quản trị");
  }
  };
+
+ // Khi rooms/vehicles trong provider thay đổi (do realtime hoặc provider refresh),
+ // đồng bộ vào state local để UI nhảy kịp.
+ useEffect(() => { setRooms(cachedRooms || []); }, [cachedRooms]);
+ useEffect(() => { setVehicles(cachedVehicles || []); }, [cachedVehicles]);
 
  const handleUpdateRole = async (userId: string, newRole: any) => {
  try {

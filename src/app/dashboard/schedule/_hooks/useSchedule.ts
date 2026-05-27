@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -15,8 +15,14 @@ import { useAppData } from "@/hooks/use-app-data";
 export function useSchedule() {
   const supabase = createClient();
   const { toast } = useToast();
-  // Profiles/departments/currentProfile lấy từ AppDataProvider — không fetch lại
-  const { currentProfile, profiles: cachedProfiles, departments: cachedDepartments } = useAppData();
+  // Profiles/departments/vehicles/rooms/currentProfile lấy từ AppDataProvider — không fetch lại
+  const {
+    currentProfile,
+    profiles: cachedProfiles,
+    departments: cachedDepartments,
+    vehicles: cachedVehicles,
+    rooms: cachedRooms,
+  } = useAppData();
   // allProfiles của schedule cũ loại admin để giữ shape consumer
   const allProfiles = useMemo(() => cachedProfiles.filter((p: any) => p.role !== 'admin'), [cachedProfiles]);
   const profile = currentProfile;
@@ -51,10 +57,10 @@ export function useSchedule() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, pathname, router]);
 
-  // Dữ liệu chính
+  // Dữ liệu chính — schedules fetch riêng theo window; vehicles/rooms lấy từ provider.
   const [schedules, setSchedules] = useState<any[]>([]);
-  const [vehicles, setVehicles] = useState<any[]>([]);
-  const [rooms, setRooms] = useState<any[]>([]);
+  const vehicles = cachedVehicles;
+  const rooms = cachedRooms;
   const [loading, setLoading] = useState(true);
 
   // State điều hướng
@@ -200,32 +206,7 @@ export function useSchedule() {
     }
   }, [filterType, loading]);
 
-  // Fetch dữ liệu và kích hoạt Real-time đồng bộ (có debounce để giảm spam)
-  useEffect(() => {
-    setMounted(true);
-    fetchData();
-
-    let refetchTimer: any = null;
-    const scheduleRefetch = () => {
-      if (refetchTimer) clearTimeout(refetchTimer);
-      refetchTimer = setTimeout(() => { fetchData(); }, 600);
-    };
-
-    const channel = supabase
-      .channel('schedule_realtime_sync')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'schedules' }, scheduleRefetch)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'schedule_participants' }, scheduleRefetch)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'vehicles' }, scheduleRefetch)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms' }, scheduleRefetch)
-      .subscribe();
-
-    return () => {
-      if (refetchTimer) clearTimeout(refetchTimer);
-      supabase.removeChannel(channel);
-    };
-  }, [selectedDate]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const result = await fetchScheduleData(supabase, selectedDate, profile);
@@ -233,14 +214,50 @@ export function useSchedule() {
         setFilterDepts([profile.department_id]);
       }
       setSchedules(result.schedules);
-      setVehicles(result.vehicles);
-      setRooms(result.rooms);
     } catch (error) {
       notifyError(error, "Không tải được dữ liệu lịch trình");
     } finally {
       setLoading(false);
     }
-  };
+  }, [supabase, selectedDate, profile, filterDepts.length]);
+
+  const fetchDataRef = useRef(fetchData);
+  useEffect(() => {
+    fetchDataRef.current = fetchData;
+  });
+
+  // Fetch dữ liệu khi selectedDate thay đổi
+  useEffect(() => {
+    setMounted(true);
+    fetchData();
+  }, [selectedDate, fetchData]);
+
+  // Đăng ký kênh Real-time đồng bộ một lần duy nhất khi mount
+  useEffect(() => {
+    let refetchTimer: any = null;
+    const scheduleRefetch = () => {
+      if (refetchTimer) clearTimeout(refetchTimer);
+      refetchTimer = setTimeout(() => {
+        fetchDataRef.current();
+      }, 600);
+    };
+
+    // Realtime narrowing: tách INSERT/UPDATE/DELETE — tránh '*' (bao gồm TRUNCATE).
+    // vehicles/rooms đã được AppDataProvider subscribe → bỏ khỏi channel này.
+    const channel = supabase
+      .channel('schedule_realtime_sync')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'schedules' }, scheduleRefetch)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'schedules' }, scheduleRefetch)
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'schedules' }, scheduleRefetch)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'schedule_participants' }, scheduleRefetch)
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'schedule_participants' }, scheduleRefetch)
+      .subscribe();
+
+    return () => {
+      if (refetchTimer) clearTimeout(refetchTimer);
+      supabase.removeChannel(channel);
+    };
+  }, [supabase]);
 
   const findParticipantConflicts = async (params: {
     participantIds: string[];

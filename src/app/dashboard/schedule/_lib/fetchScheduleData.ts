@@ -1,5 +1,11 @@
 // Helper fetch dữ liệu lịch trình — tách khỏi useSchedule để giữ file gốc dưới 500 dòng.
-// Profiles/departments KHÔNG còn fetch ở đây — caller bơm vào từ AppDataProvider cache.
+// Profiles/departments/vehicles/rooms KHÔNG còn fetch ở đây — caller bơm vào từ AppDataProvider cache.
+//
+// Tối ưu Supabase queries (Gói D):
+//   Trước đây gộp schedulesQuery + pendingQueueQuery là 2 SELECT nặng trùng lặp,
+//   client merge dedupe → tốn ~2x payload.
+//   Bây giờ: 1 SELECT với điều kiện OR (window tuần) hoặc (pending) hoặc (use_vehicle
+//   AND vehicle_id IS NULL) — PostgREST xử lý dedupe ở DB, giảm payload + 1 round-trip.
 
 import { addDays, endOfDay, endOfWeek, startOfWeek } from "date-fns";
 import { canCoordinateSharedResources } from "@/lib/permissions";
@@ -8,8 +14,6 @@ const SCHEDULE_SELECT = `*, creator:profiles!schedules_created_by_fkey(full_name
 
 export interface FetchedScheduleData {
   schedules: any[];
-  vehicles: any[];
-  rooms: any[];
 }
 
 export async function fetchScheduleData(
@@ -23,44 +27,27 @@ export async function fetchScheduleData(
     endOfDay(addDays(selectedDate, 3)).getTime()
   ));
 
-  const schedulesQuery = supabase
+  const canSeePendingQueue = canCoordinateSharedResources(currentProfile);
+  const startIso = start.toISOString();
+  const endIso = end.toISOString();
+
+  // 1 SELECT duy nhất. Coordinator cần thêm pending queue (có thể ngoài window).
+  // Filter: (window tuần) hoặc (status=pending) hoặc (use_vehicle=true và chưa gán xe).
+  let query = supabase
     .from('schedules')
     .select(SCHEDULE_SELECT)
-    .gte('end_time', start.toISOString())
-    .lte('start_time', end.toISOString())
     .order('start_time');
 
-  const canSeePendingQueue = canCoordinateSharedResources(currentProfile);
-  const pendingQueueQuery = canSeePendingQueue
-    ? supabase
-        .from('schedules')
-        .select(SCHEDULE_SELECT)
-        .or('status.eq.pending,and(use_vehicle.eq.true,vehicle_id.is.null)')
-        .order('start_time')
-    : Promise.resolve({ data: [] as any[], error: null });
+  if (canSeePendingQueue) {
+    query = query.or(
+      `and(end_time.gte.${startIso},start_time.lte.${endIso}),status.eq.pending,and(use_vehicle.eq.true,vehicle_id.is.null)`
+    );
+  } else {
+    query = query.gte('end_time', startIso).lte('start_time', endIso);
+  }
 
-  const [
-    { data: scheds, error: sError },
-    { data: pendingQueue, error: pendingError },
-    { data: vData },
-    { data: rData },
-  ] = await Promise.all([
-    schedulesQuery,
-    pendingQueueQuery,
-    supabase.from('vehicles').select('*, default_driver:profiles!vehicles_driver_id_fkey(id, full_name, phone)'),
-    supabase.from('rooms').select('*'),
-  ]);
-
+  const { data: scheds, error: sError } = await query;
   if (sError) throw sError;
-  if (pendingError) throw pendingError;
 
-  const merged = [...(scheds || []), ...(pendingQueue || [])].filter(
-    (item, index, arr) => arr.findIndex((x: any) => x.id === item.id) === index
-  );
-
-  return {
-    schedules: merged,
-    vehicles: vData || [],
-    rooms: rData || [],
-  };
+  return { schedules: scheds || [] };
 }
