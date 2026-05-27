@@ -23,7 +23,7 @@ import {
   getProfileDepartmentCode,
 } from '@/lib/permissions';
 import { upsertRecurringTemplate } from '../_lib/recurringActions';
-import { fetchAssignableProfiles, fetchDepartments } from '../_lib/fetchTasks';
+import { fetchAssignableProfiles } from '../_lib/fetchTasks';
 import { PeoplePicker } from '@/components/ui/people-picker';
 import { DepartmentPicker } from '@/components/ui/department-picker';
 import { CronScheduleSelector } from './CronScheduleSelector';
@@ -38,10 +38,9 @@ interface Props {
 }
 
 export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }: Props) {
-  const { currentProfile } = useAppData();
+  const { currentProfile, departments: cachedDepts } = useAppData();
   const profile = currentProfile;
   const [profiles, setProfiles] = useState<any[]>([]);
-  const [departments, setDepartments] = useState<any[]>([]);
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -64,22 +63,18 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
   useEffect(() => {
     if (!isOpen || !profile) return;
     (async () => {
-      const [list, depts] = await Promise.all([
-        fetchAssignableProfiles({
-          context: taskType === 'task' ? 'create-task' : 'create-report',
-          caller: {
-            id: profile.id,
-            role: profile.role ?? null,
-            department_id: profile.department_id ?? null,
-            department_code: getProfileDepartmentCode(profile),
-          },
-        }),
-        fetchDepartments(),
-      ]);
+      const list = await fetchAssignableProfiles({
+        context: taskType === 'task' ? 'create-task' : 'create-report',
+        caller: {
+          id: profile.id,
+          role: profile.role ?? null,
+          department_id: profile.department_id ?? null,
+          department_code: getProfileDepartmentCode(profile),
+        },
+      });
       setProfiles(list);
-      setDepartments(depts);
     })();
-  }, [isOpen, profile?.id, taskType]);
+  }, [isOpen, profile?.id, taskType, cachedDepts]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -280,7 +275,7 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
               )}
               {target === 'department' ? (
                 <DepartmentPicker
-                  items={departments}
+                  items={cachedDepts}
                   selected={deptIds}
                   onChange={setDeptIds}
                   triggerLabel="Chọn phòng ban"

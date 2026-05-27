@@ -5454,6 +5454,29 @@ NOTIFY pgrst, 'reload schema';
 
 
 -- ==============================================================================
+-- 8. INDEXES TỐI ƯU TRUY VẤN
+-- ==============================================================================
+
+-- Các chỉ mục hỗ trợ module Hồ sơ vật lý (Handover) đã được mô tả trong docs nhưng thiếu ở SQL
+CREATE INDEX IF NOT EXISTS idx_documents_current_assignee ON documents(current_assignee_id);
+CREATE INDEX IF NOT EXISTS idx_documents_creator ON documents(creator_id);
+CREATE INDEX IF NOT EXISTS idx_documents_status ON documents(status);
+CREATE INDEX IF NOT EXISTS idx_handovers_doc_sent ON document_handovers(document_id, sent_at DESC);
+CREATE INDEX IF NOT EXISTS idx_handovers_receiver_pending ON document_handovers(receiver_id) WHERE status = 'PENDING';
+CREATE INDEX IF NOT EXISTS idx_handovers_sender ON document_handovers(sender_id);
+
+-- Chỉ mục hiệu năng cao hỗ trợ hàm kiểm tra bảo mật RLS luân chuyển hồ sơ
+CREATE INDEX IF NOT EXISTS idx_handovers_document_sender_receiver ON document_handovers(document_id, sender_id, receiver_id);
+
+-- Chỉ mục hiệu năng cao hỗ trợ tìm kiếm khoảng thời gian Lịch trình/Lịch họp
+CREATE INDEX IF NOT EXISTS idx_schedules_start_end ON schedules(start_time, end_time);
+
+-- Chỉ mục một phần (partial index) siêu tốc hỗ trợ thống kê danh sách Nghỉ phép trên Dashboard
+CREATE INDEX IF NOT EXISTS idx_schedules_active_leaves 
+ON schedules(start_time, end_time) 
+WHERE type = 'leave' AND status IN ('approved', 'in_progress');
+
+-- ==============================================================================
 -- Kết thúc consolidated schema. NOTIFY pgrst để Supabase reload PostgREST cache.
 -- ==============================================================================
 NOTIFY pgrst, 'reload schema';

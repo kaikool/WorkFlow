@@ -33,7 +33,7 @@ import {
   getProfileDepartmentCode,
 } from '@/lib/permissions';
 import { createTask } from '../_lib/taskActions';
-import { fetchAssignableProfiles, fetchDepartments } from '../_lib/fetchTasks';
+import { fetchAssignableProfiles } from '../_lib/fetchTasks';
 import { PeoplePicker } from '@/components/ui/people-picker';
 import { DepartmentPicker } from '@/components/ui/department-picker';
 import { TimePicker } from '@/components/ui/time-picker';
@@ -50,7 +50,6 @@ interface ProfileItem {
   departments?: { name?: string | null; code?: string | null } | null;
 }
 
-interface Department { id: string; name: string; code?: string | null }
 
 const createTaskSchema = z.object({
   formType: z.enum(['task', 'report']),
@@ -94,10 +93,9 @@ interface Props {
 }
 
 export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
-  const { currentProfile } = useAppData();
+  const { currentProfile, departments: cachedDepts } = useAppData();
   const profile = currentProfile;
   const [profiles, setProfiles] = useState<ProfileItem[]>([]);
-  const [departments, setDepartments] = useState<Department[]>([]);
   const [fetching, setFetching] = useState(true);
   const [loading, setLoading] = useState(false);
   const [isDateOpen, setIsDateOpen] = useState(false);
@@ -142,17 +140,15 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
           department_code: getProfileDepartmentCode(profile),
         },
       });
-      const depts = await fetchDepartments();
       if (!active) return;
       setProfiles(list as ProfileItem[]);
-      setDepartments(depts);
       if (profile.role === 'staff') {
         form.setValue('selectedAssignees', [profile.id], { shouldValidate: true });
       }
       setFetching(false);
     })();
     return () => { active = false; };
-  }, [isOpen, profile?.id, formType]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isOpen, profile?.id, formType, cachedDepts]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!canCrossDept) form.setValue('reportTarget', 'profile');
@@ -365,7 +361,7 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
                   </p>
                 ) : reportTarget === 'department' ? (
                   <DepartmentPicker
-                    items={departments}
+                    items={cachedDepts}
                     selected={selectedDepartments}
                     onChange={(ids) => form.setValue('selectedDepartments', ids, { shouldValidate: true })}
                     triggerLabel={formType === 'task' ? 'Chọn phòng ban nhận việc' : 'Chọn phòng ban nhận báo cáo'}
