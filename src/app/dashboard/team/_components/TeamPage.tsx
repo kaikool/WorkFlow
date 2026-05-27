@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useMemo, useState } from "react";
-import { Users, Cake, Plane, Sparkles } from "lucide-react";
+import { Users, Cake, Plane, Sparkles, UserMinus, UserPlus } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ListSkeleton } from "@/components/ui/list-skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -16,12 +16,12 @@ import OrgChartView from "./OrgChartView";
 
 // Container chính cho /dashboard/team — 1 view duy nhất (org-chart style).
 // Filter trạng thái = Tabs. Search dùng chung top nav (?q=...). Deep link ?id= mở dialog.
-const FILTER_TABS: Array<{ key: ProfileStatus | 'all'; label: string }> = [
-  { key: 'all', label: 'Tất cả' },
-  { key: 'on_leave', label: STATUS_BADGES.on_leave.label },
-  { key: 'on_trip', label: STATUS_BADGES.on_trip.label },
-  { key: 'birthday_today', label: 'Sinh nhật' },
-  { key: 'new_joiner', label: 'Mới vào' },
+const FILTER_TABS: Array<{ key: ProfileStatus | 'all'; label: string; icon: React.ReactNode }> = [
+  { key: 'all', label: 'Tất cả', icon: <Users className="h-4 w-4" /> },
+  { key: 'on_leave', label: STATUS_BADGES.on_leave.label, icon: <UserMinus className="h-4 w-4" /> },
+  { key: 'on_trip', label: STATUS_BADGES.on_trip.label, icon: <Plane className="h-4 w-4" /> },
+  { key: 'birthday_today', label: 'Sinh nhật', icon: <Cake className="h-4 w-4" /> },
+  { key: 'new_joiner', label: 'Mới vào', icon: <Sparkles className="h-4 w-4" /> },
 ];
 
 export default function TeamPage() {
@@ -136,9 +136,10 @@ export default function TeamPage() {
             <TabsTrigger
               key={opt.key}
               value={opt.key}
-              className="rounded-lg py-1.5 font-semibold text-[13px] flex items-center justify-center gap-1.5"
+              className="rounded-lg py-1.5 font-semibold text-[13px] flex items-center justify-center gap-1.5 px-1 md:px-3"
             >
-              <span className="truncate">{opt.label}</span>
+              {opt.icon}
+              <span className="truncate hidden md:inline-block">{opt.label}</span>
             </TabsTrigger>
           ))}
         </TabsList>
