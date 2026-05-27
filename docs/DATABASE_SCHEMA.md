@@ -520,7 +520,7 @@ CREATE TABLE recognitions (
 );
 ```
 
-- **RLS hiện tại (`schema.sql`)**: SELECT mở (`USING true`), INSERT chỉ `admin`/`director`. Module Team (`useRecognitions`) gọi INSERT trực tiếp, nên các role khác (`manager`/`staff`/`secretary`/`hr_officer`) hiện sẽ bị RLS chặn ở DB dù `canRecognize()` ở client cho phép. **TODO**: mở RLS cho `auth.uid() = sender_id AND role != 'driver'` để khớp business intent — chưa có migration làm việc này, code Team đã sẵn sàng.
+- **RLS hiện tại (`schema.sql`)**: SELECT mở (`USING true`), INSERT cho phép mọi cán bộ đang hoạt động ngoại trừ lái xe (`auth.uid() = sender_id AND role != 'driver' AND is_active = true`), khớp hoàn hảo với business intent và hàm `canRecognize()` của client.
 - Notification cho receiver được hook `useRecognitions` insert trực tiếp vào `notifications` (không qua trigger DB).
 
 #### `out_of_office` (Phase 2 — vắng mặt tạm thời)

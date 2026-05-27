@@ -516,6 +516,24 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["push_subscriptions"]["Insert"]>;
       };
 
+      out_of_office: {
+        Row: {
+          id: Uuid;
+          user_id: Uuid;
+          message: string;
+          ends_at: Timestamp;
+          created_at: Timestamp;
+        };
+        Insert: {
+          id?: Uuid;
+          user_id: Uuid;
+          message: string;
+          ends_at: Timestamp;
+          created_at?: Timestamp;
+        };
+        Update: Partial<Database["public"]["Tables"]["out_of_office"]["Insert"]>;
+      };
+
       account_requests: {
         Row: {
           id: Uuid;
@@ -595,6 +613,10 @@ export interface Database {
       auto_archive_and_cleanup: {
         Args: Record<string, never>;
         Returns: void;
+      };
+      cleanup_expired_ooo: {
+        Args: Record<string, never>;
+        Returns: number;
       };
 
       // --- Module Tasks (migration_tasks_revamp.sql) ---

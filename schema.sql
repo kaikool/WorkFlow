@@ -356,9 +356,12 @@ CREATE POLICY "Users can post comments" ON task_comments FOR INSERT WITH CHECK (
 
 DROP POLICY IF EXISTS "Anyone can view recognitions" ON recognitions;
 DROP POLICY IF EXISTS "Admins can create recognitions" ON recognitions;
+DROP POLICY IF EXISTS "Anyone active except driver can create recognitions" ON recognitions;
 CREATE POLICY "Anyone can view recognitions" ON recognitions FOR SELECT USING (true);
-CREATE POLICY "Admins can create recognitions" ON recognitions FOR INSERT WITH CHECK (
-    (SELECT role FROM profiles WHERE id = auth.uid()) IN ('admin', 'director')
+CREATE POLICY "Anyone active except driver can create recognitions" ON recognitions FOR INSERT WITH CHECK (
+    auth.uid() = sender_id AND
+    (SELECT role FROM profiles WHERE id = auth.uid()) != 'driver' AND
+    (SELECT is_active FROM profiles WHERE id = auth.uid()) = true
 );
 
 CREATE POLICY "Users can view own notifications" ON notifications FOR SELECT USING (auth.uid() = user_id);
