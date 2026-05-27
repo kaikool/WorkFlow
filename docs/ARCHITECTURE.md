@@ -600,10 +600,16 @@ const handleSubmit = async () => {
      - *Bước 2*: Thực hiện background fetch ( profiles/depts/ooo, cộng thêm vehicles/rooms nếu cache cũ ghi nhận user có quyền) để cập nhật state.
      - *Bước 3*: Subscribe realtime channel `app_data_sync` cho profiles/depts/ooo, và channel `app_resource_sync` riêng biệt cho vehicles/rooms (chỉ mount khi có quyền thực tế).
      - *Bước 4*: Dynamic upgrade/downgrade: Nếu profiles thay đổi và user được nâng cấp quyền, AppDataProvider sẽ tự động kích hoạt background fetch và subscribe Websocket cho các tài nguyên bổ sung, đảm bảo trải nghiệm liền mạch mà vẫn an toàn tuyệt đối.
+   - **Tối ưu payload**: Đối với user không phải admin, fetching profiles được filter ngay tại DB với `role != 'admin'` thay vì tải toàn bộ rồi lọc client-side, giúp giảm đáng kể dung lượng tải về (admin/director thường chiếm <5% tổng user). Admin vẫn fetch toàn bộ profiles không filter.
    - **Quy tắc sử dụng**: Tuyệt đối không tự fetch lại danh sách phòng ban (`departments`), xe (`vehicles`), hay phòng (`rooms`) trong các dialog/component con mà bắt buộc phải đọc trực tiếp từ `useAppData()` để tối ưu hóa hiệu năng.
 
 2. **Cơ chế Cookie Cache trong Middleware**:
    - Để tối ưu hóa hot path và giảm tải cho DB trên mọi navigation, Middleware sử dụng một signed cookie (`wf_active_v1`) để cache trạng thái kích hoạt `is_active` của user với thời gian TTL là 60 giây (60s).
+
+3. **In-memory cache dashboard_summary (30s TTL)**:
+   - Hook `useDashboardSummary` duy trì một module-level cache (`cachedData`) với TTL 30 giây để tránh gọi lại RPC `dashboard_summary()` khi người dùng chuyển tab/quay lại trong khoảng thời gian ngắn.
+   - Cache tự động invalidate mỗi khi có realtime event từ dashboard channel hoặc khi user gọi `refetch()` thủ công.
+   - Cơ chế stale-while-revalidate: cache cũ vẫn được dùng để render ngay, background fetch cập nhật sau.
    - **Nguyên lý hoạt động**:
      - *Cache hit*: Nếu cookie cache hợp lệ và khớp với trạng thái hiện tại (`id:1` cho active, `id:0` cho inactive), bypass truy vấn profile từ DB.
      - *Cache miss*: Nếu cookie hết hạn hoặc chưa có, Middleware sẽ truy cập Supabase SELECT để kiểm tra `is_active` thực tế, sau đó ghi đè cookie cache với thời hạn 60 giây.

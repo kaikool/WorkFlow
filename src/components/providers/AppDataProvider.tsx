@@ -102,23 +102,35 @@ export function AppDataProvider({ currentUserId, children }: Props) {
   }, [supabase, scope]);
 
   // 5. Tải danh sách profiles (có gate gọi thêm xe/phòng khi profiles đổi hoặc cache thay đổi)
+  //    Tối ưu: kiểm tra role của user hiện tại trước, rồi filter admin trong SQL
+  //    — tránh fetch toàn bộ admin profiles cho non-admin user.
   const fetchProfiles = useCallback(async () => {
-    const { data, error } = await supabase
+    // Bước 1: Lấy role của current user (1 row duy nhất — rất nhẹ)
+    const { data: meRow } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', currentUserId)
+      .single();
+    const isMeAdmin = meRow?.role === 'admin';
+
+    // Bước 2: Fetch profiles — nếu không phải admin, filter admin ngay trong SQL
+    let query = supabase
       .from('profiles')
       .select(PROFILES_SELECT)
-      .eq('is_active', true)
-      .order('full_name');
+      .eq('is_active', true);
+    if (!isMeAdmin) {
+      query = query.neq('role', 'admin');
+    }
+    const { data, error } = await query.order('full_name');
     if (error || !data) return;
     let list = data as unknown as Profile[];
     
-    // Tìm profile của current user trong danh sách tải về
-    const me = list.find((p) => p.id === currentUserId);
-    const isMeAdmin = me?.role === 'admin';
-    
     // Nếu tôi KHÔNG phải admin, ẩn toàn bộ các tài khoản Quản trị hệ thống (role = admin) khỏi danh sách tương tác
+    // (đã filter trong SQL ở bước 2, nhưng filter lại client để chắc chắn)
     if (!isMeAdmin) {
       list = list.filter((p) => p.role !== 'admin');
     }
+    const me = list.find((p) => p.id === currentUserId) ?? null;
     
     setProfiles(list);
     setCached(scope, 'profiles', list);

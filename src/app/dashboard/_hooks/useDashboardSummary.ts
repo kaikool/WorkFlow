@@ -2,6 +2,7 @@
 
 // Hook gọi RPC dashboard_summary() — gộp 13 round-trip cũ về 1.
 // Realtime hẹp: chỉ subscribe tasks + documents + document_handovers (3 bảng).
+// In-memory cache 30s: tránh gọi lại RPC khi user switch tab > quay lại (SPA).
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
@@ -18,8 +19,15 @@ const EMPTY_DATA: DashboardSummary = {
   counts: EMPTY_COUNTS,
   today_tasks: [],
   pending_docs: [],
+  today_leaves: [],
   role: 'staff',
 };
+
+// In-memory cache 30s — module-level, shared giữa các lần mount hook.
+// Khi cache còn hạn, trả về ngay mà không cần gọi RPC.
+// Khi realtime fire hoặc cache hết hạn → gọi RPC + cập nhật cache.
+const CACHE_TTL_MS = 30_000;
+let cachedData: { data: DashboardSummary; at: number } | null = null;
 
 export interface UseDashboardSummaryOptions {
   enabled?: boolean;
@@ -30,12 +38,25 @@ export function useDashboardSummary(opts: UseDashboardSummaryOptions = {}) {
   const enabled = opts.enabled ?? true;
 
   const [loading, setLoading] = useState(true);
-  const [data, setData] = useState<DashboardSummary>(EMPTY_DATA);
+  const [data, setData] = useState<DashboardSummary>(() => {
+    // Hydrate từ cache ngay lần render đầu — perceived instant
+    if (cachedData && Date.now() - cachedData.at < CACHE_TTL_MS) {
+      return cachedData.data;
+    }
+    return EMPTY_DATA;
+  });
 
   const refetchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchSummary = useCallback(async () => {
     if (!enabled) return;
+    
+    // Cache hit: nếu cache còn hạn (dưới 30s), không gọi RPC
+    if (cachedData && Date.now() - cachedData.at < CACHE_TTL_MS) {
+      setData(cachedData.data);
+      return;
+    }
+
     const { data: res, error } = await supabase.rpc('dashboard_summary');
     if (error) {
       // Log đầy đủ vì PostgrestError không stringify mặc định
@@ -43,15 +64,21 @@ export function useDashboardSummary(opts: UseDashboardSummaryOptions = {}) {
       return;
     }
     const r = res as unknown as DashboardSummary;
-    setData({
+    const summary: DashboardSummary = {
       counts: r?.counts ?? EMPTY_COUNTS,
       today_tasks: r?.today_tasks ?? [],
       pending_docs: r?.pending_docs ?? [],
+      today_leaves: r?.today_leaves ?? [],
       role: r?.role ?? 'staff',
-    });
+    };
+    // Ghi cache + state
+    cachedData = { data: summary, at: Date.now() };
+    setData(summary);
   }, [supabase, enabled]);
 
   const refetch = useCallback(async () => {
+    // Force refetch: clear cache rồi gọi lại
+    cachedData = null;
     await fetchSummary();
   }, [fetchSummary]);
 

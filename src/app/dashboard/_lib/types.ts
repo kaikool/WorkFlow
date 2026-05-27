@@ -48,9 +48,19 @@ export interface PendingDocItem {
   handovers: PendingDocHandover[] | null;
 }
 
+export interface TodayLeaveItem {
+  id: string;
+  type: string;
+  status: string;
+  start_time: string;
+  end_time: string;
+  created_by: string;
+}
+
 export interface DashboardSummary {
   counts: DashboardCounts;
   today_tasks: TodayTaskItem[];
   pending_docs: PendingDocItem[];
+  today_leaves: TodayLeaveItem[];
   role: string;
 }

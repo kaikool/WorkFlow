@@ -579,6 +579,9 @@ INSERT public (form `/register`), SELECT + UPDATE chỉ `admin`.
 | `idx_tasks_created_by` | tasks (`created_by`) | Tasks tôi tạo |
 | `idx_notifications_user_created` | notifications (`user_id, created_at DESC`) | Inbox notifications mới nhất |
 | `idx_schedule_participants_profile` | schedule_participants (`profile_id`) | Lịch tôi tham gia |
+| `idx_tasks_active_status` | tasks (`is_archived, status`) WHERE `is_archived = FALSE` | Dashboard + tasks_dashboard — quét task active nhanh hơn (partial index) |
+| `idx_task_assignees_task` | task_assignees (`task_id`) | Dashboard_summary CTE + tasks_dashboard — lookup assignee theo task |
+| `idx_handovers_receiver_status` | document_handovers (`receiver_id, status`) | Handover inbox + dashboard_summary pending_docs — lọc theo receiver + status |
 
 ---
 

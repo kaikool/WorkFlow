@@ -1129,6 +1129,16 @@ CREATE INDEX IF NOT EXISTS idx_kpis_assignee ON kpis(assignee_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_user_created ON notifications(user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_schedule_participants_profile ON schedule_participants(profile_id);
 
+CREATE INDEX IF NOT EXISTS idx_tasks_active_status 
+  ON tasks(is_archived, status) 
+  WHERE is_archived = FALSE;
+
+CREATE INDEX IF NOT EXISTS idx_task_assignees_task 
+  ON task_assignees(task_id);
+
+CREATE INDEX IF NOT EXISTS idx_handovers_receiver_status 
+  ON document_handovers(receiver_id, status);
+
 -- =====================================================
 -- 9. CHẶN GÁN XE TRÙNG LỊCH (TỪ DB LAYER)
 -- =====================================================
@@ -4707,6 +4717,7 @@ DECLARE
   v_counts    JSONB;
   v_today     JSONB;
   v_docs      JSONB;
+  v_leaves    JSONB;
 BEGIN
   IF v_uid IS NULL THEN
     RAISE EXCEPTION 'Chưa đăng nhập';
@@ -4833,9 +4844,27 @@ BEGIN
     ) d;
 
   RETURN jsonb_build_object(
+
+  -- 4) Today leaves: lịch nghỉ phép hôm nay
+  SELECT COALESCE(jsonb_agg(row_to_json(l.*) ORDER BY l.start_time), '[]'::jsonb)
+    INTO v_leaves
+    FROM (
+      SELECT s.id, s.title, s.status, s.start_time, s.end_time,
+             s.created_by, p.full_name AS creator_name,
+             p.avatar_url AS creator_avatar
+      FROM schedules s
+      LEFT JOIN profiles p ON p.id = s.created_by
+      WHERE s.type = 'leave'
+        AND s.status IN ('approved', 'in_progress')
+        AND s.start_time <= NOW()
+        AND s.end_time >= date_trunc('day', NOW())
+      ORDER BY s.start_time
+      LIMIT 20
+    ) l;
     'counts',       COALESCE(v_counts, jsonb_build_object('active',0,'urgent',0,'overdue',0,'done_today',0)),
     'today_tasks',  COALESCE(v_today, '[]'::jsonb),
     'pending_docs', COALESCE(v_docs,  '[]'::jsonb),
+    'today_leaves', COALESCE(v_leaves, '[]'::jsonb),
     'role',         v_role
   );
 END;
