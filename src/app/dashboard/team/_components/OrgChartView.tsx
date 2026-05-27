@@ -20,7 +20,7 @@ interface OrgChartViewProps {
 
 export default function OrgChartView({ members, onSelect, getStatus }: OrgChartViewProps) {
   const groups = useMemo(() => groupProfilesByDepartment(members as any), [members]);
-  const [openMap, setOpenMap] = useState<Record<string, boolean>>({ bgd: true });
+  const [openMap, setOpenMap] = useState<Record<string, boolean>>({});
 
   const toggle = (key: string) => setOpenMap((m) => ({ ...m, [key]: !m[key] }));
 
