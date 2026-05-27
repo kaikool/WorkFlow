@@ -16,7 +16,7 @@ export default function MustChangePasswordBanner({ show }: Props) {
   return (
     <Link
       href="/dashboard/profile#change-password"
-      className="block bg-amber-50 border-y border-amber-100 hover:bg-amber-100/70 transition-colors active:scale-[0.995]"
+      className="block bg-amber-50 border-y border-amber-100 hover:bg-amber-100/70 transition-colors active:scale-[0.995] -mb-2 lg:-mb-4 relative z-10"
     >
       <div className="page-container py-3 flex items-center gap-3">
         <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
