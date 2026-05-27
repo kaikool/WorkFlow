@@ -70,7 +70,6 @@ function OrgPerson({
   isHead: boolean;
   getStatus?: (m: any) => ProfileStatus;
 }) {
-  const role = ROLE_LABELS[member.role] ?? ROLE_LABELS.staff;
   const status: ProfileStatus = getStatus ? getStatus(member) : 'available';
   const statusBadge = STATUS_BADGES[status];
   const showStatusChip = status !== 'available';
@@ -104,7 +103,6 @@ function OrgPerson({
           {isHead && <Crown className="h-3.5 w-3.5 text-amber-600" />}
         </div>
         <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-          <Badge className={cn("text-[10px] font-bold px-1.5 py-0 rounded-md border-none", role.color)}>{role.label}</Badge>
           {member.title && <span className="text-meta truncate">{member.title}</span>}
           {showStatusChip && (
             <Badge className={cn("text-[10px] font-bold px-2 py-0 rounded-md border", statusBadge.chipClass)}>

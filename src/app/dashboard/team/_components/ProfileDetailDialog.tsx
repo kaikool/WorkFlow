@@ -62,7 +62,6 @@ export default function ProfileDetailDialog({
   const canEdit = canEditProfile(viewer, target);
   const canSendRecog = canRecognize(viewer) && !isSelf;
 
-  const role = target ? (ROLE_LABELS[target.role] ?? ROLE_LABELS.staff) : null;
   const statusMeta = STATUS_BADGES[status];
   const years = target ? getYearsOfService(target.branch_join_date) : null;
   const deptName = target?.departments?.name ?? (Array.isArray(target?.departments) ? target?.departments[0]?.name : null);
@@ -115,9 +114,6 @@ export default function ProfileDetailDialog({
                       <h2 className="heading-section break-words">{target.full_name}</h2>
                       {target.title && <p className="text-label truncate">{target.title}</p>}
                       <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
-                        {role && (
-                          <Badge className={cn("font-bold rounded-md border-none", role.color)}>{role.label}</Badge>
-                        )}
                         {status !== 'available' && (
                           <Badge className={cn("font-bold rounded-md border", statusMeta.chipClass)}>{statusMeta.label}</Badge>
                         )}
