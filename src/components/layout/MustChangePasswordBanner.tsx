@@ -14,18 +14,17 @@ interface Props {
 export default function MustChangePasswordBanner({ show }: Props) {
   if (!show) return null;
   return (
-    <Link
-      href="/dashboard/profile#change-password"
-      className="block bg-amber-50 border-y border-amber-100 hover:bg-amber-100/70 transition-colors active:scale-[0.995] -mb-2 lg:-mb-4 relative z-10"
-    >
-      <div className="page-container py-3 flex items-center gap-3">
+    <div className="page-container flex justify-center -mb-2 lg:-mb-4 relative z-10 pt-3 lg:pt-0">
+      <Link
+        href="/dashboard/profile#change-password"
+        className="inline-flex items-center gap-2 lg:gap-3 bg-amber-50 border border-amber-200 hover:bg-amber-100 transition-colors active:scale-[0.995] rounded-full px-4 py-2 shadow-sm max-w-full"
+      >
         <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
-        <p className="flex-1 text-sm font-semibold text-amber-800">
-          Bạn đang dùng mật khẩu mặc định — hãy đổi sang mật khẩu cá nhân để bảo mật.
-        </p>
-        <span className="text-xs font-bold text-amber-700 hidden sm:inline">Đổi ngay</span>
+        <span className="text-[13px] font-semibold text-amber-800 truncate">
+          Bạn đang dùng mật khẩu mặc định — hãy đổi mật khẩu cá nhân
+        </span>
         <ChevronRight className="h-4 w-4 text-amber-600 shrink-0" />
-      </div>
-    </Link>
+      </Link>
+    </div>
   );
 }
