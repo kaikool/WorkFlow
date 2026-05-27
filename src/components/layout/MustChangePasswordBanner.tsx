@@ -11,7 +11,7 @@ interface Props {
 export default function MustChangePasswordBanner({ show }: Props) {
   if (!show) return null;
   return (
-    <div className="page-container mb-6 animate-in fade-in slide-in-from-top-2">
+    <div className="max-w-[72rem] mx-auto px-[var(--app-page-x)] mb-6 animate-in fade-in slide-in-from-top-2">
       <Link
         href="/dashboard/profile#change-password"
         className="group relative flex items-center gap-3 lg:gap-4 overflow-hidden rounded-2xl border border-amber-200/50 bg-gradient-to-r from-amber-50 to-amber-100/30 p-3 lg:p-4 shadow-sm transition-all hover:border-amber-300 hover:shadow-md"
