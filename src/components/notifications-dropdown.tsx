@@ -22,7 +22,6 @@ export function NotificationsDropdown() {
   const [unreadCount, setUnreadCount] = useState(0);
   const supabase = createClient();
   const router = useRouter();
-  const unreadBadgeLabel = unreadCount > 9 ? "9+" : unreadCount;
 
   useEffect(() => {
     setMounted(true);
@@ -148,7 +147,13 @@ export function NotificationsDropdown() {
           <Bell className="h-5 w-5 text-slate-600" />
           {unreadCount > 0 && (
             <Badge className="absolute -top-1 -right-1 !flex !h-5 !min-h-5 !w-5 !min-w-5 items-center justify-center rounded-full border-2 border-white bg-red-600 !p-0 text-[10px] font-bold leading-none text-white tabular-nums">
-              {unreadBadgeLabel}
+              {unreadCount > 9 ? (
+                <span className="flex items-center justify-center translate-x-[0.5px]">
+                  9<span className="text-[7.5px] -ml-[0.5px] mt-[1px]">+</span>
+                </span>
+              ) : (
+                unreadCount
+              )}
             </Badge>
           )}
         </Button>
