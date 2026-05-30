@@ -28,6 +28,7 @@ export interface HandoverRow {
   sent_at: string;
   received_at: string | null;
   note: string | null;
+  reject_reason: string | null;
   created_at: string;
   sender?: DocumentProfileLite | null;
   receiver?: DocumentProfileLite | null;
@@ -50,7 +51,6 @@ export interface DocumentRow {
   creator?: DocumentProfileLite | null;
   current_assignee?: DocumentProfileLite | null;
   handovers?: HandoverRow[];
-  comments?: DocumentComment[];
 }
 
 export interface DocumentComment {

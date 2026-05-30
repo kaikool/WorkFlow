@@ -112,8 +112,13 @@ export default function HandoverTimeline({ document }: Props) {
             </p>
 
             {h.note && (
-              <p className="mt-2 text-[12px] text-slate-600 italic bg-slate-50 rounded-xl px-3 py-2">
-                "{h.note}"
+              <p className="mt-2 text-[12px] text-slate-600 bg-slate-50 rounded-xl px-3 py-2 whitespace-pre-wrap">
+                📝 {h.note}
+              </p>
+            )}
+            {h.status === "REJECTED" && h.reject_reason && (
+              <p className="mt-2 text-[12px] text-red-600 bg-red-50 rounded-xl px-3 py-2 whitespace-pre-wrap">
+                ↩ Lý do: {h.reject_reason}
               </p>
             )}
           </li>

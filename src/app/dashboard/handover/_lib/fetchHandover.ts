@@ -18,7 +18,7 @@ const LIST_SELECT = `
   creator:profiles!creator_id ( id, full_name, avatar_url, department_id, departments ( name ) ),
   current_assignee:profiles!current_assignee_id ( id, full_name, avatar_url, department_id, departments ( name ) ),
   handovers:document_handovers (
-    id, document_id, sender_id, receiver_id, status, sent_at, received_at, note, created_at,
+    id, document_id, sender_id, receiver_id, status, sent_at, received_at, note, reject_reason, created_at,
     sender:profiles!sender_id ( id, full_name, avatar_url ),
     receiver:profiles!receiver_id ( id, full_name, avatar_url )
   )
@@ -31,7 +31,7 @@ const DETAIL_SELECT = `
   creator:profiles!creator_id ( id, full_name, avatar_url, department_id, departments ( name ) ),
   current_assignee:profiles!current_assignee_id ( id, full_name, avatar_url, department_id, departments ( name ) ),
   handovers:document_handovers (
-    id, document_id, sender_id, receiver_id, status, sent_at, received_at, note, created_at,
+    id, document_id, sender_id, receiver_id, status, sent_at, received_at, note, reject_reason, created_at,
     sender:profiles!sender_id ( id, full_name, avatar_url, department_id, departments ( name ) ),
     receiver:profiles!receiver_id ( id, full_name, avatar_url, department_id, departments ( name ) )
   )
