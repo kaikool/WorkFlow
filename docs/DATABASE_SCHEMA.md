@@ -10,7 +10,7 @@
 4. [Schema chi tiết từng bảng](#4-schema-chi-tiết-từng-bảng)
    - 4.1 `auth.users` + `profiles`
    - 4.2 `departments`
-   - 4.3 `documents` + `document_handovers` + `document_categories`
+   - 4.3 `documents` + `document_handovers` + `document_categories` + `document_comments`
    - 4.4 `tasks` + `task_comments`
    - 4.5 `schedules` + `schedule_participants` + `rooms` + `vehicles`
    - 4.6 `notifications` + `push_subscriptions`
@@ -259,6 +259,21 @@ CREATE TABLE document_handovers (
 
 - **`ON DELETE CASCADE`** từ `documents` — xoá hồ sơ → xoá toàn bộ lịch sử handover của nó.
 - **`ON DELETE RESTRICT`** từ `profiles` — không cho xoá user còn lịch sử handover (bảo toàn dấu vết).
+
+#### `document_comments` (Ý kiến & Thảo luận hồ sơ)
+
+```sql
+CREATE TABLE document_comments (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    document_id     UUID NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+    user_id         UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+    content         TEXT NOT NULL,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+```
+
+- **`ON DELETE CASCADE`** — xoá hồ sơ hoặc xoá người dùng bình luận thì xoá bình luận đi kèm.
+- **Bảo mật RLS**: Kế thừa trực tiếp từ bảng `documents`. Chỉ cho phép những người được quyền xem hồ sơ (creator, current assignee, admin, director, hoặc người có trong luồng handover) được xem và viết bình luận.
 
 ### 4.4 Module Công việc
 

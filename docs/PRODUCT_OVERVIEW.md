@@ -646,7 +646,7 @@ Mỗi page chính subscribe 1 channel Supabase Realtime, refetch toàn list khi 
 | Channel | Sub-tables | Vị trí |
 |---------|-----------|--------|
 | `dashboard_sync` | tasks, recognitions, task_comments, schedules, schedule_participants, vehicles, rooms, documents, document_handovers | `/dashboard` |
-| `handover_realtime_sync` | documents, document_handovers, document_categories | `/dashboard/handover` |
+| `handover_realtime_sync` | documents, document_handovers, document_categories, document_comments | `/dashboard/handover` |
 | `schedule_realtime_sync` | schedules, schedule_participants, rooms, vehicles | `/dashboard/schedule` |
 | `notifications_realtime_<userId>` | notifications (filter user_id) | `<NotificationsDropdown>` |
 | `task_<id>` / `report_<id>` | tasks, task_comments | `/dashboard/tasks/[id]` |

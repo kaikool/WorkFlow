@@ -50,4 +50,14 @@ export interface DocumentRow {
   creator?: DocumentProfileLite | null;
   current_assignee?: DocumentProfileLite | null;
   handovers?: HandoverRow[];
+  comments?: DocumentComment[];
+}
+
+export interface DocumentComment {
+  id: string;
+  document_id: string;
+  user_id: string;
+  content: string;
+  created_at: string;
+  user?: DocumentProfileLite | null;
 }

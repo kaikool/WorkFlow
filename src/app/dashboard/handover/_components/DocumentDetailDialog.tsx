@@ -9,7 +9,12 @@ import {
   Undo2,
   User,
   Building2,
+  Send,
 } from "lucide-react";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Textarea } from "@/components/ui/textarea";
+import { fetchDocumentComments, addDocumentComment } from "../_lib/commentActions";
+import type { DocumentComment } from "../_lib/types";
 import {
   Dialog,
   DialogContent,
@@ -60,18 +65,89 @@ export default function DocumentDetailDialog({
   const [isReturnOpen, setIsReturnOpen] = React.useState(false);
   const [lightboxIndex, setLightboxIndex] = React.useState<number | null>(null);
 
+  // States for comments
+  const [comments, setComments] = React.useState<DocumentComment[]>([]);
+  const [loadingComments, setLoadingComments] = React.useState(false);
+  const [newComment, setNewComment] = React.useState("");
+  const [submittingComment, setSubmittingComment] = React.useState(false);
+
   const refetch = React.useCallback(async () => {
     if (!documentId) return;
     setLoading(true);
     const fresh = await fetchDocumentById(documentId);
     setDoc(fresh);
     setLoading(false);
+
+    setLoadingComments(true);
+    const freshComments = await fetchDocumentComments(documentId);
+    setComments(freshComments);
+    setLoadingComments(false);
   }, [documentId]);
 
   React.useEffect(() => {
-    if (isOpen && documentId) refetch();
-    if (!isOpen) setDoc(null);
+    if (!isOpen || !documentId) {
+      setDoc(null);
+      setComments([]);
+      return;
+    }
+
+    refetch();
+
+    // Subscribe to realtime for document_comments
+    const { createClient } = require("@/utils/supabase/client");
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`doc_comments_${documentId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "document_comments",
+          filter: `document_id=eq.${documentId}`,
+        },
+        async (payload: any) => {
+          const { data: userProfile } = await supabase
+            .from("profiles")
+            .select("id, full_name, avatar_url, department_id, departments(name)")
+            .eq("id", payload.new.user_id)
+            .single();
+
+          const freshComment: DocumentComment = {
+            ...payload.new,
+            user: userProfile,
+          };
+
+          setComments((prev) => {
+            if (prev.some((c) => c.id === freshComment.id)) return prev;
+            return [...prev, freshComment].sort(
+              (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+            );
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [isOpen, documentId, refetch]);
+
+  const handleSendComment = async () => {
+    if (!newComment.trim() || !doc || !profile) return;
+    setSubmittingComment(true);
+    const res = await addDocumentComment(doc.id, profile.id, newComment.trim());
+    setSubmittingComment(false);
+    if (!res.ok) {
+      notifyError(res.error, "Không gửi được ý kiến");
+      return;
+    }
+    setNewComment("");
+    setComments((prev) => {
+      if (prev.some((c) => c.id === res.comment.id)) return prev;
+      return [...prev, res.comment];
+    });
+  };
 
   if (!isOpen || !documentId) return null;
 
@@ -249,8 +325,100 @@ export default function DocumentDetailDialog({
                     </div>
                   )}
 
+                  {/* Ý kiến & Thảo luận */}
+                  <div className="space-y-3 pt-3 border-t border-slate-100">
+                    <p className="heading-card flex items-center justify-between text-slate-500">
+                      <span>Ý kiến & Thảo luận ({comments.length})</span>
+                      {loadingComments && <span className="text-[11px] font-normal text-slate-400 animate-pulse">Đang tải...</span>}
+                    </p>
+
+                    {/* Comments List */}
+                    <div className="space-y-3">
+                      {comments.length === 0 ? (
+                        <p className="text-[12px] text-slate-400 font-medium italic pl-1 py-1">
+                          Chưa có ý kiến thảo luận nào.
+                        </p>
+                      ) : (
+                        <div className="space-y-3.5 max-h-[220px] overflow-y-auto pr-1 overscroll-contain">
+                          {comments.map((c) => {
+                            const isMe = c.user_id === profile?.id;
+                            return (
+                              <div key={c.id} className={cn("flex gap-2.5 items-start", isMe && "flex-row-reverse")}>
+                                <Avatar className="h-7 w-7 mt-0.5 shrink-0 select-none">
+                                  <AvatarImage src={c.user?.avatar_url || undefined} />
+                                  <AvatarFallback className="text-[10px] bg-slate-100 font-semibold text-slate-600">
+                                    {c.user?.full_name?.[0] || "U"}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div className={cn("min-w-0 max-w-[80%] flex flex-col", isMe ? "items-end" : "items-start")}>
+                                  <div className={cn("flex items-center gap-1.5 flex-wrap", isMe && "flex-row-reverse")}>
+                                    <span className="text-[11px] font-semibold text-slate-700">
+                                      {c.user?.full_name || "Thành viên"}
+                                    </span>
+                                    <span className="text-[10px] text-slate-400 font-medium">
+                                      {c.user?.departments?.name ? `(${c.user.departments.name})` : ""}
+                                    </span>
+                                    <span className="text-[9px] text-slate-400 tabular-nums">
+                                      {format(new Date(c.created_at), "HH:mm dd/MM", { locale: vi })}
+                                    </span>
+                                  </div>
+                                  <div className={cn(
+                                    "mt-1 text-[13px] font-medium p-2.5 rounded-xl break-words whitespace-pre-wrap text-left shadow-sm",
+                                    isMe
+                                      ? "bg-primary text-white rounded-tr-none"
+                                      : "bg-slate-50 border border-slate-100 text-slate-700 rounded-tl-none"
+                                  )}>
+                                    {c.content}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Form to submit new comment */}
+                    {!isReadOnly && doc.status !== "COMPLETED" && (
+                      <div className="flex gap-2 items-start mt-2">
+                        <Avatar className="h-7 w-7 mt-1 shrink-0 select-none">
+                          <AvatarImage src={profile?.avatar_url || undefined} />
+                          <AvatarFallback className="text-[10px] bg-slate-100 font-semibold text-slate-600">
+                            {profile?.full_name?.[0] || "U"}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 relative">
+                          <Textarea
+                            value={newComment}
+                            onChange={(e) => setNewComment(e.target.value)}
+                            placeholder="Nhập ý kiến thảo luận..."
+                            rows={1}
+                            className="bg-slate-50 border-none rounded-xl font-medium resize-none p-2.5 pr-10 text-[13px] min-h-[40px] max-h-[120px] w-full focus-visible:ring-1 focus-visible:ring-primary/20 placeholder:text-slate-400 text-slate-700"
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" && !e.shiftKey) {
+                                if (e.ctrlKey || e.metaKey) {
+                                  e.preventDefault();
+                                  handleSendComment();
+                                }
+                              }
+                            }}
+                          />
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={handleSendComment}
+                            disabled={submittingComment || !newComment.trim()}
+                            className="absolute right-1 bottom-1 h-8 w-8 text-primary hover:text-primary/90 hover:bg-transparent disabled:text-slate-300"
+                          >
+                            <Send className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
                   {/* Timeline */}
-                  <div className="space-y-2">
+                  <div className="space-y-2 pt-3 border-t border-slate-100">
                     <p className="text-[12px] font-medium text-slate-400">Truy vết luân chuyển</p>
                     <HandoverTimeline document={doc} />
                   </div>
