@@ -5148,6 +5148,21 @@ GRANT EXECUTE ON FUNCTION public.current_user_department() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.current_user_is_head() TO authenticated;
 
 -- 2. Tái cấu trúc policy tasks/kpis với function đã cache
+CREATE OR REPLACE FUNCTION public.user_is_task_assignee(p_task_id UUID, p_user_id UUID)
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM task_assignees 
+    WHERE task_id = p_task_id AND user_id = p_user_id
+  );
+$$;
+
+GRANT EXECUTE ON FUNCTION public.user_is_task_assignee(UUID, UUID) TO authenticated;
+
 DROP POLICY IF EXISTS "Tasks read access" ON tasks;
 CREATE POLICY "Tasks read access" ON tasks FOR SELECT
 USING (
@@ -5155,7 +5170,7 @@ USING (
   OR (public.current_user_role() = 'manager' AND department_id = public.current_user_department())
   OR auth.uid() = assignee_id
   OR auth.uid() = created_by
-  OR (metadata->>'assigned_line' IS NOT NULL AND auth.uid()::text = ANY(ARRAY(SELECT jsonb_array_elements_text(metadata->'assigned_line'))))
+  OR public.user_is_task_assignee(id, auth.uid())
 );
 
 DROP POLICY IF EXISTS "Tasks update access" ON tasks;
@@ -5165,7 +5180,7 @@ USING (
   OR (public.current_user_role() = 'manager' AND department_id = public.current_user_department())
   OR auth.uid() = assignee_id
   OR auth.uid() = created_by
-  OR (metadata->>'assigned_line' IS NOT NULL AND auth.uid()::text = ANY(ARRAY(SELECT jsonb_array_elements_text(metadata->'assigned_line'))))
+  OR public.user_is_task_assignee(id, auth.uid())
 );
 
 DROP POLICY IF EXISTS "Tasks delete access" ON tasks;
