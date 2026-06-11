@@ -99,6 +99,27 @@ export function NotificationsDropdown() {
     }
   };
 
+  const markAllAsRead = async () => {
+    const userId = currentProfile?.id;
+    if (!userId) return;
+    try {
+      // Cập nhật tất cả thông báo chưa đọc của user thành đã đọc bằng 1 request duy nhất
+      const { error } = await supabase
+        .from('notifications')
+        .update({ is_read: true })
+        .eq('user_id', userId)
+        .eq('is_read', false);
+
+      if (error) throw error;
+
+      // Đồng bộ state local ngay lập tức
+      setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+      setUnreadCount(0);
+    } catch (error) {
+      console.error("Lỗi khi đánh dấu đọc tất cả thông báo:", error);
+    }
+  };
+
   const handleNotificationClick = (notification: any) => {
     markAsRead(notification.id);
     if (notification.link) {
@@ -177,7 +198,7 @@ export function NotificationsDropdown() {
             <Button
               variant="ghost"
               className="h-auto p-0 text-sm font-medium text-primary hover:bg-transparent truncate whitespace-nowrap"
-              onClick={() => notifications.forEach(n => !n.is_read && markAsRead(n.id))}
+              onClick={markAllAsRead}
             >
               Đọc tất cả
             </Button>
