@@ -255,7 +255,15 @@ function TasksContent() {
 
 export default function TasksPage() {
   return (
-    <Suspense fallback={<div className="page-container py-10"><ListSkeleton rows={5} variant="card" /></div>}>
+    <Suspense fallback={
+      <div className="page-container space-y-6 md:space-y-8 animate-fade-in-up">
+        <PageHeader
+          title="Công việc"
+          description="Quản trị & theo dõi tiến độ"
+        />
+        <ListSkeleton rows={6} variant="card" />
+      </div>
+    }>
       <TasksContent />
     </Suspense>
   );

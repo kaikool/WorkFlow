@@ -22,6 +22,7 @@ import { useAppData } from "@/hooks/use-app-data";
 import { ROLE_LABELS, STATUS_BADGES } from "../team/_lib/constants";
 import { getProfileBadgeStatus, getYearsOfService } from "../team/_lib/utils";
 import EditProfileDialog from "../team/_components/EditProfileDialog";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // Trang hồ sơ cá nhân — đồng bộ pattern với ProfileDetailDialog (team module).
 // Self-mode: dùng EditProfileDialog để cập nhật phone/extension/seat_location/avatar
@@ -30,8 +31,8 @@ export default function ProfilePage() {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
   const { currentProfile, outOfOffice, refresh } = useAppData();
-  const [profile, setProfile] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState<any>(currentProfile);
+  const [loading, setLoading] = useState(!currentProfile);
   const [uploading, setUploading] = useState(false);
   const [activities, setActivities] = useState<any[]>([]);
   const [todaySchedules, setTodaySchedules] = useState<any[]>([]);
@@ -44,13 +45,16 @@ export default function ProfilePage() {
   const ooo = currentProfile ? outOfOffice[currentProfile.id] ?? null : null;
 
   useEffect(() => {
+    if (currentProfile) {
+      setProfile(currentProfile);
+    }
     void loadAll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentProfile?.id]);
 
   const loadAll = async () => {
     if (!currentProfile) return;
-    setLoading(true);
+    if (!profile) setLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -118,9 +122,40 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="page-container animate-fade-in-up">
-        <div className="flex h-96 items-center justify-center">
-          <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+      <div className="page-container space-y-6 md:space-y-8 animate-fade-in-up">
+        <PageHeader title="Hồ sơ cá nhân" description="Thông tin tài khoản và thông tin hiển thị trong danh bạ Nhân sự" />
+        
+        {/* Hero card skeleton */}
+        <section className="premium-card !p-0 overflow-hidden bg-slate-50/60">
+          <div className="px-[var(--app-page-x)] py-5 sm:py-6 flex items-start gap-3 sm:gap-4">
+            <Skeleton className="h-16 w-16 sm:h-20 sm:w-20 rounded-full shrink-0 animate-pulse" />
+            <div className="flex-1 space-y-2">
+              <Skeleton className="h-6 w-48 rounded animate-pulse" />
+              <Skeleton className="h-4 w-32 rounded animate-pulse" />
+              <div className="flex gap-2 pt-1">
+                <Skeleton className="h-5 w-16 rounded-md animate-pulse" />
+                <Skeleton className="h-5 w-20 rounded-md animate-pulse" />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* 2 info sections skeleton */}
+        <div className="group-stack">
+          {Array.from({ length: 2 }).map((_, i) => (
+            <section key={i} className="premium-card p-4 sm:p-5 item-stack">
+              <Skeleton className="h-5 w-40 rounded animate-pulse" />
+              {Array.from({ length: 3 }).map((_, j) => (
+                <div key={j} className="flex items-center gap-3 py-2.5">
+                  <Skeleton className="h-5 w-5 rounded shrink-0 animate-pulse" />
+                  <div className="flex-1 space-y-1.5">
+                    <Skeleton className="h-3 w-20 rounded animate-pulse" />
+                    <Skeleton className="h-4 w-2/3 rounded animate-pulse" />
+                  </div>
+                </div>
+              ))}
+            </section>
+          ))}
         </div>
       </div>
     );

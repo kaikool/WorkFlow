@@ -580,6 +580,12 @@ const handleSubmit = async () => {
 | Error fetch | Return mảng rỗng → render Empty + log console | (không hiện full-page error) |
 | Error mutation | `toast({ variant: "destructive", title, description })` | `useToast` |
 
+**Quy tắc đồng nhất Skeleton (Unified Loading Skeleton Pattern):**
+- **Cấm sử dụng `loading.tsx` ở cấp thư mục con (subroute)** nếu trang đó thực hiện client-side fetching qua Supabase client. Việc lồng ghép Next.js `loading.tsx` với client component loading sẽ gây ra lỗi hiển thị skeleton 2 lần (double loading) và giật lag layout.
+- **Trang chủ Dashboard**: Sử dụng một `<Suspense>` boundary bọc `DashboardContent` kèm theo `<DashboardLoading />` fallback để hiển thị skeleton khớp chính xác cấu trúc Home Dashboard.
+- **Các trang con khác**: Sử dụng cấu trúc thủ công `<Suspense>` trong `page.tsx` để bao bọc client component (bắt buộc do sử dụng `useSearchParams()`), với tham số `fallback` phải chứa cấu trúc đầy đủ của trang (ví dụ: `<PageHeader>` kèm `<ListSkeleton />` bên dưới) để giao diện không bị giật hay thay đổi bố cục khi chuyển trang.
+- **Tối ưu hóa bằng Cache (SWR)**: Đối với các dữ liệu đã được lưu trữ trong `AppDataProvider` (ví dụ: thông tin profile cá nhân), các client page phải sử dụng dữ liệu này để hiển thị ngay lập tức (0ms) trên render đầu tiên, sau đó chỉ cập nhật ngầm (SWR) nhằm loại bỏ hoàn toàn skeleton loading cho người dùng đã đăng nhập.
+
 **Cấm hiển thị page-level error UI cho lỗi fetch list** — luôn fallback về empty state. Lý do: lỗi fetch tạm thời thường tự khỏi qua realtime.
 
 ### 5.6 Bộ nhớ đệm dữ liệu dùng chung (AppDataProvider) & Tối ưu hóa Middleware cache

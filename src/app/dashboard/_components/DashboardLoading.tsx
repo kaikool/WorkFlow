@@ -1,0 +1,29 @@
+'use client';
+
+import React from 'react';
+import { StatsSkeleton, ListSkeleton } from '@/components/ui/list-skeleton';
+import { Skeleton } from '@/components/ui/skeleton';
+
+export default function DashboardLoading() {
+  return (
+    <div className="page-container section-stack pt-4">
+      <header className="flex flex-col gap-4 pt-4 sm:pt-0 sm:flex-row sm:items-end sm:justify-between">
+        <div className="space-y-2">
+          <Skeleton className="h-8 w-48 rounded-xl" />
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-4 w-72 rounded-lg" />
+          </div>
+        </div>
+      </header>
+      <StatsSkeleton count={3} />
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="lg:col-span-8">
+          <ListSkeleton variant="card" rows={4} />
+        </div>
+        <div className="lg:col-span-4">
+          <ListSkeleton variant="card" rows={3} />
+        </div>
+      </div>
+    </div>
+  );
+}

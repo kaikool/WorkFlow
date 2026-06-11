@@ -37,7 +37,11 @@ export function useDashboardSummary(opts: UseDashboardSummaryOptions = {}) {
   const supabase = useMemo(() => createClient(), []);
   const enabled = opts.enabled ?? true;
 
-  const [loading, setLoading] = useState(true);
+  const hasValidCache = useMemo(() => {
+    return !!(cachedData && Date.now() - cachedData.at < CACHE_TTL_MS);
+  }, []);
+
+  const [loading, setLoading] = useState(!hasValidCache);
   const [data, setData] = useState<DashboardSummary>(() => {
     // Hydrate từ cache ngay lần render đầu — perceived instant
     if (cachedData && Date.now() - cachedData.at < CACHE_TTL_MS) {
@@ -91,12 +95,14 @@ export function useDashboardSummary(opts: UseDashboardSummaryOptions = {}) {
     if (!enabled) return;
     let active = true;
     (async () => {
-      setLoading(true);
+      if (!hasValidCache) {
+        setLoading(true);
+      }
       await fetchSummary();
       if (active) setLoading(false);
     })();
     return () => { active = false; };
-  }, [fetchSummary, enabled]);
+  }, [fetchSummary, enabled, hasValidCache]);
 
   useEffect(() => {
     if (!enabled) return;

@@ -1,6 +1,6 @@
 'use client'
 
-import React from "react";
+import React, { Suspense } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { notifyError, notifySuccess } from "@/lib/notify";
@@ -15,7 +15,7 @@ import { useSchedule } from "./_hooks/useSchedule";
 import PageHeader from "@/components/layout/PageHeader";
 import { ListSkeleton } from "@/components/ui/list-skeleton";
 
-export default function SchedulePage() {
+function ScheduleContent() {
   const scheduleProps = useSchedule();
   const {
     schedules, vehicles, rooms, loading, profile, allProfiles, departments,
@@ -38,7 +38,11 @@ export default function SchedulePage() {
 
   if (!mounted) {
     return (
-      <div className="page-container py-10">
+      <div className="page-container space-y-10 animate-fade-in-up">
+        <PageHeader
+          title="Lịch trình"
+          description="Điều phối lịch họp & công tác"
+        />
         <ListSkeleton variant="card" rows={6} />
       </div>
     );
@@ -152,5 +156,21 @@ export default function SchedulePage() {
         onResubmitSchedule={handleResubmitSchedule}
       />
     </div>
+  );
+}
+
+export default function SchedulePage() {
+  return (
+    <Suspense fallback={
+      <div className="page-container space-y-10 animate-fade-in-up">
+        <PageHeader
+          title="Lịch trình"
+          description="Điều phối lịch họp & công tác"
+        />
+        <ListSkeleton variant="card" rows={6} />
+      </div>
+    }>
+      <ScheduleContent />
+    </Suspense>
   );
 }

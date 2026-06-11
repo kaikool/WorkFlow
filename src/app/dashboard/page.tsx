@@ -8,7 +8,7 @@
 // Default view gọi RPC dashboard_summary() qua hook nội bộ.
 // Legacy schedule data chỉ fetch khi role thực sự cần — KHÔNG còn chạy cho default user.
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { addDays, endOfDay, endOfWeek, isSameDay, startOfWeek } from 'date-fns';
 import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -24,7 +24,7 @@ import DriverDashboardView from './_components/DriverDashboardView';
 import HRDashboardView from './_components/HRDashboardView';
 import CoordinatorDashboardView from './_components/CoordinatorDashboardView';
 import DefaultDashboardView from './_components/DefaultDashboardView';
-import { StatsSkeleton, ListSkeleton } from '@/components/ui/list-skeleton';
+import DashboardLoading from './_components/DashboardLoading';
 
 interface LegacyScheduleState {
   schedules: any[];
@@ -34,7 +34,7 @@ const EMPTY_SCHEDULE: LegacyScheduleState = {
   schedules: [],
 };
 
-export default function DashboardPage() {
+function DashboardContent() {
   const supabase = useMemo(() => createClient(), []);
   const { toast } = useToast();
   // Profiles + departments + profile của user lấy từ AppDataProvider (shared cache)
@@ -232,22 +232,12 @@ export default function DashboardPage() {
 
   // Render: chờ profile và cache hydrate xong rồi mới quyết định view.
   if (profileLoading || (hydrating && needsLegacySchedule)) {
-    return (
-      <div className="page-container section-stack py-6">
-        <StatsSkeleton count={3} />
-        <ListSkeleton variant="card" rows={3} />
-      </div>
-    );
+    return <DashboardLoading />;
   }
 
   if (canUseDriverWorkspace(profile)) {
     if (legacyLoading) {
-      return (
-        <div className="page-container section-stack py-6">
-          <StatsSkeleton count={3} />
-          <ListSkeleton variant="card" rows={3} />
-        </div>
-      );
+      return <DashboardLoading />;
     }
     return (
       <DriverDashboardView
@@ -261,12 +251,7 @@ export default function DashboardPage() {
 
   if (canUseHumanResourcesWorkspace(profile)) {
     if (legacyLoading) {
-      return (
-        <div className="page-container section-stack py-6">
-          <StatsSkeleton count={3} />
-          <ListSkeleton variant="card" rows={3} />
-        </div>
-      );
+      return <DashboardLoading />;
     }
     return (
       <HRDashboardView
@@ -282,12 +267,7 @@ export default function DashboardPage() {
   const isResourcesManagerDashboard = profile?.role === 'secretary';
   if (isResourcesManagerDashboard) {
     if (legacyLoading) {
-      return (
-        <div className="page-container section-stack py-6">
-          <StatsSkeleton count={3} />
-          <ListSkeleton variant="card" rows={3} />
-        </div>
-      );
+      return <DashboardLoading />;
     }
     return (
       <CoordinatorDashboardView
@@ -316,4 +296,12 @@ export default function DashboardPage() {
 
   // Default view cho admin/director/manager/staff thường — KHÔNG fetch legacy schedule.
   return <DefaultDashboardView profile={profile} />;
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<DashboardLoading />}>
+      <DashboardContent />
+    </Suspense>
+  );
 }

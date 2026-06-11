@@ -73,13 +73,17 @@ export default function AdminPage() {
     handleUpdateRole, handleCreateRoom, handleCreateVehicle, handleUpdateRoom, handleUpdateVehicle, handleDeleteRoom, handleDeleteVehicle
   } = adminProps;
 
- if (loading) {
- return (
- <div className="page-container py-10 space-y-6">
-   <ListSkeleton variant="table" rows={6} />
- </div>
- );
- }
+  if (loading) {
+    return (
+      <div className="page-container space-y-10 animate-fade-in-up">
+        <PageHeader
+          title="Quản trị Hệ thống"
+          description="Toàn quyền cấu hình hệ thống bankportal"
+        />
+        <ListSkeleton variant="table" rows={6} />
+      </div>
+    );
+  }
 
  const isAdmin = userProfile?.role === 'admin';
  const normalizedSearch = searchQuery.trim().toLowerCase();
