@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { StatsSkeleton, ListSkeleton } from '@/components/ui/list-skeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useAppData } from '@/hooks/use-app-data';
 import { useDashboardSummary } from '../_hooks/useDashboardSummary';
 import TodayTaskList from './TodayTaskList';
@@ -53,7 +54,20 @@ export default function DefaultDashboardView({ profile }: { profile: any }) {
             </div>
           </div>
         </header>
-        <StatsSkeleton count={3} />
+        
+        {/* KPI Card Loading Skeleton */}
+        <div className="premium-card p-4 sm:p-5">
+          <div className="grid grid-cols-3 divide-x divide-slate-100 dark:divide-slate-800">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="flex flex-col items-center justify-center text-center px-2 py-1 space-y-2.5">
+                <Skeleton className="h-8 w-8 rounded-lg" />
+                <Skeleton className="h-3 w-14 rounded" />
+                <Skeleton className="h-6 w-8 rounded" />
+              </div>
+            ))}
+          </div>
+        </div>
+
         <ListSkeleton variant="card" rows={4} />
       </div>
     );
@@ -79,62 +93,64 @@ export default function DefaultDashboardView({ profile }: { profile: any }) {
         </Button>
       </header>
 
-      {/* 3 KPI card */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Link href="/dashboard/tasks?status=todo" className="premium-card p-5 group hover:shadow-md transition-all">
-          <div className="flex items-start justify-between gap-3">
-            <div className="tight-stack">
-              <p className="text-subtitle">Đang xử lý</p>
-              <div className="flex items-end gap-2">
-                <span className="heading-section tabular-nums text-2xl leading-7">{counts.active}</span>
-                {counts.urgent > 0 && (
-                  <Badge className="status-danger-bg border-none rounded-full px-2 py-0 text-[11px] font-medium">
-                    {counts.urgent} ưu tiên
-                  </Badge>
-                )}
-              </div>
+      {/* KPI Card duy nhất dồn 3 thông số */}
+      <div className="premium-card p-4 sm:p-5">
+        <div className="grid grid-cols-3 divide-x divide-slate-100 dark:divide-slate-800">
+          {/* Cột 1: Đang xử lý */}
+          <Link
+            href="/dashboard/tasks?status=todo"
+            className="flex flex-col items-center justify-center text-center px-1 sm:px-2 py-1 group hover:bg-slate-50/60 dark:hover:bg-slate-800/40 rounded-xl transition-all select-none"
+          >
+            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary mb-2.5 transition-transform group-hover:scale-110">
+              <ListChecks className="w-4.5 h-4.5" />
             </div>
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-              <ListChecks className="icon-md" />
-            </div>
-          </div>
-        </Link>
-
-        <Link
-          href="/dashboard/tasks?status=overdue"
-          className={cn(
-            'premium-card p-5 group hover:shadow-md transition-all',
-            hasOverdue && 'status-danger-bg border-none',
-          )}
-        >
-          <div className="flex items-start justify-between gap-3">
-            <div className="tight-stack">
-              <p className={cn('text-subtitle', hasOverdue && 'text-red-900')}>Quá hạn</p>
-              <span className={cn(
-                'heading-section tabular-nums text-2xl leading-7',
-                hasOverdue && 'text-red-900',
-              )}>
-                {counts.overdue}
+            <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Đang xử lý</span>
+            <div className="flex items-center justify-center gap-1.5 mt-1">
+              <span className="text-xl sm:text-2xl font-bold tabular-nums text-slate-800 dark:text-slate-200 leading-tight">
+                {counts.active}
               </span>
+              {counts.urgent > 0 && (
+                <Badge className="bg-rose-50 hover:bg-rose-50 text-rose-600 border-none rounded-full px-1.5 py-0 text-[9px] font-bold shadow-sm shrink-0">
+                  {counts.urgent} khẩn
+                </Badge>
+              )}
             </div>
-            <div className={cn(
-              'w-10 h-10 rounded-xl flex items-center justify-center',
-              hasOverdue ? 'bg-red-200 text-red-700' : 'bg-slate-100 text-slate-500',
-            )}>
-              <AlertTriangle className="icon-md" />
-            </div>
-          </div>
-        </Link>
+          </Link>
 
-        <div className="premium-card p-5">
-          <div className="flex items-start justify-between gap-3">
-            <div className="tight-stack">
-              <p className="text-subtitle">Xong hôm nay</p>
-              <span className="heading-section tabular-nums text-2xl leading-7">{counts.done_today}</span>
+          {/* Cột 2: Quá hạn */}
+          <Link
+            href="/dashboard/tasks?status=overdue"
+            className="flex flex-col items-center justify-center text-center px-1 sm:px-2 py-1 group hover:bg-slate-50/60 dark:hover:bg-slate-800/40 rounded-xl transition-all select-none"
+          >
+            <div className={cn(
+              "w-8 h-8 rounded-lg flex items-center justify-center mb-2.5 transition-transform group-hover:scale-110",
+              hasOverdue ? "bg-rose-100 dark:bg-rose-950 text-rose-600 dark:text-rose-400" : "bg-slate-100 dark:bg-slate-800 text-slate-500"
+            )}>
+              <AlertTriangle className="w-4.5 h-4.5" />
             </div>
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600">
-              <CheckCircle2 className="icon-md" />
+            <span className={cn(
+              "text-[11px] font-medium",
+              hasOverdue ? "text-rose-600 dark:text-rose-400" : "text-slate-500 dark:text-slate-400"
+            )}>
+              Quá hạn
+            </span>
+            <span className={cn(
+              "text-xl sm:text-2xl font-bold tabular-nums mt-1 leading-tight",
+              hasOverdue ? "text-rose-600 dark:text-rose-400" : "text-slate-800 dark:text-slate-200"
+            )}>
+              {counts.overdue}
+            </span>
+          </Link>
+
+          {/* Cột 3: Xong hôm nay */}
+          <div className="flex flex-col items-center justify-center text-center px-1 sm:px-2 py-1 select-none">
+            <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 flex items-center justify-center text-emerald-600 dark:text-emerald-400 mb-2.5">
+              <CheckCircle2 className="w-4.5 h-4.5" />
             </div>
+            <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Xong hôm nay</span>
+            <span className="text-xl sm:text-2xl font-bold tabular-nums text-slate-800 dark:text-slate-200 mt-1 leading-tight">
+              {counts.done_today}
+            </span>
           </div>
         </div>
       </div>

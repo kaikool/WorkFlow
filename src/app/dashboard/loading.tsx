@@ -1,10 +1,10 @@
 'use client';
 
 import React from 'react';
-import { StatsSkeleton, ListSkeleton } from '@/components/ui/list-skeleton';
+import { ListSkeleton } from '@/components/ui/list-skeleton';
 import { Skeleton } from '@/components/ui/skeleton';
 
-export default function DashboardLoading() {
+export default function Loading() {
   return (
     <div className="page-container section-stack pt-4">
       <header className="flex flex-col gap-4 pt-4 sm:pt-0 sm:flex-row sm:items-end sm:justify-between">
@@ -15,6 +15,7 @@ export default function DashboardLoading() {
           </div>
         </div>
       </header>
+      
       {/* KPI Card Loading Skeleton */}
       <div className="premium-card p-4 sm:p-5">
         <div className="grid grid-cols-3 divide-x divide-slate-100 dark:divide-slate-800">
@@ -27,6 +28,7 @@ export default function DashboardLoading() {
           ))}
         </div>
       </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <div className="lg:col-span-8">
           <ListSkeleton variant="card" rows={4} />
