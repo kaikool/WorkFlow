@@ -74,13 +74,19 @@ export async function updateScheduleAction(p: UpdateScheduleParams) {
     if (Array.isArray(participant_ids)) {
       finalParticipantIds = Array.from(new Set([schedule.created_by, ...participant_ids].filter(Boolean)));
       addedParticipantIds = finalParticipantIds.filter((uid: string) => !oldParticipantIds.includes(uid));
+      const removedParticipantIds = oldParticipantIds.filter((uid: string) => !finalParticipantIds.includes(uid));
 
-      const { error: deleteError } = await supabase.from('schedule_participants').delete().eq('schedule_id', id);
-      if (deleteError) throw deleteError;
+      if (removedParticipantIds.length > 0) {
+        const { error: deleteError } = await supabase.from('schedule_participants')
+          .delete()
+          .eq('schedule_id', id)
+          .in('profile_id', removedParticipantIds);
+        if (deleteError) throw deleteError;
+      }
 
-      if (finalParticipantIds.length > 0) {
+      if (addedParticipantIds.length > 0) {
         const { error: insertError } = await supabase.from('schedule_participants').insert(
-          finalParticipantIds.map((uid: string) => ({ schedule_id: id, profile_id: uid }))
+          addedParticipantIds.map((uid: string) => ({ schedule_id: id, profile_id: uid }))
         );
         if (insertError) throw insertError;
       }
