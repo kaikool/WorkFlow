@@ -142,7 +142,7 @@ export default function ScheduleEditForm({
             </div>
 
             {/* Lưới 4 cột: Ngày/Giờ đi - Ngày/Giờ về */}
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div className="space-y-3">
                 <Label className="text-[12px] font-medium text-slate-500 pl-0.5">Từ ngày</Label>
                 <Popover open={detail.isStartOpen} onOpenChange={detail.setIsStartOpen}>

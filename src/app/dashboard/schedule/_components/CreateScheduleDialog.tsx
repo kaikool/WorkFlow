@@ -122,7 +122,7 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
         <div className="space-y-5 px-[var(--app-page-x)] py-4">
 
           {/* 1. Thời gian */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             <div className="space-y-2">
               <Label className="text-[13px] font-medium text-slate-500 whitespace-nowrap">Từ ngày</Label>
               <Popover open={isStartOpen} onOpenChange={setIsStartOpen}>
