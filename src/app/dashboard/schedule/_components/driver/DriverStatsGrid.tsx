@@ -5,14 +5,13 @@ import { Car, CheckCircle2, Gauge, Navigation } from "lucide-react";
 
 interface Props {
   totalTrips: number;
-  totalKm: number;
   activeTrip: any;
   driverStatus: string;
 }
 
-export default function DriverStatsGrid({ totalTrips, totalKm, activeTrip, driverStatus }: Props) {
+export default function DriverStatsGrid({ totalTrips, activeTrip, driverStatus }: Props) {
   return (
-    <div className="grid grid-cols-3 gap-2.5 sm:gap-4">
+    <div className="grid grid-cols-2 gap-2.5 sm:gap-4">
       <div className="p-3 sm:p-5 bg-slate-50 rounded-2xl border border-slate-100/80 shadow-sm transition-all duration-300 hover:bg-white hover:shadow-lg active:scale-95 flex flex-col justify-between h-28 sm:h-32">
         <div className="flex items-center justify-between w-full">
           <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-slate-900/5 flex items-center justify-center shrink-0">
@@ -27,19 +26,6 @@ export default function DriverStatsGrid({ totalTrips, totalKm, activeTrip, drive
         </div>
       </div>
 
-      <div className="p-3 sm:p-5 bg-slate-50 rounded-2xl border border-slate-100/80 shadow-sm transition-all duration-300 hover:bg-white hover:shadow-lg active:scale-95 flex flex-col justify-between h-28 sm:h-32">
-        <div className="flex items-center justify-between w-full">
-          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-amber-500/10 flex items-center justify-center shrink-0">
-            <Gauge className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600" />
-          </div>
-        </div>
-        <div className="space-y-0.5 sm:space-y-1">
-          <p className="text-[10px] sm:text-[12px] font-semibold text-slate-400 truncate">Tích lũy</p>
-          <p className="text-lg sm:text-2xl font-bold text-slate-900 tabular-nums truncate">
-            {totalKm} <span className="text-xs sm:text-sm font-medium text-slate-500">Km</span>
-          </p>
-        </div>
-      </div>
 
       <div className="p-3 sm:p-5 bg-slate-50 rounded-2xl border border-slate-100/80 shadow-sm transition-all duration-300 hover:bg-white hover:shadow-lg active:scale-95 flex flex-col justify-between h-28 sm:h-32">
         <div className="flex items-center justify-between w-full">

@@ -107,7 +107,7 @@ export function checkConflicts(params: {
 
     const foundConflicts: string[] = [];
     schedules.forEach(s => {
-      if (s.id === ignoreScheduleId || s.status === 'rejected') return;
+      if (s.id === ignoreScheduleId || s.status === 'rejected' || s.status === 'completed') return;
       const isPending = s.status === 'pending';
       const sStart = new Date(s.start_time);
       const sEnd = new Date(s.end_time);
@@ -140,7 +140,7 @@ export function checkResourceConflicts(params: {
   const conflicts: string[] = [];
 
   schedules.forEach(s => {
-    if (s.id === ignoreScheduleId || s.status === 'rejected') return;
+    if (s.id === ignoreScheduleId || s.status === 'rejected' || s.status === 'completed') return;
 
     const sStart = new Date(s.start_time);
     const sEnd = new Date(s.end_time);

@@ -62,7 +62,7 @@ export async function createSchedule(p: CreateScheduleParams) {
     notifyValidation("Vui lòng chọn phòng họp tại chi nhánh.", "Thiếu phòng họp");
     return;
   }
-  if (!isLeave && newSchedule.location !== 'Chi nhánh' && !newSchedule.location.trim()) {
+  if (!isLeave && newSchedule.location !== 'Chi nhánh' && (!newSchedule.destinations || !newSchedule.destinations[0]?.location?.trim())) {
     notifyValidation("Vui lòng nhập địa điểm hoặc lộ trình cụ thể.", "Thiếu địa điểm");
     return;
   }
@@ -81,9 +81,13 @@ export async function createSchedule(p: CreateScheduleParams) {
   }
 
   try {
-    const { use_vehicle, participants, vehicle_id, target_profile_id, ...insertData } = newSchedule;
+    const { use_vehicle, participants, vehicle_id, target_profile_id, destinations, location: originLocation, ...insertData } = newSchedule;
     const targetId = (isLeave && newSchedule.target_profile_id) ? newSchedule.target_profile_id : profile?.id;
     const targetProfile = isLeave ? allProfiles.find((x: any) => x.id === targetId) : profile;
+
+    const finalLocation = (!isLeave && originLocation !== 'Chi nhánh' && destinations?.length > 0)
+      ? destinations.map((d: any) => d.location).filter(Boolean).join(' ➔ ')
+      : originLocation;
 
     const selectedParticipantIds = isLeave
       ? [targetId].filter(Boolean)
@@ -122,6 +126,8 @@ export async function createSchedule(p: CreateScheduleParams) {
 
     const { data: createdSchedule, error } = await supabase.from('schedules').insert({
       ...insertData,
+      location: isLeave ? null : finalLocation,
+      metadata: (!isLeave && originLocation !== 'Chi nhánh') ? { destinations } : {},
       start_time: start.toISOString(),
       end_time: end.toISOString(),
       room_id: (!isLeave && newSchedule.location === 'Chi nhánh' && newSchedule.room_id !== "none") ? newSchedule.room_id : null,

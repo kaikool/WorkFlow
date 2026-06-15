@@ -31,8 +31,8 @@ DialogOverlay.displayName = DialogPrimitive.Overlay.displayName
 
 const DialogContent = React.forwardRef<
  React.ElementRef<typeof DialogPrimitive.Content>,
- React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
->(({ className, children, "aria-describedby": ariaDescribedBy, ...props }, ref) => (
+ React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & { hideCloseButton?: boolean }
+>(({ className, children, hideCloseButton, "aria-describedby": ariaDescribedBy, ...props }, ref) => (
  <DialogPortal>
  <DialogOverlay />
  <DialogPrimitive.Content
@@ -45,10 +45,12 @@ const DialogContent = React.forwardRef<
  {...props}
  >
  {children}
- <DialogPrimitive.Close className="absolute right-3 top-3 flex h-11 w-11 items-center justify-center rounded-xl text-slate-500 opacity-80 ring-offset-background transition-opacity hover:bg-slate-100 hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring/40 focus:ring-offset-1 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
- <X className="h-5 w-5" />
- <span className="sr-only">Đóng</span>
- </DialogPrimitive.Close>
+ {!hideCloseButton && (
+  <DialogPrimitive.Close className="absolute right-3 top-3 flex h-11 w-11 items-center justify-center rounded-xl text-slate-500 opacity-80 ring-offset-background transition-opacity hover:bg-slate-100 hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring/40 focus:ring-offset-1 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground z-50">
+  <X className="h-5 w-5" />
+  <span className="sr-only">Đóng</span>
+  </DialogPrimitive.Close>
+ )}
  </DialogPrimitive.Content>
  </DialogPortal>
 ))

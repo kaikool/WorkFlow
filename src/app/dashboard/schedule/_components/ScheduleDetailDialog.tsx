@@ -1,7 +1,7 @@
 'use client'
 
 import React from "react";
-import { MapPin, Car, UserCheck, Pencil, Clock } from "lucide-react";
+import { MapPin, Car, UserCheck, Pencil, Clock, MoreVertical, Trash2, CheckCircle2, Ban } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -13,6 +13,9 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from "@/components/ui/select";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
 import { cn, compareProfilesByHierarchy, canViewLeaveDetails } from "@/lib/utils";
 import { format } from "date-fns";
 import { typeLabels } from "../_lib/constants";
@@ -78,18 +81,21 @@ function DetailHeader({ schedule, badgeColor, headerBg, isAllowedToView }: {
   schedule: any; badgeColor: string; headerBg: string; isAllowedToView: boolean;
 }) {
   return (
-    <div className={cn("px-[var(--app-page-x)] py-5 sm:p-6 relative overflow-hidden backdrop-blur-xl border-b border-slate-100", headerBg)}>
-      <div className="relative z-10 space-y-3">
-        <Badge className={cn("bg-white/60 backdrop-blur-md shadow-sm font-bold text-[10px] px-3 py-1 whitespace-nowrap", badgeColor)}>
+    <div className={cn("px-[var(--app-page-x)] py-5 sm:p-6 relative overflow-hidden backdrop-blur-xl border-b border-slate-100 flex items-start justify-between", headerBg)}>
+      <div className="relative z-10 space-y-3 flex-1 min-w-0 pr-4">
+        <Badge className={cn("bg-white/60 backdrop-blur-md shadow-sm font-bold text-[10px] px-3 py-1 whitespace-nowrap w-fit", badgeColor)}>
           {typeLabels[schedule.type]?.label}
         </Badge>
-        <DialogTitle className="text-lg sm:text-xl font-bold leading-tight tabular-nums text-slate-900 break-words">
+        <DialogTitle className="text-lg sm:text-xl font-bold leading-tight tabular-nums text-slate-900 break-words pr-2">
           {isAllowedToView ? schedule.title : `Nghỉ phép (${schedule.creator?.full_name || 'Cán bộ'})`}
         </DialogTitle>
         <div className="flex flex-wrap items-center gap-2 text-slate-600 text-[13px] font-semibold pt-1">
           <div className="flex min-w-0 items-center gap-1.5">
             <Clock className="w-4 h-4 text-slate-400 shrink-0" />
-            {format(new Date(schedule.start_time), 'HH:mm dd/MM')} - {format(new Date(schedule.end_time), 'HH:mm dd/MM')}
+            {schedule.status === 'completed'
+              ? `${format(new Date(schedule.start_time), 'HH:mm dd/MM')} - ${format(new Date(schedule.end_time), 'HH:mm dd/MM')}`
+              : `Bắt đầu từ: ${format(new Date(schedule.start_time), 'HH:mm dd/MM')}`
+            }
           </div>
         </div>
       </div>
@@ -113,10 +119,11 @@ interface ScheduleDetailDialogProps {
   onUpdateEndTime: (scheduleId: string, newEndTime: string) => void;
   onUpdateSchedule: (scheduleId: string, updates: any) => void;
   onResubmitSchedule?: (scheduleId: string, changeReason: string, editedPayload: any) => void;
+  onDeleteSchedule?: (scheduleId: string) => void;
 }
 
 export default function ScheduleDetailDialog({
-  isOpen, setIsOpen, schedule, schedules, vehicles, rooms, allProfiles, departments, currentProfile, onAssignVehicle, onUpdateEndTime, onUpdateSchedule, onResubmitSchedule
+  isOpen, setIsOpen, schedule, schedules, vehicles, rooms, allProfiles, departments, currentProfile, onAssignVehicle, onUpdateEndTime, onUpdateSchedule, onResubmitSchedule, onDeleteSchedule
 }: ScheduleDetailDialogProps) {
   const detail = useScheduleDetail({
     isOpen, schedule, schedules, vehicles, rooms, allProfiles, currentProfile,
@@ -181,12 +188,51 @@ export default function ScheduleDetailDialog({
     );
   }
 
+  const isCompleted = schedule?.status === 'completed';
+  const showEditAction = canEdit && !isRejected && !isCompleted;
+  const showEndAction = canEdit && !isCompleted && new Date(schedule.end_time) > new Date();
+  const showCancelVehicle = isCoordinator && schedule.vehicle_id && !isCompleted;
+  const showDeleteAction = detail.isCreator;
+  const hasAnyAction = showEditAction || showEndAction || showCancelVehicle || showDeleteAction;
+
+  const handleDelete = async () => {
+    const ok = confirm("Bạn có chắc chắn muốn xóa lịch trình này?");
+    if (ok && onDeleteSchedule) {
+      onDeleteSchedule(schedule.id);
+    }
+  };
+
+  const menuActions = hasAnyAction ? (
+    <div className="flex items-center gap-1.5">
+      {showEditAction && (
+        <Button variant="ghost" size="icon" title="Sửa lịch trình" onClick={() => detail.openEditMode('edit')} className="h-10 w-10 rounded-xl text-slate-500 bg-slate-50 hover:bg-slate-100 hover:text-slate-900 border border-slate-100">
+          <Pencil className="h-4 w-4" />
+        </Button>
+      )}
+      {showEndAction && (
+        <Button variant="ghost" size="icon" title="Kết thúc sớm" onClick={detail.handleEndNow} className="h-10 w-10 rounded-xl text-emerald-600 bg-emerald-50 hover:bg-emerald-100 border border-emerald-100">
+          <CheckCircle2 className="h-4 w-4" />
+        </Button>
+      )}
+      {showCancelVehicle && (
+        <Button variant="ghost" size="icon" title="Hủy gán xe" onClick={() => onAssignVehicle(schedule.id, null, null)} className="h-10 w-10 rounded-xl text-amber-600 bg-amber-50 hover:bg-amber-100 border border-amber-100">
+          <Ban className="h-4 w-4" />
+        </Button>
+      )}
+      {showDeleteAction && (
+        <Button variant="ghost" size="icon" title="Xóa lịch trình" onClick={handleDelete} className="h-10 w-10 rounded-xl text-red-600 bg-red-50 hover:bg-red-100 border border-red-100">
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      )}
+    </div>
+  ) : null;
+
   // =====================================================
   // CHẾ ĐỘ XEM (Read Mode) — Giao diện mặc định
   // =====================================================
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="app-dialog-sheet app-dialog-sheet--xl shadow-2xl">
+      <DialogContent hideCloseButton className="app-dialog-sheet app-dialog-sheet--xl shadow-2xl">
         <DialogHeader className="sr-only">
           <DialogDescription>Thông tin chi tiết, thành phần tham gia, phương tiện và các thao tác cập nhật lịch trình.</DialogDescription>
           <DialogTitle>Chi tiết lịch trình</DialogTitle>
@@ -212,18 +258,6 @@ export default function ScheduleDetailDialog({
                 <p className="text-[12px] font-medium text-slate-400">Nội dung chi tiết</p>
                 <p className="text-sm font-medium text-slate-600 leading-relaxed bg-slate-50 p-4 rounded-2xl">{safeSchedule.description}</p>
               </div>
-            )}
-
-            {/* Nút sửa lịch trình — nổi bật. Khi rejected: đã có nút trong banner đỏ. */}
-            {canEdit && !isRejected && (
-              <Button
-                variant="outline"
-                className="w-full min-h-11 rounded-xl text-sm font-medium text-slate-700 border-slate-200 hover:bg-slate-50 active:scale-95 transition-all flex items-center justify-center gap-2"
-                onClick={() => detail.openEditMode('edit')}
-              >
-                <Pencil className="w-4 h-4" />
-                Sửa lịch trình
-              </Button>
             )}
 
             {/* Địa điểm / Phòng họp */}
@@ -341,50 +375,13 @@ export default function ScheduleDetailDialog({
               </div>
             )}
 
-            {/* Điều chỉnh thời gian nhanh */}
-            {canEdit && (
-              <div className="space-y-3">
-                <p className="text-[12px] font-medium text-slate-400">Điều chỉnh nhanh</p>
-                {!detail.isEditingTime && new Date(schedule.end_time) > new Date() && (
-                  <div className="flex gap-2">
-                    <Button variant="outline" className="flex-1 min-h-11 rounded-xl text-sm font-medium text-slate-600 border-slate-200 active:scale-95 transition-all whitespace-nowrap" onClick={() => detail.setIsEditingTime(true)}>Sửa giờ kết thúc</Button>
-                    <Button variant="outline" className="flex-1 min-h-11 rounded-xl text-sm font-medium border-orange-200 text-orange-600 hover:bg-orange-50 active:scale-95 transition-all whitespace-nowrap" onClick={detail.handleEndNow}>Kết thúc sớm</Button>
-                  </div>
-                )}
-                {detail.isEditingTime && (
-                  <div className="flex flex-col gap-3 p-4 bg-slate-50 rounded-2xl animate-in zoom-in-95 duration-200">
-                    <div>
-                      <p className="text-[12px] font-medium text-slate-500 mb-2">Giờ kết thúc mới</p>
-                      <Input
-                        type="datetime-local"
-                        value={detail.newEndTime}
-                        onChange={(e) => detail.setNewEndTime(e.target.value)}
-                        className="min-h-11 rounded-xl border-none bg-white px-4 py-2 text-base md:text-sm font-medium shadow-sm"
-                      />
-                    </div>
-                    <div className="flex gap-2 justify-end">
-                      <Button variant="ghost" className="min-h-11 px-4 rounded-xl text-sm font-medium text-slate-500 active:scale-95 transition-all" onClick={() => detail.setIsEditingTime(false)}>Hủy</Button>
-                      <Button className="min-h-11 px-4 rounded-xl text-sm font-medium bg-primary text-white shadow-lg shadow-primary/20 active:scale-95 transition-all" onClick={detail.handleSaveTime}>Lưu thay đổi</Button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
           </div>
           </ScrollArea>
 
           {/* Footer */}
-          <DialogFooter className="app-dialog-sheet-footer flex flex-row flex-wrap justify-between items-center gap-3">
-            <Button variant="ghost" className="min-h-11 px-4 rounded-xl font-medium text-slate-600 text-[13px] hover:bg-slate-200 active:scale-95 transition-all whitespace-nowrap" onClick={() => setIsOpen(false)}>Đóng cửa sổ</Button>
-            {isCoordinator && schedule.vehicle_id && (
-              <Button
-                variant="outline"
-                className="min-h-11 px-4 rounded-xl font-medium text-[12px] border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 shadow-sm active:scale-95 transition-all whitespace-nowrap"
-                onClick={() => onAssignVehicle(schedule.id, null, null)}
-              >
-                Hủy gán xe
-              </Button>
-            )}
+          <DialogFooter className="app-dialog-sheet-footer flex flex-row justify-between items-center gap-3">
+            {menuActions || <div />}
+            <Button variant="ghost" className="min-h-11 px-4 rounded-xl font-medium text-slate-600 text-[13px] bg-slate-100 hover:bg-slate-200 active:scale-95 transition-all whitespace-nowrap" onClick={() => setIsOpen(false)}>Đóng cửa sổ</Button>
           </DialogFooter>
       </DialogContent>
     </Dialog>

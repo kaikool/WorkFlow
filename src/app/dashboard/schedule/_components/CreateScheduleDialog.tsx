@@ -8,6 +8,7 @@ import {
   Plus,
   AlertCircle,
   Users,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -160,45 +161,13 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 min-[420px]:grid-cols-2">
-            <div className="space-y-2">
-              <Label className="text-[13px] font-medium text-slate-500 whitespace-nowrap">Đến ngày</Label>
-              <Popover open={isEndOpen} onOpenChange={setIsEndOpen}>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-full h-11 bg-slate-50 border-none rounded-xl font-medium justify-start text-left text-sm active:scale-[0.98] transition-all duration-300 ease-in-out truncate">
-                    <CalendarIcon className="mr-2 h-4 w-4 text-primary shrink-0" />
-                    <span className="truncate">{endDate ? format(endDate, "dd/MM/yyyy") : "Chọn ngày"}</span>
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0 rounded-2xl border-none shadow-2xl z-[9999] pointer-events-auto" align="start" onOpenAutoFocus={(e) => e.preventDefault()}>
-                  <Calendar
-                    mode="single"
-                    selected={endDate}
-                    onSelect={(date) => {
-                      if (date && startDate && date < startDate) {
-                        notifyValidation("Ngày kết thúc không thể trước ngày bắt đầu.", "Lỗi thời gian");
-                        return;
-                      }
-                      setEndDate(date);
-                      setIsEndOpen(false);
-                    }}
-                    initialFocus
-                    locale={vi}
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-[13px] font-medium text-slate-500 whitespace-nowrap">Giờ kết thúc</Label>
-              <TimePicker value={endTime} onChange={setEndTime} />
-            </div>
-          </div>
+
 
           {/* 2. Loại hình & Tiêu đề */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="text-[13px] font-medium text-slate-500 whitespace-nowrap">Loại hình</Label>
-              <Select value={newSchedule.type} onValueChange={(v) => setNewSchedule({ ...newSchedule, type: v })}>
+              <Select value={newSchedule.type} onValueChange={(v) => setNewSchedule({ ...newSchedule, type: v, use_vehicle: v === 'trip' })}>
                 <SelectTrigger className="h-11 bg-slate-50 border-none rounded-xl font-medium text-sm">
                   <SelectValue />
                 </SelectTrigger>
@@ -307,14 +276,50 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
                   </Select>
                 </div>
               ) : (
-                <div className="relative animate-in fade-in zoom-in-95 duration-300">
-                  <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                  <Input
-                    placeholder="Nhập địa chỉ / lộ trình cụ thể..."
-                    className="h-11 bg-white border-none rounded-xl font-medium pl-11 shadow-sm text-sm"
-                    value={newSchedule.location}
-                    onChange={(e) => setNewSchedule({ ...newSchedule, location: e.target.value })}
-                  />
+                <div className="space-y-3 animate-in fade-in zoom-in-95 duration-300">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[10px] md:text-[13px] font-medium text-slate-500 whitespace-nowrap">Lộ trình di chuyển</Label>
+                    <div 
+                      role="button"
+                      onClick={() => {
+                        const current = newSchedule.destinations || [{ location: '' }];
+                        setNewSchedule({ ...newSchedule, destinations: [...current, { location: '' }] });
+                      }}
+                      className="flex items-center h-7 text-xs font-medium text-primary hover:opacity-80 px-2 rounded-md cursor-pointer transition-colors"
+                    >
+                      <Plus className="w-3.5 h-3.5 mr-1" /> Thêm điểm đến
+                    </div>
+                  </div>
+                  {(newSchedule.destinations || [{ location: '' }]).map((dest: any, idx: number) => (
+                    <div key={idx} className="flex items-center gap-2 relative">
+                      <div className="relative flex-1">
+                        <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                        <Input
+                          placeholder={`Điểm đến ${idx + 1}...`}
+                          className="h-11 bg-white border-none rounded-xl font-medium pl-11 pr-10 shadow-sm text-sm"
+                          value={dest.location}
+                          onChange={(e) => {
+                            const newDests = [...(newSchedule.destinations || [{ location: '' }])];
+                            newDests[idx].location = e.target.value;
+                            setNewSchedule({ ...newSchedule, destinations: newDests });
+                          }}
+                        />
+                      </div>
+                      {(newSchedule.destinations?.length > 1) && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newDests = [...newSchedule.destinations];
+                            newDests.splice(idx, 1);
+                            setNewSchedule({ ...newSchedule, destinations: newDests });
+                          }}
+                          className="shrink-0 text-slate-400 hover:text-red-500 hover:bg-transparent transition-colors p-2 text-xl leading-none"
+                        >
+                          &times;
+                        </button>
+                      )}
+                    </div>
+                  ))}
                 </div>
               )}
 
@@ -326,33 +331,8 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
                 />
                 <div className="flex flex-col flex-1 min-w-0">
                   <span className="text-sm font-medium text-slate-900 whitespace-nowrap">Sử dụng xe cơ quan</span>
-                  <span className="text-[12px] text-slate-400 truncate">Tích chọn nếu cần điều xe</span>
                 </div>
               </div>
-
-              {newSchedule.use_vehicle && (
-                <div className="animate-in slide-in-from-top-2 duration-300 space-y-3">
-                  <p className="text-[13px] font-medium text-slate-500 whitespace-nowrap">Loại xe cần đăng ký</p>
-                  <Tabs
-                    value={newSchedule.requested_vehicle_type}
-                    onValueChange={(value) => setNewSchedule({ ...newSchedule, requested_vehicle_type: value })}
-                  >
-                    <TabsList className="grid grid-cols-3 bg-white shadow-sm ring-1 ring-slate-100 min-h-9">
-                      {['4 chỗ', '7 chỗ', 'Khác'].map(type => (
-                        <TabsTrigger key={type} value={type} className="rounded-md text-[13px] font-medium">
-                          {type}
-                        </TabsTrigger>
-                      ))}
-                    </TabsList>
-                  </Tabs>
-                  <div className="p-3 bg-blue-50/50 rounded-2xl border border-blue-100 flex items-center gap-3">
-                    <div className="p-2 bg-white rounded-xl shadow-sm">
-                      <Car className="w-4 h-4 text-blue-600" />
-                    </div>
-                    <p className="text-sm font-medium text-blue-700 leading-tight">Yêu cầu của bạn sẽ được bộ phận điều phối phê duyệt và gán xe/lái xe cụ thể sau khi đăng ký.</p>
-                  </div>
-                </div>
-              )}
             </div>
           )}
 

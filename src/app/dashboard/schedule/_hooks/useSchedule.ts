@@ -72,8 +72,8 @@ export function useSchedule() {
   const [newSchedule, setNewSchedule] = useState({
     title: "", description: "", location: "", department_id: "",
     type: "trip", use_room: false, room_id: "",
-    use_vehicle: false, vehicle_id: "", requested_vehicle_type: "4 chỗ", participants: [],
-    target_profile_id: ""
+    use_vehicle: true, vehicle_id: "", requested_vehicle_type: "4 chỗ", participants: [],
+    target_profile_id: "", destinations: [{ location: "" }]
   });
   const [startDate, setStartDate] = useState<Date | undefined>(new Date());
   const [endDate, setEndDate] = useState<Date | undefined>(new Date());
@@ -401,7 +401,7 @@ export function useSchedule() {
     }
   };
 
-  const handleAssignVehicle = async (scheduleId: string, vehicleId: string | null) => {
+  const handleAssignVehicle = async (scheduleId: string, vehicleId: string | null, driverId: string | null = null) => {
     try {
       const schedule = schedules.find(s => s.id === scheduleId);
       const vehicleConflicts = vehicleId && schedule ? checkResourceConflicts({
@@ -418,35 +418,60 @@ export function useSchedule() {
         return;
       }
 
-      const { error } = await supabase.from('schedules').update({ vehicle_id: vehicleId, status: vehicleId ? 'approved' : 'pending' }).eq('id', scheduleId);
+      const { error } = await supabase.from('schedules').update({ 
+        vehicle_id: vehicleId, 
+        driver_id: driverId,
+        status: vehicleId ? 'approved' : 'pending' 
+      }).eq('id', scheduleId);
+      
       if (error) throw error;
       const vehicle = vehicles.find(v => v.id === vehicleId);
       if (schedule?.created_by) {
         await sendNotifications([{
           user_id: schedule.created_by,
-          title: vehicleId ? "Đã gán Xe điều động 🚗" : "Đã hủy gán Xe",
+          title: vehicleId ? "Xác nhận điều phối phương tiện 🚗" : "Hủy điều phối phương tiện",
           content: vehicleId
-            ? `Lịch trình "${schedule.title}" đã được gán xe: ${vehicle?.plate_number} - ${vehicle?.name}.`
-            : `Lịch trình "${schedule.title}" đã bị hủy gán xe điều động.`,
+            ? `Bộ phận điều phối đã bố trí phương tiện ${vehicle?.plate_number} (${vehicle?.name}) cho chuyến công tác "${schedule.title}". Lịch trình đã được phê duyệt.`
+            : `Phương tiện cho chuyến công tác "${schedule.title}" đã bị hủy do thay đổi kế hoạch điều phối. Vui lòng kiểm tra lại.`,
           link: "/dashboard/schedule"
         }]);
       }
+      
+      // Gửi thông báo cho Lái xe
+      if (driverId) {
+        await sendNotifications([{
+          user_id: driverId,
+          title: "Thông báo điều động Lái xe 🚗",
+          content: `Bạn vừa được phân công phụ trách chuyến công tác "${schedule.title}" với xe ${vehicle?.plate_number}. Vui lòng kiểm tra lịch trình để chuẩn bị.`,
+          link: "/dashboard/schedule"
+        }]);
+      } else if (schedule?.driver_id && !driverId) {
+        await sendNotifications([{
+          user_id: schedule.driver_id,
+          title: "Hủy phân công Lái xe",
+          content: `Phân công của bạn cho chuyến công tác "${schedule.title}" đã được thu hồi do thay đổi kế hoạch điều phối.`,
+          link: "/dashboard/schedule"
+        }]);
+      }
+
       // Loại trừ driver khỏi thông báo cập nhật lịch chung (quy tắc §5.D.2)
       const participantIds = (schedule?.participants || [])
         .filter((p: any) => p.profile?.role !== 'driver')
         .map((p: any) => p.profile?.id)
         .filter((uid: string) => uid && uid !== profile?.id && uid !== schedule?.created_by);
+        
       if (vehicleId && participantIds.length > 0) {
         await sendNotifications(
           participantIds.map((uid: string) => ({
             user_id: uid,
-            title: "Lịch trình đã được duyệt",
-            content: `Lịch trình "${schedule.title}" đã được gán xe và phê duyệt.`,
+            title: "Thông báo lịch trình công tác",
+            content: `Chuyến công tác "${schedule.title}" đã được bộ phận điều phối xác nhận và bố trí phương tiện. Vui lòng theo dõi lịch trình.`,
             link: "/dashboard/schedule"
           }))
         );
       }
-      notifySuccess(vehicleId ? "Đã gán xe cho lịch trình" : "Đã huỷ gán xe");
+      
+      notifySuccess(vehicleId ? "Đã gán xe và tài xế cho lịch trình" : "Đã huỷ gán xe");
       if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
       setIsDetailOpen(false);
       fetchData();
@@ -455,29 +480,14 @@ export function useSchedule() {
     }
   };
   const handleDeleteSchedule = async (id: string) => {
-    const schedule = schedules.find(s => s.id === id);
-    if (schedule?.status === 'in_progress') {
-      notifyValidation(
-        "Lịch trình đang diễn ra. Vui lòng kết thúc trước khi xoá.",
-        "Không thể xoá"
-      );
-      return;
-    }
-    const ok = await confirmDialog({
-      title: 'Xóa lịch trình?',
-      description: 'Toàn bộ thông tin liên quan tới lịch trình này sẽ bị gỡ khỏi hệ thống.',
-      confirmText: 'Xóa',
-      danger: true,
-    });
-    if (!ok) return;
     try {
       const { error } = await supabase.from('schedules').delete().eq('id', id);
       if (error) throw error;
-      notifySuccess("Đã xoá lịch trình");
+      notifySuccess("Đã xóa lịch trình");
       setIsDetailOpen(false);
       fetchData();
     } catch (error) {
-      notifyError(error, "Không xoá được lịch trình");
+      notifyError(error, "Không xóa được lịch trình");
     }
   };
 
@@ -490,7 +500,10 @@ export function useSchedule() {
       const newEndTime = new Date(newEndTimeStr);
       const isEndEarly = newEndTime <= new Date();
 
-      const { error } = await supabase.from('schedules').update({ end_time: newEndTime.toISOString() }).eq('id', id);
+      const { error } = await supabase.from('schedules').update({ 
+        end_time: newEndTime.toISOString(),
+        status: isEndEarly ? 'completed' : schedule.status
+      }).eq('id', id);
       if (error) throw error;
 
       // Ghi nhận lịch sử / cảnh báo cho những người khác (thông báo) — loại trừ lái xe
@@ -528,7 +541,7 @@ export function useSchedule() {
 
 
   const resetCreateForm = () => {
-    setNewSchedule({ title: "", description: "", location: "", department_id: "", type: "trip", use_room: false, room_id: "", use_vehicle: false, vehicle_id: "", requested_vehicle_type: "4 chỗ", participants: [], target_profile_id: "" });
+    setNewSchedule({ title: "", description: "", location: "", department_id: "", type: "trip", use_room: false, room_id: "", use_vehicle: true, vehicle_id: "", requested_vehicle_type: "Khác", participants: [], target_profile_id: "", destinations: [{ location: "" }] });
     setStartDate(new Date());
     setEndDate(new Date());
     setStartTime("08:00");
@@ -543,13 +556,17 @@ export function useSchedule() {
   };
 
   const handleCreateSchedule = async () => {
-    if (!startDate || !endDate) {
-      notifyValidation("Vui lòng chọn đầy đủ ngày bắt đầu và ngày kết thúc.");
+    if (!startDate) {
+      notifyValidation("Vui lòng chọn ngày bắt đầu.");
       return;
     }
+    // Tự động gán ngày kết thúc và giờ kết thúc
+    const autoEndDate = new Date(startDate);
+    const autoEndTime = "23:59";
+
     await createScheduleHelper({
       supabase, toast, profile, allProfiles, newSchedule,
-      startDate, endDate, startTime, endTime,
+      startDate, endDate: autoEndDate, startTime, endTime: autoEndTime,
       conflicts, resourceConflicts,
       selectedParticipants, bgdMode, selectedBGD, deptMode, filterDepts, participantMode,
       findParticipantConflicts, sendNotifications, isScheduleApprover,

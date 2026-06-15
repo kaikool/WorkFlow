@@ -1,12 +1,12 @@
 'use client'
 
 import React from "react";
-import { Calendar as CalendarIcon, Clock, AlertCircle, ArrowLeft } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, AlertCircle, ArrowLeft, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { vi } from "date-fns/locale";
@@ -43,7 +43,7 @@ export default function ScheduleEditForm({
   const canCoord = !!detail.canCoord;
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="app-dialog-sheet app-dialog-sheet--2xl shadow-2xl">
+      <DialogContent hideCloseButton className="app-dialog-sheet app-dialog-sheet--2xl shadow-2xl">
         <DialogHeader className="sr-only">
           <DialogDescription>Chỉnh sửa thông tin lịch trình, thời gian, địa điểm và thành phần tham gia.</DialogDescription>
           <DialogTitle>Sửa lịch trình</DialogTitle>
@@ -119,7 +119,7 @@ export default function ScheduleEditForm({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-3">
                 <Label className="text-[12px] font-medium text-slate-500 pl-0.5">Loại lịch trình</Label>
-                <Select value={detail.editData.type} onValueChange={(v) => detail.setEditData({ ...detail.editData, type: v })}>
+                <Select value={detail.editData.type} onValueChange={(v) => detail.setEditData({ ...detail.editData, type: v, use_vehicle: v === 'trip' ? true : detail.editData.use_vehicle })}>
                   <SelectTrigger className="min-h-11 bg-slate-50 border-none rounded-xl font-medium text-sm"><SelectValue /></SelectTrigger>
                   <SelectContent className="rounded-xl border-none shadow-2xl">
                     <SelectItem value="meeting" className="text-base md:text-sm py-3 md:py-2">Họp nội bộ</SelectItem>
@@ -183,43 +183,7 @@ export default function ScheduleEditForm({
               </div>
             </div>
 
-            {/* Lưới 2 cột: Ngày kết thúc + Giờ về */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-3">
-                <Label className="text-[12px] font-medium text-slate-500 pl-0.5">Đến ngày</Label>
-                <Popover open={detail.isEndOpen} onOpenChange={detail.setIsEndOpen}>
-                  <PopoverTrigger asChild>
-                    <Button type="button" variant="outline" className="w-full min-h-11 bg-slate-50 border-none rounded-xl font-medium justify-start text-left text-base md:text-sm active:scale-95 transition-all">
-                      <CalendarIcon className="mr-2 h-4 w-4 text-primary shrink-0" />
-                      <span className="truncate">{detail.editEndDate ? format(detail.editEndDate, "dd/MM/yyyy") : "Chọn ngày"}</span>
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0 rounded-2xl border-none shadow-2xl z-[9999] pointer-events-auto" align="start" onOpenAutoFocus={(e) => e.preventDefault()}>
-                    <Calendar
-                      mode="single"
-                      selected={detail.editEndDate}
-                      onSelect={(date) => { detail.setEditEndDate(date); detail.setIsEndOpen(false); }}
-                      initialFocus
-                      locale={vi}
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-              <div className="space-y-3">
-                <Label className="text-[12px] font-medium text-slate-500 pl-0.5">Giờ về</Label>
-                <Select value={detail.editEndTime} onValueChange={detail.setEditEndTime}>
-                  <SelectTrigger className="min-h-11 bg-slate-50 border-none rounded-xl font-medium text-sm">
-                    <Clock className="mr-2 h-4 w-4 text-primary shrink-0" />
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-xl border-none shadow-2xl">
-                    {timeOptions.map(time => (
-                      <SelectItem key={time} value={time} className="text-base md:text-sm py-3 md:py-2">{time}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+
 
             {/* Địa điểm chi tiết */}
             {detail.editData.type !== 'leave' && detail.editData.location === 'Chi nhánh' ? (
@@ -233,38 +197,72 @@ export default function ScheduleEditForm({
                 </Select>
               </div>
             ) : detail.editData.type !== 'leave' ? (
-              <div className="space-y-3">
-                <Label className="text-[12px] font-medium text-slate-500 pl-0.5">Địa điểm / Lộ trình</Label>
-                <Input value={detail.editData.location || ""} onChange={(e) => detail.setEditData({ ...detail.editData, location: e.target.value })} className="min-h-11 bg-slate-50 border-none rounded-xl font-medium text-sm" placeholder="Nhập địa điểm cụ thể..." />
+              <div className="space-y-3 animate-in fade-in zoom-in-95 duration-300">
+                <div className="flex items-center justify-between">
+                  <Label className="text-[12px] font-medium text-slate-500 pl-0.5">Lộ trình di chuyển</Label>
+                  <div 
+                    role="button"
+                    onClick={() => {
+                      const current = detail.editData.destinations || [{ location: '' }];
+                      detail.setEditData({ ...detail.editData, destinations: [...current, { location: '' }] });
+                    }}
+                    className="flex items-center h-7 text-xs font-medium text-primary hover:opacity-80 px-2 rounded-md cursor-pointer transition-colors"
+                  >
+                    <Plus className="w-3.5 h-3.5 mr-1" /> Thêm điểm đến
+                  </div>
+                </div>
+                {(detail.editData.destinations || [{ location: '' }]).map((dest: any, idx: number) => (
+                  <div key={idx} className="flex items-center gap-2 relative">
+                    <div className="relative flex-1">
+                      <Input
+                        placeholder={`Điểm đến ${idx + 1}...`}
+                        className="h-11 bg-slate-50 border-none rounded-xl font-medium px-4 shadow-sm text-sm"
+                        value={dest.location}
+                        onChange={(e) => {
+                          const newDests = [...(detail.editData.destinations || [{ location: '' }])];
+                          newDests[idx].location = e.target.value;
+                          detail.setEditData({ ...detail.editData, destinations: newDests });
+                        }}
+                      />
+                    </div>
+                    {(detail.editData.destinations?.length > 1) && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newDests = [...detail.editData.destinations];
+                          newDests.splice(idx, 1);
+                          detail.setEditData({ ...detail.editData, destinations: newDests });
+                        }}
+                        className="shrink-0 text-slate-400 hover:text-red-500 hover:bg-transparent transition-colors p-2 text-xl leading-none"
+                      >
+                        &times;
+                      </button>
+                    )}
+                  </div>
+                ))}
               </div>
             ) : null}
 
             {/* Phương tiện */}
             {detail.editData.type !== 'leave' && (
-              <div className="space-y-4 p-4 bg-slate-50/50 rounded-2xl">
-                <label className="flex items-center gap-3 text-sm font-medium text-slate-700 cursor-pointer">
-                  <Checkbox checked={!!detail.editData.use_vehicle} onCheckedChange={(checked) => detail.setEditData({ ...detail.editData, use_vehicle: checked === true, vehicle_id: checked === true ? detail.editData.vehicle_id : 'none' })} />
-                  Sử dụng xe cơ quan
-                </label>
-                {detail.editData.use_vehicle && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2 duration-200">
-                    <Select value={detail.editData.requested_vehicle_type || '4 chỗ'} onValueChange={(v) => detail.setEditData({ ...detail.editData, requested_vehicle_type: v })}>
-                      <SelectTrigger className="min-h-11 bg-white border-none rounded-xl font-medium text-sm shadow-sm"><SelectValue /></SelectTrigger>
+              <div className="flex items-center gap-3 p-3 bg-white rounded-2xl border border-slate-100 shadow-sm mt-4">
+                <Switch
+                  checked={!!detail.editData.use_vehicle}
+                  onCheckedChange={(checked) => detail.setEditData({ ...detail.editData, use_vehicle: checked, vehicle_id: checked ? 'none' : detail.editData.vehicle_id })}
+                  aria-label="Bật hoặc tắt sử dụng xe cơ quan"
+                />
+                <div className="flex flex-col flex-1 min-w-0">
+                  <span className="text-sm font-medium text-slate-900 whitespace-nowrap">Sử dụng xe cơ quan</span>
+                </div>
+                {canCoord && detail.editData.use_vehicle && (
+                  <div className="w-40 shrink-0 animate-in fade-in zoom-in-95">
+                    <Select value={detail.editData.vehicle_id || 'none'} onValueChange={(v) => detail.setEditData({ ...detail.editData, vehicle_id: v })}>
+                      <SelectTrigger className="h-9 bg-slate-50 border-none rounded-lg font-medium text-xs shadow-sm"><SelectValue placeholder="Gán xe" /></SelectTrigger>
                       <SelectContent className="rounded-xl border-none shadow-2xl">
-                        <SelectItem value="4 chỗ" className="text-base md:text-sm py-3 md:py-2">Xe 4 chỗ</SelectItem>
-                        <SelectItem value="7 chỗ" className="text-base md:text-sm py-3 md:py-2">Xe 7 chỗ</SelectItem>
-                        <SelectItem value="Khác" className="text-base md:text-sm py-3 md:py-2">Loại khác</SelectItem>
+                        <SelectItem value="none" className="text-xs py-2">Chưa gán xe</SelectItem>
+                        {vehicles.map(v => <SelectItem key={v.id} value={v.id} className="text-xs py-2">{v.name} - {v.plate_number}</SelectItem>)}
                       </SelectContent>
                     </Select>
-                    {canCoord && (
-                      <Select value={detail.editData.vehicle_id || 'none'} onValueChange={(v) => detail.setEditData({ ...detail.editData, vehicle_id: v })}>
-                        <SelectTrigger className="min-h-11 bg-white border-none rounded-xl font-medium text-sm shadow-sm"><SelectValue placeholder="Xe cụ thể" /></SelectTrigger>
-                        <SelectContent className="rounded-xl border-none shadow-2xl">
-                          <SelectItem value="none" className="text-base md:text-sm py-3 md:py-2">Chưa gán xe</SelectItem>
-                          {vehicles.map(v => <SelectItem key={v.id} value={v.id} className="text-base md:text-sm py-3 md:py-2">{v.name} - {v.plate_number}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    )}
                   </div>
                 )}
               </div>

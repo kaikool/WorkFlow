@@ -90,6 +90,7 @@ export function useScheduleDetail({
         start_time: format(start, "yyyy-MM-dd'T'HH:mm"),
         end_time: format(end, "yyyy-MM-dd'T'HH:mm"),
         location: schedule.location || "",
+        destinations: schedule.metadata?.destinations || [{ location: schedule.location || "" }],
         room_id: schedule.room_id || "none",
         use_vehicle: !!schedule.use_vehicle,
         vehicle_id: schedule.vehicle_id || "none",
@@ -213,13 +214,18 @@ export function useScheduleDetail({
     const startString = `${format(editStartDate || new Date(), 'yyyy-MM-dd')}T${editStartTime}`;
     const endString = `${format(editEndDate || new Date(), 'yyyy-MM-dd')}T${editEndTime}`;
 
+    const finalLocation = (!isLeaveType && !isBranchLocation && editData.destinations?.length > 0)
+      ? editData.destinations.map((d: any) => d.location).filter(Boolean).join(' ➔ ')
+      : editData.location;
+
     const payload = {
       title: editData.title,
       description: editData.description || null,
       type: editData.type,
       start_time: new Date(startString).toISOString(),
-      end_time: new Date(endString).toISOString(),
-      location: isLeaveType ? null : editData.location,
+      end_time: schedule.end_time, // Giữ nguyên giờ kết thúc cũ
+      location: isLeaveType ? null : finalLocation,
+      metadata: (!isLeaveType && !isBranchLocation) ? { ...schedule.metadata, destinations: editData.destinations } : schedule.metadata,
       room_id: !isLeaveType && isBranchLocation && editData.room_id !== 'none' ? editData.room_id : null,
       use_vehicle: !isLeaveType && !!editData.use_vehicle,
       vehicle_id: !isLeaveType && editData.vehicle_id !== 'none' ? editData.vehicle_id : null,

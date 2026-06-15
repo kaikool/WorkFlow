@@ -33,7 +33,7 @@ function ScheduleContent() {
     sendNotifications, weekDays, isTodaySelected,
     currentTimePercent, startLimit, duration,
     conflicts, resourceConflicts, fetchData,
-    handleStatusUpdate, handleUpdateEndTime, handleUpdateSchedule, handleResubmitSchedule, handleCreateSchedule, handleSelectSchedule
+    handleStatusUpdate, handleUpdateEndTime, handleUpdateSchedule, handleResubmitSchedule, handleCreateSchedule, handleSelectSchedule, handleDeleteSchedule
   } = scheduleProps;
 
   if (!mounted) {
@@ -154,6 +154,7 @@ function ScheduleContent() {
         onUpdateEndTime={handleUpdateEndTime}
         onUpdateSchedule={handleUpdateSchedule}
         onResubmitSchedule={handleResubmitSchedule}
+        onDeleteSchedule={handleDeleteSchedule}
       />
     </div>
   );

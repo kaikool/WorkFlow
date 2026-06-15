@@ -88,15 +88,17 @@ export default function ScheduleCard({ item, profile, onSelect, onStatusUpdate }
                   <span className="text-xs text-slate-500 truncate">Bắt đầu</span>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-slate-100 text-slate-500 rounded-xl">
-                  <Clock className="w-4 h-4" />
+              {item.status === 'completed' && (
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-slate-100 text-slate-500 rounded-xl">
+                    <Clock className="w-4 h-4" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[14px] font-medium text-slate-900">{format(endTime, sameDay ? 'HH:mm' : 'dd/MM HH:mm')}</span>
+                    <span className="text-xs text-slate-500 truncate">Kết thúc</span>
+                  </div>
                 </div>
-                <div className="flex flex-col">
-                  <span className="text-[14px] font-medium text-slate-900">{format(endTime, sameDay ? 'HH:mm' : 'dd/MM HH:mm')}</span>
-                  <span className="text-xs text-slate-500 truncate">Kết thúc</span>
-                </div>
-              </div>
+              )}
             </div>
 
             <div className="flex flex-wrap gap-4 pt-2 border-t border-slate-50">

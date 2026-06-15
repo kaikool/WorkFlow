@@ -37,20 +37,18 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
   // Dialog KM xuất phát
   const [isStartOpen, setIsStartOpen] = useState(false);
   const [selectedStartSchedule, setSelectedStartSchedule] = useState<any>(null);
-  const [startKm, setStartKm] = useState("");
 
   // Dialog KM kết thúc
   const [isEndOpen, setIsEndOpen] = useState(false);
   const [selectedEndSchedule, setSelectedEndSchedule] = useState<any>(null);
-  const [endKm, setEndKm] = useState("");
 
   // Dialog Báo cáo sự cố xe
   const [isIssueOpen, setIsIssueOpen] = useState(false);
   const [selectedIssueSchedule, setSelectedIssueSchedule] = useState<any>(null);
   const [issueText, setIssueText] = useState("");
 
-  // Thống kê toàn bộ lịch trình và Km từ CSDL toàn thời gian (All-Time Sync)
-  const [driverStats, setDriverStats] = useState({ totalTrips: 0, totalKm: 0 });
+  // Thống kê toàn bộ chuyến từ CSDL toàn thời gian (All-Time Sync)
+  const [driverStats, setDriverStats] = useState({ totalTrips: 0 });
 
   const fetchDriverStats = async () => {
     if (!profile?.id) return;
@@ -64,11 +62,8 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
       if (error) throw error;
 
       if (data) {
-        const completed = data.filter((s: any) => s.status === 'completed');
-        const totalKmVal = completed.reduce((acc: number, s: any) => acc + (Number(s.metadata?.actual_distance) || 0), 0);
         setDriverStats({
-          totalTrips: data.length,
-          totalKm: totalKmVal
+          totalTrips: data.length
         });
       }
     } catch (err) {
@@ -94,10 +89,6 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
   });
 
   const handleStartTrip = async () => {
-    if (!startKm || isNaN(Number(startKm)) || Number(startKm) < 0) {
-      notifyValidation("Vui lòng nhập số Km xuất phát hợp lệ.");
-      return;
-    }
     setUpdating(true);
     try {
       const schedule = selectedStartSchedule;
@@ -105,7 +96,6 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
       const actualStart = new Date();
       const newMeta = {
         ...meta,
-        start_km: Number(startKm),
         trip_started_at: actualStart.toISOString(),
         actual_start_time: actualStart.toISOString(),
       };
@@ -120,7 +110,6 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
 
       notifySuccess("Đã bắt đầu chuyến đi");
       setIsStartOpen(false);
-      setStartKm("");
 
       // Kiểm tra lệch lịch trình và cảnh báo bộ phận điều phối
       const scheduledStart = new Date(schedule.start_time);
@@ -152,23 +141,13 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
   };
 
   const handleEndTrip = async () => {
-    const start_km = selectedEndSchedule?.metadata?.start_km || 0;
-    if (!endKm || isNaN(Number(endKm)) || Number(endKm) <= start_km) {
-      notifyValidation(
-        `Vui lòng nhập số Km kết thúc lớn hơn số Km xuất phát (${start_km} km).`
-      );
-      return;
-    }
     setUpdating(true);
     try {
       const schedule = selectedEndSchedule;
       const meta = schedule.metadata || {};
-      const actual_distance = Number(endKm) - start_km;
       const actualEnd = new Date();
       const newMeta = {
         ...meta,
-        end_km: Number(endKm),
-        actual_distance,
         trip_ended_at: actualEnd.toISOString(),
         actual_end_time: actualEnd.toISOString(),
       };
@@ -188,15 +167,14 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
           coordinatorTargets.map((target: any) => ({
             user_id: target.id,
             title: "Quyết toán hành trình xe công 🚗",
-            content: `Tài xế ${profile?.full_name} đã kết thúc chuyến "${schedule.title}". Quãng đường di chuyển thực tế: ${actual_distance} km.`,
+            content: `Tài xế ${profile?.full_name} đã kết thúc chuyến "${schedule.title}".`,
             link: "/dashboard/schedule"
           }))
         );
       }
 
-      notifySuccess("Đã hoàn thành chuyến đi", "Đã cập nhật số Km hành trình.");
+      notifySuccess("Đã hoàn thành chuyến đi");
       setIsEndOpen(false);
-      setEndKm("");
 
       // Kiểm tra lệch giờ kết thúc
       const scheduledEnd = new Date(schedule.end_time);
@@ -211,7 +189,7 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
           coordinatorTargets.map((target: any) => ({
             user_id: target.id,
             title: `🚗 Quyết toán xe + Lệch lịch: ${endDeviationMinutes > 0 ? 'Trễ lịch' : 'Về sớm'}`,
-            content: `Tài xế ${profile?.full_name} đã ${endLabel} cho chuyến "${schedule.title}". Quãng đường thực tế: ${actual_distance} km.`,
+            content: `Tài xế ${profile?.full_name} đã ${endLabel} cho chuyến "${schedule.title}".`,
             link: '/dashboard/schedule'
           }))
         );
@@ -281,7 +259,6 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
 
       <DriverStatsGrid
         totalTrips={driverStats.totalTrips}
-        totalKm={driverStats.totalKm}
         activeTrip={activeTrip}
         driverStatus={driverStatus}
       />
@@ -329,7 +306,7 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {otherTrips.map(trip => {
               const hasStarted = !!trip.metadata?.trip_started_at;
-              const hasEnded = !!trip.metadata?.end_km;
+              const hasEnded = !!trip.metadata?.trip_ended_at;
               const driverName = trip.driver?.full_name
                 || trip.participants?.find((p: any) => p.role === 'driver')?.profile?.full_name
                 || "Lái xe";
@@ -380,8 +357,6 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
       <StartTripDialog
         isOpen={isStartOpen}
         setIsOpen={setIsStartOpen}
-        startKm={startKm}
-        setStartKm={setStartKm}
         updating={updating}
         onConfirm={handleStartTrip}
       />
@@ -390,8 +365,6 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
       <EndTripDialog
         isOpen={isEndOpen}
         setIsOpen={setIsEndOpen}
-        endKm={endKm}
-        setEndKm={setEndKm}
         selectedSchedule={selectedEndSchedule}
         updating={updating}
         onConfirm={handleEndTrip}

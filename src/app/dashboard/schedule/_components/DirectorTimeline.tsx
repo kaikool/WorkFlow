@@ -112,7 +112,7 @@ export default function DirectorTimeline({
                             onClick={() => onSelectSchedule(sched)}
                             style={{ left: `${leftPercent}%`, width: `${widthPercent}%` }}
                             className={`absolute h-2.5 rounded-full cursor-pointer transition-all hover:scale-y-125 hover:shadow-sm active:scale-[0.95] select-none ${typeColor} border-none shadow-sm ${(isCutLeft || isCutRight) ? 'opacity-60' : ''}`}
-                            title={`${displayTitle} (${format(sTime, 'HH:mm')} - ${format(eTime, 'HH:mm')})${isCutLeft ? ' ◀ ngoài khung' : ''}${isCutRight ? ' ▶ ngoài khung' : ''}`}
+                            title={`${displayTitle} (${sched.status === 'completed' ? `${format(sTime, 'HH:mm')} - ${format(eTime, 'HH:mm')}` : `Từ ${format(sTime, 'HH:mm')}`})${isCutLeft ? ' ◀ ngoài khung' : ''}${isCutRight ? ' ▶ ngoài khung' : ''}`}
                           />
                         );
                       })}

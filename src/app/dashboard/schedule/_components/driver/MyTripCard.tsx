@@ -1,9 +1,10 @@
 'use client'
 
 import React from "react";
-import { AlertTriangle, Car, CheckCircle2, Clock, MapPin, Navigation } from "lucide-react";
+import { AlertTriangle, Car, CheckCircle2, Clock, MapPin, Navigation, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface Props {
   trip: any;
@@ -17,7 +18,7 @@ const fmtDt = (d: Date) =>
 
 export default function MyTripCard({ trip, onStart, onEnd, onReportIssue }: Props) {
   const hasStarted = trip.status === 'in_progress' || trip.status === 'completed' || !!trip.metadata?.trip_started_at;
-  const hasEnded = trip.status === 'completed' || !!trip.metadata?.end_km;
+  const hasEnded = trip.status === 'completed' || !!trip.metadata?.trip_ended_at;
   const hasIssue = !!trip.metadata?.vehicle_issue;
   const startDt = new Date(trip.start_time);
   const endDt = new Date(trip.end_time);
@@ -95,31 +96,47 @@ export default function MyTripCard({ trip, onStart, onEnd, onReportIssue }: Prop
             </div>
             <div className="text-[13px] text-slate-500 space-y-0.5 font-medium">
               <div><span className="text-slate-400 text-xs font-semibold">Đi:</span> {fmtDt(startDt)}</div>
-              <div><span className="text-slate-400 text-xs font-semibold">Về:</span> {fmtDt(endDt)}</div>
+              {(hasEnded || trip.metadata?.trip_ended_at) && (
+                <div><span className="text-slate-400 text-xs font-semibold">Đến:</span> {fmtDt(new Date(trip.metadata?.trip_ended_at || endDt))}</div>
+              )}
             </div>
           </div>
+          
+          {trip.metadata?.destinations && trip.metadata.destinations.length > 0 && (
+            <div className="flex items-start gap-3 mt-2">
+              <div className="w-7 h-7 rounded-lg bg-slate-50 flex items-center justify-center shrink-0 border border-slate-100/30">
+                <Navigation className="w-3 h-3 text-slate-500" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <span className="text-sm text-slate-600 line-clamp-2 leading-relaxed">
+                  {trip.metadata.destinations.map((d: any) => d.location).join(' ➔ ')}
+                </span>
+              </div>
+            </div>
+          )}
         </div>
 
-        {trip.metadata?.start_km && (
-          <div className="flex items-stretch gap-2.5 pt-2 border-t border-slate-50">
-            <div className="flex-1 bg-slate-50 rounded-xl px-3 py-2 text-center border border-slate-100/80">
-              <p className="text-[10px] font-bold text-slate-400">Xuất phát</p>
-              <p className="text-[13px] font-bold text-slate-700 mt-0.5 tabular-nums">{trip.metadata.start_km} Km</p>
+        {trip.participants && trip.participants.length > 0 && (
+          <div className="pt-3 mt-2 border-t border-slate-50">
+            <div className="flex items-center gap-2 mb-2">
+              <Users className="w-3.5 h-3.5 text-slate-400" />
+              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Người đi cùng ({trip.participants.filter((p: any) => p.profile?.role !== 'driver').length})</span>
             </div>
-            <div className="flex-1 bg-slate-50 rounded-xl px-3 py-2 text-center border border-slate-100/80">
-              <p className="text-[10px] font-bold text-slate-400">Kết thúc</p>
-              <p className="text-[13px] font-bold mt-0.5 tabular-nums">
-                {hasEnded
-                  ? <span className="text-slate-700">{trip.metadata.end_km} Km</span>
-                  : <span className="text-slate-300 font-normal italic text-xs">—</span>}
-              </p>
+            <div className="flex flex-wrap items-center gap-2">
+              {trip.participants.filter((p: any) => p.profile?.role !== 'driver').map((p: any) => (
+                <div key={p.profile?.id} className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-lg border border-slate-100">
+                  <Avatar className="w-5 h-5 shrink-0">
+                    <AvatarImage src={p.profile?.avatar_url} />
+                    <AvatarFallback className="bg-primary/10 text-primary text-[10px] font-bold">
+                      {p.profile?.full_name?.charAt(0) || '?'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="text-xs font-medium text-slate-700 truncate max-w-[120px]">
+                    {p.profile?.full_name}
+                  </span>
+                </div>
+              ))}
             </div>
-            {hasEnded && trip.metadata?.actual_distance != null && (
-              <div className="flex-1 bg-emerald-50/50 rounded-xl px-3 py-2 text-center border border-emerald-100">
-                <p className="text-[10px] font-bold text-emerald-600">Tổng chạy</p>
-                <p className="text-[13px] font-bold text-emerald-700 mt-0.5 tabular-nums">{trip.metadata.actual_distance} Km</p>
-              </div>
-            )}
           </div>
         )}
       </div>
