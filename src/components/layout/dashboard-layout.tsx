@@ -314,7 +314,8 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
   ].filter(item => !(item.hideFor || []).includes(profile?.role));
 
  return (
- <div className="flex min-h-screen bg-background">
+  <>
+  <div className="flex min-h-screen bg-background">
  <ConfirmDialogProvider />
  <BatchScopeDialogProvider />
  <AnniversaryDialog
@@ -411,9 +412,10 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
  <MustChangePasswordBanner show={profile?.must_change_password === true} />
  {children}
  </main>
+ </div>
+ </div>
  <MobileBottomNav navItems={navItems} pathname={pathname} />
  <MobileCreateFab />
- </div>
- </div>
+ </>
  );
 }

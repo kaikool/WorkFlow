@@ -21,6 +21,7 @@ import { format } from "date-fns";
 import { typeLabels } from "../_lib/constants";
 import { filterBGD, filterStaff } from "../_lib/utils";
 import { useScheduleDetail } from "../_hooks/useScheduleDetail";
+import { confirmDialog } from "@/components/ui/confirm-dialog";
 import ScheduleEditForm from "./ScheduleEditForm";
 import RejectedBanner from "./RejectedBanner";
 import { createClient } from "@/utils/supabase/client";
@@ -92,7 +93,7 @@ function DetailHeader({ schedule, badgeColor, headerBg, isAllowedToView }: {
         <div className="flex flex-wrap items-center gap-2 text-slate-600 text-[13px] font-semibold pt-1">
           <div className="flex min-w-0 items-center gap-1.5">
             <Clock className="w-4 h-4 text-slate-400 shrink-0" />
-            {schedule.status === 'completed'
+            {schedule.status === 'completed' || !(format(new Date(schedule.end_time), 'HH:mm') === '23:59')
               ? `${format(new Date(schedule.start_time), 'HH:mm dd/MM')} - ${format(new Date(schedule.end_time), 'HH:mm dd/MM')}`
               : `Bắt đầu từ: ${format(new Date(schedule.start_time), 'HH:mm dd/MM')}`
             }
@@ -195,11 +196,19 @@ export default function ScheduleDetailDialog({
   const showDeleteAction = detail.isCreator;
   const hasAnyAction = showEditAction || showEndAction || showCancelVehicle || showDeleteAction;
 
-  const handleDelete = async () => {
-    const ok = confirm("Bạn có chắc chắn muốn xóa lịch trình này?");
-    if (ok && onDeleteSchedule) {
-      onDeleteSchedule(schedule.id);
-    }
+  const handleDelete = () => {
+    confirmDialog({
+      title: 'Xóa lịch trình',
+      description: 'Bạn có chắc chắn muốn xóa lịch trình này? Hành động này không thể hoàn tác.',
+      confirmText: 'Xóa lịch trình',
+      cancelText: 'Đóng',
+      variant: 'destructive',
+      onConfirm: async () => {
+        if (onDeleteSchedule) {
+          onDeleteSchedule(schedule.id);
+        }
+      }
+    });
   };
 
   const menuActions = hasAnyAction ? (

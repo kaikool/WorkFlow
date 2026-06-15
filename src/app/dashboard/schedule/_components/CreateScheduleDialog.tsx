@@ -122,7 +122,7 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
         <div className="space-y-5 px-[var(--app-page-x)] py-4">
 
           {/* 1. Thời gian */}
-          <div className="grid grid-cols-1 gap-4 min-[420px]:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
             <div className="space-y-2">
               <Label className="text-[13px] font-medium text-slate-500 whitespace-nowrap">Từ ngày</Label>
               <Popover open={isStartOpen} onOpenChange={setIsStartOpen}>
@@ -155,8 +155,40 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
                   setStartTime(v);
                   const [h, m] = v.split(':');
                   const endH = Math.min(parseInt(h) + 1, 18);
-                  setEndTime(`${endH.toString().padStart(2, '0')}:${m}`);
+                  if (!endTime) setEndTime(`${endH.toString().padStart(2, '0')}:${m}`);
                 }}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-[13px] font-medium text-slate-500 whitespace-nowrap">Đến ngày <span className="text-slate-400 font-normal">(Tuỳ chọn)</span></Label>
+              <Popover open={isEndOpen} onOpenChange={setIsEndOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className={cn("w-full h-11 bg-slate-50 border-none rounded-xl font-medium justify-start text-left text-sm active:scale-[0.98] transition-all duration-300 ease-in-out truncate", !endDate && "text-slate-400")}>
+                    <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
+                    <span className="truncate">{endDate ? format(endDate, "dd/MM/yyyy") : "Tự động"}</span>
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0 rounded-2xl border-none shadow-2xl z-[9999] pointer-events-auto" align="start" onOpenAutoFocus={(e) => e.preventDefault()}>
+                  <Calendar
+                    mode="single"
+                    selected={endDate}
+                    onSelect={(date) => {
+                      setEndDate(date);
+                      setIsEndOpen(false);
+                    }}
+                    initialFocus
+                    locale={vi}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[13px] font-medium text-slate-500 whitespace-nowrap">{isLeave ? 'Giờ kết thúc' : 'Giờ về'} <span className="text-slate-400 font-normal">(Tuỳ chọn)</span></Label>
+              <TimePicker
+                value={endTime || null}
+                onChange={(v) => setEndTime(v)}
+                placeholder="Tự động"
               />
             </div>
           </div>

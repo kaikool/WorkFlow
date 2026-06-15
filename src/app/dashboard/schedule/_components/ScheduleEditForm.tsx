@@ -141,8 +141,8 @@ export default function ScheduleEditForm({
               </div>
             </div>
 
-            {/* Lưới 2 cột: Ngày bắt đầu + Giờ đi */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Lưới 4 cột: Ngày/Giờ đi - Ngày/Giờ về */}
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
               <div className="space-y-3">
                 <Label className="text-[12px] font-medium text-slate-500 pl-0.5">Từ ngày</Label>
                 <Popover open={detail.isStartOpen} onOpenChange={detail.setIsStartOpen}>
@@ -175,6 +175,45 @@ export default function ScheduleEditForm({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="rounded-xl border-none shadow-2xl">
+                    {timeOptions.map(time => (
+                      <SelectItem key={time} value={time} className="text-base md:text-sm py-3 md:py-2">{time}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-3">
+                <Label className="text-[12px] font-medium text-slate-500 pl-0.5">Đến ngày <span className="text-slate-400 font-normal">(Tuỳ chọn)</span></Label>
+                <Popover open={detail.isEndOpen} onOpenChange={detail.setIsEndOpen}>
+                  <PopoverTrigger asChild>
+                    <Button type="button" variant="outline" className={cn("w-full min-h-11 bg-slate-50 border-none rounded-xl font-medium justify-start text-left text-base md:text-sm active:scale-95 transition-all", !detail.editEndDate && "text-slate-400")}>
+                      <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
+                      <span className="truncate">{detail.editEndDate ? format(detail.editEndDate, "dd/MM/yyyy") : "Tự động"}</span>
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 rounded-2xl border-none shadow-2xl z-[9999] pointer-events-auto" align="start" onOpenAutoFocus={(e) => e.preventDefault()}>
+                    <Calendar
+                      mode="single"
+                      selected={detail.editEndDate}
+                      onSelect={(date) => {
+                        detail.setEditEndDate(date);
+                        detail.setIsEndOpen(false);
+                      }}
+                      initialFocus
+                      locale={vi}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div className="space-y-3">
+                <Label className="text-[12px] font-medium text-slate-500 pl-0.5">Giờ về <span className="text-slate-400 font-normal">(Tuỳ chọn)</span></Label>
+                <Select value={detail.editEndTime || "none"} onValueChange={(v) => detail.setEditEndTime(v === "none" ? "" : v)}>
+                  <SelectTrigger className="min-h-11 bg-slate-50 border-none rounded-xl font-medium text-sm">
+                    <Clock className="mr-2 h-4 w-4 shrink-0 text-slate-500" />
+                    <SelectValue placeholder="Tự động" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl border-none shadow-2xl">
+                    <SelectItem value="none" className="text-base md:text-sm py-3 md:py-2 italic">Tự động</SelectItem>
                     {timeOptions.map(time => (
                       <SelectItem key={time} value={time} className="text-base md:text-sm py-3 md:py-2">{time}</SelectItem>
                     ))}

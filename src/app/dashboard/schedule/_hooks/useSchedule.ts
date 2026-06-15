@@ -76,9 +76,9 @@ export function useSchedule() {
     target_profile_id: "", destinations: [{ location: "" }]
   });
   const [startDate, setStartDate] = useState<Date | undefined>(new Date());
-  const [endDate, setEndDate] = useState<Date | undefined>(new Date());
+  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   const [startTime, setStartTime] = useState("08:00");
-  const [endTime, setEndTime] = useState("09:00");
+  const [endTime, setEndTime] = useState("");
   const [isStartOpen, setIsStartOpen] = useState(false);
   const [isEndOpen, setIsEndOpen] = useState(false);
 
@@ -560,13 +560,13 @@ export function useSchedule() {
       notifyValidation("Vui lòng chọn ngày bắt đầu.");
       return;
     }
-    // Tự động gán ngày kết thúc và giờ kết thúc
-    const autoEndDate = new Date(startDate);
-    const autoEndTime = "23:59";
+    // Tự động gán ngày kết thúc và giờ kết thúc nếu người dùng không chọn
+    const finalEndDate = endDate ? endDate : new Date(startDate);
+    const finalEndTime = endTime ? endTime : "23:59";
 
     await createScheduleHelper({
       supabase, toast, profile, allProfiles, newSchedule,
-      startDate, endDate: autoEndDate, startTime, endTime: autoEndTime,
+      startDate, endDate: finalEndDate, startTime, endTime: finalEndTime,
       conflicts, resourceConflicts,
       selectedParticipants, bgdMode, selectedBGD, deptMode, filterDepts, participantMode,
       findParticipantConflicts, sendNotifications, isScheduleApprover,

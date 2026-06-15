@@ -212,7 +212,7 @@ export function useScheduleDetail({
       : resolveParticipantIds({ selectedParticipants, bgdMode, selectedBGD, deptMode, filterDepts, participantMode, allProfiles });
 
     const startString = `${format(editStartDate || new Date(), 'yyyy-MM-dd')}T${editStartTime}`;
-    const endString = `${format(editEndDate || new Date(), 'yyyy-MM-dd')}T${editEndTime}`;
+    const endString = `${format(editEndDate || editStartDate || new Date(), 'yyyy-MM-dd')}T${editEndTime || "23:59"}`;
 
     const finalLocation = (!isLeaveType && !isBranchLocation && editData.destinations?.length > 0)
       ? editData.destinations.map((d: any) => d.location).filter(Boolean).join(' ➔ ')
@@ -223,7 +223,8 @@ export function useScheduleDetail({
       description: editData.description || null,
       type: editData.type,
       start_time: new Date(startString).toISOString(),
-      end_time: schedule.end_time, // Giữ nguyên giờ kết thúc cũ
+      end_time: new Date(endString).toISOString(),
+
       location: isLeaveType ? null : finalLocation,
       metadata: (!isLeaveType && !isBranchLocation) ? { ...schedule.metadata, destinations: editData.destinations } : schedule.metadata,
       room_id: !isLeaveType && isBranchLocation && editData.room_id !== 'none' ? editData.room_id : null,
@@ -244,7 +245,7 @@ export function useScheduleDetail({
     setEditStartTime(v);
     const [h, m] = v.split(':');
     const endH = Math.min(parseInt(h) + 1, 23);
-    setEditEndTime(`${endH.toString().padStart(2, '0')}:${m}`);
+    if (!editEndTime) setEditEndTime(`${endH.toString().padStart(2, '0')}:${m}`);
   };
 
   const handleVehicleSelect = (v: string) => {
