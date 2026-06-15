@@ -245,17 +245,17 @@ export default function ScheduleEditForm({
 
             {/* Phương tiện */}
             {detail.editData.type !== 'leave' && (
-              <div className="flex items-center gap-3 p-3 bg-white rounded-2xl border border-slate-100 shadow-sm mt-4">
+              <div className="flex flex-wrap items-center gap-3 p-3 bg-white rounded-2xl border border-slate-100 shadow-sm mt-4">
                 <Switch
                   checked={!!detail.editData.use_vehicle}
                   onCheckedChange={(checked) => detail.setEditData({ ...detail.editData, use_vehicle: checked, vehicle_id: checked ? 'none' : detail.editData.vehicle_id })}
                   aria-label="Bật hoặc tắt sử dụng xe cơ quan"
                 />
-                <div className="flex flex-col flex-1 min-w-0">
+                <div className="flex flex-col flex-1 min-w-[120px]">
                   <span className="text-sm font-medium text-slate-900 whitespace-nowrap">Sử dụng xe cơ quan</span>
                 </div>
                 {canCoord && detail.editData.use_vehicle && (
-                  <div className="w-40 shrink-0 animate-in fade-in zoom-in-95">
+                  <div className="w-full sm:w-40 shrink-0 animate-in fade-in zoom-in-95">
                     <Select value={detail.editData.vehicle_id || 'none'} onValueChange={(v) => detail.setEditData({ ...detail.editData, vehicle_id: v })}>
                       <SelectTrigger className="h-9 bg-slate-50 border-none rounded-lg font-medium text-xs shadow-sm"><SelectValue placeholder="Gán xe" /></SelectTrigger>
                       <SelectContent className="rounded-xl border-none shadow-2xl">
