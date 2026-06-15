@@ -196,19 +196,18 @@ export default function ScheduleDetailDialog({
   const showDeleteAction = detail.isCreator;
   const hasAnyAction = showEditAction || showEndAction || showCancelVehicle || showDeleteAction;
 
-  const handleDelete = () => {
-    confirmDialog({
+  const handleDelete = async () => {
+    const ok = await confirmDialog({
       title: 'Xóa lịch trình',
       description: 'Bạn có chắc chắn muốn xóa lịch trình này? Hành động này không thể hoàn tác.',
       confirmText: 'Xóa lịch trình',
       cancelText: 'Đóng',
-      variant: 'destructive',
-      onConfirm: async () => {
-        if (onDeleteSchedule) {
-          onDeleteSchedule(schedule.id);
-        }
-      }
+      danger: true,
     });
+    
+    if (ok && onDeleteSchedule) {
+      onDeleteSchedule(schedule.id);
+    }
   };
 
   const menuActions = hasAnyAction ? (
