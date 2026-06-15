@@ -35,7 +35,7 @@ export function TaskDetailDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="app-dialog-sheet app-dialog-sheet--2xl shadow-2xl">
+      <DialogContent hideCloseButton className="app-dialog-sheet app-dialog-sheet--2xl shadow-2xl flex flex-col p-0">
         <DialogHeader className="app-dialog-sheet-header">
           <DialogTitle className="text-[18px] font-bold text-slate-900 leading-tight pr-8">
             {loading && !task ? 'Đang tải…' : (task?.title ?? 'Không tìm thấy')}
@@ -45,30 +45,27 @@ export function TaskDetailDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="app-dialog-sheet-body">
-          <div className="px-[var(--app-page-x)] py-4">
-            {loading && !task && (
-              <div className="flex items-center justify-center py-10">
-                <Loader2 className="icon-lg animate-spin text-slate-400" />
-              </div>
-            )}
-            {task && (
-              <TaskDetailPanel
-                task={task}
-                currentProfile={currentProfile}
-                onChanged={() => {
-                  refetch();
-                  onChanged?.();
-                }}
-              />
-            )}
-            {!loading && !task && (
-              <p className="text-[14px] text-slate-500 text-center py-10">
-                Công việc đã bị xoá hoặc bạn không có quyền xem.
-              </p>
-            )}
+        {loading && !task && (
+          <div className="flex-1 flex items-center justify-center py-10">
+            <Loader2 className="icon-lg animate-spin text-slate-400" />
           </div>
-        </ScrollArea>
+        )}
+        {task && (
+          <TaskDetailPanel
+            task={task}
+            currentProfile={currentProfile}
+            onChanged={() => {
+              refetch();
+              onChanged?.();
+            }}
+            onClose={() => setIsOpen(false)}
+          />
+        )}
+        {!loading && !task && (
+          <p className="text-[14px] text-slate-500 text-center py-10">
+            Công việc đã bị xoá hoặc bạn không có quyền xem.
+          </p>
+        )}
       </DialogContent>
     </Dialog>
   );

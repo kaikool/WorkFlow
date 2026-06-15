@@ -144,7 +144,7 @@ export default function DocumentDetailDialog({
   return (
     <>
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="app-dialog-sheet app-dialog-sheet--xl shadow-2xl">
+        <DialogContent hideCloseButton className="app-dialog-sheet app-dialog-sheet--xl shadow-2xl flex flex-col p-0">
           <DialogHeader className="app-dialog-sheet-header">
             <div className="flex items-center gap-2 flex-wrap">
               <p className="font-mono text-[12px] font-semibold text-slate-500 tabular-nums">
@@ -261,31 +261,26 @@ export default function DocumentDetailDialog({
             </div>
           </ScrollArea>
 
-          <DialogFooter className="app-dialog-sheet-footer flex flex-row flex-wrap items-center justify-between gap-2">
-            <Button
-              variant="ghost"
-              onClick={() => setIsOpen(false)}
-              className="min-h-11 px-4 rounded-xl font-medium text-slate-500 text-[13px]"
-            >
-              Đóng
-            </Button>
-
-            <div className="flex flex-wrap items-center gap-2">
+          <div className="app-dialog-sheet-footer flex flex-row justify-between items-center gap-3 border-t border-slate-100 p-4">
+            <div className="flex items-center gap-1.5">
               {/* Người nhận đang chờ → "Đã nhận" / "Trả về" */}
               {pendingHandover && doc && (
                 <>
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     onClick={() => setIsReturnOpen(true)}
-                    className="min-h-11 px-4 rounded-xl font-medium text-[13px] border-red-200 text-red-600 hover:bg-red-50"
+                    title="Trả về"
+                    className="h-10 px-3 rounded-xl font-medium text-[13px] text-red-600 bg-red-50 hover:bg-red-100"
                   >
-                    <Undo2 className="w-4 h-4 mr-1" /> Trả về
+                    <Undo2 className="w-4 h-4 mr-1.5" /> Trả về
                   </Button>
                   <Button
+                    variant="ghost"
                     onClick={handleAcknowledge}
-                    className="min-h-11 px-4 rounded-xl font-semibold bg-emerald-600 hover:bg-emerald-700 text-white"
+                    title="Đã nhận"
+                    className="h-10 px-3 rounded-xl font-medium text-[13px] bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
                   >
-                    <Check className="w-4 h-4 mr-1" /> Đã nhận
+                    <Check className="w-4 h-4 mr-1.5" /> Đã nhận
                   </Button>
                 </>
               )}
@@ -294,22 +289,33 @@ export default function DocumentDetailDialog({
               {canSenderAct && doc && (
                 <>
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     onClick={handleComplete}
-                    className="min-h-11 px-4 rounded-xl font-medium text-[13px] border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+                    title="Hoàn thành"
+                    className="h-10 px-3 rounded-xl font-medium text-[13px] text-emerald-600 bg-emerald-50 hover:bg-emerald-100"
                   >
-                    <CheckCircle2 className="w-4 h-4 mr-1" /> Hoàn thành
+                    <CheckCircle2 className="w-4 h-4 mr-1.5" /> Hoàn thành
                   </Button>
                   <Button
+                    variant="ghost"
                     onClick={() => setIsTransferOpen(true)}
-                    className="min-h-11 px-4 rounded-xl font-semibold bg-primary hover:bg-primary/90 text-white"
+                    title="Chuyển tiếp"
+                    className="h-10 px-3 rounded-xl font-medium text-[13px] bg-primary/10 text-primary hover:bg-primary/20"
                   >
-                    Chuyển tiếp <ArrowRight className="w-4 h-4 ml-1" />
+                    <ArrowRight className="w-4 h-4 mr-1.5" /> Chuyển tiếp
                   </Button>
                 </>
               )}
             </div>
-          </DialogFooter>
+            
+            <Button
+              variant="ghost"
+              onClick={() => setIsOpen(false)}
+              className="min-h-11 px-4 rounded-xl font-medium text-slate-600 text-[13px] bg-slate-100 hover:bg-slate-200 active:scale-95 transition-all whitespace-nowrap"
+            >
+              Đóng cửa sổ
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 

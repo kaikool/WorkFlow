@@ -152,7 +152,7 @@ export function BatchTaskDetailDialog({ isOpen, setIsOpen, batchId, children, on
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="app-dialog-sheet app-dialog-sheet--xl shadow-2xl">
+      <DialogContent hideCloseButton className="app-dialog-sheet app-dialog-sheet--xl shadow-2xl">
         <DialogHeader className="app-dialog-sheet-header">
           <div className="flex items-start justify-between gap-4 pr-8">
             <div>
@@ -163,35 +163,6 @@ export function BatchTaskDetailDialog({ isOpen, setIsOpen, batchId, children, on
                 {dueLabel && ` · hạn ${dueLabel}`}
               </DialogDescription>
             </div>
-            {(canEdit || canDelete) && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="rounded-full shrink-0 -mt-1 -mr-1" disabled={deleting}>
-                    <MoreHorizontal className="icon-md text-slate-500" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48 rounded-xl shadow-lg border border-slate-100 z-[9999]">
-                  {canEdit && (
-                    <DropdownMenuItem onClick={() => setOpenEdit(true)} className="gap-2 py-2 cursor-pointer font-medium">
-                      <Pencil className="icon-sm text-slate-500" /> Sửa thông tin lô
-                    </DropdownMenuItem>
-                  )}
-                  {canForceComplete && hasPending && (
-                    <DropdownMenuItem onClick={runForceCompleteBatch} className="gap-2 py-2 cursor-pointer font-medium text-primary">
-                      <CheckCircle2 className="icon-sm" /> Đã nhận lô
-                    </DropdownMenuItem>
-                  )}
-                  {canDelete && (
-                    <DropdownMenuItem 
-                      onClick={runDelete} 
-                      className="gap-2 py-2 cursor-pointer font-medium text-red-600 focus:text-red-700 focus:bg-red-50"
-                    >
-                      <Trash2 className="icon-sm" /> Xoá toàn bộ lô
-                    </DropdownMenuItem>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
           </div>
         </DialogHeader>
 
@@ -279,6 +250,26 @@ export function BatchTaskDetailDialog({ isOpen, setIsOpen, batchId, children, on
             </div>
           </div>
         </ScrollArea>
+        <div className="app-dialog-sheet-footer flex flex-row justify-between items-center gap-3 border-t border-slate-100 p-4">
+          <div className="flex items-center gap-1.5">
+            {canEdit && (
+              <Button variant="ghost" size="icon" title="Sửa thông tin lô" onClick={() => setOpenEdit(true)} disabled={deleting} className="h-10 w-10 rounded-xl text-slate-500 bg-slate-50 hover:bg-slate-100 hover:text-slate-900 border border-slate-100">
+                <Pencil className="h-4 w-4" />
+              </Button>
+            )}
+            {canForceComplete && hasPending && (
+              <Button variant="ghost" size="icon" title="Đã nhận lô" onClick={runForceCompleteBatch} disabled={deleting} className="h-10 w-10 rounded-xl text-emerald-600 bg-emerald-50 hover:bg-emerald-100 border border-emerald-100">
+                <CheckCircle2 className="h-4 w-4" />
+              </Button>
+            )}
+            {canDelete && (
+              <Button variant="ghost" size="icon" title="Xoá toàn bộ lô" onClick={runDelete} disabled={deleting} className="h-10 w-10 rounded-xl text-red-600 bg-red-50 hover:bg-red-100 border border-red-100">
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+          <Button variant="ghost" className="min-h-11 px-4 rounded-xl font-medium text-slate-600 text-[13px] bg-slate-100 hover:bg-slate-200 active:scale-95 transition-all whitespace-nowrap" onClick={() => setIsOpen(false)}>Đóng cửa sổ</Button>
+        </div>
         {openEdit && representative && (
           <TaskEditDialog
             task={{

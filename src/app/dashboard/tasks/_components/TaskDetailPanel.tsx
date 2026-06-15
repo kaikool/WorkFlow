@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Calendar, Play, CheckCircle2, Send, Clock, Users, Archive,
   AlertTriangle, Loader2, Building2, UserPlus, Undo2, X, RotateCcw,
@@ -49,10 +50,11 @@ interface Props {
   task: TaskDetail;
   currentProfile: { id: string; role: string; department_id: string | null } | null;
   onChanged: () => void;
+  onClose?: () => void;
   showArchive?: boolean;
 }
 
-export function TaskDetailPanel({ task, currentProfile, onChanged, showArchive = true }: Props) {
+export function TaskDetailPanel({ task, currentProfile, onChanged, onClose, showArchive = true }: Props) {
   const [busy, setBusy] = useState<string | null>(null);
   const [openDelegate, setOpenDelegate] = useState(false);
   const [openExtension, setOpenExtension] = useState(false);
@@ -182,7 +184,18 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, showArchive =
       danger: true,
     });
     if (!ok) return;
-    await runDeleteIds([task.id]);
+    
+    setBusy('delete');
+    const res = await deleteTask(task.id);
+    setBusy(null);
+    if (!res.ok) { notifyError(res.error, 'Không xoá được'); return; }
+    notifySuccess('Đã xoá công việc');
+    onChanged();
+    
+    // Thêm delay 100ms trước khi gọi onClose để tránh lỗi kẹt pointer-events:none của Radix UI
+    setTimeout(() => {
+      onClose?.();
+    }, 100);
   };
 
   const runDeleteIds = async (taskIds: string[]) => {
@@ -210,6 +223,11 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, showArchive =
       );
     }
     onChanged();
+    
+    // Thêm delay 100ms trước khi gọi onClose để tránh lỗi kẹt pointer-events:none của Radix UI
+    setTimeout(() => {
+      onClose?.();
+    }, 100);
   };
 
   // Cờ "Báo cáo bị trả về" — banner đỏ cam cho người được giao
@@ -220,7 +238,9 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, showArchive =
     && (isAssignee || isManagerOfTask));
 
   return (
-    <div className="group-stack">
+    <>
+    <ScrollArea className="app-dialog-sheet-body flex-1">
+    <div className="px-[var(--app-page-x)] py-4 group-stack">
       <div className="flex items-center gap-2 flex-wrap">
         <Badge variant="outline" className={cn('rounded-full px-2.5 py-0.5 font-medium', STATUS_BADGE_CLASS[task.status])}>
           {STATUS_LABEL[task.status]}
@@ -461,30 +481,12 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, showArchive =
               disabled={busy !== null}
             />
           )}
-          {canEdit && (
-            <SecondaryAction
-              label="Sửa"
-              icon={<Pencil className="icon-md" />}
-              onClick={() => setOpenEdit(true)}
-              disabled={busy !== null}
-            />
-          )}
           {canRequestExtension && (
             <SecondaryAction
               label="Xin gia hạn"
               icon={<Clock className="icon-md" />}
               onClick={() => setOpenExtension(true)}
               disabled={busy !== null}
-            />
-          )}
-
-          {canDelete && (
-            <DangerAction
-              label="Xoá"
-              icon={busy === 'delete' ? <Loader2 className="icon-md animate-spin" /> : <Trash2 className="icon-md" />}
-              onClick={runDelete}
-              disabled={busy !== null}
-              className="ml-auto"
             />
           )}
         </div>
@@ -622,6 +624,23 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, showArchive =
         />
       )}
     </div>
+    </ScrollArea>
+    <div className="app-dialog-sheet-footer flex flex-row justify-between items-center gap-3 border-t border-slate-100 p-4">
+      <div className="flex items-center gap-1.5">
+        {canEdit && (
+          <Button variant="ghost" size="icon" title="Sửa công việc" onClick={() => setOpenEdit(true)} disabled={busy !== null} className="h-10 w-10 rounded-xl text-slate-500 bg-slate-50 hover:bg-slate-100 hover:text-slate-900 border border-slate-100">
+            <Pencil className="h-4 w-4" />
+          </Button>
+        )}
+        {canDelete && (
+          <Button variant="ghost" size="icon" title="Xóa công việc" onClick={runDelete} disabled={busy !== null} className="h-10 w-10 rounded-xl text-red-600 bg-red-50 hover:bg-red-100 border border-red-100">
+            {busy === 'delete' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+          </Button>
+        )}
+      </div>
+      <Button variant="ghost" className="min-h-11 px-4 rounded-xl font-medium text-slate-600 text-[13px] bg-slate-100 hover:bg-slate-200 active:scale-95 transition-all whitespace-nowrap" onClick={onClose}>Đóng cửa sổ</Button>
+    </div>
+    </>
   );
 }
 
