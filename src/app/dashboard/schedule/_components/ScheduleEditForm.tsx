@@ -183,7 +183,7 @@ export default function ScheduleEditForm({
               </div>
 
               <div className="space-y-3">
-                <Label className="text-[12px] font-medium text-slate-500 pl-0.5">Đến ngày <span className="text-slate-400 font-normal">(Tuỳ chọn)</span></Label>
+                <Label className="text-[12px] font-medium text-slate-500 pl-0.5">Đến ngày</Label>
                 <Popover open={detail.isEndOpen} onOpenChange={detail.setIsEndOpen}>
                   <PopoverTrigger asChild>
                     <Button type="button" variant="outline" className={cn("w-full min-h-11 bg-slate-50 border-none rounded-xl font-medium justify-start text-left text-base md:text-sm active:scale-95 transition-all", !detail.editEndDate && "text-slate-400")}>
@@ -206,7 +206,7 @@ export default function ScheduleEditForm({
                 </Popover>
               </div>
               <div className="space-y-3">
-                <Label className="text-[12px] font-medium text-slate-500 pl-0.5">Giờ về <span className="text-slate-400 font-normal">(Tuỳ chọn)</span></Label>
+                <Label className="text-[12px] font-medium text-slate-500 pl-0.5">Giờ về</Label>
                 <Select value={detail.editEndTime || "none"} onValueChange={(v) => detail.setEditEndTime(v === "none" ? "" : v)}>
                   <SelectTrigger className="min-h-11 bg-slate-50 border-none rounded-xl font-medium text-sm">
                     <Clock className="mr-2 h-4 w-4 shrink-0 text-slate-500" />

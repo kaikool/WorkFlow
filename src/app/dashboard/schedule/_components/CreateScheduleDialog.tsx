@@ -161,7 +161,7 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-[13px] font-medium text-slate-500 whitespace-nowrap">Đến ngày <span className="text-slate-400 font-normal">(Tuỳ chọn)</span></Label>
+              <Label className="text-[13px] font-medium text-slate-500 whitespace-nowrap">Đến ngày</Label>
               <Popover open={isEndOpen} onOpenChange={setIsEndOpen}>
                 <PopoverTrigger asChild>
                   <Button variant="outline" className={cn("w-full h-11 bg-slate-50 border-none rounded-xl font-medium justify-start text-left text-sm active:scale-[0.98] transition-all duration-300 ease-in-out truncate", !endDate && "text-slate-400")}>
@@ -184,7 +184,7 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
               </Popover>
             </div>
             <div className="space-y-2">
-              <Label className="text-[13px] font-medium text-slate-500 whitespace-nowrap">{isLeave ? 'Giờ kết thúc' : 'Giờ về'} <span className="text-slate-400 font-normal">(Tuỳ chọn)</span></Label>
+              <Label className="text-[13px] font-medium text-slate-500 whitespace-nowrap">{isLeave ? 'Giờ kết thúc' : 'Giờ về'}</Label>
               <TimePicker
                 value={endTime || null}
                 onChange={(v) => setEndTime(v)}
