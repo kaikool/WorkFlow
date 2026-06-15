@@ -206,7 +206,11 @@ export default function ScheduleDetailDialog({
     });
     
     if (ok && onDeleteSchedule) {
-      onDeleteSchedule(schedule.id);
+      // Dùng setTimeout để tránh lỗi Radix UI bị kẹt pointer-events: none trên body 
+      // khi đóng 2 dialog (ConfirmDialog và ScheduleDetailDialog) cùng lúc.
+      setTimeout(() => {
+        onDeleteSchedule(schedule.id);
+      }, 100);
     }
   };
 
