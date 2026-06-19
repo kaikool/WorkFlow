@@ -36,7 +36,15 @@ export async function rejectDocument(handoverId: string, reason: string) {
 }
 
 export async function completeDocument(documentId: string) {
-  const { error } = await supabase.rpc("complete_document", {
+ const { error } = await supabase.rpc("complete_document", {
+   p_document_id: documentId,
+ });
+ if (error) return { ok: false as const, error: error.message };
+ return { ok: true as const };
+}
+
+export async function adminCompleteDocument(documentId: string) {
+  const { error } = await supabase.rpc("admin_complete_document", {
     p_document_id: documentId,
   });
   if (error) return { ok: false as const, error: error.message };

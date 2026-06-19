@@ -25,7 +25,7 @@ import { cn } from "@/lib/utils";
 import { notifyError, notifySuccess } from "@/lib/notify";
 import { DOCUMENT_STATUS_META } from "../_lib/constants";
 import { fetchDocumentById } from "../_lib/fetchHandover";
-import { acknowledgeDocument, completeDocument } from "../_lib/transferActions";
+import { acknowledgeDocument, completeDocument, adminCompleteDocument } from "../_lib/transferActions";
 import { canViewAllDocuments } from "@/lib/permissions";
 import type { DocumentRow, HandoverRow } from "../_lib/types";
 import HandoverTimeline from "./HandoverTimeline";
@@ -82,6 +82,7 @@ export default function DocumentDetailDialog({
   const isCreator = doc?.creator_id === profile?.id;
   const isHolder = doc?.current_assignee_id === profile?.id;
   const isReadOnly = !isHolder && !isCreator && !canViewAllDocuments(profile);
+  const isAdmin = profile?.role === 'admin' || profile?.role === 'director';
 
   // Tìm handover PENDING gần nhất với receiver = me → để show "Đã nhận" / "Trả về"
   const pendingHandover: HandoverRow | undefined = doc?.handovers?.find(
@@ -100,6 +101,7 @@ export default function DocumentDetailDialog({
     && !outgoingPending
     && doc.status !== "PENDING_RECEIPT"
     && doc.status !== "COMPLETED";
+  const canAdminForceComplete = isAdmin && doc && doc.status !== 'COMPLETED' && !canSenderAct;
 
   const handleAcknowledge = async () => {
     if (!pendingHandover) return;
@@ -303,14 +305,42 @@ export default function DocumentDetailDialog({
                     className="h-10 px-3 rounded-xl font-medium text-[13px] bg-primary/10 text-primary hover:bg-primary/20"
                   >
                     <ArrowRight className="w-4 h-4 mr-1.5" /> Chuyển tiếp
+                  <ArrowRight className="w-4 h-4 mr-1.5" /> Chuyển tiếp
                   </Button>
-                </>
-              )}
-            </div>
+                  </>)}
+                  {/* Admin override: đóng hồ sơ */}
+                  {canAdminForceComplete && (
+                  <Button
+                  variant="ghost"
+                  onClick={async () => {
+                  const { confirmDialog } = await import("@/components/ui/confirm-dialog");
+                  const ok = await confirmDialog({
+                    title: "Đóng hồ sơ (Hỗ trợ)?",
+                    description: "Hồ sơ sẽ được đóng. Hành động này được ghi nhận là admin/BGĐ can thiệp.",
+                    confirmText: "Xác nhận đóng",
+                    danger: true,
+                  });
+                  if (!ok) return;
+                  const res = await adminCompleteDocument(doc.id);
+                  if (!res.ok) {
+                    notifyError(res.error, "Không đóng được hồ sơ");
+                    return;
+                  }
+                  notifySuccess("Đã đóng hồ sơ", "Admin/BGĐ can thiệp thành công.");
+                  await refetch();
+                  onChanged();
+                  }}
+                  title="Đóng hồ sơ"
+                  className="h-10 px-3 rounded-xl font-medium text-[13px] text-orange-600 bg-orange-50 hover:bg-orange-100"
+                  >
+                  <CheckCircle2 className="w-4 h-4 mr-1.5" /> Đóng hồ sơ (Hỗ trợ)
+                  </Button>
+                  )}
+                  </div>
             
-            <Button
-              variant="ghost"
-              onClick={() => setIsOpen(false)}
+                  <Button
+                  variant="ghost"
+                  onClick={() => setIsOpen(false)}
               className="min-h-11 px-4 rounded-xl font-medium text-slate-600 text-[13px] bg-slate-100 hover:bg-slate-200 active:scale-95 transition-all whitespace-nowrap"
             >
               Đóng cửa sổ
