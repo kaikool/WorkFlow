@@ -39,8 +39,8 @@ export default function DirectorTimeline({
         <div className="min-w-[850px] space-y-4">
           {/* Tiêu đề giờ */}
           <div className="relative h-6 text-sm font-medium text-slate-500 select-none w-full border-b border-slate-100 pb-2 mb-4">
-            {['07:00','08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00'].map((label, i) => (
-              <span key={label} className="absolute -translate-x-1/2" style={{ left: `${(i / 12) * 100}%` }}>{label}</span>
+            {['07:00','09:00','11:00','13:00','15:00','17:00','19:00'].map((label, i) => (
+              <span key={label} className="absolute -translate-x-1/2 text-xs" style={{ left: `${(i / 6) * 100}%` }}>{label}</span>
             ))}
           </div>
 
@@ -59,7 +59,7 @@ export default function DirectorTimeline({
                 <div key={dir.id} className="relative w-full h-8 flex items-center border-b border-slate-100/50 last:border-none">
                   {/* Lưới giờ */}
                   <div className="absolute inset-0 pointer-events-none flex">
-                    {Array.from({ length: 9 }).map((_, idx) => (
+                    {Array.from({ length: 12 }).map((_, idx) => (
                       <div key={idx} className="flex-1 border-r border-slate-200/20 last:border-none" />
                     ))}
                   </div>
