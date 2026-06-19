@@ -145,8 +145,8 @@ export function useSchedule() {
   const isTodaySelected = isSameDay(selectedDate, new Date());
   const now = new Date();
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
-  const startLimit = 8 * 60;
-  const endLimit = 17 * 60;
+  const startLimit = 7 * 60;
+  const endLimit = 19 * 60;
   const duration = endLimit - startLimit;
   const isWithinWorkingHours = currentMinutes >= startLimit && currentMinutes <= endLimit;
   const currentTimePercent = isWithinWorkingHours ? ((currentMinutes - startLimit) / duration) * 100 : -1;
@@ -190,9 +190,9 @@ export function useSchedule() {
       const now = new Date();
       const currentHour = now.getHours();
       const currentMinutes = now.getMinutes();
-      if (currentHour >= 8 && currentHour <= 17) {
-        const totalMinutes = 9 * 60;
-        const minutesElapsed = (currentHour - 8) * 60 + currentMinutes;
+      if (currentHour >= 7 && currentHour <= 19) {
+        const totalMinutes = 12 * 60;
+        const minutesElapsed = (currentHour - 7) * 60 + currentMinutes;
         const percentElapsed = minutesElapsed / totalMinutes;
         setTimeout(() => {
           if (timelineContainerRef.current) {

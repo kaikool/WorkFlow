@@ -27,7 +27,7 @@ export default function ResourcesManagerDashboard({ schedules, vehicles, rooms, 
       .filter(s =>
         s.vehicle_id === vehicleId &&
         (s.status === 'approved' || s.status === 'in_progress') &&
-        isAfter(new Date(s.end_time), now)
+        (s.status === 'in_progress' || isAfter(new Date(s.end_time), now))
       )
       .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
 
