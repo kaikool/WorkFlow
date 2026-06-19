@@ -209,19 +209,6 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
 
       if (error) throw error;
 
-      // Bộ phận điều phối lấy từ cache shared (coordinatorTargets ở component scope)
-
-      if (coordinatorTargets.length > 0) {
-        await supabase.from('notifications').insert(
-          coordinatorTargets.map((target: any) => ({
-            user_id: target.id,
-            title: "Quyết toán hành trình xe công 🚗",
-            content: `Tài xế ${profile?.full_name} đã kết thúc chuyến "${schedule.title}".`,
-            link: "/dashboard/schedule"
-          }))
-        );
-      }
-
       notifySuccess("Đã hoàn thành chuyến đi");
       setIsEndOpen(false);
 
