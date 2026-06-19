@@ -99,7 +99,7 @@ export default function ScheduleCard({ item, profile, onSelect, onStatusUpdate }
                     {status.label}
                   </Badge>
                 </div>
-                <h3 className="text-[17px] font-semibold text-slate-900 leading-tight pt-1">{displayTitle}</h3>
+                <h3 className="text-[17px] font-semibold text-slate-900 leading-snug pt-1.5 pb-0.5">{displayTitle}</h3>
               </div>
             </div>
 
