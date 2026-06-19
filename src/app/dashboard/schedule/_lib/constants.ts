@@ -14,11 +14,11 @@ export const typeLabels: any = {
 };
 
 export const statusLabels: any = {
-  pending:     { label: "Đang chờ duyệt", color: "bg-slate-100 text-slate-500" },
-  approved:    { label: "Đã xác nhận",    color: "bg-slate-900 text-white" },
-  rejected:    { label: "Từ chối",         color: "bg-slate-100 text-slate-600" },
-  in_progress: { label: "Đang thực hiện", color: "bg-amber-600 text-white" },
-  completed:   { label: "Hoàn thành",     color: "bg-slate-100 text-slate-700" },
+  pending:     { label: "Đang chờ",    color: "bg-amber-50 text-amber-700 border border-amber-200" },
+  approved:    { label: "Đã xác nhận", color: "bg-emerald-50 text-emerald-700 border border-emerald-200" },
+  rejected:    { label: "Từ chối",     color: "bg-red-50 text-red-700 border border-red-200" },
+  in_progress: { label: "Đang thực hiện", color: "bg-blue-50 text-blue-700 border border-blue-200" },
+  completed:   { label: "Hoàn thành",  color: "bg-slate-100 text-slate-500 border border-slate-200" },
 };
 
 export const directorColors = [
