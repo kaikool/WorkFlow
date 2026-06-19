@@ -27,7 +27,7 @@ const statusBarColor: Record<string, string> = {
   completed: "bg-slate-300",
 };
 
-export default function ScheduleCard({ item, profile, onSelect, onStatusUpdate }: ScheduleCardProps) {
+export default React.memo(function ScheduleCard({ item, profile, onSelect, onStatusUpdate }: ScheduleCardProps) {
   const isCoordinator = canCoordinateSharedResources(profile);
   const [rejectOpen, setRejectOpen] = React.useState(false);
   const type = typeLabels[item.type] || typeLabels.meeting;
@@ -190,4 +190,4 @@ export default function ScheduleCard({ item, profile, onSelect, onStatusUpdate }
       />
     </Card>
   );
-}
+});

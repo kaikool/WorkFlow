@@ -4,16 +4,17 @@ import React, { Suspense } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { notifyError, notifySuccess } from "@/lib/notify";
-
-import CreateScheduleDialog from "./_components/CreateScheduleDialog";
-import ScheduleDetailDialog from "./_components/ScheduleDetailDialog";
+import { Plus } from "lucide-react";
 import DateNavigator from "./_components/DateNavigator";
 import CalendarView from "./_components/CalendarView";
-import DriverDashboard from "./_components/DriverDashboard";
 import { canApproveLeave, canUseDriverWorkspace } from "@/lib/permissions";
 import { useSchedule } from "./_hooks/useSchedule";
 import PageHeader from "@/components/layout/PageHeader";
 import { ListSkeleton } from "@/components/ui/list-skeleton";
+
+const CreateScheduleDialog = React.lazy(() => import("./_components/CreateScheduleDialog"));
+const ScheduleDetailDialog = React.lazy(() => import("./_components/ScheduleDetailDialog"));
+const DriverDashboard = React.lazy(() => import("./_components/DriverDashboard"));
 
 function ScheduleContent() {
   const scheduleProps = useSchedule();
@@ -56,12 +57,14 @@ function ScheduleContent() {
           title="Lịch trình"
           description="Lịch chạy xe & hành trình của bạn"
         />
-        <DriverDashboard
-          schedules={schedules}
-          profile={profile}
-          fetchData={fetchData}
-          toast={toast}
-        />
+        <Suspense fallback={<ListSkeleton variant="card" rows={4} />}>
+          <DriverDashboard
+            schedules={schedules}
+            profile={profile}
+            fetchData={fetchData}
+            toast={toast}
+          />
+        </Suspense>
       </div>
     );
   }
@@ -72,25 +75,27 @@ function ScheduleContent() {
         title="Lịch trình"
         description="Điều phối lịch họp & công tác"
         action={
-          <CreateScheduleDialog
-            isOpen={isCreateOpen} setIsOpen={setIsCreateOpen}
-            newSchedule={newSchedule} setNewSchedule={setNewSchedule}
-            startDate={startDate} setStartDate={setStartDate}
-            endDate={endDate} setEndDate={setEndDate}
-            startTime={startTime} setStartTime={setStartTime}
-            endTime={endTime} setEndTime={setEndTime}
-            isStartOpen={isStartOpen} setIsStartOpen={setIsStartOpen}
-            isEndOpen={isEndOpen} setIsEndOpen={setIsEndOpen}
-            rooms={rooms} conflicts={[...conflicts, ...resourceConflicts]} onSubmit={handleCreateSchedule} toast={toast}
-            allProfiles={allProfiles} departments={departments}
-            bgdMode={bgdMode} setBgdMode={setBgdMode}
-            selectedBGD={selectedBGD} setSelectedBGD={setSelectedBGD}
-            deptMode={deptMode} setDeptMode={setDeptMode}
-            filterDepts={filterDepts} setFilterDepts={setFilterDepts}
-            participantMode={participantMode} setParticipantMode={setParticipantMode}
-            selectedParticipants={selectedParticipants} setSelectedParticipants={setSelectedParticipants}
-            profile={profile}
-          />
+          <Suspense fallback={<Button className="bg-primary hover:bg-primary/90 px-5 font-medium h-11"><Plus className="w-5 h-5 mr-2" /> Đăng ký lịch mới</Button>}>
+            <CreateScheduleDialog
+              isOpen={isCreateOpen} setIsOpen={setIsCreateOpen}
+              newSchedule={newSchedule} setNewSchedule={setNewSchedule}
+              startDate={startDate} setStartDate={setStartDate}
+              endDate={endDate} setEndDate={setEndDate}
+              startTime={startTime} setStartTime={setStartTime}
+              endTime={endTime} setEndTime={setEndTime}
+              isStartOpen={isStartOpen} setIsStartOpen={setIsStartOpen}
+              isEndOpen={isEndOpen} setIsEndOpen={setIsEndOpen}
+              rooms={rooms} conflicts={[...conflicts, ...resourceConflicts]} onSubmit={handleCreateSchedule} toast={toast}
+              allProfiles={allProfiles} departments={departments}
+              bgdMode={bgdMode} setBgdMode={setBgdMode}
+              selectedBGD={selectedBGD} setSelectedBGD={setSelectedBGD}
+              deptMode={deptMode} setDeptMode={setDeptMode}
+              filterDepts={filterDepts} setFilterDepts={setFilterDepts}
+              participantMode={participantMode} setParticipantMode={setParticipantMode}
+              selectedParticipants={selectedParticipants} setSelectedParticipants={setSelectedParticipants}
+              profile={profile}
+            />
+          </Suspense>
         }
       />
 
@@ -116,12 +121,13 @@ function ScheduleContent() {
       />
 
       {/* Dialog chi tiết */}
-      <ScheduleDetailDialog
-        isOpen={isDetailOpen} setIsOpen={setIsDetailOpen}
-        schedule={selectedSchedule} schedules={schedules} vehicles={vehicles} rooms={rooms}
-        allProfiles={allProfiles} departments={departments}
-        currentProfile={profile}
-        onAssignVehicle={async (id, vId, dId) => {
+      <Suspense fallback={null}>
+        <ScheduleDetailDialog
+          isOpen={isDetailOpen} setIsOpen={setIsDetailOpen}
+          schedule={selectedSchedule} schedules={schedules} vehicles={vehicles} rooms={rooms}
+          allProfiles={allProfiles} departments={departments}
+          currentProfile={profile}
+          onAssignVehicle={async (id, vId, dId) => {
           try {
             const schedule = schedules.find(s => s.id === id);
             const { error } = await supabase.from('schedules').update({ vehicle_id: vId, driver_id: dId, status: vId ? 'approved' : 'pending' }).eq('id', id);
@@ -156,6 +162,7 @@ function ScheduleContent() {
         onResubmitSchedule={handleResubmitSchedule}
         onDeleteSchedule={handleDeleteSchedule}
       />
+      </Suspense>
     </div>
   );
 }
