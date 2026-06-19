@@ -6,8 +6,6 @@ import { cn } from "@/lib/utils";
 import { addDays, endOfDay, format, isSameDay, startOfDay } from "date-fns";
 import ScheduleCard from "./ScheduleCard";
 import DirectorTimeline from "./DirectorTimeline";
-import ResourcesManagerDashboard from "./ResourcesManagerDashboard";
-import LeaveApprovalDashboard from "./LeaveApprovalDashboard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -15,6 +13,9 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { canCoordinateSharedResources } from "@/lib/permissions";
+
+const ResourcesManagerDashboard = React.lazy(() => import("./ResourcesManagerDashboard"));
+const LeaveApprovalDashboard = React.lazy(() => import("./LeaveApprovalDashboard"));
 
 interface CalendarViewProps {
   loading: boolean;
@@ -245,7 +246,9 @@ export default function CalendarView(props: CalendarViewProps) {
             <ChevronDown className="ml-auto w-4 h-4 text-slate-400 transition-transform duration-200 group-data-[state=open]:rotate-180 shrink-0" />
           </CollapsibleTrigger>
           <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
-            <ResourcesManagerDashboard schedules={schedules} vehicles={vehicles} rooms={rooms} selectedDate={selectedDate} onSelectSchedule={onSelectSchedule} />
+            <Suspense fallback={<Loader2 className="h-6 w-6 animate-spin text-primary mx-auto my-8" />}>
+              <ResourcesManagerDashboard schedules={schedules} vehicles={vehicles} rooms={rooms} selectedDate={selectedDate} onSelectSchedule={onSelectSchedule} />
+            </Suspense>
           </CollapsibleContent>
         </Collapsible>
       )}
@@ -260,7 +263,9 @@ export default function CalendarView(props: CalendarViewProps) {
             <ChevronDown className="ml-auto w-4 h-4 text-slate-400 transition-transform duration-200 group-data-[state=open]:rotate-180 shrink-0" />
           </CollapsibleTrigger>
           <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
-            <LeaveApprovalDashboard schedules={schedules} profile={profile} onStatusUpdate={onStatusUpdate} />
+            <Suspense fallback={<Loader2 className="h-6 w-6 animate-spin text-primary mx-auto my-8" />}>
+              <LeaveApprovalDashboard schedules={schedules} profile={profile} onStatusUpdate={onStatusUpdate} />
+            </Suspense>
           </CollapsibleContent>
         </Collapsible>
       )}
