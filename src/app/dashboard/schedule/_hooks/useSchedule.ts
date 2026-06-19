@@ -214,22 +214,6 @@ export function useSchedule() {
         setFilterDepts([profile.department_id]);
       }
       setSchedules(result.schedules);
-
-      // Auto-complete: single-day in_progress quá 23:59
-      const now2 = new Date();
-      const endOfToday = new Date(); endOfToday.setHours(23, 59, 59, 999);
-      if (now2 >= endOfToday) {
-        const overdueSingles = result.schedules.filter((s: any) =>
-          s.status === 'in_progress' &&
-          isSameDay(new Date(s.start_time), new Date(s.end_time))
-        );
-        for (const s of overdueSingles) {
-          await supabase.from('schedules').update({
-            status: 'completed',
-            metadata: { ...s.metadata, auto_completed_at: now2.toISOString() }
-          }).eq('id', s.id);
-        }
-      }
     } catch (error) {
       notifyError(error, "Không tải được dữ liệu lịch trình");
     } finally {
