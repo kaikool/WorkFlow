@@ -94,7 +94,9 @@ function DetailHeader({ schedule, badgeColor, headerBg, isAllowedToView }: {
           <div className="flex min-w-0 items-center gap-1.5">
             <Clock className="w-4 h-4 text-slate-400 shrink-0" />
             {schedule.status === 'completed' || !(format(new Date(schedule.end_time), 'HH:mm') === '23:59')
-              ? `${format(new Date(schedule.start_time), 'HH:mm dd/MM')} - ${format(new Date(schedule.end_time), 'HH:mm dd/MM')}`
+              ? (schedule.status === 'in_progress' && new Date() > new Date(schedule.end_time)
+                ? `${format(new Date(schedule.start_time), 'HH:mm dd/MM')} - ${format(new Date(), 'HH:mm dd/MM')} (quá giờ)`
+                : `${format(new Date(schedule.start_time), 'HH:mm dd/MM')} - ${format(new Date(schedule.end_time), 'HH:mm dd/MM')}`)
               : `Bắt đầu từ: ${format(new Date(schedule.start_time), 'HH:mm dd/MM')}`
             }
           </div>
