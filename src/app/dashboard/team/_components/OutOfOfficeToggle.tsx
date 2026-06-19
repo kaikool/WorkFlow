@@ -9,7 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { createClient } from "@/utils/supabase/client";
 import { notifyError, notifySuccess, notifyValidation } from "@/lib/notify";
 import { format } from "date-fns";
-import { vi } from "date-fns/locale";
+import { viLocale as vi } from "@/lib/locale";
 
 // Toggle Out-of-Office cho chính chủ. 1 user — 1 record active (UNIQUE).
 // Optimistic: caller pass refetch để reload sau khi save thành công.

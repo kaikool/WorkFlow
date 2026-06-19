@@ -5,7 +5,7 @@ import { ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { endOfDay, format, addDays, isSameDay, startOfDay } from "date-fns";
-import { vi } from "date-fns/locale";
+import { viLocale as vi } from "@/lib/locale";
 
 interface DateNavigatorProps {
   selectedDate: Date;

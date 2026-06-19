@@ -6,7 +6,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { format, formatDistanceStrict } from "date-fns";
-import { vi } from "date-fns/locale";
+import { viLocale as vi } from "@/lib/locale";
 import type { HandoverRow, DocumentRow } from "../_lib/types";
 
 interface Props {

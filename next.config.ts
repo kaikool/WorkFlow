@@ -1,8 +1,9 @@
 import type { NextConfig } from 'next';
+import withBundleAnalyzer from '@next/bundle-analyzer'({
+  enabled: process.env.ANALYZE === 'true',
+});
 
-const nextConfig: NextConfig = {
-  // Tree-shake các package nặng có nhiều named export — giảm bundle ~30-40% cho dashboard.
-  // Áp dụng các package chính: icon (lucide-react), date helper (date-fns), calendar (react-day-picker).
+const nextConfig: NextConfig = withBundleAnalyzer({
   experimental: {
     optimizePackageImports: [
       'lucide-react',
@@ -38,6 +39,6 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-};
+});
 
 export default nextConfig;

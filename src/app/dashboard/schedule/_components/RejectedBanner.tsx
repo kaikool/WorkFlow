@@ -3,7 +3,7 @@
 import React from "react";
 import { XCircle, RotateCcw } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { vi } from "date-fns/locale";
+import { viLocale as vi } from "@/lib/locale";
 import { Button } from "@/components/ui/button";
 
 interface RejectedBannerProps {

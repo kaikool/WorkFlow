@@ -4,7 +4,7 @@ import React, { useMemo } from "react";
 import { Cake, Award, PartyPopper, Plane } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format } from "date-fns";
-import { vi } from "date-fns/locale";
+import { viLocale as vi } from "@/lib/locale";
 import { ANNIVERSARY_YEARS } from "../_lib/constants";
 import { isMMDDWithinDays, isSameMMDD } from "../_lib/utils";
 

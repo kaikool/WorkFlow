@@ -6,7 +6,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { vi } from "date-fns/locale";
+import { viLocale as vi } from "@/lib/locale";
 import { DOCUMENT_STATUS_META } from "../_lib/constants";
 import type { DocumentRow } from "../_lib/types";
 import SLABadge from "./SLABadge";

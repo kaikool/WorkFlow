@@ -15,7 +15,7 @@ import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { vi } from "date-fns/locale";
+import { viLocale as vi } from "@/lib/locale";
 import PageHeader from "@/components/layout/PageHeader";
 import AvatarCropDialog from "@/components/ui/avatar-crop-dialog";
 import { useAppData } from "@/hooks/use-app-data";

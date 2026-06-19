@@ -27,7 +27,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn, sortProfilesByHierarchy } from "@/lib/utils";
 import { format } from "date-fns";
-import { vi } from "date-fns/locale";
+import { viLocale as vi } from "@/lib/locale";
 import { notifyValidation } from "@/lib/notify";
 import ParticipantSelector from "./ParticipantSelector";
 

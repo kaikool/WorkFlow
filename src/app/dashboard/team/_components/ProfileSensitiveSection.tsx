@@ -3,7 +3,7 @@
 import React from "react";
 import { Cake, IdCard, AtSign, User2 } from "lucide-react";
 import { format } from "date-fns";
-import { vi } from "date-fns/locale";
+import { viLocale as vi } from "@/lib/locale";
 
 // Section hiển thị field nhạy cảm: birthday, ad_account, employee_code, gender.
 // Caller phải check canViewSensitiveProfileFields trước khi render component này.
