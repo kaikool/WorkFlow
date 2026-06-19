@@ -1,9 +1,6 @@
 import type { NextConfig } from 'next';
-import withBundleAnalyzer from '@next/bundle-analyzer'({
-  enabled: process.env.ANALYZE === 'true',
-});
 
-const nextConfig: NextConfig = withBundleAnalyzer({
+const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: [
       'lucide-react',
@@ -39,6 +36,6 @@ const nextConfig: NextConfig = withBundleAnalyzer({
       },
     ];
   },
-});
+};
 
 export default nextConfig;
