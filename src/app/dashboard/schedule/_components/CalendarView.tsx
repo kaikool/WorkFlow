@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, Suspense } from "react";
+import React, { useState } from "react";
 import { Clock, Loader2, ChevronDown, ChevronUp, Plane, ShieldCheck, AlertTriangle, AlertCircle, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { addDays, endOfDay, format, isSameDay, startOfDay } from "date-fns";
@@ -246,9 +246,9 @@ export default function CalendarView(props: CalendarViewProps) {
             <ChevronDown className="ml-auto w-4 h-4 text-slate-400 transition-transform duration-200 group-data-[state=open]:rotate-180 shrink-0" />
           </CollapsibleTrigger>
           <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
-            <Suspense fallback={<Loader2 className="h-6 w-6 animate-spin text-primary mx-auto my-8" />}>
+            <React.Suspense fallback={<Loader2 className="h-6 w-6 animate-spin text-primary mx-auto my-8" />}>
               <ResourcesManagerDashboard schedules={schedules} vehicles={vehicles} rooms={rooms} selectedDate={selectedDate} onSelectSchedule={onSelectSchedule} />
-            </Suspense>
+            </React.Suspense>
           </CollapsibleContent>
         </Collapsible>
       )}
@@ -263,9 +263,9 @@ export default function CalendarView(props: CalendarViewProps) {
             <ChevronDown className="ml-auto w-4 h-4 text-slate-400 transition-transform duration-200 group-data-[state=open]:rotate-180 shrink-0" />
           </CollapsibleTrigger>
           <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
-            <Suspense fallback={<Loader2 className="h-6 w-6 animate-spin text-primary mx-auto my-8" />}>
+            <React.Suspense fallback={<Loader2 className="h-6 w-6 animate-spin text-primary mx-auto my-8" />}>
               <LeaveApprovalDashboard schedules={schedules} profile={profile} onStatusUpdate={onStatusUpdate} />
-            </Suspense>
+            </React.Suspense>
           </CollapsibleContent>
         </Collapsible>
       )}
