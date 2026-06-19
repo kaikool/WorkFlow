@@ -136,7 +136,7 @@ export default function DirectorTimeline({
           const dirColor = getDirectorColor(dir.full_name, allProfiles);
           const now = new Date();
           const onTrip = schedules.some(s =>
-            s.status === 'approved' && s.type === 'trip' &&
+            (s.status === 'approved' || s.status === 'in_progress') && s.type === 'trip' &&
             new Date(s.start_time) <= now && new Date(s.end_time) >= now &&
             s.participants?.some((p: any) => p.profile?.id === dir.id)
           );

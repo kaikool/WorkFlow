@@ -47,12 +47,12 @@ export const directorColors = [
     hover: 'hover:bg-emerald-100'
   },
   {
-    bg: 'bg-orange-50/90',
-    border: 'border-orange-200',
-    text: 'text-orange-800',
-    bullet: 'bg-orange-600',
-    pill: 'bg-orange-50/90 text-orange-800 border-orange-200 hover:bg-orange-100',
-    hover: 'hover:bg-orange-100'
+    bg: 'bg-violet-50/90',
+    border: 'border-violet-200',
+    text: 'text-violet-800',
+    bullet: 'bg-violet-600',
+    pill: 'bg-violet-50/90 text-violet-800 border-violet-200 hover:bg-violet-100',
+    hover: 'hover:bg-violet-100'
   },
   {
     bg: 'bg-sky-50/90',
