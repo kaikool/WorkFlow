@@ -38,9 +38,9 @@ export default function DirectorTimeline({
       >
         <div className="min-w-[850px] space-y-4">
           {/* Tiêu đề giờ */}
-          <div className="relative h-6 text-sm font-medium text-slate-500 select-none w-full border-b border-slate-100 pb-2 mb-4">
-            {['07:00','09:00','11:00','13:00','15:00','17:00','19:00'].map((label, i) => (
-              <span key={label} className="absolute -translate-x-1/2 text-xs" style={{ left: `${(i / 6) * 100}%` }}>{label}</span>
+          <div className="relative h-5 text-[10px] font-semibold text-slate-400 select-none w-full border-b border-slate-100 pb-1 mb-3">
+            {['07:00','08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00'].map((label, i) => (
+              <span key={label} className="absolute -translate-x-1/2 text-[10px] font-semibold text-slate-400" style={{ left: `${(i / 12) * 100}%` }}>{label}</span>
             ))}
           </div>
 
