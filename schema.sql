@@ -360,8 +360,8 @@ DROP POLICY IF EXISTS "Anyone active except driver can create recognitions" ON r
 CREATE POLICY "Anyone can view recognitions" ON recognitions FOR SELECT USING (true);
 CREATE POLICY "Anyone active except driver can create recognitions" ON recognitions FOR INSERT WITH CHECK (
     auth.uid() = sender_id AND
-    (SELECT role FROM profiles WHERE id = auth.uid()) != 'driver' AND
-    (SELECT is_active FROM profiles WHERE id = auth.uid()) = true
+    public.current_user_role() != 'driver' AND
+    public.current_user_is_active() = true
 );
 
 CREATE POLICY "Users can view own notifications" ON notifications FOR SELECT USING (auth.uid() = user_id);
@@ -5142,9 +5142,20 @@ AS $$
   SELECT COALESCE(is_department_head, FALSE) FROM profiles WHERE id = auth.uid();
 $$;
 
+CREATE OR REPLACE FUNCTION public.current_user_is_active()
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT COALESCE(is_active, FALSE) FROM profiles WHERE id = auth.uid();
+$$;
+
 GRANT EXECUTE ON FUNCTION public.current_user_role() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.current_user_department() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.current_user_is_head() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.current_user_is_active() TO authenticated;
 
 -- 2. Tái cấu trúc policy tasks/kpis với function đã cache
 CREATE OR REPLACE FUNCTION public.user_is_task_assignee(p_task_id UUID, p_user_id UUID)
