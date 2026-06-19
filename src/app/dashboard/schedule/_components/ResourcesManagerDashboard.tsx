@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Clock, MapPin, Car, DoorOpen, ChevronRight, ArrowRight, User } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -18,8 +18,11 @@ interface ResourcesManagerDashboardProps {
 export default function ResourcesManagerDashboard({ schedules, vehicles, rooms, selectedDate, onSelectSchedule }: ResourcesManagerDashboardProps) {
   const [expandedVehicle, setExpandedVehicle] = useState<string | null>(null);
   const [expandedRoom, setExpandedRoom] = useState<string | null>(null);
-
-  const now = new Date();
+  const [now, setNow] = useState(new Date());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 30000);
+    return () => clearInterval(timer);
+  }, []);
 
   // Lấy tất cả lịch sắp tới cho một xe/phòng (sau thời điểm hiện tại, sắp xếp theo giờ)
   const getUpcomingTrips = (vehicleId: string) =>
