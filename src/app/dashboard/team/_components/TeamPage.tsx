@@ -113,7 +113,7 @@ export default function TeamPage() {
           icon={<Plane className="icon-sm" />}
           tone="bg-amber-50 text-amber-700"
           label="Đang vắng mặt"
-          value={stats.on_leave + stats.on_trip}
+          value={stats.on_leave}
         />
         <StatCard
           icon={<Cake className="icon-sm" />}
