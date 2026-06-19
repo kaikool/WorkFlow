@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { PWANotificationHandler } from "@/components/pwa-notification-handler";
+import { PointerEventsCleanup } from "@/components/pointer-events-cleanup";
 
 export const metadata: Metadata = {
  title: 'WorkFlow - CN Hoàng Mai',
@@ -49,7 +50,9 @@ export default function RootLayout({
  {children}
  <Toaster />
  <PWANotificationHandler />
+ <PointerEventsCleanup />
  </body>
  </html>
+
  );
 }
