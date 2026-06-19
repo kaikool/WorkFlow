@@ -28,6 +28,12 @@ export default function DirectorTimeline({
   const bgdProfiles = filterBGD(allProfiles);
   const selectedStart = startOfDay(selectedDate);
   const selectedEnd = endOfDay(selectedDate);
+  // Refresh mỗi 30s để cập nhật giờ hiện tại trên timeline
+  const [now, setNow] = React.useState(new Date());
+  React.useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 30000);
+    return () => clearInterval(timer);
+  }, []);
 
   return (
     <div className="space-y-6 overflow-hidden animate-in fade-in duration-150">
@@ -90,7 +96,7 @@ export default function DirectorTimeline({
                     <div className="relative w-full h-full z-10 flex items-center">
                       {dirSchedules.map(sched => {
                         const rawStart = new Date(sched.start_time);
-                        const rawEnd = sched.status === 'in_progress' ? new Date() : new Date(sched.end_time);
+                        const rawEnd = sched.status === 'in_progress' ? now : new Date(sched.end_time);
                         const sTime = rawStart < selectedStart ? selectedStart : rawStart;
                         const eTime = rawEnd > selectedEnd ? selectedEnd : rawEnd;
                         const sMin = sTime.getHours() * 60 + sTime.getMinutes();
@@ -134,7 +140,6 @@ export default function DirectorTimeline({
       <div className="max-w-md mx-auto bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-2">
         {bgdProfiles.map(dir => {
           const dirColor = getDirectorColor(dir.full_name, allProfiles);
-          const now = new Date();
           const onTrip = schedules.some(s =>
             (s.status === 'approved' || s.status === 'in_progress') && s.type === 'trip' &&
             new Date(s.start_time) <= now &&
