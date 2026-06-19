@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from "react";
+import React, { useState, Suspense } from "react";
 import { Clock, Loader2, ChevronDown, ChevronUp, Plane, ShieldCheck, AlertTriangle, AlertCircle, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { addDays, endOfDay, format, isSameDay, startOfDay } from "date-fns";
