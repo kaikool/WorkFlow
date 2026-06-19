@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface Props {
   trip: any;
+  onConfirm: (trip: any) => void;
   onStart: (trip: any) => void;
   onEnd: (trip: any) => void;
   onReportIssue: (trip: any) => void;
@@ -16,9 +17,10 @@ interface Props {
 const fmtDt = (d: Date) =>
   d.toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
-export default function MyTripCard({ trip, onStart, onEnd, onReportIssue }: Props) {
+export default function MyTripCard({ trip, onConfirm, onStart, onEnd, onReportIssue }: Props) {
   const hasStarted = trip.status === 'in_progress' || trip.status === 'completed' || !!trip.metadata?.trip_started_at;
   const hasEnded = trip.status === 'completed' || !!trip.metadata?.trip_ended_at;
+  const isConfirmed = !!trip.metadata?.driver_confirmed_at;
   const hasIssue = !!trip.metadata?.vehicle_issue;
   const startDt = new Date(trip.start_time);
   const endDt = new Date(trip.end_time);
@@ -27,6 +29,11 @@ export default function MyTripCard({ trip, onStart, onEnd, onReportIssue }: Prop
   let statusBadgeBg = "bg-amber-50 text-amber-700 border-amber-100";
   let statusText = "Chờ khởi hành";
   let statusIcon: React.ReactNode = <Clock className="w-3.5 h-3.5 shrink-0" />;
+
+  if (!isConfirmed && trip.status === 'approved' && !hasStarted) {
+    statusText = "Chờ xác nhận";
+    statusIcon = <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />;
+  }
 
   if (hasEnded) {
     borderStyle = "border-l-4 border-l-slate-200 border-slate-100 opacity-80";
@@ -143,7 +150,14 @@ export default function MyTripCard({ trip, onStart, onEnd, onReportIssue }: Prop
 
       {!hasEnded && (
         <div className="flex items-center gap-2 px-5 pb-5 pt-1 bg-slate-50/10">
-          {!hasStarted ? (
+          {!isConfirmed && trip.status === 'approved' && !hasStarted ? (
+            <Button
+              onClick={() => onConfirm(trip)}
+              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold min-h-11 text-sm gap-1.5 shadow-sm active:scale-95 transition-all duration-150"
+            >
+              <CheckCircle2 className="w-3.5 h-3.5" /> Xác nhận lịch
+            </Button>
+          ) : !hasStarted ? (
             <Button
               onClick={() => onStart(trip)}
               className="flex-1 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold min-h-11 text-sm gap-1.5 shadow-sm active:scale-95 transition-all duration-150"

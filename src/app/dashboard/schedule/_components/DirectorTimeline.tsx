@@ -50,6 +50,8 @@ export default function DirectorTimeline({
               const dirColor = getDirectorColor(dir.full_name, allProfiles);
               const dirSchedules = schedules.filter(s => {
                 if (new Date(s.start_time) > selectedEnd || new Date(s.end_time) < selectedStart) return false;
+                // Meeting tại chi nhánh (có phòng họp) không vẽ lên timeline BGĐ
+                if (s.type === 'meeting' && (s.location === 'Chi nhánh' || s.room_id)) return false;
                 return s.participants?.some((p: any) => p.profile?.id === dir.id);
               });
 

@@ -7,8 +7,6 @@ import {
   Car,
   Plus,
   AlertCircle,
-  Users,
-  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -105,6 +103,13 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
     });
   }, [sortedProfiles, profile?.id]);
 
+  const scheduleTypes = [
+    { value: 'meeting', label: 'Họp nội bộ' },
+    { value: 'trip', label: 'Công tác' },
+    { value: 'event', label: 'Sự kiện' },
+    { value: 'leave', label: 'Nghỉ phép' },
+  ];
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
@@ -200,17 +205,26 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="text-[13px] font-medium text-slate-500 whitespace-nowrap">Loại hình</Label>
-              <Select value={newSchedule.type} onValueChange={(v) => setNewSchedule({ ...newSchedule, type: v, use_vehicle: v === 'trip' })}>
-                <SelectTrigger className="h-11 bg-slate-50 border-none rounded-xl font-medium text-sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="rounded-xl border-none shadow-lg">
-                  <SelectItem value="meeting">Họp nội bộ</SelectItem>
-                  <SelectItem value="trip">Đi công tác</SelectItem>
-                  <SelectItem value="event">Sự kiện</SelectItem>
-                  <SelectItem value="leave">Nghỉ phép</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="grid grid-cols-4 gap-1.5 rounded-2xl bg-slate-50 p-1.5">
+                {scheduleTypes.map((type) => {
+                  const isSelected = newSchedule.type === type.value;
+                  return (
+                    <button
+                      key={type.value}
+                      type="button"
+                      onClick={() => setNewSchedule({ ...newSchedule, type: type.value, use_vehicle: type.value === 'trip' })}
+                      className={cn(
+                        "min-h-10 rounded-xl px-2 text-[11px] font-semibold transition-all active:scale-[0.98] sm:text-xs",
+                        isSelected
+                          ? "bg-blue-600 text-white shadow-sm shadow-blue-600/20"
+                          : "bg-white text-slate-500 ring-1 ring-slate-100 hover:bg-slate-100 hover:text-slate-700"
+                      )}
+                    >
+                      {type.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
             <div className="space-y-2">
               <Label className="text-[13px] font-medium text-slate-500 whitespace-nowrap">

@@ -42,6 +42,10 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
   const [isEndOpen, setIsEndOpen] = useState(false);
   const [selectedEndSchedule, setSelectedEndSchedule] = useState<any>(null);
 
+  // Dialog Xác nhận lịch
+  const [selectedConfirmSchedule, setSelectedConfirmSchedule] = useState<any>(null);
+  const [confirming, setConfirming] = useState(false);
+
   // Dialog Báo cáo sự cố xe
   const [isIssueOpen, setIsIssueOpen] = useState(false);
   const [selectedIssueSchedule, setSelectedIssueSchedule] = useState<any>(null);
@@ -137,6 +141,51 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
       notifyError(e, "Không bắt đầu được chuyến");
     } finally {
       setUpdating(false);
+    }
+  };
+
+  const handleConfirmTrip = async (schedule: any) => {
+    setConfirming(true);
+    try {
+      const meta = schedule.metadata || {};
+      const newMeta = {
+        ...meta,
+        driver_confirmed_at: new Date().toISOString(),
+      };
+
+      const { error } = await supabase.from('schedules').update({
+        metadata: newMeta
+      }).eq('id', schedule.id);
+      if (error) throw error;
+
+      // Thông báo cho người tạo lịch và bộ phận điều phối
+      const notifyUserIds: string[] = [];
+      if (schedule.created_by && schedule.created_by !== profile?.id) {
+        notifyUserIds.push(schedule.created_by);
+      }
+      coordinatorTargets.forEach((target: any) => {
+        if (target.id !== profile?.id && !notifyUserIds.includes(target.id)) {
+          notifyUserIds.push(target.id);
+        }
+      });
+
+      if (notifyUserIds.length > 0) {
+        await supabase.from('notifications').insert(
+          notifyUserIds.map((uid: string) => ({
+            user_id: uid,
+            title: "✅ Lái xe đã xác nhận lịch",
+            content: `Tài xế ${profile?.full_name} đã xác nhận nhận lịch chạy xe cho chuyến "${schedule.title}".`,
+            link: "/dashboard/schedule"
+          }))
+        );
+      }
+
+      notifySuccess("Đã xác nhận lịch", "Người gán đã được thông báo.");
+      fetchData();
+    } catch (e) {
+      notifyError(e, "Không xác nhận được lịch");
+    } finally {
+      setConfirming(false);
     }
   };
 
@@ -286,6 +335,7 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
             <MyTripCard
               key={trip.id}
               trip={trip}
+              onConfirm={handleConfirmTrip}
               onStart={(t) => { setSelectedStartSchedule(t); setIsStartOpen(true); }}
               onEnd={(t) => { setSelectedEndSchedule(t); setIsEndOpen(true); }}
               onReportIssue={(t) => { setSelectedIssueSchedule(t); setIsIssueOpen(true); }}

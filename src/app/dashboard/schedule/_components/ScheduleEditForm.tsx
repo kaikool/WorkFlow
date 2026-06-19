@@ -302,7 +302,7 @@ export default function ScheduleEditForm({
                         <SelectItem value="none" className="text-xs py-2">Chưa chọn xe</SelectItem>
                         {vehicles.map(v => (
                           <SelectItem key={v.id} value={v.id} className="text-xs py-2">
-                            {v.name} - {v.plate_number}{v.default_driver?.full_name ? ` · ${v.default_driver.full_name}` : ''}
+                            {v.name} - {v.plate_number}
                           </SelectItem>
                         ))}
                       </SelectContent>

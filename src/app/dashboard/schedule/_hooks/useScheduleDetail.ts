@@ -94,7 +94,7 @@ export function useScheduleDetail({
         room_id: schedule.room_id || "none",
         use_vehicle: !!schedule.use_vehicle,
         vehicle_id: schedule.vehicle_id || "none",
-        requested_vehicle_type: schedule.requested_vehicle_type || "4 chỗ",
+        requested_vehicle_type: schedule.requested_vehicle_type || null,
       });
     }
   }, [schedule, isOpen]);
