@@ -306,11 +306,11 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
   const canManageSystem = canManageResourceCatalog(profile);
 
   const navItems = [
-   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-   { name: 'Công việc', href: '/dashboard/tasks', icon: ListTodo, hideFor: ['driver', 'secretary', 'hr_officer'] },
-   { name: 'Lịch trình', href: '/dashboard/schedule', icon: CalendarDays },
-   { name: 'Hồ sơ', href: '/dashboard/handover', icon: FolderOpen, hideFor: ['driver'] },
-   { name: 'Cán bộ', href: '/dashboard/team', icon: Users, hideFor: ['driver'] },
+   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, prefetch: true },
+   { name: 'Công việc', href: '/dashboard/tasks', icon: ListTodo, prefetch: true, hideFor: ['driver', 'secretary', 'hr_officer'] },
+   { name: 'Lịch trình', href: '/dashboard/schedule', icon: CalendarDays, prefetch: true },
+   { name: 'Hồ sơ', href: '/dashboard/handover', icon: FolderOpen, prefetch: true, hideFor: ['driver'] },
+   { name: 'Cán bộ', href: '/dashboard/team', icon: Users, prefetch: true, hideFor: ['driver'] },
   ].filter(item => !(item.hideFor || []).includes(profile?.role));
 
  return (
