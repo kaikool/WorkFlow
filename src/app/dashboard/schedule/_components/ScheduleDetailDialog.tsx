@@ -193,7 +193,7 @@ export default function ScheduleDetailDialog({
   const showEditAction = canEdit && !isRejected && !isCompleted;
   const showEndAction = canEdit && !isCompleted && new Date(schedule.end_time) > new Date();
   const showCancelVehicle = isCoordinator && schedule.vehicle_id && !isCompleted;
-  const showDeleteAction = detail.isCreator;
+  const showDeleteAction = detail.isCreator || isCoordinator;
   const hasAnyAction = showEditAction || showEndAction || showCancelVehicle || showDeleteAction;
 
   const handleDelete = async () => {
