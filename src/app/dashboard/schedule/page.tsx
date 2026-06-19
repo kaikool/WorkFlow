@@ -5,6 +5,7 @@ import { createClient } from "@/utils/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { notifyError, notifySuccess } from "@/lib/notify";
 import { Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import DateNavigator from "./_components/DateNavigator";
 import CalendarView from "./_components/CalendarView";
 import { canApproveLeave, canUseDriverWorkspace } from "@/lib/permissions";
