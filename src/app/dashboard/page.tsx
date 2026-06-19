@@ -60,8 +60,8 @@ function DashboardContent() {
   const selectedDate = new Date();
   const isTodaySelected = isSameDay(selectedDate, new Date());
   const now = new Date();
-  const startLimit = 8 * 60;
-  const endLimit = 17 * 60;
+  const startLimit = 7 * 60;
+  const endLimit = 19 * 60;
   const duration = endLimit - startLimit;
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
   const currentTimePercent =
