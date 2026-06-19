@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from "react";
-import { Clock, Loader2, ChevronDown, ChevronUp, Plane, ShieldCheck, AlertTriangle } from "lucide-react";
+import { Clock, Loader2, ChevronDown, ChevronUp, Plane, ShieldCheck, AlertTriangle, AlertCircle, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { addDays, endOfDay, format, isSameDay, startOfDay } from "date-fns";
 import ScheduleCard from "./ScheduleCard";
@@ -38,6 +38,55 @@ interface CalendarViewProps {
   onStatusUpdate: (id: string, status: string, reason?: string) => Promise<void>;
 }
 
+interface SectionProps {
+  icon: React.ReactNode;
+  label: string;
+  count: number;
+  color: 'red' | 'amber' | 'green' | 'blue' | 'slate';
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}
+
+function ScheduleSection({ icon, label, count, color, defaultOpen = true, children }: SectionProps) {
+  const colorMap = {
+    red: { badge: "bg-red-50 text-red-700 border-red-100", header: "text-red-600" },
+    amber: { badge: "bg-amber-50 text-amber-700 border-amber-100", header: "text-amber-600" },
+    green: { badge: "bg-emerald-50 text-emerald-700 border-emerald-100", header: "text-emerald-600" },
+    blue: { badge: "bg-blue-50 text-blue-700 border-blue-100", header: "text-blue-600" },
+    slate: { badge: "bg-slate-100 text-slate-500 border-slate-200", header: "text-slate-400" },
+  };
+  const c = colorMap[color];
+
+  if (count === 0) return null;
+
+  return (
+    <Collapsible defaultOpen={defaultOpen && count > 0} className="space-y-3">
+      <CollapsibleTrigger
+        className={cn(
+          "group w-full flex items-center gap-2 px-2 py-2 rounded-xl",
+          "text-[13px] font-medium",
+          "transition-colors hover:bg-slate-50",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20"
+        )}
+      >
+        <span className={c.header}>{icon}</span>
+        <span className={c.header}>{label}</span>
+        <Badge className={cn("h-5 rounded-full border px-2.5 text-[10px] font-bold", c.badge)}>
+          {count}
+        </Badge>
+        <ChevronDown
+          className="ml-auto w-4 h-4 text-slate-400 transition-transform duration-200 group-data-[state=open]:rotate-180 shrink-0"
+        />
+      </CollapsibleTrigger>
+      <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {children}
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
+  );
+}
+
 export default function CalendarView(props: CalendarViewProps) {
   const {
     loading, filterType, setFilterType, schedules, vehicles, rooms,
@@ -49,22 +98,57 @@ export default function CalendarView(props: CalendarViewProps) {
 
   const isCoordinator = canCoordinateSharedResources(profile);
 
-  const [showAllSchedules, setShowAllSchedules] = useState(false);
-  const DEFAULT_LIMIT = 4;
+  // Helper: ai được xem rejected
+  const canSeeRejected = (s: any) => {
+    if (s.status !== 'rejected') return true;
+    if (s.created_by === profile?.id) return true;
+    if (['admin', 'secretary'].includes(profile?.role)) return true;
+    if (isCoordinator) return true;
+    return false;
+  };
 
-  // Lọc lịch trình theo ngày và phòng ban
-  const filteredSchedules = React.useMemo(() => {
+  // ── Nhóm schedules ──
+
+  // 🔴 Cần xử lý
+  const needsAction = React.useMemo(() => {
+    return schedules.filter(s => {
+      // Lịch bị từ chối (creator + admin/coordinator thấy)
+      if (s.status === 'rejected' && canSeeRejected(s)) return true;
+      // Lịch chờ gán xe (coordinator thấy)
+      if (isCoordinator && s.use_vehicle && !s.vehicle_id && s.status === 'pending') return true;
+      return false;
+    });
+  }, [schedules, profile, isCoordinator]);
+
+  // 🟡 Đang chờ phê duyệt
+  const pendingApproval = React.useMemo(() => {
+    return schedules.filter(s => {
+      if (s.status === 'rejected') return false;
+      if (s.use_vehicle && !s.vehicle_id) return false;
+      if (s.status !== 'pending') return false;
+      // Chỉ hiển thị nếu user có liên quan hoặc có quyền duyệt
+      if (s.created_by === profile?.id) return true;
+      if (['admin', 'secretary', 'director'].includes(profile?.role)) return true;
+      if (isCoordinator) return true;
+      return false;
+    });
+  }, [schedules, profile, isCoordinator]);
+
+  // 🟢 Hôm nay
+  const todaySchedules = React.useMemo(() => {
     const selectedStart = startOfDay(selectedDate);
     const selectedEnd = endOfDay(selectedDate);
     return schedules.filter(s => {
       if (new Date(s.start_time) > selectedEnd || new Date(s.end_time) < selectedStart) return false;
-      // Lịch bị từ chối: chỉ creator nhìn thấy để có thể đẩy lại duyệt
-      if (s.status === 'rejected' && s.created_by !== profile?.id) return false;
+      if (!canSeeRejected(s)) return false;
+      if (s.status === 'pending') return false; // pending đã ở section Đang chờ
+      if (s.status === 'completed') return false; // completed đã ở Đã hoàn thành
       if (filterType === 'dept') return s.department_id === profile?.department_id;
       return true;
     });
   }, [schedules, selectedDate, filterType, profile]);
 
+  // 🔵 Sắp tới (3 ngày)
   const upcomingSchedules = React.useMemo(() => {
     const selectedEnd = endOfDay(selectedDate);
     const rangeEnd = endOfDay(addDays(selectedDate, 3));
@@ -72,38 +156,45 @@ export default function CalendarView(props: CalendarViewProps) {
       .filter(s => {
         const start = new Date(s.start_time);
         if (start <= selectedEnd || start > rangeEnd) return false;
-        if (s.status === 'rejected' && s.created_by !== profile?.id) return false;
+        if (!canSeeRejected(s)) return false;
+        if (s.status === 'pending') return false;
+        if (s.status === 'completed') return false;
         if (filterType === 'dept') return s.department_id === profile?.department_id;
         return true;
       })
       .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
-      .slice(0, 6);
+      .slice(0, 8);
   }, [schedules, selectedDate, filterType, profile]);
 
-  // Lọc danh sách nhân sự đang hoặc sắp nghỉ phép
+  // ⚪️ Đã hoàn thành
+  const completedSchedules = React.useMemo(() => {
+    const selectedStart = startOfDay(selectedDate);
+    const selectedEnd = endOfDay(selectedDate);
+    return schedules.filter(s => {
+      if (!canSeeRejected(s)) return false;
+      if (s.status !== 'completed') return false;
+      if (new Date(s.start_time) > selectedEnd || new Date(s.end_time) < selectedStart) return false;
+      if (filterType === 'dept') return s.department_id === profile?.department_id;
+      return true;
+    }).slice(0, 10);
+  }, [schedules, selectedDate, filterType, profile]);
+
+  // Danh sách nhân sự nghỉ phép
   const leaveList = React.useMemo(() => {
     const todayStart = startOfDay(new Date());
     const todayEnd = endOfDay(new Date());
-
     return schedules
       .filter(s => s.type === 'leave' && s.status === 'approved')
       .map(s => {
         const start = new Date(s.start_time);
         const end = new Date(s.end_time);
-        // Đang nghỉ: thời gian hiện tại nằm giữa start và end
         const isCurrent = start <= todayEnd && end >= todayStart;
-        return {
-          ...s,
-          isCurrent,
-          startDate: start,
-          endDate: end
-        };
+        return { ...s, isCurrent, startDate: start, endDate: end };
       })
       .filter(leave => leave.endDate >= todayStart)
       .sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
   }, [schedules]);
 
-  // Tra cứu phòng ban từ danh sách hồ sơ
   const getProfileDeptName = (profileId: string) => {
     const p = allProfiles.find(ap => ap.id === profileId);
     if (!p) return "";
@@ -111,13 +202,9 @@ export default function CalendarView(props: CalendarViewProps) {
     return Array.isArray(dept) ? dept[0]?.name : dept?.name;
   };
 
-  const displayedSchedules = showAllSchedules
-    ? filteredSchedules
-    : filteredSchedules.slice(0, DEFAULT_LIMIT);
-
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      {/* Tablist phạm vi xem — gộp luôn chức năng điều phối/duyệt vào từng phạm vi tương ứng */}
+      {/* Tablist phạm vi */}
       <Tabs value={filterType} onValueChange={(value) => setFilterType(value as 'all' | 'bgd' | 'dept')} className="w-full">
         <TabsList className="grid grid-cols-3 min-h-9">
           <TabsTrigger value="all" className="rounded-lg px-2 text-[12px] font-medium md:text-[14px] relative">
@@ -142,18 +229,10 @@ export default function CalendarView(props: CalendarViewProps) {
         </TabsList>
       </Tabs>
 
-      {/* TAB: Toàn chi nhánh — nhúng điều phối tài nguyên nếu user có quyền.
-          Mặc định ĐÓNG để ưu tiên lịch trình. Click vào header để mở rộng. */}
+      {/* Điều phối tài nguyên */}
       {filterType === 'all' && isCoordinator && (
         <Collapsible defaultOpen={false} className="space-y-3">
-          <CollapsibleTrigger
-            className={cn(
-              "group w-full flex items-center gap-2 px-2 py-2 rounded-xl",
-              "text-[13px] font-medium text-slate-500",
-              "transition-colors hover:bg-slate-50",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20"
-            )}
-          >
+          <CollapsibleTrigger className="group w-full flex items-center gap-2 px-2 py-2 rounded-xl text-[13px] font-medium text-slate-500 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20">
             <ShieldCheck className="w-3.5 h-3.5 text-amber-600 shrink-0" />
             <span>Điều phối tài nguyên</span>
             {pendingVehicleCount > 0 && (
@@ -161,207 +240,155 @@ export default function CalendarView(props: CalendarViewProps) {
                 {pendingVehicleCount} lịch cần xe
               </Badge>
             )}
-            <ChevronDown
-              className="ml-auto w-4 h-4 text-slate-400 transition-transform duration-200 group-data-[state=open]:rotate-180 shrink-0"
-            />
+            <ChevronDown className="ml-auto w-4 h-4 text-slate-400 transition-transform duration-200 group-data-[state=open]:rotate-180 shrink-0" />
           </CollapsibleTrigger>
           <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
-            <ResourcesManagerDashboard
-              schedules={schedules}
-              vehicles={vehicles}
-              rooms={rooms}
-              selectedDate={selectedDate}
-              onSelectSchedule={onSelectSchedule}
-            />
+            <ResourcesManagerDashboard schedules={schedules} vehicles={vehicles} rooms={rooms} selectedDate={selectedDate} onSelectSchedule={onSelectSchedule} />
           </CollapsibleContent>
         </Collapsible>
       )}
 
-      {/* TAB: Phòng của tôi — nhúng đơn nghỉ phép cần duyệt (luôn mở nếu có pending vì quan trọng) */}
+      {/* Đơn nghỉ phép chờ duyệt */}
       {filterType === 'dept' && canApproveLeavePermission && pendingLeavesCount > 0 && (
         <Collapsible defaultOpen={true} className="space-y-3">
-          <CollapsibleTrigger
-            className={cn(
-              "group w-full flex items-center gap-2 px-2 py-2 rounded-xl",
-              "text-[13px] font-medium text-slate-500",
-              "transition-colors hover:bg-slate-50",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20"
-            )}
-          >
+          <CollapsibleTrigger className="group w-full flex items-center gap-2 px-2 py-2 rounded-xl text-[13px] font-medium text-slate-500 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20">
             <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
             <span>Đơn nghỉ phép chờ duyệt</span>
-            <Badge className="h-5 rounded-full border border-amber-100 bg-amber-50 px-2.5 text-[10px] font-bold text-amber-700">
-              {pendingLeavesCount} đơn
-            </Badge>
-            <ChevronDown
-              className="ml-auto w-4 h-4 text-slate-400 transition-transform duration-200 group-data-[state=open]:rotate-180 shrink-0"
-            />
+            <Badge className="h-5 rounded-full border border-amber-100 bg-amber-50 px-2.5 text-[10px] font-bold text-amber-700">{pendingLeavesCount} đơn</Badge>
+            <ChevronDown className="ml-auto w-4 h-4 text-slate-400 transition-transform duration-200 group-data-[state=open]:rotate-180 shrink-0" />
           </CollapsibleTrigger>
           <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
-            <LeaveApprovalDashboard
-              schedules={schedules}
-              profile={profile}
-              onStatusUpdate={onStatusUpdate}
-            />
+            <LeaveApprovalDashboard schedules={schedules} profile={profile} onStatusUpdate={onStatusUpdate} />
           </CollapsibleContent>
         </Collapsible>
       )}
 
-      {/* Danh sách lịch */}
-      <div className="space-y-4">
-        <h3 className="text-[13px] font-medium text-slate-500 flex items-center gap-2 px-2">
-          <Clock className="w-3.5 h-3.5 text-primary" /> Lịch trình ngày {format(selectedDate, 'dd/MM/yyyy')}
-        </h3>
+      {loading ? (
+        <div className="flex h-48 items-center justify-center bg-white rounded-2xl border border-slate-100 shadow-sm">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        </div>
+      ) : filterType === 'bgd' ? (
+        <DirectorTimeline
+          allProfiles={allProfiles} schedules={schedules} selectedDate={selectedDate}
+          timelineContainerRef={timelineContainerRef} isTodaySelected={isTodaySelected}
+          currentTimePercent={currentTimePercent} startLimit={startLimit} duration={duration}
+          onSelectSchedule={onSelectSchedule} currentProfile={profile}
+        />
+      ) : (
+        <div className="space-y-6">
+          {/* 🔴 Cần xử lý */}
+          <ScheduleSection
+            icon={<XCircle className="w-3.5 h-3.5" />}
+            label="Cần xử lý"
+            count={needsAction.length}
+            color="red"
+          >
+            {needsAction.map(item => (
+              <ScheduleCard key={item.id} item={item} profile={profile} onSelect={onSelectSchedule} onStatusUpdate={onStatusUpdate} />
+            ))}
+          </ScheduleSection>
 
-        {loading ? (
-          <div className="flex h-48 items-center justify-center bg-white rounded-2xl border border-slate-100 shadow-sm">
-            <Loader2 className="h-6 w-6 animate-spin text-primary" />
-          </div>
-        ) : filterType === 'bgd' ? (
-          <DirectorTimeline
-            allProfiles={allProfiles}
-            schedules={schedules}
-            selectedDate={selectedDate}
-            timelineContainerRef={timelineContainerRef}
-            isTodaySelected={isTodaySelected}
-            currentTimePercent={currentTimePercent}
-            startLimit={startLimit}
-            duration={duration}
-            onSelectSchedule={onSelectSchedule}
-            currentProfile={profile}
-          />
-        ) : (
-          <div className="space-y-6">
-            {filteredSchedules.length === 0 ? (
-              <div className="text-center py-8 bg-white rounded-2xl border border-slate-100 shadow-sm">
-                <Clock className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-                <p className="text-sm font-medium text-slate-400">Không có lịch trình nào trong ngày</p>
+          {/* 🟡 Đang chờ */}
+          <ScheduleSection
+            icon={<Clock className="w-3.5 h-3.5" />}
+            label="Đang chờ"
+            count={pendingApproval.length}
+            color="amber"
+          >
+            {pendingApproval.map(item => (
+              <ScheduleCard key={item.id} item={item} profile={profile} onSelect={onSelectSchedule} onStatusUpdate={onStatusUpdate} />
+            ))}
+          </ScheduleSection>
+
+          {/* 🟢 Hôm nay */}
+          {todaySchedules.length > 0 && (
+            <div className="space-y-3">
+              <h3 className="text-[13px] font-medium text-slate-500 flex items-center gap-2 px-2">
+                <Clock className="w-3.5 h-3.5 text-primary" /> Lịch trình ngày {format(selectedDate, 'dd/MM/yyyy')}
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {todaySchedules.map(item => (
+                  <ScheduleCard key={item.id} item={item} profile={profile} onSelect={onSelectSchedule} onStatusUpdate={onStatusUpdate} />
+                ))}
               </div>
-            ) : (
-              <>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {displayedSchedules.map(item => (
-                    <ScheduleCard
-                      key={item.id}
-                      item={item}
-                      profile={profile}
-                      onSelect={onSelectSchedule}
-                      onStatusUpdate={onStatusUpdate}
-                    />
-                  ))}
-                </div>
+            </div>
+          )}
 
-                {filteredSchedules.length > DEFAULT_LIMIT && (
-                  <div className="flex justify-center pt-2">
-                    <Button
-                      variant="ghost"
-                      onClick={() => setShowAllSchedules(!showAllSchedules)}
-                      className="text-sm font-medium text-primary hover:bg-primary/5 rounded-full px-6 py-2 flex items-center gap-1.5"
-                    >
-                      {showAllSchedules ? (
-                        <>Thu gọn <ChevronUp className="w-4 h-4" /></>
-                      ) : (
-                        <>Xem thêm {filteredSchedules.length - DEFAULT_LIMIT} lịch trình <ChevronDown className="w-4 h-4" /></>
-                      )}
-                    </Button>
-                  </div>
-                )}
-              </>
-            )}
+          {/* 🔵 Sắp tới */}
+          <ScheduleSection
+            icon={<AlertCircle className="w-3.5 h-3.5" />}
+            label="Sắp tới"
+            count={upcomingSchedules.length}
+            color="blue"
+          >
+            {upcomingSchedules.map(item => (
+              <ScheduleCard key={`upcoming-${item.id}`} item={item} profile={profile} onSelect={onSelectSchedule} onStatusUpdate={onStatusUpdate} />
+            ))}
+          </ScheduleSection>
 
-            {upcomingSchedules.length > 0 && (
-              <div className="space-y-3 pt-2">
-                <h3 className="text-[13px] font-medium text-slate-500 flex items-center gap-2 px-2">
-                  <Clock className="w-3.5 h-3.5 text-amber-500" /> Lịch sắp tới trong 3 ngày
+          {/* ⚪️ Đã hoàn thành */}
+          <ScheduleSection
+            icon={<ChevronDown className="w-3.5 h-3.5" />}
+            label="Đã hoàn thành"
+            count={completedSchedules.length}
+            color="slate"
+            defaultOpen={false}
+          >
+            {completedSchedules.map(item => (
+              <ScheduleCard key={item.id} item={item} profile={profile} onSelect={onSelectSchedule} onStatusUpdate={onStatusUpdate} />
+            ))}
+          </ScheduleSection>
+
+          {/* Danh sách người nghỉ phép */}
+          {leaveList.length > 0 && (
+            <div className="space-y-4 pt-6 border-t border-slate-100 mt-8">
+              <div className="flex items-center justify-between px-2">
+                <h3 className="flex items-center gap-2 text-[12px] font-bold text-slate-400">
+                  <Plane className="w-4 h-4 text-blue-500 shrink-0" />
+                  Nhân sự nghỉ phép ({leaveList.length})
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {upcomingSchedules.map(item => (
-                    <ScheduleCard
-                      key={`upcoming-${item.id}`}
-                      item={item}
-                      profile={profile}
-                      onSelect={onSelectSchedule}
-                      onStatusUpdate={onStatusUpdate}
-                    />
-                  ))}
-                </div>
               </div>
-            )}
-
-            {/* Danh sách người nghỉ phép (đang nghỉ/sắp nghỉ) */}
-            {leaveList.length > 0 && (
-              <div className="space-y-4 pt-6 border-t border-slate-100 mt-8">
-                <div className="flex items-center justify-between px-2">
-                  <h3 className="flex items-center gap-2 text-[12px] font-bold text-slate-400">
-                    <Plane className="w-4 h-4 text-blue-500 shrink-0" />
-                    Nhân sự nghỉ phép ({leaveList.length})
-                  </h3>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {leaveList.map(leave => {
-                    const deptName = getProfileDeptName(leave.created_by);
-                    const formattedRange = isSameDay(leave.startDate, leave.endDate)
-                      ? format(leave.startDate, 'dd/MM/yyyy')
-                      : `${format(leave.startDate, 'dd/MM')} - ${format(leave.endDate, 'dd/MM/yyyy')}`;
-
-                    return (
-                      <Card
-                        key={leave.id}
-                        onClick={() => onSelectSchedule(leave)}
-                        className="rounded-2xl overflow-hidden border-none shadow-sm hover:shadow-lg transition-all duration-300 group cursor-pointer hover:-translate-y-0.5 hover:bg-slate-50/30"
-                      >
-                        <CardContent className="p-0">
-                          <div className="flex h-full">
-                            <div className={cn(
-                              "w-2 transition-all duration-300 group-hover:w-2.5 shrink-0",
-                              leave.isCurrent ? "bg-amber-400" : "bg-blue-400"
-                            )} />
-
-                            <div className="flex-1 p-3.5 flex items-center gap-3.5 min-w-0">
-                              <Avatar className="h-9 w-9 shrink-0 border border-slate-100 shadow-sm">
-                                <AvatarImage src={leave.creator?.avatar_url} />
-                                <AvatarFallback className="text-xs bg-slate-100 font-extrabold text-slate-600">
-                                  {leave.creator?.full_name?.[0]}
-                                </AvatarFallback>
-                              </Avatar>
-
-                              <div className="flex-1 min-w-0 space-y-1">
-                                <div className="flex items-center justify-between gap-2">
-                                  <p className="text-[13px] font-extrabold text-slate-800 truncate group-hover:text-primary transition-colors">
-                                    {leave.creator?.full_name}
-                                  </p>
-                                  <span className={cn(
-                                    "text-[9px] font-extrabold px-2 py-0.5 rounded-md tracking-normal shrink-0",
-                                    leave.isCurrent
-                                      ? "bg-amber-50 text-amber-600 border border-amber-200/50"
-                                      : "bg-blue-50/50 text-blue-600 border border-blue-200/40"
-                                  )}>
-                                    {leave.isCurrent ? "Đang nghỉ" : "Sắp nghỉ"}
-                                  </span>
-                                </div>
-
-                                <p className="text-[10px] text-slate-400 font-bold truncate">
-                                  {deptName || "Chưa phân phòng"}
-                                </p>
-
-                                <div className="flex items-center justify-between gap-1.5 pt-1.5 border-t border-slate-100">
-                                  <span className="text-[9.5px] font-medium text-slate-400">Thời gian nghỉ:</span>
-                                  <span className="text-[10.5px] font-bold text-slate-700">{formattedRange}</span>
-                                </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {leaveList.map(leave => {
+                  const deptName = getProfileDeptName(leave.created_by);
+                  const formattedRange = isSameDay(leave.startDate, leave.endDate)
+                    ? format(leave.startDate, 'dd/MM/yyyy')
+                    : `${format(leave.startDate, 'dd/MM')} - ${format(leave.endDate, 'dd/MM/yyyy')}`;
+                  return (
+                    <Card key={leave.id} onClick={() => onSelectSchedule(leave)}
+                      className="rounded-2xl overflow-hidden border-none shadow-sm hover:shadow-lg transition-all duration-300 group cursor-pointer hover:-translate-y-0.5 hover:bg-slate-50/30">
+                      <CardContent className="p-0">
+                        <div className="flex h-full">
+                          <div className={cn("w-2 transition-all duration-300 group-hover:w-2.5 shrink-0", leave.isCurrent ? "bg-amber-400" : "bg-blue-400")} />
+                          <div className="flex-1 p-3.5 flex items-center gap-3.5 min-w-0">
+                            <Avatar className="h-9 w-9 shrink-0 border border-slate-100 shadow-sm">
+                              <AvatarImage src={leave.creator?.avatar_url} />
+                              <AvatarFallback className="text-xs bg-slate-100 font-extrabold text-slate-600">{leave.creator?.full_name?.[0]}</AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0 space-y-1">
+                              <div className="flex items-center justify-between gap-2">
+                                <p className="text-[13px] font-extrabold text-slate-800 truncate group-hover:text-primary transition-colors">{leave.creator?.full_name}</p>
+                                <span className={cn("text-[9px] font-extrabold px-2 py-0.5 rounded-md tracking-normal shrink-0", leave.isCurrent ? "bg-amber-50 text-amber-600 border border-amber-200/50" : "bg-blue-50/50 text-blue-600 border border-blue-200/40")}>
+                                  {leave.isCurrent ? "Đang nghỉ" : "Sắp nghỉ"}
+                                </span>
+                              </div>
+                              <p className="text-[10px] text-slate-400 font-bold truncate">{deptName || "Chưa phân phòng"}</p>
+                              <div className="flex items-center justify-between gap-1.5 pt-1.5 border-t border-slate-100">
+                                <span className="text-[9.5px] font-medium text-slate-400">Thời gian nghỉ:</span>
+                                <span className="text-[10.5px] font-bold text-slate-700">{formattedRange}</span>
                               </div>
                             </div>
                           </div>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
-            )}
-          </div>
-        )}
-      </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

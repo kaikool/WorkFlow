@@ -45,11 +45,11 @@ export default function DateNavigator({ selectedDate, setSelectedDate, weekDays,
             const dayStart = startOfDay(day);
             const dayEnd = endOfDay(day);
             const daySchedules = schedules.filter(s => {
-              if (s.status === 'rejected') return false;
               return new Date(s.start_time) <= dayEnd && new Date(s.end_time) >= dayStart;
             });
             const hasPending = daySchedules.some(s => s.status === 'pending' || (s.use_vehicle && !s.vehicle_id));
             const hasApproved = daySchedules.some(s => s.status === 'approved');
+            const hasRejected = daySchedules.some(s => s.status === 'rejected');
             return (
               <Button
                 key={idx}
@@ -80,7 +80,7 @@ export default function DateNavigator({ selectedDate, setSelectedDate, weekDays,
                   {format(day, 'd')}
                 </span>
 
-                {(hasPending || hasApproved) && (
+                {(hasPending || hasApproved || hasRejected) && (
                   <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 flex items-center gap-0.5">
                     {hasPending && (
                       <span className={cn(
@@ -92,6 +92,12 @@ export default function DateNavigator({ selectedDate, setSelectedDate, weekDays,
                       <span className={cn(
                         "h-1 w-1 rounded-full shrink-0",
                         isSelected ? "bg-emerald-300 ring-[0.5px] ring-white/40" : "bg-emerald-500"
+                      )} />
+                    )}
+                    {hasRejected && (
+                      <span className={cn(
+                        "h-1 w-1 rounded-full shrink-0",
+                        isSelected ? "bg-red-300 ring-[0.5px] ring-white/40" : "bg-red-500"
                       )} />
                     )}
                   </div>
