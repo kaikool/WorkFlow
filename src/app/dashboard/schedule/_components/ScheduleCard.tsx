@@ -157,17 +157,25 @@ export default function ScheduleCard({ item, profile, onSelect, onStatusUpdate }
               )}
             </div>
 
-            {/* Hàng 4: Action cho coordinator */}
+            {/* Hàng 4: Action cho coordinator — chỉ cho pending không xe hoặc có xe đã gán (BGĐ case) */}
             {isCoordinator && item.status === 'pending' && (
               <div className="flex gap-2 pt-3 border-t border-slate-50 relative z-10">
-                <Button size="sm" disabled={item.use_vehicle && !item.vehicle_id}
-                  onClick={(e) => { e.stopPropagation(); onStatusUpdate(item.id, 'approved'); }}
-                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-400 min-h-10 rounded-xl font-semibold text-sm shadow-sm px-4"
-                >{item.use_vehicle && !item.vehicle_id ? "Cần gán xe" : "Duyệt"}</Button>
-                <Button size="sm" variant="outline"
-                  onClick={(e) => { e.stopPropagation(); setRejectOpen(true); }}
-                  className="flex-1 min-h-10 rounded-xl font-semibold text-sm border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 px-4"
-                >Từ chối</Button>
+                {item.use_vehicle && !item.vehicle_id ? (
+                  <span className="text-xs font-medium text-amber-600 bg-amber-50 rounded-xl px-3 py-2 border border-amber-100 w-full text-center">
+                    Mở để gán xe
+                  </span>
+                ) : (
+                  <>
+                    <Button size="sm"
+                      onClick={(e) => { e.stopPropagation(); onStatusUpdate(item.id, 'approved'); }}
+                      className="flex-1 bg-emerald-600 hover:bg-emerald-700 min-h-10 rounded-xl font-semibold text-sm shadow-sm px-4"
+                    >Xác nhận</Button>
+                    <Button size="sm" variant="outline"
+                      onClick={(e) => { e.stopPropagation(); setRejectOpen(true); }}
+                      className="flex-1 min-h-10 rounded-xl font-semibold text-sm border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 px-4"
+                    >Từ chối</Button>
+                  </>
+                )}
               </div>
             )}
           </div>
