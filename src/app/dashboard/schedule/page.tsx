@@ -169,17 +169,6 @@ function ScheduleContent() {
 }
 
 export default function SchedulePage() {
-  return (
-    <Suspense fallback={
-      <div className="page-container space-y-10 animate-fade-in-up">
-        <PageHeader
-          title="Lịch trình"
-          description="Điều phối lịch họp & công tác"
-        />
-        <ListSkeleton variant="card" rows={6} />
-      </div>
-    }>
-      <ScheduleContent />
-    </Suspense>
-  );
+  return <ScheduleContent />;
 }
+
