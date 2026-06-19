@@ -28,9 +28,19 @@ export default function SettingsPage() {
 
   const togglePush = async (v: boolean) => {
     if (v) {
-      const sub = await subscribe();
-      if (sub) notifySuccess("Đã bật thông báo đẩy");
-      else notifyError(null, "Hãy 'Thêm vào màn hình chính' và cấp quyền thông báo trước");
+      try {
+        const sub = await subscribe();
+        if (sub) notifySuccess("Đã bật thông báo đẩy");
+      } catch (err: any) {
+        const msg = err?.message || '';
+        if (msg === 'IOS_NOT_STANDALONE') {
+          notifyError(null, "Trên iOS cần 'Thêm vào màn hình chính' trước khi bật thông báo đẩy.");
+        } else if (msg === 'IOS_VERSION_TOO_OLD') {
+          notifyError(null, "iOS cần phiên bản 16.4 trở lên để hỗ trợ thông báo đẩy trên PWA.");
+        } else {
+          notifyError(null, "Hãy 'Thêm vào màn hình chính' và cấp quyền thông báo trước.");
+        }
+      }
     } else {
       await unsubscribe();
       notifySuccess("Đã tắt thông báo đẩy");

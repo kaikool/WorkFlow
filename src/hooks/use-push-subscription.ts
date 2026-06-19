@@ -19,12 +19,18 @@ export function usePushSubscription() {
   const [isSupported, setIsSupported] = useState(false)
   const [subscription, setSubscription] = useState<PushSubscription | null>(null)
   const [permission, setPermission] = useState<NotificationPermission>('default')
+  const [isStandalone, setIsStandalone] = useState(false)
   const supabase = createClient()
 
   useEffect(() => {
     if (typeof window !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window) {
       setIsSupported(true)
       setPermission(Notification.permission)
+
+      // Phát hiện chế độ PWA (thêm vào Màn hình chính)
+      const standalone = (window.navigator as any).standalone === true
+        || window.matchMedia('(display-mode: standalone)').matches
+      setIsStandalone(standalone)
 
       navigator.serviceWorker.ready.then((registration) => {
         registration.pushManager.getSubscription().then((sub) => {
@@ -34,8 +40,26 @@ export function usePushSubscription() {
     }
   }, [])
 
+  // Kiểm tra iOS và phiên bản
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+    || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+  const iOSVersion = (() => {
+    const match = navigator.userAgent.match(/OS (\d+)_(\d+)/)
+    return match ? parseInt(match[1]) + (parseInt(match[2]) / 100) : 0
+  })()
+
   const subscribe = async () => {
     if (!isSupported) return
+
+    // iOS: push notification chỉ hoạt động khi ở chế độ PWA (đã thêm vào Màn hình chính)
+    if (isIOS) {
+      if (!isStandalone) {
+        throw new Error('IOS_NOT_STANDALONE')
+      }
+      if (iOSVersion < 16.4) {
+        throw new Error('IOS_VERSION_TOO_OLD')
+      }
+    }
 
     try {
       const result = await Notification.requestPermission()
@@ -69,6 +93,7 @@ export function usePushSubscription() {
       return sub
     } catch (error) {
       console.error('Failed to subscribe to push notifications:', error)
+      throw error
     }
   }
 
@@ -94,6 +119,7 @@ export function usePushSubscription() {
 
   return {
     isSupported,
+    isStandalone,
     subscription,
     permission,
     subscribe,
