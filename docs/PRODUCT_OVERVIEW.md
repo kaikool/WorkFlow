@@ -64,7 +64,7 @@ Hệ thống có **7 role** khai báo ở enum `user_role` (Postgres) + type `Us
 | `director` | Giám đốc / Phó Giám đốc | Xem **toàn bộ hồ sơ** chi nhánh (read-only truy vết), xem mọi task, duyệt đơn nghỉ phép của cấp Trưởng phòng / lãnh đạo cùng cấp. Lịch trình của BGĐ public toàn chi nhánh. |
 | `manager` | Trưởng phòng / Phó phòng | Xem & update task của phòng. Duyệt đơn nghỉ phép nhân viên cùng phòng (chỉ khi `is_department_head = true` HOẶC creator không phải lãnh đạo cùng cấp). Nếu thuộc phòng **Tổ chức Tổng hợp** (code `13602`) → có quyền điều phối phòng họp/xe như `secretary`. |
 | `staff` | Nhân viên (RM, GDV, KSV, Kho quỹ, Pháp chế, IT, Tổ chức Tổng hợp…) | Tạo & luân chuyển hồ sơ vật lý, xem task được giao hoặc do mình tạo, đăng ký lịch họp/đặt xe, tạo đơn nghỉ phép. Phân biệt nhau qua `department_id`. |
-| `secretary` | Thư ký Ban Giám đốc | Điều phối phòng họp + xe ô tô (CRUD `rooms`, `vehicles`, duyệt/sửa `schedules` toàn chi nhánh, gán tài xế). |
+| `secretary` | Thư ký Ban Giám đốc | Điều phối phòng họp + xe ô tô (CRUD `rooms`, `vehicles`, gán xe/lái xe cho lịch có yêu cầu xe). Không xem lịch không xe nếu không phải creator/participant/cùng phòng/trừ lịch có BGĐ. |
 | `hr_officer` | Cán bộ Nhân sự | Workspace riêng (`HRDashboardView`), **read-only** đơn nghỉ phép toàn chi nhánh, xem danh bạ, xem mọi profile (tổng hợp data nhân sự). |
 | `driver` | Lái xe | Workspace riêng (`DriverDashboard`) chỉ xem chuyến đi được giao. **Bị chặn** khỏi module Hồ sơ vật lý, Công việc, Cán bộ. Có `start_km`/`end_km` workflow cho mỗi chuyến. |
 
@@ -397,7 +397,7 @@ Mọi assignee picker dùng `<PeoplePicker>` shared (`src/components/ui/people-p
 | `type` | Mục đích | Resource liên quan |
 |--------|----------|--------------------|
 | `meeting` | Họp nội bộ | `room_id` (phòng họp) |
-| `trip` | Công tác / đi địa bàn | `vehicle_id` + `driver_id` + `requested_vehicle_type` |
+| `trip` | Công tác / đi địa bàn | Người tạo bật `use_vehicle`; bộ phận điều phối gán `vehicle_id`, `driver_id` tự lấy từ xe đã gán lái xe trong `vehicles` |
 | `leave` | Đơn nghỉ phép | Có luồng duyệt riêng (`LeaveApprovalDashboard`) |
 | `event` | Sự kiện chung chi nhánh | — |
 
@@ -408,9 +408,9 @@ Mọi assignee picker dùng `<PeoplePicker>` shared (`src/components/ui/people-p
 - **Driver** → `DriverDashboard` (workspace lái xe — xem 3.4.4).
 - **Còn lại** → `CalendarView` với:
   - **`DateNavigator`** — chọn ngày, hiển thị 7 ngày nổi bật ngày được chọn.
-  - **3 phạm vi filter**: "Toàn chi nhánh" / "BGĐ" / "Phòng của tôi".
+  - **3 phạm vi filter**: "Toàn chi nhánh" / "BGĐ" / "Phòng của tôi". Lịch không có BGĐ tham gia chỉ hiển thị cho creator, participant, cùng phòng hoặc admin; bộ phận điều phối/driver chỉ thấy lịch khi lịch có yêu cầu xe/gán xe cho họ. Lịch có BGĐ tham gia public toàn chi nhánh.
   - **Sub-dashboard nhúng**:
-    - `ResourcesManagerDashboard` (chỉ bộ phận điều phối/secretary/admin) — bảng điều phối phòng họp + xe.
+    - `ResourcesManagerDashboard` (chỉ bộ phận điều phối/secretary/admin) — bảng điều phối phòng họp + xe, nhưng dữ liệu lịch vẫn bị RLS siết theo quy tắc lịch có xe/BGĐ/phòng.
     - `LeaveApprovalDashboard` (chỉ user có quyền `canApproveLeave`) — list đơn pending + duyệt 1 click.
     - `DirectorTimeline` — timeline ngày dành cho BGĐ.
 
@@ -451,10 +451,11 @@ URL vẫn là `/dashboard/schedule` nhưng auto-detect role `driver` → render 
 
 #### 3.4.5 Gán xe + tài xế (Resource Coordination)
 
-Secretary / admin / manager phòng điều phối:
-1. Mở `ScheduleDetailDialog` của 1 schedule `type='trip'`.
-2. Chọn `vehicle_id` + `driver_id` từ list.
-3. UPDATE schedule → status `approved` + notification cho driver "Bạn được phân công lịch chạy xe …".
+Quy tắc xe:
+1. Người tạo lịch công tác chỉ bật "Sử dụng xe cơ quan" để đưa lịch vào hàng chờ điều phối; không tự chọn xe/lái xe.
+2. Secretary / admin / manager phòng điều phối mở `ScheduleDetailDialog`, chọn xe trong bảng `vehicles`; hệ thống tự lấy `driver_id` chuyên trách của xe và số điện thoại từ `profiles.phone` của lái xe.
+3. Ngay sau khi điều phối gán xe + lái xe, schedule được cập nhật `status='approved'` và notification được gửi cho driver "Bạn được phân công lịch chạy xe …". Không có bước phê duyệt riêng sau điều phối.
+4. Lịch không có xe và không có BGĐ tham gia được tự động `approved`, không cần điều phối/phê duyệt.
 
 #### 3.4.6 Conflict detection
 

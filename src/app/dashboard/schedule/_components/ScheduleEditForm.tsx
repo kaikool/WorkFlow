@@ -41,6 +41,7 @@ export default function ScheduleEditForm({
   const reasonLen = (detail.changeReason || '').trim().length;
   const reasonValid = reasonLen >= 10;
   const canCoord = !!detail.canCoord;
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent hideCloseButton className="app-dialog-sheet app-dialog-sheet--2xl shadow-2xl">
@@ -294,12 +295,16 @@ export default function ScheduleEditForm({
                   <span className="text-sm font-medium text-slate-900 whitespace-nowrap">Sử dụng xe cơ quan</span>
                 </div>
                 {canCoord && detail.editData.use_vehicle && (
-                  <div className="w-full sm:w-40 shrink-0 animate-in fade-in zoom-in-95">
+                  <div className="w-full sm:w-64 shrink-0 animate-in fade-in zoom-in-95">
                     <Select value={detail.editData.vehicle_id || 'none'} onValueChange={(v) => detail.setEditData({ ...detail.editData, vehicle_id: v })}>
-                      <SelectTrigger className="h-9 bg-slate-50 border-none rounded-lg font-medium text-xs shadow-sm"><SelectValue placeholder="Gán xe" /></SelectTrigger>
+                      <SelectTrigger className="h-9 bg-slate-50 border-none rounded-lg font-medium text-xs shadow-sm"><SelectValue placeholder="Chọn xe" /></SelectTrigger>
                       <SelectContent className="rounded-xl border-none shadow-2xl">
-                        <SelectItem value="none" className="text-xs py-2">Chưa gán xe</SelectItem>
-                        {vehicles.map(v => <SelectItem key={v.id} value={v.id} className="text-xs py-2">{v.name} - {v.plate_number}</SelectItem>)}
+                        <SelectItem value="none" className="text-xs py-2">Chưa chọn xe</SelectItem>
+                        {vehicles.map(v => (
+                          <SelectItem key={v.id} value={v.id} className="text-xs py-2">
+                            {v.name} - {v.plate_number}{v.default_driver?.full_name ? ` · ${v.default_driver.full_name}` : ''}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>

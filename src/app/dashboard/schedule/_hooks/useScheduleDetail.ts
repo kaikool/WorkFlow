@@ -218,6 +218,10 @@ export function useScheduleDetail({
       ? editData.destinations.map((d: any) => d.location).filter(Boolean).join(' ➔ ')
       : editData.location;
 
+    const selectedVehicle = !isLeaveType && editData.use_vehicle && editData.vehicle_id !== 'none'
+      ? vehicles.find((vehicle: any) => vehicle.id === editData.vehicle_id)
+      : null;
+
     const payload = {
       title: editData.title,
       description: editData.description || null,
@@ -229,8 +233,9 @@ export function useScheduleDetail({
       metadata: (!isLeaveType && !isBranchLocation) ? { ...schedule.metadata, destinations: editData.destinations } : schedule.metadata,
       room_id: !isLeaveType && isBranchLocation && editData.room_id !== 'none' ? editData.room_id : null,
       use_vehicle: !isLeaveType && !!editData.use_vehicle,
-      vehicle_id: !isLeaveType && editData.vehicle_id !== 'none' ? editData.vehicle_id : null,
-      requested_vehicle_type: !isLeaveType && editData.use_vehicle ? editData.requested_vehicle_type : null,
+      vehicle_id: selectedVehicle ? selectedVehicle.id : null,
+      driver_id: selectedVehicle?.driver_id || null,
+      requested_vehicle_type: selectedVehicle ? selectedVehicle.type : null,
       participant_ids: finalParticipantIds
     };
 

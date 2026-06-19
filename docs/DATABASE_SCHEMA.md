@@ -444,7 +444,7 @@ CREATE TABLE schedules (
     created_by                  UUID REFERENCES profiles(id),
     use_room                    BOOLEAN DEFAULT false,
     use_vehicle                 BOOLEAN DEFAULT false,
-    requested_vehicle_type      TEXT,                -- "4 chỗ", "7 chỗ", "16 chỗ"
+    requested_vehicle_type      TEXT,                -- Legacy/display: lấy từ vehicles.type khi chọn xe trực tiếp
     metadata                    JSONB DEFAULT '{}'::jsonb,
                                                       -- driver flow: {start_km, end_km, actual_distance}
     created_at                  TIMESTAMPTZ DEFAULT NOW()
@@ -865,7 +865,7 @@ Workspace lái xe (`DriverDashboard.tsx`) update trực tiếp các field này k
 |-----------|----------------|-------------------|
 | **Public read** (`departments`, `rooms`, `vehicles`, `recognitions`, `task_comments`, `schedule_participants`) | `USING (true)` cho mọi authenticated | Write: theo role (admin/secretary/bộ phận điều phối) |
 | **Owner-only** (`notifications`, `push_subscriptions`) | `USING (auth.uid() = user_id)` | Tương tự — chỉ owner |
-| **Quan hệ + role** (`documents`, `document_handovers`, `tasks`, `schedules`) | Phối hợp: creator + assignee + participant + role (admin/director/role đặc thù) | INSERT theo role, UPDATE qua RPC |
+| **Quan hệ + role** (`documents`, `document_handovers`, `tasks`, `schedules`) | Phối hợp: creator + assignee + participant + role (admin/director; riêng schedules điều phối chỉ thấy lịch có xe) | INSERT theo role, UPDATE qua RPC |
 | **Admin-only** (`account_requests`, `document_categories`) | `current_user_role() = 'admin'` | Toàn quyền chỉ admin |
 | **Mutation chỉ qua RPC** (`document_handovers`, cột `status`/`current_assignee_id` của `documents`) | `INSERT WITH CHECK (false)` chặn direct | Buộc đi qua RPC `SECURITY DEFINER` |
 
@@ -916,10 +916,17 @@ Update tương tự, kết hợp với **trigger `guard_tasks_update`** để ch
 ### 11.5 Schedules RLS
 
 ```sql
--- SELECT: creator + cùng phòng + participant + director public + role đặc thù + driver
--- UPDATE: bộ phận điều phối + creator + admin/secretary/hr_officer + driver (chuyến của mình)
+-- SELECT: creator + cùng phòng + participant + admin + lịch có BGĐ public + điều phối nếu use_vehicle=true + driver_id được gán
+-- UPDATE: creator + admin + điều phối nếu use_vehicle=true + driver_id được gán
 -- DELETE: cấm khi status = 'in_progress'; còn lại cho creator + admin/sec/hr/director/điều phối
 ```
+
+Quy tắc nghiệp vụ hiện hành:
+- Nếu lịch không có BGĐ tham gia thì chỉ creator, participant, cùng phòng hoặc admin được xem.
+- Nếu lịch có BGĐ tham gia hoặc creator là BGĐ thì public toàn chi nhánh để mọi phòng nắm lịch lãnh đạo.
+- Bộ phận điều phối/secretary chỉ xem và cập nhật lịch ngoài scope cá nhân/phòng khi `use_vehicle=true`; nếu lịch không cần xe thì điều phối không được xem chỉ vì role điều phối.
+- Nếu `use_vehicle=true` thì lịch ở `pending` để chờ điều phối gán xe. Khi bộ phận điều phối chọn `vehicle_id` từ `vehicles`, `driver_id` lấy theo `vehicles.driver_id`, số điện thoại lái xe lấy từ `profiles.phone`, và schedule chuyển thẳng sang `approved` — không có bước phê duyệt riêng sau điều phối.
+- Driver chỉ xem/cập nhật chuyến có `schedules.driver_id = auth.uid()`.
 
 Riêng nội dung đơn nghỉ phép (`type='leave'`): payload có `description`/`title` chỉ trả về cho user pass check `can_view_leave_detail()`:
 

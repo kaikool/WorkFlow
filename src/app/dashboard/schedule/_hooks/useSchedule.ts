@@ -41,7 +41,7 @@ export function useSchedule() {
     const params = new URLSearchParams(searchParams.toString());
 
     if (typeParam === 'leave') {
-      setNewSchedule(prev => ({ ...prev, type: 'leave' }));
+      setNewSchedule((prev: any) => ({ ...prev, type: 'leave' }));
       setIsCreateOpen(true);
       params.delete('type');
       shouldUpdateUrl = true;
@@ -69,10 +69,10 @@ export function useSchedule() {
 
   // State dialog tạo mới
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [newSchedule, setNewSchedule] = useState({
+  const [newSchedule, setNewSchedule] = useState<any>({
     title: "", description: "", location: "", department_id: "",
     type: "trip", use_room: false, room_id: "",
-    use_vehicle: true, vehicle_id: "", requested_vehicle_type: "4 chỗ", participants: [],
+    use_vehicle: true, vehicle_id: "none", requested_vehicle_type: null, participants: [],
     target_profile_id: "", destinations: [{ location: "" }]
   });
   const [startDate, setStartDate] = useState<Date | undefined>(new Date());
@@ -96,7 +96,7 @@ export function useSchedule() {
 
   // Tính toán
   const defaultTab = canUseDriverWorkspace(profile) ? 'driver-trips' : 'calendar';
-  const pendingVehicleCount = schedules.filter(s => s.use_vehicle && !s.vehicle_id).length;
+  const pendingVehicleCount = schedules.filter(s => s.use_vehicle && s.status === 'pending').length;
   const pendingVehicleBadge = pendingVehicleCount > 9 ? "9+" : pendingVehicleCount;
   const canCoordinateResources = canCoordinateSharedResources(profile);
 
@@ -541,7 +541,7 @@ export function useSchedule() {
 
 
   const resetCreateForm = () => {
-    setNewSchedule({ title: "", description: "", location: "", department_id: "", type: "trip", use_room: false, room_id: "", use_vehicle: true, vehicle_id: "", requested_vehicle_type: "Khác", participants: [], target_profile_id: "", destinations: [{ location: "" }] });
+    setNewSchedule({ title: "", description: "", location: "", department_id: "", type: "trip", use_room: false, room_id: "", use_vehicle: true, vehicle_id: "none", requested_vehicle_type: null, participants: [], target_profile_id: "", destinations: [{ location: "" }] });
     setStartDate(new Date());
     setEndDate(new Date());
     setStartTime("08:00");

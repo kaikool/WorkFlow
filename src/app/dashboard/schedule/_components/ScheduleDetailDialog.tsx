@@ -346,34 +346,30 @@ export default function ScheduleDetailDialog({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <Select value={detail.tempVehicleId || ''} onValueChange={detail.handleVehicleSelect}>
                     <SelectTrigger className="min-h-11 bg-white border-none rounded-xl font-medium text-sm shadow-sm">
-                      <SelectValue placeholder={`Chọn xe ${schedule.requested_vehicle_type}...`} />
+                      <SelectValue placeholder="Chọn xe..." />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl border-none shadow-2xl">
                       {vehicles
-                        .filter(v => schedule.requested_vehicle_type === 'Khác' ? !['4 chỗ', '7 chỗ'].includes(v.type) : v.type === schedule.requested_vehicle_type)
                         .map(v => (
                           <SelectItem key={v.id} value={v.id} className="text-base md:text-sm py-3 md:py-2">
-                            <span className="font-bold text-slate-800">{v.name} - {v.plate_number}</span>
+                            <span className="font-bold text-slate-800">
+                              {v.name} - {v.plate_number}{v.default_driver?.full_name ? ` · ${v.default_driver.full_name}` : ''}
+                            </span>
                           </SelectItem>
                         ))}
                     </SelectContent>
                   </Select>
 
-                  <Select value={detail.tempDriverId || ''} onValueChange={detail.setTempDriverId}>
-                    <SelectTrigger className="min-h-11 bg-white border-none rounded-xl font-medium text-sm shadow-sm">
-                      <SelectValue placeholder="Chọn Lái xe..." />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl border-none shadow-2xl">
-                      {allProfiles.filter(p => p.role === 'driver').map(p => (
-                        <SelectItem key={p.id} value={p.id} className="text-base md:text-sm py-3 md:py-2">
-                          <div className="flex items-center gap-2">
-                            <Avatar className="h-5 w-5"><AvatarImage src={p.avatar_url}/></Avatar>
-                            <span className="font-bold text-slate-800">{p.full_name}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="min-h-11 rounded-xl bg-white px-3 py-2 shadow-sm text-sm font-medium text-slate-700">
+                    {detail.tempVehicleId
+                      ? (() => {
+                          const selectedVehicle = vehicles.find(v => v.id === detail.tempVehicleId);
+                          return selectedVehicle?.default_driver?.full_name
+                            ? `Lái xe: ${selectedVehicle.default_driver.full_name}${selectedVehicle.default_driver.phone ? ` · ${selectedVehicle.default_driver.phone}` : ''}`
+                            : 'Xe này chưa gán lái xe trong danh mục';
+                        })()
+                      : 'Lái xe sẽ tự lấy theo xe đã chọn'}
+                  </div>
                 </div>
                 <div className="flex justify-end pt-1">
                   <Button

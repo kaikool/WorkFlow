@@ -594,18 +594,18 @@ const handleSubmit = async () => {
 
 1. **Bộ nhớ đệm dữ liệu dùng chung (`AppDataProvider`)**:
    - Cung cấp cơ chế lưu trữ đệm client-side (Stale-While-Revalidate) cho các dữ liệu ít biến động hoặc dùng chung ở nhiều trang: `profiles`, `departments`, `out_of_office` (vắng mặt tạm thời), cùng với **`vehicles`** (xe) và **`rooms`** (phòng họp).
-   - **Cổng phân quyền (Gate)**: Để tránh lãng phí kết nối Websocket và chặn các lỗi RLS đối với nhân viên thông thường, việc fetch danh sách và subscribe realtime `vehicles` & `rooms` được **gate nghiêm ngặt** theo phân quyền. Chỉ tải và sync các bảng này khi user có quyền điều phối hoặc tài xế chuyên trách (`canCoordinateSharedResources` hoặc `canUseDriverWorkspace`). Nếu không có quyền, state được gán là mảng rỗng `[]` và không subscribe channel tài nguyên.
+   - **Danh mục tài nguyên public-read**: `rooms` được dùng khi cán bộ đặt phòng họp; `vehicles` dùng cho bộ phận điều phối gán xe/lái xe. Hai danh mục này được tải và subscribe realtime cho dashboard, nhưng quyền xem từng `schedule` vẫn do RLS của `schedules` quyết định; quyền ghi/sửa danh mục vẫn chỉ dành cho admin/secretary/manager phòng điều phối.
    - **Thời gian sống (TTL)**:
      - `profiles`: 1 giờ (1h)
      - `departments`: 24 giờ (24h)
      - `ooo` (Out of Office): 30 phút (30m)
-     - `vehicles`: 24 giờ (24h) - Invalidated realtime (chỉ cho user có quyền)
-     - `rooms`: 24 giờ (24h) - Invalidated realtime (chỉ cho user có quyền)
+     - `vehicles`: 24 giờ (24h) - Invalidated realtime
+     - `rooms`: 24 giờ (24h) - Invalidated realtime
    - **Cơ chế hoạt động**:
      - *Bước 1*: Đọc đồng bộ dữ liệu từ `localStorage` khi mount (tránh hydration mismatch) để render ngay lập tức (0ms delay).
-     - *Bước 2*: Thực hiện background fetch ( profiles/depts/ooo, cộng thêm vehicles/rooms nếu cache cũ ghi nhận user có quyền) để cập nhật state.
-     - *Bước 3*: Subscribe realtime channel `app_data_sync` cho profiles/depts/ooo, và channel `app_resource_sync` riêng biệt cho vehicles/rooms (chỉ mount khi có quyền thực tế).
-     - *Bước 4*: Dynamic upgrade/downgrade: Nếu profiles thay đổi và user được nâng cấp quyền, AppDataProvider sẽ tự động kích hoạt background fetch và subscribe Websocket cho các tài nguyên bổ sung, đảm bảo trải nghiệm liền mạch mà vẫn an toàn tuyệt đối.
+     - *Bước 2*: Thực hiện background fetch profiles/depts/ooo/vehicles/rooms để cập nhật state.
+     - *Bước 3*: Subscribe realtime channel `app_data_sync` cho profiles/depts/ooo, và channel `app_resource_sync` riêng biệt cho vehicles/rooms.
+     - *Bước 4*: Phân quyền ghi/sửa tài nguyên không nằm ở cache provider mà nằm ở helper UI + RLS policy backend.
    - **Tối ưu payload**: Đối với user không phải admin, fetching profiles được filter ngay tại DB với `role != 'admin'` thay vì tải toàn bộ rồi lọc client-side, giúp giảm đáng kể dung lượng tải về (admin/director thường chiếm <5% tổng user). Admin vẫn fetch toàn bộ profiles không filter.
    - **Quy tắc sử dụng**: Tuyệt đối không tự fetch lại danh sách phòng ban (`departments`), xe (`vehicles`), hay phòng (`rooms`) trong các dialog/component con mà bắt buộc phải đọc trực tiếp từ `useAppData()` để tối ưu hóa hiệu năng.
 

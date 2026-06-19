@@ -1,7 +1,6 @@
 // Helper tạo lịch trình mới — tách khỏi useSchedule để giữ file gốc dưới 500 dòng.
 // Nhận state đã được chuẩn hoá và trả về Promise<void>.
 
-import { canCoordinateSharedResources } from "@/lib/permissions";
 import { resolveParticipantIds } from "./utils";
 import { confirmDialog } from "@/components/ui/confirm-dialog";
 import { notifyError, notifySuccess, notifyValidation } from "@/lib/notify";
@@ -11,6 +10,7 @@ interface CreateScheduleParams {
   toast: any;                                                     // legacy — không dùng nội bộ, giữ để không phá signature
   profile: any;
   allProfiles: any[];
+
   newSchedule: any;
   startDate: Date;
   endDate: Date;
@@ -66,7 +66,6 @@ export async function createSchedule(p: CreateScheduleParams) {
     notifyValidation("Vui lòng nhập địa điểm hoặc lộ trình cụ thể.", "Thiếu địa điểm");
     return;
   }
-
   if (!isLeave && resourceConflicts.length > 0) {
     notifyValidation(resourceConflicts[0], "Tài nguyên đang bận");
     return;
@@ -110,12 +109,17 @@ export async function createSchedule(p: CreateScheduleParams) {
       if (!ok) return;
     }
 
+    const hasDirectorParticipant = !isLeave && finalParticipants.some((uid: string) => {
+      const participant = allProfiles.find((x: any) => x.id === uid);
+      return participant?.role === 'director';
+    });
+
     const isTargetBGD = targetProfile?.role === 'director' || targetProfile?.role === 'admin';
     // Chỉ admin/secretary được tự duyệt khi tạo lịch. HR Officer chỉ tạo hộ nhưng không tự duyệt.
     const isAuthorizedCreator = ['admin', 'secretary'].includes(profile?.role);
     const shouldApproveImmediately = isLeave
       ? (isTargetBGD || isAuthorizedCreator)
-      : canCoordinateSharedResources(profile);
+      : (!newSchedule.use_vehicle && !hasDirectorParticipant);
     const status = shouldApproveImmediately ? 'approved' : 'pending';
 
     // department_id: với đơn nghỉ phép đăng ký hộ, luôn ưu tiên phòng ban của người được nghỉ.
@@ -132,7 +136,8 @@ export async function createSchedule(p: CreateScheduleParams) {
       end_time: end.toISOString(),
       room_id: (!isLeave && newSchedule.location === 'Chi nhánh' && newSchedule.room_id !== "none") ? newSchedule.room_id : null,
       vehicle_id: null,
-      requested_vehicle_type: (!isLeave && use_vehicle) ? newSchedule.requested_vehicle_type : null,
+      driver_id: null,
+      requested_vehicle_type: null,
       use_vehicle: !isLeave && use_vehicle,
       created_by: profile?.id,
       department_id: finalDepartmentId,

@@ -4,8 +4,8 @@
 // Tối ưu Supabase queries (Gói D):
 //   Trước đây gộp schedulesQuery + pendingQueueQuery là 2 SELECT nặng trùng lặp,
 //   client merge dedupe → tốn ~2x payload.
-//   Bây giờ: 1 SELECT với điều kiện OR (window tuần) hoặc (pending) hoặc (use_vehicle
-//   AND vehicle_id IS NULL) — PostgREST xử lý dedupe ở DB, giảm payload + 1 round-trip.
+//   Bây giờ: 1 SELECT với điều kiện OR (window tuần) hoặc (use_vehicle pending)
+//   — PostgREST xử lý dedupe ở DB, giảm payload + 1 round-trip.
 
 import { addDays, endOfDay, endOfWeek, startOfWeek } from "date-fns";
 import { canCoordinateSharedResources } from "@/lib/permissions";
@@ -31,8 +31,8 @@ export async function fetchScheduleData(
   const startIso = start.toISOString();
   const endIso = end.toISOString();
 
-  // 1 SELECT duy nhất. Coordinator cần thêm pending queue (có thể ngoài window).
-  // Filter: (window tuần) hoặc (status=pending) hoặc (use_vehicle=true và chưa gán xe).
+  // 1 SELECT duy nhất. Coordinator chỉ được thêm queue lịch cần xe (có thể ngoài window).
+  // RLS vẫn là nguồn chặn cuối: điều phối không thấy lịch không xe ngoài phòng/participant.
   let query = supabase
     .from('schedules')
     .select(SCHEDULE_SELECT)
@@ -40,7 +40,7 @@ export async function fetchScheduleData(
 
   if (canSeePendingQueue) {
     query = query.or(
-      `and(end_time.gte.${startIso},start_time.lte.${endIso}),status.eq.pending,and(use_vehicle.eq.true,vehicle_id.is.null)`
+      `and(end_time.gte.${startIso},start_time.lte.${endIso}),and(use_vehicle.eq.true,status.eq.pending)`
     );
   } else {
     query = query.gte('end_time', startIso).lte('start_time', endIso);

@@ -59,9 +59,9 @@ export default function ScheduleCard({ item, profile, onSelect, onStatusUpdate }
                   <Badge variant="outline" className={cn("text-xs font-semibold px-2.5 py-1 rounded-md whitespace-nowrap", type.color)}>
                     <type.icon className="w-3 h-3 mr-1 shrink-0" /> {type.label}
                   </Badge>
-                  {item.use_vehicle && !item.vehicle_id && (
+                  {item.use_vehicle && item.status === 'pending' && (
                     <Badge className="bg-amber-50 text-amber-700 hover:bg-amber-50 border border-amber-100 font-semibold text-xs px-2.5 py-1 rounded-md flex items-center gap-1 whitespace-nowrap">
-                      <Car className="w-2.5 h-2.5 shrink-0" /> Chờ điều xe
+                      <Car className="w-2.5 h-2.5 shrink-0" /> {item.vehicle_id ? 'Chờ duyệt xe' : 'Chưa chọn xe'}
                     </Badge>
                   )}
                   {isOwnRejected && (

@@ -51,6 +51,7 @@ interface CreateScheduleDialogProps {
   isEndOpen: boolean;
   setIsEndOpen: (v: boolean) => void;
   rooms: any[];
+
   conflicts: string[];
   onSubmit: () => void;
   toast: any;
@@ -358,11 +359,17 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
               <div className="flex items-center gap-3 p-3 bg-white rounded-2xl border border-slate-100 shadow-sm">
                 <Switch
                   checked={newSchedule.use_vehicle}
-                  onCheckedChange={(checked) => setNewSchedule({ ...newSchedule, use_vehicle: checked, vehicle_id: checked ? 'none' : newSchedule.vehicle_id })}
+                  onCheckedChange={(checked) => setNewSchedule({
+                    ...newSchedule,
+                    use_vehicle: checked,
+                    vehicle_id: 'none',
+                    requested_vehicle_type: null,
+                  })}
                   aria-label="Bật hoặc tắt sử dụng xe cơ quan"
                 />
                 <div className="flex flex-col flex-1 min-w-0">
                   <span className="text-sm font-medium text-slate-900 whitespace-nowrap">Sử dụng xe cơ quan</span>
+                  <span className="text-xs font-medium text-slate-500">Bộ phận điều phối sẽ gán xe và lái xe, sau đó lịch tự được xác nhận.</span>
                 </div>
               </div>
             </div>

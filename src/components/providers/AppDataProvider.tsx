@@ -4,6 +4,7 @@
 //   - profiles (active, có nested departments)
 //   - departments
 //   - out_of_office (map theo user_id)
+//   - rooms/vehicles (public read; dùng cả khi cán bộ thường đăng ký phòng họp/xe)
 //
 // Stale-while-revalidate:
 //   1. Hydrate SYNC từ localStorage → render ngay (nav giữa trang cảm giác instant)
@@ -17,7 +18,7 @@ import type { Profile, Department } from '@/types/profile';
 import { createClient } from '@/utils/supabase/client';
 import { getCached, setCached } from '@/lib/local-cache';
 import { AppDataContext, AppDataValue, OutOfOfficeRecord } from '@/hooks/use-app-data';
-import { canCoordinateSharedResources, canUseDriverWorkspace } from '@/lib/permissions';
+
 
 const TTL = {
   profiles: 60 * 60 * 1000, // 1h
@@ -79,7 +80,7 @@ export function AppDataProvider({ currentUserId, children }: Props) {
     }
   }, [supabase, scope]);
 
-  // 3. Tải danh sách xe ô tô điều động (chỉ cho phép khi có quyền)
+  // 3. Tải danh sách xe ô tô điều động (public read để cán bộ chọn xe khi đăng ký công tác)
   const fetchVehicles = useCallback(async () => {
     const { data, error } = await supabase
       .from('vehicles')
@@ -90,7 +91,7 @@ export function AppDataProvider({ currentUserId, children }: Props) {
     setCached(scope, 'vehicles', data);
   }, [supabase, scope]);
 
-  // 4. Tải danh sách phòng họp (chỉ cho phép khi có quyền)
+  // 4. Tải danh sách phòng họp (public read để cán bộ chọn phòng khi đặt lịch tại chi nhánh)
   const fetchRooms = useCallback(async () => {
     const { data, error } = await supabase
       .from('rooms')
@@ -135,37 +136,24 @@ export function AppDataProvider({ currentUserId, children }: Props) {
     setProfiles(list);
     setCached(scope, 'profiles', list);
 
-    // Dynamic gate check: nếu user được cấp quyền xe/phòng họp -> tự động tải các tài nguyên này
-    const canSee = me ? (canCoordinateSharedResources(me) || canUseDriverWorkspace(me)) : false;
-    if (canSee) {
-      void fetchVehicles();
-      void fetchRooms();
-    }
   }, [supabase, scope, currentUserId, fetchVehicles, fetchRooms]);
 
-  // Reactive state check for resource authorization
+  // Profile hiện tại dùng chung cho toàn dashboard
   const myProfile = useMemo(() => {
     return profiles.find((p) => p.id === currentUserId) ?? null;
   }, [profiles, currentUserId]);
-
-  const hasResourceAccess = useMemo(() => {
-    return canCoordinateSharedResources(myProfile) || canUseDriverWorkspace(myProfile);
-  }, [myProfile]);
 
   const refresh = useCallback(async () => {
     const promises: Promise<any>[] = [
       fetchProfiles(),
       fetchDepartments(),
       fetchOutOfOffice(),
+      fetchVehicles(),
+      fetchRooms(),
     ];
 
-    if (hasResourceAccess) {
-      promises.push(fetchVehicles());
-      promises.push(fetchRooms());
-    }
-
     await Promise.all(promises);
-  }, [fetchProfiles, fetchDepartments, fetchOutOfOffice, fetchVehicles, fetchRooms, hasResourceAccess]);
+  }, [fetchProfiles, fetchDepartments, fetchOutOfOffice, fetchVehicles, fetchRooms]);
 
   // 1. Initial fetch + realtime subscribe cho các bảng chung (profiles, departments, ooo)
   useEffect(() => {
@@ -180,24 +168,17 @@ export function AppDataProvider({ currentUserId, children }: Props) {
     if (cachedDepts) setDepartments(cachedDepts);
     if (cachedOoo) setOutOfOffice(cachedOoo);
 
-    const cachedMe = cachedProfiles?.find((p) => p.id === currentUserId);
-    const cachedCanSee = cachedMe ? (canCoordinateSharedResources(cachedMe) || canUseDriverWorkspace(cachedMe)) : false;
-
     const promises: Promise<any>[] = [
       fetchProfiles(),
       fetchDepartments(),
       fetchOutOfOffice(),
+      fetchVehicles(),
+      fetchRooms(),
     ];
-
-    if (cachedCanSee) {
-      const cachedVehicles = getCached<any[]>(scope, 'vehicles', TTL.vehicles);
-      const cachedRooms = getCached<any[]>(scope, 'rooms', TTL.rooms);
-      if (cachedVehicles) setVehicles(cachedVehicles);
-      if (cachedRooms) setRooms(cachedRooms);
-
-      promises.push(fetchVehicles());
-      promises.push(fetchRooms());
-    }
+    const cachedVehicles = getCached<any[]>(scope, 'vehicles', TTL.vehicles);
+    const cachedRooms = getCached<any[]>(scope, 'rooms', TTL.rooms);
+    if (cachedVehicles) setVehicles(cachedVehicles);
+    if (cachedRooms) setRooms(cachedRooms);
 
     void Promise.all(promises).finally(() => {
       if (mounted) setHydrating(false);
@@ -223,14 +204,9 @@ export function AppDataProvider({ currentUserId, children }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scope, supabase, currentUserId, fetchProfiles, fetchDepartments, fetchOutOfOffice, fetchVehicles, fetchRooms]);
 
-  // 2. Kênh đồng bộ Real-time cho Vehicles và Rooms (chỉ subscribe khi có quyền)
+  // 2. Kênh đồng bộ Real-time cho Vehicles và Rooms.
+  // Mọi user cần đọc danh mục để đăng ký lịch; quyền ghi vẫn do RLS/policy điều phối chặn.
   useEffect(() => {
-    if (!hasResourceAccess) {
-      setVehicles([]);
-      setRooms([]);
-      return;
-    }
-
     const channel = supabase
       .channel('app_resource_sync')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'vehicles' }, () => {
@@ -244,7 +220,7 @@ export function AppDataProvider({ currentUserId, children }: Props) {
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [supabase, hasResourceAccess, fetchVehicles, fetchRooms]);
+  }, [supabase, fetchVehicles, fetchRooms]);
 
   const value = useMemo<AppDataValue>(
     () => ({

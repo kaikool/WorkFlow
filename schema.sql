@@ -411,6 +411,7 @@ GRANT EXECUTE ON FUNCTION public.check_schedule_participant_conflicts(uuid[], ti
 DROP POLICY IF EXISTS "Public read schedules" ON schedules;
 CREATE POLICY "Public read schedules" ON schedules FOR SELECT USING (
     auth.uid() = created_by
+    OR EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
     OR department_id = (SELECT department_id FROM profiles WHERE id = auth.uid())
     OR EXISTS (
         SELECT 1 FROM schedule_participants sp
@@ -429,11 +430,10 @@ CREATE POLICY "Public read schedules" ON schedules FOR SELECT USING (
         SELECT 1 FROM profiles p
         LEFT JOIN departments d ON p.department_id = d.id
         WHERE p.id = auth.uid()
-        AND (p.role IN ('admin', 'secretary', 'hr_officer') OR (p.role = 'manager' AND d.code = '13602'))
+        AND schedules.use_vehicle = true
+        AND (p.role = 'secretary' OR (p.role = 'manager' AND d.code = '13602'))
     )
-    OR EXISTS (
-        SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role = 'driver'
-    )
+    OR driver_id = auth.uid()
 );
 
 DROP POLICY IF EXISTS "Anyone can create schedules" ON schedules;
@@ -446,16 +446,15 @@ DROP POLICY IF EXISTS "Coordinator and Creator can update schedules" ON schedule
 CREATE POLICY "Coordinator and Creator can update schedules" ON schedules FOR UPDATE
 USING (
     auth.uid() = created_by 
-    OR EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role IN ('admin', 'secretary', 'hr_officer'))
+    OR EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
     OR EXISTS (
       SELECT 1 FROM profiles p
       LEFT JOIN departments d ON p.department_id = d.id
       WHERE p.id = auth.uid() 
-      AND (p.role IN ('admin', 'secretary', 'hr_officer') OR (p.role = 'manager' AND d.code = '13602'))
+      AND schedules.use_vehicle = true
+      AND (p.role = 'secretary' OR (p.role = 'manager' AND d.code = '13602'))
     )
-    OR EXISTS (
-      SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role = 'driver'
-    )
+    OR driver_id = auth.uid()
 );
 
 -- Policies cho Phòng và Xe (Admin và Thư ký Tổ chức Tổng hợp toàn quyền, User chỉ xem)
