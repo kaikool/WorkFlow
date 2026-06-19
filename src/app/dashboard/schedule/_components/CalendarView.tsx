@@ -142,6 +142,7 @@ export default function CalendarView(props: CalendarViewProps) {
       if (new Date(s.start_time) > selectedEnd || new Date(s.end_time) < selectedStart) return false;
       if (!canSeeRejected(s)) return false;
       if (s.status === 'pending') return false; // pending đã ở section Đang chờ
+      if (s.status === 'rejected') return false; // rejected đã ở section Cần xử lý
       if (s.status === 'completed') return false; // completed đã ở Đã hoàn thành
       if (filterType === 'dept') return s.department_id === profile?.department_id;
       return true;
@@ -158,6 +159,7 @@ export default function CalendarView(props: CalendarViewProps) {
         if (start <= selectedEnd || start > rangeEnd) return false;
         if (!canSeeRejected(s)) return false;
         if (s.status === 'pending') return false;
+        if (s.status === 'rejected') return false;
         if (s.status === 'completed') return false;
         if (filterType === 'dept') return s.department_id === profile?.department_id;
         return true;
