@@ -103,9 +103,11 @@ export default function MyTripCard({ trip, onConfirm, onStart, onEnd, onReportIs
             </div>
             <div className="text-[13px] text-slate-500 space-y-0.5 font-medium">
               <div><span className="text-slate-400 text-xs font-semibold">Đi:</span> {fmtDt(startDt)}</div>
-              {(hasEnded || trip.metadata?.trip_ended_at) && (
+              {hasEnded ? (
                 <div><span className="text-slate-400 text-xs font-semibold">Đến:</span> {fmtDt(new Date(trip.metadata?.trip_ended_at || endDt))}</div>
-              )}
+              ) : hasStarted ? (
+                <div><span className="text-amber-600 text-xs font-semibold">Đang đến:</span> <span className="text-amber-600">{fmtDt(new Date())}</span></div>
+              ) : null}
             </div>
           </div>
           

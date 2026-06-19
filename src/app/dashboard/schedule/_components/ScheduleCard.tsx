@@ -55,10 +55,12 @@ export default React.memo(function ScheduleCard({ item, profile, onSelect, onSta
     || null;
 
   // Format time range
+  const isOverdue = item.status === 'in_progress' && new Date() > endTime;
+  const effectiveEnd = isOverdue ? new Date() : endTime;
   const timeRange = showEndTime
     ? sameDay
-      ? `${format(startTime, 'HH:mm')} - ${format(endTime, 'HH:mm')}`
-      : `${format(startTime, 'dd/MM HH:mm')} - ${format(endTime, 'dd/MM HH:mm')}`
+      ? `${format(startTime, 'HH:mm')} - ${format(effectiveEnd, 'HH:mm')}${isOverdue ? ' 🔴' : ''}`
+      : `${format(startTime, 'dd/MM HH:mm')} - ${format(effectiveEnd, 'dd/MM HH:mm')}${isOverdue ? ' 🔴' : ''}`
     : `Từ ${format(startTime, sameDay ? 'HH:mm' : 'dd/MM HH:mm')}`;
 
   return (
