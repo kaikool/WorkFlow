@@ -407,12 +407,12 @@ Mọi assignee picker dùng `<PeoplePicker>` shared (`src/components/ui/people-p
 
 - **Driver** → `DriverDashboard` (workspace lái xe — xem 3.4.4).
 - **Còn lại** → `CalendarView` với:
-  - **`DateNavigator`** — chọn ngày, hiển thị 7 ngày nổi bật ngày được chọn.
-  - **3 phạm vi filter**: "Toàn chi nhánh" / "BGĐ" / "Phòng của tôi". Lịch không có BGĐ tham gia chỉ hiển thị cho creator, participant, cùng phòng hoặc admin; bộ phận điều phối/driver chỉ thấy lịch khi lịch có yêu cầu xe/gán xe cho họ. Lịch có BGĐ tham gia public toàn chi nhánh.
+  - **`DateNavigator`** — chọn ngày, hiển thị 7 ngày, chấm màu theo trạng thái (xanh=approved, vàng=pending, đỏ=rejected).
+  - **3 phạm vi filter**: "Toàn chi nhánh" / "BGĐ" / "Phòng của tôi"...
   - **Sub-dashboard nhúng**:
     - `ResourcesManagerDashboard` (chỉ bộ phận điều phối/secretary/admin) — bảng điều phối phòng họp + xe, nhưng dữ liệu lịch vẫn bị RLS siết theo quy tắc lịch có xe/BGĐ/phòng.
     - `LeaveApprovalDashboard` (chỉ user có quyền `canApproveLeave`) — list đơn pending + duyệt 1 click.
-    - `DirectorTimeline` — timeline ngày dành cho BGĐ.
+    - `DirectorTimeline` — timeline 07:00-19:00 dành cho BGĐ, refresh 30s. Bar `in_progress` kéo dài đến `end_time` đăng ký. Legend hiển thị "Công tác" nếu đang có trip `in_progress`/`approved`.
 
 #### 3.4.3 Luồng duyệt nghỉ phép
 
@@ -442,10 +442,10 @@ URL vẫn là `/dashboard/schedule` nhưng auto-detect role `driver` → render 
 
 | Hành động | Implementation |
 |-----------|----------------|
-| Xem chuyến được giao | Filter `schedules WHERE driver_id = auth.uid()` (RLS cho phép) |
+| **Xem chuyến được giao** | Filter `schedules WHERE driver_id = auth.uid()` (RLS cho phép) |
 | **Bắt đầu chuyến** | `StartTripDialog` → nhập `start_km` → UPDATE `schedules.metadata = {start_km: …}` + status `in_progress` |
+| **Xác nhận lịch** | `MyTripCard` → nút "Xác nhận lịch" → ghi `metadata.driver_confirmed_at` + notification cho người gán + coordinator. Sau xác nhận mới hiện nút "Bắt đầu chuyến". |
 | **Kết thúc chuyến** | `EndTripDialog` → nhập `end_km` (validate > start_km) → UPDATE metadata `{start_km, end_km, actual_distance}` + status `completed` |
-| **Báo sự cố** | `ReportIssueDialog` → insert notification cho bộ phận điều phối/secretary |
 | Stat cá nhân | `DriverStatsGrid` — tổng số chuyến, tổng Km tháng |
 | Card từng chuyến | `MyTripCard` — hiển thị Km xuất phát/về, biển số, người yêu cầu |
 
@@ -730,3 +730,6 @@ Query string `?q=...&status=...` đẩy vào URL → mỗi page tự đọc và 
 ---
 
 **Phiên bản:** 1.4 — 2026-05-26 (Tasks: bổ sung ma trận quyền 6-row theo phòng đầu mối (admin/director/manager hub/manager non-hub/staff hub/staff non-hub × Luồng A/B); làm rõ 5 layer defense-in-depth (UI helper → fetch filter → RPC `task_create` → RPC `recurring_template_upsert` → worker `recurring_fire_due`); doc `default_assignee_id` override TP + auto-fill TP + `batch_id` + cửa sổ xoá nháp 10 phút).
+#### 3.4.7 Theo dõi thời gian thực
+- `DirectorTimeline` và `ResourcesManagerDashboard` có `now` stateful refresh 30 giây để cập nhật trạng thái xe/người mà không cần reload trang.
+- Khi lịch `in_progress` quá giờ dự kiến: card hiển thị giờ hiện tại (không phải "quá giờ"), timeline dừng ở `end_time` đăng ký, nhưng legend/trạng thái xe vẫn hiển thị "Công tác"/"Đang chạy" cho đến khi có người bấm kết thúc.

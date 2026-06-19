@@ -446,7 +446,7 @@ CREATE TABLE schedules (
     use_vehicle                 BOOLEAN DEFAULT false,
     requested_vehicle_type      TEXT,                -- Legacy/display: lấy từ vehicles.type khi chọn xe trực tiếp
     metadata                    JSONB DEFAULT '{}'::jsonb,
-                                                      -- driver flow: {start_km, end_km, actual_distance}
+                                                      --- driver flow: {start_km, end_km, actual_distance, driver_confirmed_at, trip_started_at, trip_ended_at}
     created_at                  TIMESTAMPTZ DEFAULT NOW()
 );
 ```
