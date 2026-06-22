@@ -1,7 +1,7 @@
 'use client'
 
 import React from "react";
-import { MapPin, Car, UserCheck, Pencil, Clock, MoreVertical, Trash2, CheckCircle2, XCircle } from "lucide-react";
+import { MapPin, Car, UserCheck, Pencil, Clock, MoreVertical, Trash2, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -135,6 +135,15 @@ export default function ScheduleDetailDialog({
     onAssignVehicle, onUpdateEndTime, onUpdateSchedule, onResubmitSchedule
   });
   const isCoordinator = detail.canCoord;
+  // Tìm chuyến đang chạy của xe được chọn (để cảnh báo coordinator)
+  const activeVehicleTrip = React.useMemo(() => {
+    if (!detail.tempVehicleId || !schedule) return null;
+    return schedules.find((s: any) =>
+      s.id !== schedule.id &&
+      s.vehicle_id === detail.tempVehicleId &&
+      s.status === 'in_progress'
+    ) || null;
+  }, [detail.tempVehicleId, schedules, schedule?.id]);
   const supabase = createClient();
   const [safeLeave, setSafeLeave] = React.useState<any>(null);
   const [rejectVehicleOpen, setRejectVehicleOpen] = React.useState(false);
@@ -367,6 +376,20 @@ export default function ScheduleDetailDialog({
                     <p className="text-[10px] font-medium text-slate-500">Chọn xe và lái xe phù hợp</p>
                   </div>
                 </div>
+
+                {/* Cảnh báo xe đang đi chuyến khác */}
+                {activeVehicleTrip && (
+                  <div className="flex items-start gap-2.5 p-3 bg-amber-50 rounded-xl border border-amber-200">
+                    <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-[12px] font-semibold text-amber-800">Xe đang đi chuyến: "{activeVehicleTrip.title}"</p>
+                      <p className="text-[11px] text-amber-700 mt-0.5">
+                        {new Date(activeVehicleTrip.start_time).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })} – {new Date(activeVehicleTrip.end_time).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <Select value={detail.tempVehicleId || ''} onValueChange={detail.handleVehicleSelect}>
                     <SelectTrigger className="min-h-11 bg-white border-none rounded-xl font-medium text-sm shadow-sm">
@@ -405,7 +428,12 @@ export default function ScheduleDetailDialog({
                   <Button
                     disabled={!detail.tempVehicleId}
                     onClick={() => onAssignVehicle(schedule.id, detail.tempVehicleId, detail.tempDriverId)}
-                    className="bg-primary text-white min-h-11 px-6 rounded-xl text-sm font-medium shadow-lg shadow-primary/20 active:scale-95 transition-all whitespace-nowrap"
+                    className={cn(
+                      "min-h-11 px-6 rounded-xl text-sm font-medium active:scale-95 transition-all whitespace-nowrap shadow-lg",
+                      activeVehicleTrip
+                        ? "bg-amber-500 hover:bg-amber-600 text-white shadow-amber-500/20"
+                        : "bg-primary text-white shadow-primary/20"
+                    )}
                   >
                     Xác nhận gán
                   </Button>
