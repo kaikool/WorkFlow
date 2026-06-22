@@ -1066,7 +1066,7 @@ WHERE ad_account IS NOT NULL
   AND ad_account NOT LIKE '%@%';
 ```
 
-> ⚠️ **Lưu ý:** Việc đổi `auth.users.email` không ảnh hưởng tới đăng nhập — user vẫn chỉ gõ username, login page tự thêm `@bank.local` hậu trường. Frontend hiển thị dùng `ad_account` trong `profiles`, đã được cập nhật.
+> ⚠️ **Lưu ý:** User chỉ cần gõ username (vd `admin`), login page tự thêm `@vietinbank.vn` hậu trường để khớp với email trong `auth.users`. Frontend hiển thị dùng `ad_account` trong `profiles`.
 >
 > Đã cập nhật đồng bộ 3 file code frontend:
 > - `profile/page.tsx` — `@agribank.com.vn` → `@vietinbank.vn`
