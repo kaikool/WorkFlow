@@ -115,58 +115,11 @@ export async function GET(request: Request) {
     if (profiles && profiles.length > 0) {
       const audience = profiles.filter(p => p.role !== 'driver');
 
+      // ⛔ TẠM ẨN: Sinh nhật & Kỷ niệm — chưa cần thiết
+      /*
       // 3.A. BIRTHDAY — toàn chi nhánh
-      const birthdayPeople = profiles.filter(p => {
-        if (!p.birthday) return false;
-        if (p.birthday_notify_optout) return false;
-        const bDate = new Date(p.birthday);
-        return bDate.getMonth() + 1 === currentMonth && bDate.getDate() === currentDay;
-      });
-
-      for (const person of birthdayPeople) {
-        audience
-          .filter(c => c.id !== person.id)
-          .forEach(c => {
-            notifications.push({
-              user_id: c.id,
-              title: 'Sinh nhật đồng nghiệp 🎂',
-              content: `Hôm nay là sinh nhật của ${person.full_name}. Gửi lời chúc qua mục Ghi nhận nhé!`,
-              link: `/dashboard/team?id=${person.id}`
-            });
-          });
-
-        notifications.push({
-          user_id: person.id,
-          title: 'Chúc mừng sinh nhật! 🎉',
-          content: `Tập thể chi nhánh chúc bạn một tuổi mới đầy thành công và hạnh phúc!`,
-          link: `/dashboard/profile`
-        });
-      }
-
-      // 3.B. ANNIVERSARY (5/10/15/20 năm gắn bó) — không phụ thuộc opt-out
-      const ANNIVERSARY_YEARS = [5, 10, 15, 20];
-      const anniversaryPeople = profiles.filter(p => {
-        if (!p.branch_join_date) return false;
-        const join = new Date(p.branch_join_date);
-        if (join.getMonth() + 1 !== currentMonth || join.getDate() !== currentDay) return false;
-        const years = now.getFullYear() - join.getFullYear();
-        return ANNIVERSARY_YEARS.includes(years);
-      });
-
-      for (const person of anniversaryPeople) {
-        const join = new Date(person.branch_join_date as string);
-        const years = now.getFullYear() - join.getFullYear();
-        audience
-          .filter(c => c.id !== person.id)
-          .forEach(c => {
-            notifications.push({
-              user_id: c.id,
-              title: `🎉 Kỷ niệm ${years} năm gắn bó của ${person.full_name}`,
-              content: `${person.full_name} đã đồng hành cùng chi nhánh ${years} năm. Gửi lời chúc qua mục Ghi nhận.`,
-              link: `/dashboard/team?id=${person.id}`
-            });
-          });
-      }
+      ...
+      */
     }
 
     // 4. CLEANUP EXPIRED OUT_OF_OFFICE
