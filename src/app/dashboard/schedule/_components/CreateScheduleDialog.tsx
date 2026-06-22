@@ -231,11 +231,15 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
                 {isLeave ? 'Lý do' : 'Tiêu đề'}
               </Label>
               <Input
-                placeholder={isLeave ? "Lý do nghỉ phép..." : "Nội dung chính..."}
+                placeholder={isLeave ? "Lý do nghỉ phép..." : "VD: Họp giao ban tuần, đi công tác Hải Phòng..."}
                 className="h-11 scroll-mt-24 bg-slate-50 border-none rounded-xl font-medium text-sm"
+                maxLength={200}
                 value={newSchedule.title}
                 onChange={(e) => setNewSchedule({ ...newSchedule, title: e.target.value })}
               />
+              <p className="text-[11px] font-medium text-slate-400 text-right tabular-nums">
+                {(newSchedule.title || '').length}/200
+              </p>
             </div>
           </div>
 

@@ -101,8 +101,12 @@ export default function ScheduleEditForm({
                 value={detail.editData.title || ""}
                 onChange={(e) => detail.setEditData({ ...detail.editData, title: e.target.value })}
                 className="min-h-11 bg-slate-50 border-none rounded-xl font-medium text-sm"
-                placeholder="Nhập tiêu đề..."
+                placeholder="VD: Họp giao ban tuần, đi công tác Hải Phòng..."
+                maxLength={200}
               />
+              <p className="text-[11px] font-medium text-slate-400 text-right tabular-nums">
+                {(detail.editData.title || '').length}/200
+              </p>
             </div>
 
             {/* Nội dung chi tiết */}
