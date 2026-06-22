@@ -453,20 +453,18 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
                       {driverName.charAt(0)}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                        <p className="text-sm font-bold text-slate-800 truncate max-w-[180px]">{driverName}</p>
-                        <Badge variant="outline" className="shrink-0 rounded px-1 py-0 text-[10px] font-medium text-slate-400">
-                          {(trip.vehicle as any)?.plate_number}
-                        </Badge>
-                      </div>
-                      <Badge className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-medium ${statusChip}`}>
-                        {hasStarted && !hasEnded ? "Đang chạy" : hasEnded ? "Hoàn thành" : "Chờ khởi hành"}
+                  <div className="flex-1 min-w-0 space-y-1">
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-sm font-bold text-slate-800">{driverName}</p>
+                      <Badge variant="outline" className="shrink-0 rounded px-1 py-0 text-[10px] font-medium text-slate-400">
+                        {(trip.vehicle as any)?.plate_number}
                       </Badge>
                     </div>
-                    <p className="text-xs text-slate-500 leading-snug mt-1">{trip.title}</p>
-                    <p className="text-[10px] font-semibold text-slate-400 tabular-nums flex items-center gap-1 mt-1">
+                    <Badge className={`rounded-full px-2.5 py-1 text-[10px] font-medium ${statusChip}`}>
+                      {hasStarted && !hasEnded ? "Đang chạy" : hasEnded ? "Hoàn thành" : "Chờ khởi hành"}
+                    </Badge>
+                    <p className="text-xs text-slate-500 leading-snug">{trip.title}</p>
+                    <p className="text-[10px] font-semibold text-slate-400 tabular-nums flex items-center gap-1">
                       <Clock className="w-2.5 h-2.5 shrink-0" />
                       {fmtShort(startDt)} – {fmtShort(endDt)}
                     </p>
