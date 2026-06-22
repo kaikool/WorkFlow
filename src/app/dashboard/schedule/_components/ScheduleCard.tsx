@@ -99,7 +99,7 @@ export default React.memo(function ScheduleCard({ item, profile, onSelect, onSta
           {/* Left color bar — theo status, luôn cố định width */}
           <div className={cn("w-2 shrink-0", barColor)} />
 
-          <div className="flex-1 p-4 space-y-3">
+          <div className="flex-1 min-w-0 p-4 space-y-3">
             {/* Hàng 1: Badge loại + Badge đặc biệt */}
             <div className="flex items-start justify-between">
               <div className="space-y-1.5 flex-1 min-w-0 pr-2">
