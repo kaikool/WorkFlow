@@ -121,7 +121,6 @@ interface ScheduleDetailDialogProps {
   currentProfile: any;
   onAssignVehicle: (scheduleId: string, vehicleId: string | null, driverId: string | null) => void;
   onRejectSchedule?: (scheduleId: string, reason: string) => void | Promise<void>;
-  onForceComplete?: (scheduleId: string) => void | Promise<void>;
   onUpdateEndTime: (scheduleId: string, newEndTime: string) => void;
   onUpdateSchedule: (scheduleId: string, updates: any) => void;
   onResubmitSchedule?: (scheduleId: string, changeReason: string, editedPayload: any) => void;
@@ -129,7 +128,7 @@ interface ScheduleDetailDialogProps {
 }
 
 export default function ScheduleDetailDialog({
-  isOpen, setIsOpen, schedule, schedules, vehicles, rooms, allProfiles, departments, currentProfile, onAssignVehicle, onRejectSchedule, onForceComplete, onUpdateEndTime, onUpdateSchedule, onResubmitSchedule, onDeleteSchedule
+  isOpen, setIsOpen, schedule, schedules, vehicles, rooms, allProfiles, departments, currentProfile, onAssignVehicle, onRejectSchedule, onUpdateEndTime, onUpdateSchedule, onResubmitSchedule, onDeleteSchedule
 }: ScheduleDetailDialogProps) {
   const detail = useScheduleDetail({
     isOpen, schedule, schedules, vehicles, rooms, allProfiles, currentProfile,
@@ -197,13 +196,11 @@ export default function ScheduleDetailDialog({
 
   const isCompleted = schedule?.status === 'completed';
   const showEditAction = canEdit && !isRejected;
-  const showEndAction = canEdit && !isCompleted && new Date(schedule.end_time) > new Date();
-  const isPastEnd = !isCompleted && new Date(schedule.end_time) < new Date();
-  const showForceCompleteAction = (isCoordinator || currentProfile?.role === 'admin') && isPastEnd && schedule.type === 'trip';
+  const showEndAction = canEdit && !isCompleted;
   const showCancelVehicle = isCoordinator && schedule.vehicle_id;
   const showReassignVehicle = (isCoordinator || currentProfile?.role === 'admin') && isCompleted && schedule.use_vehicle;
   const showDeleteAction = detail.isCreator || isCoordinator;
-  const hasAnyAction = showEditAction || showEndAction || showForceCompleteAction || showCancelVehicle || showReassignVehicle || showDeleteAction;
+  const hasAnyAction = showEditAction || showEndAction || showCancelVehicle || showReassignVehicle || showDeleteAction;
 
   const handleDelete = async () => {
     const ok = await confirmDialog({
@@ -231,7 +228,7 @@ export default function ScheduleDetailDialog({
         </Button>
       )}
       {showEndAction && (
-        <Button variant="ghost" size="icon" title="Kết thúc sớm" onClick={detail.handleEndNow} className="h-10 w-10 rounded-xl text-emerald-600 bg-emerald-50 hover:bg-emerald-100 border border-emerald-100">
+        <Button variant="ghost" size="icon" title="Kết thúc" onClick={detail.handleEndNow} className="h-10 w-10 rounded-xl text-emerald-600 bg-emerald-50 hover:bg-emerald-100 border border-emerald-100">
           <CheckCircle2 className="h-4 w-4" />
         </Button>
       )}
@@ -243,15 +240,6 @@ export default function ScheduleDetailDialog({
       {showReassignVehicle && (
         <Button variant="ghost" size="icon" title="Gán lại xe" onClick={() => detail.openEditMode('edit')} className="h-10 w-10 rounded-xl text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-100">
           <Car className="h-4 w-4" />
-        </Button>
-      )}
-      {showForceCompleteAction && (
-        <Button variant="ghost" size="icon" title="Kết thúc (quá giờ)" onClick={async () => {
-          if (onForceComplete) {
-            await onForceComplete(schedule.id);
-          }
-        }} className="h-10 w-10 rounded-xl text-amber-600 bg-amber-50 hover:bg-amber-100 border border-amber-100">
-          <CheckCircle2 className="h-4 w-4" />
         </Button>
       )}
       {showDeleteAction && (

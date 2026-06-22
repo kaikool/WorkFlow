@@ -185,27 +185,6 @@ function ScheduleContent() {
             }
           }}
         onUpdateEndTime={handleUpdateEndTime}
-        onForceComplete={async (id) => {
-          try {
-            const now = new Date().toISOString();
-            const sched = schedules.find(s => s.id === id);
-            const existingMeta = sched?.metadata || {};
-            const { error } = await supabase.from('schedules').update({
-              status: 'completed',
-              metadata: {
-                ...existingMeta,
-                force_completed_at: now,
-                force_completed_by: profile?.id,
-              }
-            }).eq('id', id);
-            if (error) throw error;
-            notifySuccess("Đã hoàn thành (force)");
-            setIsDetailOpen(false);
-            fetchData();
-          } catch (error) {
-            notifyError(error, "Không hoàn thành được lịch");
-          }
-        }}
         onUpdateSchedule={handleUpdateSchedule}
         onResubmitSchedule={handleResubmitSchedule}
         onDeleteSchedule={handleDeleteSchedule}
