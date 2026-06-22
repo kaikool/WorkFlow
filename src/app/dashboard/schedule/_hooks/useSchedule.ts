@@ -491,10 +491,19 @@ export function useSchedule() {
           ? 'in_progress'
           : schedule.status;
 
-      const { error } = await supabase.from('schedules').update({ 
+      const updatePayload: any = { 
         end_time: newEndTime.toISOString(),
-        status: newStatus
-      }).eq('id', id);
+        status: newStatus,
+      };
+      // Ghi nhận thời gian kết thúc thực tế để timeline BGĐ hiển thị đúng
+      if (newStatus === 'completed') {
+        updatePayload.metadata = {
+          ...(schedule.metadata || {}),
+          trip_ended_at: newEndTime.toISOString(),
+        };
+      }
+
+      const { error } = await supabase.from('schedules').update(updatePayload).eq('id', id);
       if (error) throw error;
 
       // Ghi nhận lịch sử / cảnh báo cho những người khác (thông báo) — loại trừ lái xe
