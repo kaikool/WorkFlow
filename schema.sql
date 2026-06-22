@@ -1140,40 +1140,13 @@ CREATE INDEX IF NOT EXISTS idx_handovers_receiver_status
 
 -- =====================================================
 -- 9. CHẶN GÁN XE TRÙNG LỊCH (TỪ DB LAYER)
+-- ⛔ ĐÃ XOÁ — xe cho phép overlapping (điều điều về)
+-- Xem migration_remove_vehicle_overlap_guard.sql
 -- =====================================================
-CREATE OR REPLACE FUNCTION public.guard_vehicle_overlap()
-RETURNS trigger
-LANGUAGE plpgsql
-AS $$
-BEGIN
-  IF NEW.vehicle_id IS NOT NULL
-     AND NEW.status NOT IN ('rejected', 'completed')
-     AND EXISTS (
-       SELECT 1 FROM schedules s
-       WHERE s.vehicle_id = NEW.vehicle_id
-         AND s.id <> NEW.id
-         AND s.status NOT IN ('rejected', 'completed')
-         AND s.start_time < NEW.end_time
-         AND s.end_time > NEW.start_time
-     ) THEN
-    RAISE EXCEPTION 'Xe đã được gán cho lịch trình khác trong khung giờ này';
-  END IF;
-  RETURN NEW;
-END;
-$$;
-
-DROP TRIGGER IF EXISTS guard_vehicle_overlap_trigger ON schedules;
-CREATE TRIGGER guard_vehicle_overlap_trigger
-  BEFORE INSERT OR UPDATE OF vehicle_id, start_time, end_time, status
-  ON schedules
-  FOR EACH ROW
-  EXECUTE FUNCTION public.guard_vehicle_overlap();
-
-NOTIFY pgrst, 'reload schema';
 
 
 -- ==============================================================================
--- [migration_leave_privacy.sql]
+--
 -- ==============================================================================
 -- =====================================================
 -- MIGRATION BỔ SUNG: Bảo vệ nội dung đơn nghỉ phép ở tầng RLS
