@@ -135,13 +135,17 @@ export default function ScheduleDetailDialog({
     onAssignVehicle, onUpdateEndTime, onUpdateSchedule, onResubmitSchedule
   });
   const isCoordinator = detail.canCoord;
-  // Tìm chuyến đang chạy của xe được chọn (để cảnh báo coordinator)
-  const activeVehicleTrip = React.useMemo(() => {
+  // Tìm lịch trình khác trùng xe (đã có hoặc sắp tới) để cảnh báo coordinator
+  const vehicleConflict = React.useMemo(() => {
     if (!detail.tempVehicleId || !schedule) return null;
+    const sStart = new Date(schedule.start_time);
+    const sEnd = new Date(schedule.end_time);
     return schedules.find((s: any) =>
       s.id !== schedule.id &&
       s.vehicle_id === detail.tempVehicleId &&
-      s.status === 'in_progress'
+      (s.status === 'in_progress' || s.status === 'approved') &&
+      new Date(s.start_time) < sEnd &&
+      new Date(s.end_time) > sStart
     ) || null;
   }, [detail.tempVehicleId, schedules, schedule?.id]);
   const supabase = createClient();
@@ -378,13 +382,13 @@ export default function ScheduleDetailDialog({
                 </div>
 
                 {/* Cảnh báo xe đang đi chuyến khác */}
-                {activeVehicleTrip && (
+                {vehicleConflict && (
                   <div className="flex items-start gap-2.5 p-3 bg-amber-50 rounded-xl border border-amber-200">
                     <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-[12px] font-semibold text-amber-800">Xe đang đi chuyến: "{activeVehicleTrip.title}"</p>
+                      <p className="text-[12px] font-semibold text-amber-800">Xe đã có lịch trùng giờ: "{vehicleConflict.title}"</p>
                       <p className="text-[11px] text-amber-700 mt-0.5">
-                        {new Date(activeVehicleTrip.start_time).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })} – {new Date(activeVehicleTrip.end_time).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                        {new Date(vehicleConflict.start_time).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })} – {new Date(vehicleConflict.end_time).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
                       </p>
                     </div>
                   </div>
@@ -430,7 +434,7 @@ export default function ScheduleDetailDialog({
                     onClick={() => onAssignVehicle(schedule.id, detail.tempVehicleId, detail.tempDriverId)}
                     className={cn(
                       "min-h-11 px-6 rounded-xl text-sm font-medium active:scale-95 transition-all whitespace-nowrap shadow-lg",
-                      activeVehicleTrip
+                      vehicleConflict
                         ? "bg-amber-500 hover:bg-amber-600 text-white shadow-amber-500/20"
                         : "bg-primary text-white shadow-primary/20"
                     )}
