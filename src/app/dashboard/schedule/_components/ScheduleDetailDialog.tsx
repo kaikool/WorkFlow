@@ -387,6 +387,20 @@ export default function ScheduleDetailDialog({
               </div>
             )}
 
+            {/* Người tạo */}
+            <div className="space-y-2">
+              <p className="text-[12px] font-medium text-slate-400">Người tạo</p>
+              <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl">
+                <div className="p-2.5 bg-white rounded-xl shadow-sm shrink-0">
+                  <UserCheck className="w-4 h-4 text-slate-500" />
+                </div>
+                <p className="text-sm font-medium text-slate-700">
+                  {schedule.creator?.full_name || "Không xác định"}
+                  {schedule.type === 'leave' && schedule.created_by === schedule.creator?.id && ' (bạn)'}
+                </p>
+              </div>
+            </div>
+
           </div>
           </ScrollArea>
 

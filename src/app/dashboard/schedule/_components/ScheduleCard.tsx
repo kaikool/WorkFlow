@@ -159,21 +159,6 @@ export default React.memo(function ScheduleCard({ item, profile, onSelect, onSta
               )}
             </div>
 
-            {/* Hàng 3.5: Người tạo — cho mọi lịch trừ leave (leave privacy) */}
-            {!item.creator?.full_name ? null : item.type === 'leave' ? (
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs text-slate-400 font-medium italic">
-                  {item.created_by === profile?.id ? 'Bạn đã tạo' : `${item.creator.full_name} đã tạo`}
-                </span>
-              </div>
-            ) : (
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs text-slate-400 font-medium">
-                  Người tạo: {item.creator.full_name}
-                </span>
-              </div>
-            )}
-
             {/* Hàng 4: Action cho coordinator — chỉ cho pending không xe hoặc có xe đã gán (BGĐ case) */}
             {isCoordinator && item.status === 'pending' && (
               <div className="flex gap-2 pt-3 border-t border-slate-50 relative z-10">
