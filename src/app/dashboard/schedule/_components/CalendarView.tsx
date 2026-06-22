@@ -220,15 +220,17 @@ export default function CalendarView(props: CalendarViewProps) {
     <div className="space-y-8 animate-in fade-in duration-500">
       {/* Tablist phạm vi */}
       <Tabs value={filterType} onValueChange={(value) => setFilterType(value as 'all' | 'bgd' | 'dept')} className="w-full">
-        <TabsList className="grid grid-cols-3 min-h-9">
-          <TabsTrigger value="all" className="rounded-lg px-2 text-[12px] font-medium md:text-[14px] relative">
-            <span className="truncate">Chi nhánh</span>
-            {isCoordinator && pendingVehicleCount > 0 && (
-              <Badge className="ml-1.5 h-5 min-w-5 shrink-0 justify-center rounded-full border-none bg-amber-600 px-1.5 text-[10px] font-bold leading-none text-white tabular-nums">
-                {pendingVehicleCount > 9 ? "9+" : pendingVehicleCount}
-              </Badge>
-            )}
-          </TabsTrigger>
+        <TabsList className={`grid min-h-9 ${isCoordinator ? 'grid-cols-3' : 'grid-cols-2'}`}>
+          {isCoordinator && (
+            <TabsTrigger value="all" className="rounded-lg px-2 text-[12px] font-medium md:text-[14px] relative">
+              <span className="truncate">Chi nhánh</span>
+              {pendingVehicleCount > 0 && (
+                <Badge className="ml-1.5 h-5 min-w-5 shrink-0 justify-center rounded-full border-none bg-amber-600 px-1.5 text-[10px] font-bold leading-none text-white tabular-nums">
+                  {pendingVehicleCount > 9 ? "9+" : pendingVehicleCount}
+                </Badge>
+              )}
+            </TabsTrigger>
+          )}
           <TabsTrigger value="bgd" className="rounded-lg px-2 text-[12px] font-medium md:text-[14px]">
             <span className="truncate">Ban giám đốc</span>
           </TabsTrigger>

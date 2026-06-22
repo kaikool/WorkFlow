@@ -65,7 +65,7 @@ export function useSchedule() {
 
   // State điều hướng
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [filterType, setFilterType] = useState<'all' | 'bgd' | 'dept'>('all');
+  const [filterType, setFilterType] = useState<'all' | 'bgd' | 'dept'>(canCoordinateSharedResources(profile) ? 'all' : 'bgd');
 
   // State dialog tạo mới
   const [isCreateOpen, setIsCreateOpen] = useState(false);
