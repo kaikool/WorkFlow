@@ -379,7 +379,7 @@ export default function CalendarView(props: CalendarViewProps) {
                       className="rounded-2xl overflow-hidden border-none shadow-sm hover:shadow-lg transition-all duration-300 group cursor-pointer hover:-translate-y-0.5 hover:bg-slate-50/30">
                       <CardContent className="p-0">
                         <div className="flex h-full">
-                          <div className={cn("w-2 transition-all duration-300 group-hover:w-2.5 shrink-0", leave.isCurrent ? "bg-amber-400" : "bg-blue-400")} />
+                          <div className={cn("w-2 shrink-0", leave.isCurrent ? "bg-amber-400" : "bg-blue-400")} />
                           <div className="flex-1 p-3.5 flex items-center gap-3.5 min-w-0">
                             <Avatar className="h-9 w-9 shrink-0 border border-slate-100 shadow-sm">
                               <AvatarImage src={leave.creator?.avatar_url} />

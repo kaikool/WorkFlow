@@ -76,8 +76,8 @@ export default React.memo(function ScheduleCard({ item, profile, onSelect, onSta
           aria-label={`Chi tiết lịch: ${displayTitle}`}
         />
         <div className="flex">
-          {/* Left color bar — theo status */}
-          <div className={cn("w-2 transition-all duration-500 group-hover:w-3", barColor)} />
+          {/* Left color bar — theo status, luôn cố định width */}
+          <div className={cn("w-2 shrink-0", barColor)} />
 
           <div className="flex-1 p-4 space-y-3">
             {/* Hàng 1: Badge loại + Badge đặc biệt */}
