@@ -1060,7 +1060,7 @@ WHERE ad_account IS NOT NULL
   AND SPLIT_PART(ad_account, '@', 2) IS DISTINCT FROM 'vietinbank.vn';
 ```
 
-> ⚠️ **Lưu ý:** Việc đổi `auth.users.email` sẽ thay đổi email đăng nhập của user. User cần dùng email mới (`username@vietinbank.vn`) để đăng nhập lần sau (nếu đang dùng full email). Nếu đăng nhập bằng username (không có @) thì không ảnh hưởng — login page tự động thêm `@vietinbank.vn`. Nên thông báo trước khi chạy.\n>\n> Đã cập nhật login page (`src/app/login/page.tsx`) từ `@bank.local` → `@vietinbank.vn` để đồng bộ.
+> ⚠️ **Lưu ý:** Việc đổi `auth.users.email` sẽ thay đổi email đăng nhập của user. User cần dùng email mới (`username@vietinbank.vn`) để đăng nhập lần sau (nếu đang dùng full email). Nếu đăng nhập bằng username (không có @) thì không ảnh hưởng — login page tự động thêm `@bank.local` để khớp với email trong DB. Nên thông báo trước khi chạy.
 
 ### 14.3 Tìm hồ sơ đang chờ tôi nhận (= Inbox PENDING)
 
