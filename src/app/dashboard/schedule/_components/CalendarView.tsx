@@ -99,10 +99,16 @@ export default function CalendarView(props: CalendarViewProps) {
 
   const isCoordinator = canCoordinateSharedResources(profile);
 
+  const isParticipant = (s: any) => {
+    if (!profile?.id) return false;
+    return (s.participants || []).some((p: any) => p.profile?.id === profile.id || p.profile_id === profile.id);
+  };
+
   // Helper: ai được xem rejected
   const canSeeRejected = (s: any) => {
     if (s.status !== 'rejected') return true;
     if (s.created_by === profile?.id) return true;
+    if (isParticipant(s)) return true;
     if (['admin', 'secretary'].includes(profile?.role)) return true;
     if (isCoordinator) return true;
     return false;
@@ -125,10 +131,17 @@ export default function CalendarView(props: CalendarViewProps) {
   const pendingApproval = React.useMemo(() => {
     return schedules.filter(s => {
       if (s.status === 'rejected') return false;
-      if (s.use_vehicle && !s.vehicle_id) return false;
       if (s.status !== 'pending') return false;
-      // Chỉ hiển thị nếu user có liên quan hoặc có quyền duyệt
-      if (s.created_by === profile?.id) return true;
+
+      const isCreator = s.created_by === profile?.id;
+      const participant = isParticipant(s);
+
+      // Lịch xe chưa gán: điều phối xử lý ở section "Cần xử lý".
+      // Nhưng creator/participant vẫn phải thấy ở lịch của mình để biết đang chờ.
+      if (s.use_vehicle && !s.vehicle_id && isCoordinator && !isCreator && !participant) return false;
+
+      if (isCreator) return true;
+      if (participant) return true;
       if (['admin', 'secretary', 'director'].includes(profile?.role)) return true;
       if (isCoordinator) return true;
       return false;
