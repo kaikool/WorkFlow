@@ -1,7 +1,7 @@
 'use client'
 
 import React from "react";
-import { MapPin, Car, UserCheck, Pencil, Clock, MoreVertical, Trash2, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
+import { MapPin, Car, UserCheck, Pencil, Clock, MoreVertical, Trash2, CheckCircle2, XCircle, AlertTriangle, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -25,6 +25,7 @@ import { confirmDialog } from "@/components/ui/confirm-dialog";
 import ScheduleEditForm from "./ScheduleEditForm";
 import RejectedBanner from "./RejectedBanner";
 import RejectScheduleDialog from "./RejectScheduleDialog";
+import VehicleRequestEmailDialog from "./VehicleRequestEmailDialog";
 import { createClient } from "@/utils/supabase/client";
 
 // --- Sub-component: Hiển thị danh sách người tham gia (Read Mode) ---
@@ -151,6 +152,7 @@ export default function ScheduleDetailDialog({
   const supabase = createClient();
   const [safeLeave, setSafeLeave] = React.useState<any>(null);
   const [rejectVehicleOpen, setRejectVehicleOpen] = React.useState(false);
+  const [vehicleEmailOpen, setVehicleEmailOpen] = React.useState(false);
 
   // Khi mở chi tiết đơn nghỉ phép mà caller không phải chủ đơn → gọi RPC server-side
   // để lấy payload đã được lọc (title/description ẩn nếu không có quyền)
@@ -258,6 +260,17 @@ export default function ScheduleDetailDialog({
       {showDeleteAction && (
         <Button variant="ghost" size="icon" title="Xóa lịch trình" onClick={handleDelete} className="h-10 w-10 rounded-xl text-red-600 bg-red-50 hover:bg-red-100 border border-red-100">
           <Trash2 className="h-4 w-4" />
+        </Button>
+      )}
+      {schedule.type === 'trip' && schedule.use_vehicle && (
+        <Button
+          variant="ghost"
+          size="icon"
+          title="Gửi email đề nghị xe"
+          onClick={() => setVehicleEmailOpen(true)}
+          className="h-10 w-10 rounded-xl text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-100"
+        >
+          <Mail className="h-4 w-4" />
         </Button>
       )}
     </div>
@@ -480,6 +493,12 @@ export default function ScheduleDetailDialog({
             setRejectVehicleOpen(false);
           }
         }}
+      />
+
+      <VehicleRequestEmailDialog
+        isOpen={vehicleEmailOpen}
+        setIsOpen={setVehicleEmailOpen}
+        schedule={schedule}
       />
     </Dialog>
   );
