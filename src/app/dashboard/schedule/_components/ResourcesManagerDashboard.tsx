@@ -89,7 +89,7 @@ export default function ResourcesManagerDashboard({ schedules, vehicles, rooms, 
                         <Car className="w-4 h-4" />
                       </div>
                       <div className="min-w-0">
-                        <p className="font-bold text-slate-900 text-sm truncate">{v.name}</p>
+                        <p className="font-semibold text-slate-900 text-sm truncate">{v.name}</p>
                         <p className="text-xs font-medium text-slate-500 truncate tabular-nums">{v.plate_number}</p>
                       </div>
                     </div>
@@ -123,7 +123,7 @@ export default function ResourcesManagerDashboard({ schedules, vehicles, rooms, 
                           </Avatar>
                           <span className="text-xs font-semibold text-slate-900 truncate">{currentTrip.title}</span>
                         </div>
-                        <span className="text-xs font-bold text-amber-700 whitespace-nowrap tabular-nums">
+                        <span className="text-xs font-semibold text-amber-700 whitespace-nowrap tabular-nums">
                           {fmtTime(new Date(currentTrip.start_time))} – {fmtTime(new Date(currentTrip.end_time))}
                         </span>
                       </div>
@@ -135,7 +135,7 @@ export default function ResourcesManagerDashboard({ schedules, vehicles, rooms, 
                     <div className="px-5 sm:px-6 pb-3 sm:pb-4 -mt-1">
                       <div className="flex items-center gap-2 text-xs text-slate-400">
                         <ArrowRight className="w-3 h-3 shrink-0" />
-                        <span className="truncate">Kế tiếp: <span className="font-semibold text-slate-600">{nextTrip.title}</span> lúc <span className="font-bold text-slate-700 tabular-nums">{fmtDateTime(new Date(nextTrip.start_time))}</span></span>
+                        <span className="truncate">Kế tiếp: <span className="font-semibold text-slate-600">{nextTrip.title}</span> lúc <span className="font-semibold text-slate-700 tabular-nums">{fmtDateTime(new Date(nextTrip.start_time))}</span></span>
                       </div>
                     </div>
                   )}
@@ -163,7 +163,7 @@ export default function ResourcesManagerDashboard({ schedules, vehicles, rooms, 
                                 isNow ? "bg-amber-600" : "bg-slate-300"
                               )} />
                               <div className="min-w-0 flex-1">
-                                <p className="text-xs font-bold text-slate-800 truncate">{trip.title}</p>
+                                <p className="text-xs font-semibold text-slate-800 truncate">{trip.title}</p>
                                 {trip.location && (
                                   <div className="flex items-center gap-1 text-xs text-slate-500 mt-0.5">
                                     <MapPin className="w-2.5 h-2.5 shrink-0" />
@@ -172,7 +172,7 @@ export default function ResourcesManagerDashboard({ schedules, vehicles, rooms, 
                                 )}
                               </div>
                               <div className="text-right shrink-0">
-                                <p className="text-xs font-bold text-slate-700 tabular-nums whitespace-nowrap">
+                                <p className="text-xs font-semibold text-slate-700 tabular-nums whitespace-nowrap">
                                   {fmtTime(new Date(trip.start_time))} – {fmtTime(new Date(trip.end_time))}
                                 </p>
                                 <p className="text-xs text-slate-500 tabular-nums">{fmtDateShort(new Date(trip.start_time))}</p>
@@ -226,7 +226,7 @@ export default function ResourcesManagerDashboard({ schedules, vehicles, rooms, 
                         <DoorOpen className="w-4 h-4" />
                       </div>
                       <div className="min-w-0">
-                        <p className="font-bold text-slate-900 text-sm truncate">{r.name}</p>
+                        <p className="font-semibold text-slate-900 text-sm truncate">{r.name}</p>
                         <p className="text-xs font-medium text-slate-500 truncate">{r.capacity} chỗ • {r.location}</p>
                       </div>
                     </div>
@@ -259,7 +259,7 @@ export default function ResourcesManagerDashboard({ schedules, vehicles, rooms, 
                           </Avatar>
                           <span className="text-xs font-semibold text-slate-900 truncate">{currentMeeting.title}</span>
                         </div>
-                        <span className="text-xs font-bold text-slate-700 whitespace-nowrap tabular-nums">
+                        <span className="text-xs font-semibold text-slate-700 whitespace-nowrap tabular-nums">
                           {fmtTime(new Date(currentMeeting.start_time))} – {fmtTime(new Date(currentMeeting.end_time))}
                         </span>
                       </div>
@@ -271,7 +271,7 @@ export default function ResourcesManagerDashboard({ schedules, vehicles, rooms, 
                     <div className="px-5 sm:px-6 pb-3 sm:pb-4 -mt-1">
                       <div className="flex items-center gap-2 text-xs text-slate-400">
                         <ArrowRight className="w-3 h-3 shrink-0" />
-                        <span className="truncate">Kế tiếp: <span className="font-semibold text-slate-600">{nextMeeting.title}</span> lúc <span className="font-bold text-slate-700 tabular-nums">{fmtDateTime(new Date(nextMeeting.start_time))}</span></span>
+                        <span className="truncate">Kế tiếp: <span className="font-semibold text-slate-600">{nextMeeting.title}</span> lúc <span className="font-semibold text-slate-700 tabular-nums">{fmtDateTime(new Date(nextMeeting.start_time))}</span></span>
                       </div>
                     </div>
                   )}
@@ -299,14 +299,14 @@ export default function ResourcesManagerDashboard({ schedules, vehicles, rooms, 
                                 isNow ? "bg-slate-900" : "bg-slate-300"
                               )} />
                               <div className="min-w-0 flex-1">
-                                <p className="text-xs font-bold text-slate-800 truncate">{meeting.title}</p>
+                                <p className="text-xs font-semibold text-slate-800 truncate">{meeting.title}</p>
                                 <div className="flex items-center gap-1 text-xs text-slate-500 mt-0.5">
                                   <User className="w-2.5 h-2.5 shrink-0" />
                                   <span className="truncate">{meeting.creator?.full_name} • {meeting.participants?.length || 0} người</span>
                                 </div>
                               </div>
                               <div className="text-right shrink-0">
-                                <p className="text-xs font-bold text-slate-700 tabular-nums whitespace-nowrap">
+                                <p className="text-xs font-semibold text-slate-700 tabular-nums whitespace-nowrap">
                                   {fmtTime(new Date(meeting.start_time))} – {fmtTime(new Date(meeting.end_time))}
                                 </p>
                                 <p className="text-xs text-slate-500 tabular-nums">{fmtDateShort(new Date(meeting.start_time))}</p>
