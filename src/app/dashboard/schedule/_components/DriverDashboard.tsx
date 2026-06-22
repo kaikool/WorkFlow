@@ -2,10 +2,12 @@ import React, { useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { cn } from "@/lib/utils";
 import { createClient } from "@/utils/supabase/client";
 import {
   Car, Clock, CheckCircle2, Navigation, AlertTriangle,
-  MapPin, Gauge
+  MapPin, Gauge, ChevronDown
 } from "lucide-react";
 import { canCoordinateSharedResources } from "@/lib/permissions";
 import { notifyError, notifySuccess, notifyValidation } from "@/lib/notify";
@@ -88,6 +90,8 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
     if (!['approved', 'in_progress', 'completed'].includes(s.status)) return false;
     return s.participants?.some((p: any) => p.profile?.id === profile?.id) || s.driver_id === profile?.id;
   });
+  const activeTrips = myTrips.filter(s => s.status !== 'completed');
+  const completedTrips = myTrips.filter(s => s.status === 'completed');
 
   // Lọc các chuyến xe khác đang hoạt động (đã duyệt hoặc đang chạy)
   const otherTrips = schedules.filter(s => {
@@ -349,7 +353,7 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
         </div>
         <h3 className="text-sm font-semibold text-slate-700 flex-1">Lịch trình của tôi</h3>
         <Badge className="border-none bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary tabular-nums">
-          {myTrips.length}
+          {activeTrips.length}
         </Badge>
       </div>
 
@@ -360,18 +364,55 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
           description="Phòng Tổ chức Tổng hợp sẽ gán xe và thông báo cho bạn khi có lịch mới."
         />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {myTrips.map((trip) => (
-            <MyTripCard
-              key={trip.id}
-              trip={trip}
-              onConfirm={handleConfirmTrip}
-              onStart={(t) => { setSelectedStartSchedule(t); setIsStartOpen(true); }}
-              onEnd={(t) => { setSelectedEndSchedule(t); setIsEndOpen(true); }}
-              onReportIssue={(t) => { setSelectedIssueSchedule(t); setIsIssueOpen(true); }}
-              onReject={(t, reason) => handleRejectTrip(t, reason)}
-            />
-          ))}
+        <div className="space-y-6">
+          {/* Chuyến đang hoạt động */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {activeTrips.map((trip) => (
+              <MyTripCard
+                key={trip.id}
+                trip={trip}
+                onConfirm={handleConfirmTrip}
+                onStart={(t) => { setSelectedStartSchedule(t); setIsStartOpen(true); }}
+                onEnd={(t) => { setSelectedEndSchedule(t); setIsEndOpen(true); }}
+                onReportIssue={(t) => { setSelectedIssueSchedule(t); setIsIssueOpen(true); }}
+                onReject={(t, reason) => handleRejectTrip(t, reason)}
+              />
+            ))}
+          </div>
+
+          {/* Chuyến đã hoàn thành — gom nhóm */}
+          {completedTrips.length > 0 && (
+            <Collapsible defaultOpen={false} className="space-y-2">
+              <CollapsibleTrigger className={cn(
+                "group w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg",
+                "bg-slate-50/30 hover:brightness-[0.96] transition-all",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20"
+              )}>
+                <div className="w-1 h-4 rounded-full shrink-0 bg-slate-300" />
+                <CheckCircle2 className="w-3 h-3 text-slate-400 shrink-0" />
+                <span className="text-xs font-bold tracking-tight text-slate-400">Đã hoàn thành</span>
+                <Badge className="h-4.5 min-w-4.5 rounded-full border-0 px-1.5 text-[9px] font-extrabold bg-slate-100 text-slate-500 leading-none flex items-center justify-center">
+                  {completedTrips.length}
+                </Badge>
+                <ChevronDown className="ml-auto w-3 h-3 text-slate-400 transition-transform duration-200 group-data-[state=open]:rotate-180 shrink-0" />
+              </CollapsibleTrigger>
+              <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-1.5">
+                  {completedTrips.map((trip) => (
+                    <MyTripCard
+                      key={trip.id}
+                      trip={trip}
+                      onConfirm={handleConfirmTrip}
+                      onStart={(t) => { setSelectedStartSchedule(t); setIsStartOpen(true); }}
+                      onEnd={(t) => { setSelectedEndSchedule(t); setIsEndOpen(true); }}
+                      onReportIssue={(t) => { setSelectedIssueSchedule(t); setIsIssueOpen(true); }}
+                      onReject={(t, reason) => handleRejectTrip(t, reason)}
+                    />
+                  ))}
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          )}
         </div>
       )}
 
@@ -414,12 +455,12 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
                   </Avatar>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <p className="text-sm font-bold text-slate-800 truncate">{driverName}</p>
+                      <p className="text-sm font-bold text-slate-800">{driverName}</p>
                       <Badge variant="outline" className="shrink-0 rounded px-1 py-0 text-[10px] font-medium text-slate-400">
                         {(trip.vehicle as any)?.plate_number}
                       </Badge>
                     </div>
-                    <p className="text-xs text-slate-500 truncate mt-0.5">{trip.title}</p>
+                    <p className="text-xs text-slate-500 mt-0.5 leading-snug">{trip.title}</p>
                     <p className="text-[10px] font-semibold text-slate-400 mt-1 tabular-nums">
                       {fmtShort(startDt)} – {fmtShort(endDt)}
                     </p>
