@@ -111,14 +111,14 @@ export default React.memo(function ScheduleCard({ item, profile, onSelect, onSta
               </div>
             </div>
 
-            {/* Hàng 2: Giờ (gộp 1 dòng) + Participants */}
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
-              <div className="flex items-center gap-2">
+            {/* Hàng 2: Giờ + Participants */}
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+              <span className="inline-flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                 <span className="text-[12px] font-medium text-slate-700">{timeRange}</span>
-              </div>
+              </span>
               {sortedParticipants.length > 0 && (
-                <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1.5">
                   <Users className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                   <AvatarStack
                     people={sortedParticipants.map((p: any) => ({
@@ -129,43 +129,47 @@ export default React.memo(function ScheduleCard({ item, profile, onSelect, onSta
                     max={4}
                     size="sm"
                   />
-                </div>
+                </span>
               )}
             </div>
 
-            {/* Hàng 3: Địa điểm / Xe + lái xe */}
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
-              {item.room && (
-                <div className="flex items-center gap-1.5">
-                  <DoorOpen className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                  <span className="text-[12px] font-medium text-slate-600 truncate max-w-[160px]">{item.room.name}</span>
-                </div>
-              )}
-              {item.vehicle && (
-                <div className="flex items-center gap-1.5">
-                  <Car className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                  <span className="text-[12px] font-medium text-amber-700 truncate max-w-[160px]">
-                    {(item.vehicle as any).name} · {(item.vehicle as any).plate_number}
+            {/* Hàng 3: Xe + Lái xe — gộp 1 dòng, không tách rời */}
+            {(item.vehicle || driverName) && (
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                {item.vehicle && (
+                  <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-amber-700">
+                    <Car className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                    <span className="truncate max-w-[180px]">{(item.vehicle as any).name} · {(item.vehicle as any).plate_number}</span>
                   </span>
-                </div>
-              )}
-              {driverName && (
-                <div className="flex items-center gap-1.5">
-                  <UserCheck className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                  <span className="text-[12px] font-medium text-slate-600 truncate max-w-[180px]">
-                    {driverName}{driverPhone ? ` · ${driverPhone}` : ''}
+                )}
+                {driverName && (
+                  <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-slate-600">
+                    <UserCheck className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                    <span className="truncate max-w-[200px]">{driverName}{driverPhone ? ` · ${driverPhone}` : ''}</span>
                   </span>
-                </div>
-              )}
-              {!item.room && !item.vehicle && item.location && (
-                <div className="flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                  <span className="text-[12px] font-medium text-slate-600 truncate max-w-[200px]">{item.location}</span>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            )}
 
-            {/* Hàng 4: Action cho coordinator — chỉ cho pending không xe hoặc có xe đã gán (BGĐ case) */}
+            {/* Hàng 4: Phòng họp / Địa điểm (nếu có) */}
+            {(item.room || (!item.vehicle && !driverName && item.location)) && (
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                {item.room && (
+                  <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-slate-600">
+                    <DoorOpen className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                    <span className="truncate max-w-[200px]">{item.room.name}</span>
+                  </span>
+                )}
+                {!item.room && !item.vehicle && item.location && (
+                  <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-slate-600">
+                    <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                    <span className="truncate max-w-[200px]">{item.location}</span>
+                  </span>
+                )}
+              </div>
+            )}
+
+            {/* Hàng 5: Action cho coordinator — chỉ cho pending không xe hoặc có xe đã gán (BGĐ case) */}
               {isCoordinator && item.status === 'pending' && (
                 <div className="flex gap-2 pt-3 border-t border-slate-50 relative z-10">
                   {item.use_vehicle && !item.vehicle_id ? (
