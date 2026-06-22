@@ -87,7 +87,7 @@ export default function DirectorTimeline({
                         className="absolute inset-x-0 h-7 mx-1 bg-slate-100 hover:bg-slate-200/80 border border-slate-200/50 rounded-lg z-10 flex items-center justify-center cursor-pointer transition-all select-none shadow-sm"
                       >
                         <span className="text-[10px] font-bold text-slate-500 flex items-center gap-1.5">
-                          <CalendarDays className="w-3.5 h-3.5 text-slate-400" /> {dir.full_name} — Nghỉ phép
+                          <CalendarDays className="w-3.5 h-3.5 text-slate-400" /> {dir.full_name}
                         </span>
                       </div>
                     );
@@ -130,7 +130,7 @@ export default function DirectorTimeline({
                             onClick={() => onSelectSchedule(sched)}
                             style={{ left: `${leftPercent}%`, width: `${widthPercent}%` }}
                             className={cn(
-                              "absolute h-7 rounded-lg cursor-pointer transition-all hover:brightness-110 active:scale-[0.97] select-none border-none shadow-sm overflow-hidden flex items-center px-2",
+                              "absolute h-7 rounded-lg cursor-pointer transition-all hover:brightness-110 active:scale-[0.97] select-none border-none shadow-sm overflow-hidden flex items-center justify-center px-2",
                               typeColor,
                               isCompleted && "opacity-70",
                               (isCutLeft || isCutRight) && "opacity-60"
@@ -138,7 +138,7 @@ export default function DirectorTimeline({
                             title={`${displayTitle}${isCompleted ? ' ✅ Đã xong' : ''} (${showEndTime ? `${format(sTime, 'HH:mm')} - ${format(eTime, 'HH:mm')}` : `Từ ${format(sTime, 'HH:mm')}`})${isCutLeft ? ' ◀' : ''}${isCutRight ? ' ▶' : ''}`}
                           >
                             <span className="text-[10px] font-bold text-white truncate leading-none">
-                              {dir.full_name} — {displayTitle}
+                              {dir.full_name}
                             </span>
                           </div>
                         );
