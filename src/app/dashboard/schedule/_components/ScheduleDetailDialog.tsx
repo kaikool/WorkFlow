@@ -409,7 +409,7 @@ export default function ScheduleDetailDialog({
                     </SelectContent>
                   </Select>
 
-                  <Select value={detail.tempDriverId || ''} onValueChange={detail.setTempDriverId}>
+                  <Select value={detail.tempDriverId || ''} onValueChange={detail.handleDriverSelect}>
                     <SelectTrigger className="min-h-11 bg-white border-none rounded-xl font-medium text-sm shadow-sm">
                       <SelectValue placeholder="Chọn lái xe..." />
                     </SelectTrigger>

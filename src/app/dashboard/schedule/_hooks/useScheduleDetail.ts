@@ -259,6 +259,12 @@ export function useScheduleDetail({
     if (selectedV?.driver_id) setTempDriverId(selectedV.driver_id);
   };
 
+  const handleDriverSelect = (d: string) => {
+    setTempDriverId(d);
+    const matchedVehicle = vehicles.find(x => x.driver_id === d);
+    if (matchedVehicle) setTempVehicleId(matchedVehicle.id);
+  };
+
   return {
     // Trạng thái chỉnh sửa
     isEditingTime, setIsEditingTime,
@@ -289,6 +295,6 @@ export function useScheduleDetail({
     isParticipant, isCreator, isLeave, canCoord,
     // Hàm xử lý
     handleSaveTime, handleEndNow, handleSaveSchedule,
-    handleStartTimeChange, handleVehicleSelect,
+    handleStartTimeChange, handleVehicleSelect, handleDriverSelect,
   };
 }
