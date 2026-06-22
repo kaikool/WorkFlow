@@ -62,7 +62,7 @@ export default function ResourcesManagerDashboard({ schedules, vehicles, rooms, 
               const upcomingTrips = getUpcomingTrips(v.id);
               const currentTrip = upcomingTrips.find(s => new Date(s.start_time) <= now);
               const nextTrip = upcomingTrips.find(s => isAfter(new Date(s.start_time), now));
-              const isBusy = !!currentTrip && currentTrip.status === 'approved';
+              const isBusy = !!currentTrip && currentTrip.status === 'approved' && new Date(currentTrip.start_time) <= now;
               const isInProgress = !!currentTrip && currentTrip.status === 'in_progress';
               const isExpanded = expandedVehicle === v.id;
               const clickTarget = currentTrip || nextTrip;
@@ -84,7 +84,7 @@ export default function ResourcesManagerDashboard({ schedules, vehicles, rooms, 
                     <div className="flex items-center gap-3 min-w-0">
                       <div className={cn(
                         "p-2.5 rounded-xl shrink-0 transition-colors",
-                        isBusy || isInProgress ? "bg-amber-50 text-amber-700" : "bg-slate-100 text-slate-700"
+                        isBusy ? "bg-red-50 text-red-700" : isInProgress ? "bg-amber-50 text-amber-700" : "bg-slate-100 text-slate-700"
                       )}>
                         <Car className="w-4 h-4" />
                       </div>
@@ -97,11 +97,11 @@ export default function ResourcesManagerDashboard({ schedules, vehicles, rooms, 
                       <Badge className={cn(
                         "rounded-full font-semibold text-[10px] px-2 py-1 whitespace-nowrap",
                         isInProgress ? "bg-slate-900 text-white" :
-                        isBusy ? "bg-amber-600 text-white" :
+                        isBusy ? "bg-red-600 text-white" :
                         nextTrip ? "bg-amber-50 text-amber-700 border border-amber-100" :
                         "bg-slate-100 text-slate-700"
                       )}>
-                        {isInProgress ? "Đang chạy" : isBusy ? "Sắp đi" : nextTrip ? "Sắp đi" : "Rảnh"}
+                        {isInProgress ? "Đang chạy" : isBusy ? "Quá giờ" : nextTrip ? "Sắp đi" : "Rảnh"}
                       </Badge>
                       {clickTarget && (
                         <ChevronRight className={cn(
@@ -115,7 +115,10 @@ export default function ResourcesManagerDashboard({ schedules, vehicles, rooms, 
                   {/* Current trip inline preview */}
                   {(isBusy || isInProgress) && currentTrip && (
                     <div className="px-5 sm:px-6 pb-3 sm:pb-4 -mt-1">
-                      <div className="bg-amber-50 rounded-xl px-3.5 py-3 flex items-center justify-between gap-3 border border-amber-100">
+                      <div className={cn(
+                        "rounded-xl px-3.5 py-3 flex items-center justify-between gap-3 border",
+                        isBusy ? "bg-red-50 border-red-100" : "bg-amber-50 border-amber-100"
+                      )}>
                         <div className="flex items-center gap-2 min-w-0">
                           <Avatar className="h-5 w-5 shrink-0">
                             <AvatarImage src={currentTrip.creator?.avatar_url} />
@@ -123,7 +126,10 @@ export default function ResourcesManagerDashboard({ schedules, vehicles, rooms, 
                           </Avatar>
                           <span className="text-xs font-semibold text-slate-900 truncate">{currentTrip.title}</span>
                         </div>
-                        <span className="text-xs font-semibold text-amber-700 whitespace-nowrap tabular-nums">
+                        <span className={cn(
+                          "text-xs font-semibold whitespace-nowrap tabular-nums",
+                          isBusy ? "text-red-700" : "text-amber-700"
+                        )}>
                           {fmtTime(new Date(currentTrip.start_time))} – {fmtTime(new Date(currentTrip.end_time))}
                         </span>
                       </div>
