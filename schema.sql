@@ -5610,8 +5610,8 @@ END $$;
 -- 10. SCHEDULE AUTO-COMPLETE HELPERS
 -- ==============================================================================
 
--- Tự hoàn thành lịch họp / sự kiện / nghỉ phép không dùng xe sau khi quá end_time 15 phút.
--- Lịch công tác / dùng xe / có lái xe giữ nguyên để lái xe hoặc điều phối xác nhận thực tế.
+-- Tự hoàn thành lịch họp / sự kiện / nghỉ phép / trip không dùng xe sau khi quá end_time 15 phút.
+-- Lịch có xe / có lái xe giữ nguyên để lái xe hoặc điều phối xác nhận thực tế.
 CREATE OR REPLACE FUNCTION public.complete_finished_schedules()
 RETURNS integer
 LANGUAGE plpgsql
@@ -5624,11 +5624,12 @@ BEGIN
   UPDATE public.schedules
   SET status = 'completed'
   WHERE status = 'approved'
-    AND type::text IN ('meeting', 'event', 'leave')
-    AND COALESCE(use_vehicle, false) = false
-    AND vehicle_id IS NULL
-    AND driver_id IS NULL
-    AND end_time < NOW() - INTERVAL '15 minutes';
+    AND end_time < NOW() - INTERVAL '15 minutes'
+    AND (
+      (type::text IN ('meeting', 'event', 'leave') AND COALESCE(use_vehicle, false) = false AND vehicle_id IS NULL AND driver_id IS NULL)
+      OR
+      (type::text = 'trip' AND COALESCE(use_vehicle, false) = false AND vehicle_id IS NULL AND driver_id IS NULL)
+    );
 
   GET DIAGNOSTICS v_updated = ROW_COUNT;
   RETURN v_updated;
