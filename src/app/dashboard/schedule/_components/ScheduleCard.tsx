@@ -148,17 +148,17 @@ export default React.memo(function ScheduleCard({ item, profile, onSelect, onSta
               </span>
             </div>
 
-            {/* Hàng 4: Xe + Lái xe — nếu có */}
+            {/* Hàng 4: Lái xe — nếu có */}
             {(item.vehicle || driverName) && (
-              <div className="flex items-center gap-1.5 text-[12px] font-medium text-amber-700 truncate">
-                <Car className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+              <div className="flex items-center gap-1.5 text-[12px] font-medium text-slate-600 truncate">
+                <Car className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                 <span className="truncate">
-                  {item.vehicle && `${(item.vehicle as any).name} · ${(item.vehicle as any).plate_number}`}
-                  {item.vehicle && driverName && ' — '}
-                  {driverName && (
+                  {driverName ? (
                     driverPhone
-                      ? <a href={`tel:${driverPhone}`} className="hover:underline text-amber-800" onClick={(e) => e.stopPropagation()}>{driverName} · {driverPhone}</a>
+                      ? <a href={`tel:${driverPhone}`} className="hover:underline" onClick={(e) => e.stopPropagation()}>{driverName} · {driverPhone}</a>
                       : driverName
+                  ) : (
+                    `${(item.vehicle as any).name} · ${(item.vehicle as any).plate_number}`
                   )}
                 </span>
               </div>

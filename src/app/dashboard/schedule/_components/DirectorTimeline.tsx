@@ -96,9 +96,14 @@ export default function DirectorTimeline({
                     <div className="relative w-full h-full z-10 flex items-center">
                       {dirSchedules.map(sched => {
                         const rawStart = new Date(sched.start_time);
-                        // Khi trip đã completed, dùng actual end_time từ metadata để bar khớp thời gian thực
+                        // Completed: dùng actual end_time từ metadata
+                        // In_progress: kéo đến hiện tại (bar thể hiện đang di chuyển)
                         const hasActualEnd = sched.status === 'completed' && sched.metadata?.trip_ended_at;
-                        const rawEnd = hasActualEnd ? new Date(sched.metadata.trip_ended_at) : new Date(sched.end_time);
+                        const rawEnd = hasActualEnd
+                          ? new Date(sched.metadata.trip_ended_at)
+                          : sched.status === 'in_progress'
+                            ? now
+                            : new Date(sched.end_time);
                         const sTime = rawStart < selectedStart ? selectedStart : rawStart;
                         const eTime = rawEnd > selectedEnd ? selectedEnd : rawEnd;
                         const sMin = sTime.getHours() * 60 + sTime.getMinutes();
