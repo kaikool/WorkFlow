@@ -198,7 +198,8 @@ export default function ScheduleDetailDialog({
   const isCompleted = schedule?.status === 'completed';
   const showEditAction = canEdit && !isRejected;
   const showEndAction = canEdit && !isCompleted && new Date(schedule.end_time) > new Date();
-  const showForceCompleteAction = (isCoordinator || currentProfile?.role === 'admin') && !isCompleted && schedule.type === 'trip';
+  const isPastEnd = !isCompleted && new Date(schedule.end_time) < new Date();
+  const showForceCompleteAction = (isCoordinator || currentProfile?.role === 'admin') && isPastEnd && schedule.type === 'trip';
   const showCancelVehicle = isCoordinator && schedule.vehicle_id;
   const showReassignVehicle = (isCoordinator || currentProfile?.role === 'admin') && isCompleted && schedule.use_vehicle;
   const showDeleteAction = detail.isCreator || isCoordinator;
@@ -245,11 +246,11 @@ export default function ScheduleDetailDialog({
         </Button>
       )}
       {showForceCompleteAction && (
-        <Button variant="ghost" size="icon" title="Hoàn thành (force)" onClick={async () => {
+        <Button variant="ghost" size="icon" title="Kết thúc (quá giờ)" onClick={async () => {
           if (onForceComplete) {
             await onForceComplete(schedule.id);
           }
-        }} className="h-10 w-10 rounded-xl text-emerald-600 bg-emerald-50 hover:bg-emerald-100 border border-emerald-100">
+        }} className="h-10 w-10 rounded-xl text-amber-600 bg-amber-50 hover:bg-amber-100 border border-amber-100">
           <CheckCircle2 className="h-4 w-4" />
         </Button>
       )}
