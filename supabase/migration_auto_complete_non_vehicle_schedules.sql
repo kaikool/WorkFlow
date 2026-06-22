@@ -20,6 +20,13 @@ BEGIN
       (type::text IN ('meeting', 'event', 'leave') AND COALESCE(use_vehicle, false) = false AND vehicle_id IS NULL AND driver_id IS NULL)
       OR
       (type::text = 'trip' AND COALESCE(use_vehicle, false) = false AND vehicle_id IS NULL AND driver_id IS NULL)
+    )
+    -- KHÔNG auto-complete lịch có BGĐ tham gia (phải có người bấm kết thúc)
+    AND NOT EXISTS (
+      SELECT 1 FROM schedule_participants sp
+      JOIN profiles p ON p.id = sp.profile_id
+      WHERE sp.schedule_id = public.schedules.id
+        AND p.role = 'director'
     );
 
   GET DIAGNOSTICS v_updated = ROW_COUNT;
