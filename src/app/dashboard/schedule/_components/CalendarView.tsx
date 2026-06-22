@@ -50,11 +50,46 @@ interface SectionProps {
 
 function ScheduleSection({ icon, label, count, color, defaultOpen = true, children }: SectionProps) {
   const colorMap = {
-    red: { badge: "bg-red-50 text-red-700 border-red-100", header: "text-red-600" },
-    amber: { badge: "bg-amber-50 text-amber-700 border-amber-100", header: "text-amber-600" },
-    green: { badge: "bg-emerald-50 text-emerald-700 border-emerald-100", header: "text-emerald-600" },
-    blue: { badge: "bg-blue-50 text-blue-700 border-blue-100", header: "text-blue-600" },
-    slate: { badge: "bg-slate-100 text-slate-500 border-slate-200", header: "text-slate-400" },
+    red: {
+      badge: "bg-red-100 text-red-700",
+      header: "text-red-700",
+      bg: "bg-red-50/60",
+      border: "border-red-200/40",
+      hover: "hover:bg-red-50/90",
+      leftBar: "bg-red-400",
+    },
+    amber: {
+      badge: "bg-amber-100 text-amber-700",
+      header: "text-amber-700",
+      bg: "bg-amber-50/60",
+      border: "border-amber-200/40",
+      hover: "hover:bg-amber-50/90",
+      leftBar: "bg-amber-400",
+    },
+    green: {
+      badge: "bg-emerald-100 text-emerald-700",
+      header: "text-emerald-700",
+      bg: "bg-emerald-50/60",
+      border: "border-emerald-200/40",
+      hover: "hover:bg-emerald-50/90",
+      leftBar: "bg-emerald-400",
+    },
+    blue: {
+      badge: "bg-blue-100 text-blue-700",
+      header: "text-blue-700",
+      bg: "bg-blue-50/60",
+      border: "border-blue-200/40",
+      hover: "hover:bg-blue-50/90",
+      leftBar: "bg-blue-400",
+    },
+    slate: {
+      badge: "bg-slate-100 text-slate-500",
+      header: "text-slate-500",
+      bg: "bg-slate-50/60",
+      border: "border-slate-200/40",
+      hover: "hover:bg-slate-50/90",
+      leftBar: "bg-slate-300",
+    },
   };
   const c = colorMap[color];
 
@@ -64,15 +99,16 @@ function ScheduleSection({ icon, label, count, color, defaultOpen = true, childr
     <Collapsible defaultOpen={defaultOpen && count > 0} className="space-y-3">
       <CollapsibleTrigger
         className={cn(
-          "group w-full flex items-center gap-2 px-2 py-2 rounded-xl",
-          "text-[13px] font-medium",
-          "transition-colors hover:bg-slate-50",
+          "group w-full flex items-center gap-3 px-4 py-3 rounded-2xl border shadow-sm",
+          c.border, c.bg, c.hover,
+          "transition-all duration-200",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20"
         )}
       >
-        <span className={c.header}>{icon}</span>
-        <span className={c.header}>{label}</span>
-        <Badge className={cn("h-5 rounded-full border px-2.5 text-[10px] font-bold", c.badge)}>
+        <div className={cn("w-1 h-8 rounded-full shrink-0", c.leftBar)} />
+        <span className={cn("shrink-0", c.header)}>{icon}</span>
+        <span className={cn("text-sm font-bold tracking-tight", c.header)}>{label}</span>
+        <Badge className={cn("h-6 min-w-6 rounded-full border-0 px-2.5 text-[11px] font-extrabold", c.badge)}>
           {count}
         </Badge>
         <ChevronDown
