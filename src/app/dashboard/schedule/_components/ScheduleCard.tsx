@@ -1,7 +1,7 @@
 'use client'
 
 import React from "react";
-import { Clock, Users, Car, XCircle } from "lucide-react";
+import { Clock, Users, Car, UserCheck, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -148,18 +148,15 @@ export default React.memo(function ScheduleCard({ item, profile, onSelect, onSta
               </span>
             </div>
 
-            {/* Hàng 4: Lái xe — nếu có */}
-            {(item.vehicle || driverName) && (
+            {/* Hàng 4: Lái xe — chỉ hiển thị khi có lái xe */}
+            {driverName && (
               <div className="flex items-center gap-1.5 text-[12px] font-medium text-slate-600 truncate">
-                <Car className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                <UserCheck className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                 <span className="truncate">
-                  {driverName ? (
-                    driverPhone
-                      ? <a href={`tel:${driverPhone}`} className="hover:underline" onClick={(e) => e.stopPropagation()}>{driverName} · {driverPhone}</a>
-                      : driverName
-                  ) : (
-                    `${(item.vehicle as any).name} · ${(item.vehicle as any).plate_number}`
-                  )}
+                  {driverPhone
+                    ? <a href={`tel:${driverPhone}`} className="hover:underline" onClick={(e) => e.stopPropagation()}>{driverName} · {driverPhone}</a>
+                    : driverName
+                  }
                 </span>
               </div>
             )}
