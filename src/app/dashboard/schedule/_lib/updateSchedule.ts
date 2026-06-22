@@ -55,6 +55,11 @@ export async function updateScheduleAction(p: UpdateScheduleParams) {
     const nextParticipantIds = Array.isArray(participant_ids)
       ? Array.from(new Set([schedule.created_by, ...participant_ids].filter(Boolean)))
       : (schedule.participants || []).map((q: any) => q.profile?.id).filter(Boolean);
+
+    // Nếu schedule đã completed mà end_time được chuyển về tương lai → tự set in_progress
+    if (schedule.status === 'completed' && updates.end_time && new Date(updates.end_time) > new Date()) {
+      scheduleUpdates.status = 'in_progress';
+    }
     const participantConflicts = isLeave ? [] : await findParticipantConflicts({
       participantIds: nextParticipantIds,
       start: nextStart,
