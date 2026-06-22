@@ -68,7 +68,7 @@ export default function ProfileDetailDialog({
   // Email: dữ liệu legacy lưu username (không có @), dữ liệu mới user tự nhập đầy đủ.
   // Hiển thị + mailto đều phải xử lý cả 2 dạng.
   const emailAddress = target?.ad_account
-    ? (target.ad_account.includes('@') ? target.ad_account : `${target.ad_account}@yourbank.com.vn`)
+    ? (target.ad_account.includes('@') ? target.ad_account : `${target.ad_account}@vietinbank.vn`)
     : null;
   const mailto = emailAddress ? `mailto:${emailAddress}` : null;
 

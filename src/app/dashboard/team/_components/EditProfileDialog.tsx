@@ -220,7 +220,7 @@ export default function EditProfileDialog({ open, onOpenChange, target, viewer, 
                   type="email"
                   value={form.ad_account}
                   onChange={(e) => setField('ad_account', e.target.value)}
-                  placeholder="ten@agribank.com.vn"
+                  placeholder="ten@vietinbank.vn"
                   className="min-h-11 rounded-xl"
                   autoComplete="email"
                   inputMode="email"

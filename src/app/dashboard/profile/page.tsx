@@ -169,7 +169,7 @@ export default function ProfilePage() {
   const deptName = profile.departments?.name ?? null;
   // Email: legacy lưu username (không có @), mới user tự nhập đầy đủ. Fallback auth email nếu rỗng.
   const emailAddress = profile.ad_account
-    ? (profile.ad_account.includes('@') ? profile.ad_account : `${profile.ad_account}@agribank.com.vn`)
+    ? (profile.ad_account.includes('@') ? profile.ad_account : `${profile.ad_account}@vietinbank.vn`)
     : (profile.email ?? null);
   const mailto = emailAddress ? `mailto:${emailAddress}` : null;
 

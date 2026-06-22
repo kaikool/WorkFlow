@@ -1043,7 +1043,7 @@ WHERE id = (SELECT id FROM auth.users WHERE email = 'admin@yourbank.vn');
 
 Migration file đầy đủ: [`supabase/migration_update_all_emails.sql`](supabase/migration_update_all_emails.sql).
 
-Chạy trong Supabase Dashboard → SQL Editor:
+Chạy trong Supabase Dashboard → SQL Editor (bản đầy đủ ở file migration):
 
 ```sql
 -- Cập nhật auth.users.email (dùng để đăng nhập)
@@ -1052,15 +1052,26 @@ SET email = SPLIT_PART(email, '@', 1) || '@vietinbank.vn'
 WHERE email IS NOT NULL
   AND SPLIT_PART(email, '@', 2) IS DISTINCT FROM 'vietinbank.vn';
 
--- Cập nhật profiles.ad_account (nếu là email đầy đủ)
+-- Cập nhật profiles.ad_account — đã có @ thì đổi domain
 UPDATE profiles
 SET ad_account = SPLIT_PART(ad_account, '@', 1) || '@vietinbank.vn'
 WHERE ad_account IS NOT NULL
   AND ad_account LIKE '%@%'
   AND SPLIT_PART(ad_account, '@', 2) IS DISTINCT FROM 'vietinbank.vn';
+
+-- Cập nhật profiles.ad_account — username thuần (không @) → thêm @vietinbank.vn
+UPDATE profiles
+SET ad_account = ad_account || '@vietinbank.vn'
+WHERE ad_account IS NOT NULL
+  AND ad_account NOT LIKE '%@%';
 ```
 
-> ⚠️ **Lưu ý:** Việc đổi `auth.users.email` sẽ thay đổi email đăng nhập của user. User cần dùng email mới (`username@vietinbank.vn`) để đăng nhập lần sau (nếu đang dùng full email). Nếu đăng nhập bằng username (không có @) thì không ảnh hưởng — login page tự động thêm `@bank.local` để khớp với email trong DB. Nên thông báo trước khi chạy.
+> ⚠️ **Lưu ý:** Việc đổi `auth.users.email` không ảnh hưởng tới đăng nhập — user vẫn chỉ gõ username, login page tự thêm `@bank.local` hậu trường. Frontend hiển thị dùng `ad_account` trong `profiles`, đã được cập nhật.
+>
+> Đã cập nhật đồng bộ 3 file code frontend:
+> - `profile/page.tsx` — `@agribank.com.vn` → `@vietinbank.vn`
+> - `ProfileDetailDialog.tsx` — `@yourbank.com.vn` → `@vietinbank.vn`
+> - `EditProfileDialog.tsx` — placeholder `@agribank.com.vn` → `@vietinbank.vn`
 
 ### 14.3 Tìm hồ sơ đang chờ tôi nhận (= Inbox PENDING)
 
