@@ -1039,7 +1039,30 @@ SET role = 'admin', is_active = true
 WHERE id = (SELECT id FROM auth.users WHERE email = 'admin@yourbank.vn');
 ```
 
-### 14.2 Tìm hồ sơ đang chờ tôi nhận (= Inbox PENDING)
+### 14.2 Đổi email toàn bộ user thành @vietinbank.vn
+
+Migration file đầy đủ: [`supabase/migration_update_all_emails.sql`](supabase/migration_update_all_emails.sql).
+
+Chạy trong Supabase Dashboard → SQL Editor:
+
+```sql
+-- Cập nhật auth.users.email (dùng để đăng nhập)
+UPDATE auth.users
+SET email = SPLIT_PART(email, '@', 1) || '@vietinbank.vn'
+WHERE email IS NOT NULL
+  AND SPLIT_PART(email, '@', 2) IS DISTINCT FROM 'vietinbank.vn';
+
+-- Cập nhật profiles.ad_account (nếu là email đầy đủ)
+UPDATE profiles
+SET ad_account = SPLIT_PART(ad_account, '@', 1) || '@vietinbank.vn'
+WHERE ad_account IS NOT NULL
+  AND ad_account LIKE '%@%'
+  AND SPLIT_PART(ad_account, '@', 2) IS DISTINCT FROM 'vietinbank.vn';
+```
+
+> ⚠️ **Lưu ý:** Việc đổi `auth.users.email` sẽ thay đổi email đăng nhập của user. User cần dùng email mới (`username@vietinbank.vn`) để đăng nhập lần sau. Nên thông báo trước khi chạy.
+
+### 14.3 Tìm hồ sơ đang chờ tôi nhận (= Inbox PENDING)
 
 ```sql
 SELECT d.*, dh.id AS handover_id, dh.sent_at, dh.note,
