@@ -314,6 +314,7 @@ export default function CalendarView(props: CalendarViewProps) {
             label="Đang chờ"
             count={pendingApproval.length}
             color="amber"
+            defaultOpen={false}
           >
             {pendingApproval.map(item => (
               <ScheduleCard key={item.id} item={item} profile={profile} onSelect={onSelectSchedule} onStatusUpdate={onStatusUpdate} />
@@ -340,6 +341,7 @@ export default function CalendarView(props: CalendarViewProps) {
             label="Sắp tới"
             count={upcomingSchedules.length}
             color="blue"
+            defaultOpen={false}
           >
             {upcomingSchedules.map(item => (
               <ScheduleCard key={`upcoming-${item.id}`} item={item} profile={profile} onSelect={onSelectSchedule} onStatusUpdate={onStatusUpdate} />

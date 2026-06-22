@@ -150,10 +150,6 @@ export function checkResourceConflicts(params: {
     if (roomId && roomId !== 'none' && s.room_id === roomId) {
       conflicts.push(`Phòng họp đang bận: ${s.title} (${format(sStart, 'HH:mm')} - ${format(sEnd, 'HH:mm')})`);
     }
-
-    if (vehicleId && vehicleId !== 'none' && s.vehicle_id === vehicleId) {
-      conflicts.push(`Xe đang bận: ${s.title} (${format(sStart, 'HH:mm')} - ${format(sEnd, 'HH:mm')})`);
-    }
   });
 
   return Array.from(new Set(conflicts));

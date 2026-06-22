@@ -197,7 +197,7 @@ export default function ScheduleDetailDialog({
   const isCompleted = schedule?.status === 'completed';
   const showEditAction = canEdit && !isRejected;
   const showEndAction = canEdit && !isCompleted;
-  const showCancelVehicle = isCoordinator && schedule.vehicle_id;
+  const showCancelVehicle = isCoordinator && schedule.vehicle_id && !isCompleted;
   const showReassignVehicle = (isCoordinator || currentProfile?.role === 'admin') && isCompleted && schedule.use_vehicle;
   const showDeleteAction = detail.isCreator || isCoordinator;
   const hasAnyAction = showEditAction || showEndAction || showCancelVehicle || showReassignVehicle || showDeleteAction;

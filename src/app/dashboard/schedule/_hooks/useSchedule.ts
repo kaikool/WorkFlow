@@ -404,20 +404,6 @@ export function useSchedule() {
   const handleAssignVehicle = async (scheduleId: string, vehicleId: string | null, driverId: string | null = null) => {
     try {
       const schedule = schedules.find(s => s.id === scheduleId);
-      const vehicleConflicts = vehicleId && schedule ? checkResourceConflicts({
-        vehicleId,
-        start: new Date(schedule.start_time),
-        end: new Date(schedule.end_time),
-        schedules,
-        ignoreScheduleId: scheduleId
-      }) : [];
-
-      // CHẶN cứng khi xe đã được gán cho lịch khác trùng giờ — không cho phép vượt
-      if (vehicleConflicts.length > 0) {
-        notifyValidation(vehicleConflicts[0], "Xe đã có lịch trùng giờ");
-        return;
-      }
-
       const { error } = await supabase.from('schedules').update({ 
         vehicle_id: vehicleId, 
         driver_id: driverId,
@@ -499,10 +485,15 @@ export function useSchedule() {
       
       const newEndTime = new Date(newEndTimeStr);
       const isEndEarly = newEndTime <= new Date();
+      const newStatus = isEndEarly
+        ? 'completed'
+        : schedule.status === 'completed'
+          ? 'in_progress'
+          : schedule.status;
 
       const { error } = await supabase.from('schedules').update({ 
         end_time: newEndTime.toISOString(),
-        status: isEndEarly ? 'completed' : schedule.status
+        status: newStatus
       }).eq('id', id);
       if (error) throw error;
 
