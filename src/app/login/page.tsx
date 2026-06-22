@@ -91,7 +91,7 @@ function LoginForm() {
     setLoading(true)
 
     // Tự động gán domain ảo nếu người dùng đăng nhập bằng Username (không có ký tự @)
-    const finalEmail = email.includes('@') ? email.trim() : `${email.trim()}@bank.local`
+    const finalEmail = email.includes('@') ? email.trim() : `${email.trim()}@vietinbank.vn`
 
     try {
       if (isSignUp) {
