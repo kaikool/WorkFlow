@@ -30,6 +30,7 @@ const statusBarColor: Record<string, string> = {
 export default React.memo(function ScheduleCard({ item, profile, onSelect, onStatusUpdate }: ScheduleCardProps) {
   const isCoordinator = canCoordinateSharedResources(profile);
   const [rejectOpen, setRejectOpen] = React.useState(false);
+  const [rejectVehicleOpen, setRejectVehicleOpen] = React.useState(false);
   const type = typeLabels[item.type] || typeLabels.meeting;
   const status = statusLabels[item.status] ?? { label: item.status ?? "Không rõ", color: "bg-slate-100 text-slate-500" };
   const isTrip = item.type === 'trip';
@@ -160,26 +161,32 @@ export default React.memo(function ScheduleCard({ item, profile, onSelect, onSta
             </div>
 
             {/* Hàng 4: Action cho coordinator — chỉ cho pending không xe hoặc có xe đã gán (BGĐ case) */}
-            {isCoordinator && item.status === 'pending' && (
-              <div className="flex gap-2 pt-3 border-t border-slate-50 relative z-10">
-                {item.use_vehicle && !item.vehicle_id ? (
-                  <span className="text-xs font-medium text-amber-600 bg-amber-50 rounded-xl px-3 py-2 border border-amber-100 w-full text-center">
-                    Mở để gán xe
-                  </span>
-                ) : (
-                  <>
-                    <Button size="sm"
-                      onClick={(e) => { e.stopPropagation(); onStatusUpdate(item.id, 'approved'); }}
-                      className="flex-1 bg-emerald-600 hover:bg-emerald-700 min-h-10 rounded-xl font-semibold text-sm shadow-sm px-4"
-                    >Xác nhận</Button>
-                    <Button size="sm" variant="outline"
-                      onClick={(e) => { e.stopPropagation(); setRejectOpen(true); }}
-                      className="flex-1 min-h-10 rounded-xl font-semibold text-sm border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 px-4"
-                    >Từ chối</Button>
-                  </>
-                )}
-              </div>
-            )}
+              {isCoordinator && item.status === 'pending' && (
+                <div className="flex gap-2 pt-3 border-t border-slate-50 relative z-10">
+                  {item.use_vehicle && !item.vehicle_id ? (
+                    <>
+                      <span className="text-xs font-medium text-amber-600 bg-amber-50 rounded-xl px-3 py-2 border border-amber-100 flex-1 text-center">
+                        Mở để gán xe
+                      </span>
+                      <Button size="sm" variant="outline"
+                        onClick={(e) => { e.stopPropagation(); setRejectVehicleOpen(true); }}
+                        className="min-h-10 rounded-xl font-semibold text-sm border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 px-4"
+                      >Từ chối</Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button size="sm"
+                        onClick={(e) => { e.stopPropagation(); onStatusUpdate(item.id, 'approved'); }}
+                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 min-h-10 rounded-xl font-semibold text-sm shadow-sm px-4"
+                      >Xác nhận</Button>
+                      <Button size="sm" variant="outline"
+                        onClick={(e) => { e.stopPropagation(); setRejectOpen(true); }}
+                        className="flex-1 min-h-10 rounded-xl font-semibold text-sm border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 px-4"
+                      >Từ chối</Button>
+                    </>
+                  )}
+                </div>
+              )}
           </div>
         </div>
       </CardContent>
@@ -188,6 +195,13 @@ export default React.memo(function ScheduleCard({ item, profile, onSelect, onSta
         isOpen={rejectOpen}
         setIsOpen={setRejectOpen}
         scheduleTitle={item.title}
+        onConfirm={async (reason) => { await onStatusUpdate(item.id, 'rejected', reason); }}
+      />
+      <RejectScheduleDialog
+        isOpen={rejectVehicleOpen}
+        setIsOpen={setRejectVehicleOpen}
+        scheduleTitle={item.title}
+        description="Lịch trình này không được chấp thuận do không có phương tiện phù hợp. Nhập lý do để người tạo biết."
         onConfirm={async (reason) => { await onStatusUpdate(item.id, 'rejected', reason); }}
       />
     </Card>

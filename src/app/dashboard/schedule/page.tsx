@@ -129,35 +129,61 @@ function ScheduleContent() {
           allProfiles={allProfiles} departments={departments}
           currentProfile={profile}
           onAssignVehicle={async (id, vId, dId) => {
-          try {
-            const schedule = schedules.find(s => s.id === id);
-            const { error } = await supabase.from('schedules').update({ vehicle_id: vId, driver_id: dId, status: vId ? 'approved' : 'pending' }).eq('id', id);
-            if (error) throw error;
+            try {
+              const schedule = schedules.find(s => s.id === id);
+              const { error } = await supabase.from('schedules').update({ vehicle_id: vId, driver_id: dId, status: vId ? 'approved' : 'pending' }).eq('id', id);
+              if (error) throw error;
 
-            // Thông báo riêng cho tài xế được gán
-            if (vId && dId && schedule) {
-              const vehicle = vehicles.find(v => v.id === vId);
-              await sendNotifications([{
-                user_id: dId,
-                title: "Bạn được phân công lịch chạy xe",
-                content: `Bạn được phân công điều khiển xe ${vehicle?.name || ''} (${vehicle?.plate_number || ''}) cho chuyến: "${schedule.title}" – ${new Date(schedule.start_time).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}.`,
-                link: "/dashboard/schedule"
-              }]);
-            } else if (!vId && schedule?.driver_id) {
-              await sendNotifications([{
-                user_id: schedule.driver_id,
-                title: "Hủy phân công lịch chạy xe",
-                content: `Lịch chạy xe "${schedule.title}" đã bị hủy phân công. Vui lòng liên hệ phòng Tổ chức Tổng hợp để biết thêm thông tin.`,
-                link: "/dashboard/schedule"
-              }]);
+              // Thông báo riêng cho tài xế được gán
+              if (vId && dId && schedule) {
+                const vehicle = vehicles.find(v => v.id === vId);
+                await sendNotifications([{
+                  user_id: dId,
+                  title: "Bạn được phân công lịch chạy xe",
+                  content: `Bạn được phân công điều khiển xe ${vehicle?.name || ''} (${vehicle?.plate_number || ''}) cho chuyến: "${schedule.title}" – ${new Date(schedule.start_time).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}.`,
+                  link: "/dashboard/schedule"
+                }]);
+              } else if (!vId && schedule?.driver_id) {
+                await sendNotifications([{
+                  user_id: schedule.driver_id,
+                  title: "Hủy phân công lịch chạy xe",
+                  content: `Lịch chạy xe "${schedule.title}" đã bị hủy phân công. Vui lòng liên hệ phòng Tổ chức Tổng hợp để biết thêm thông tin.`,
+                  link: "/dashboard/schedule"
+                }]);
+              }
+
+              notifySuccess(vId ? "Đã gán xe và tài xế" : "Đã huỷ gán xe");
+              fetchData();
+            } catch (error) {
+              notifyError(error, "Không gán được xe");
             }
+          }}
+          onRejectSchedule={async (id, reason) => {
+            try {
+              const schedule = schedules.find(s => s.id === id);
+              const { error } = await supabase.from('schedules').update({
+                status: 'rejected',
+                rejection_reason: reason,
+                rejected_by: profile?.id,
+                rejected_at: new Date().toISOString()
+              }).eq('id', id);
+              if (error) throw error;
 
-            notifySuccess(vId ? "Đã gán xe và tài xế" : "Đã huỷ gán xe");
-            fetchData();
-          } catch (error) {
-            notifyError(error, "Không gán được xe");
-          }
-        }}
+              if (schedule?.created_by) {
+                await sendNotifications([{
+                  user_id: schedule.created_by,
+                  title: "Lịch trình Từ Chối",
+                  content: `Lịch trình "${schedule.title}" bị từ chối do không có phương tiện. Lý do: ${reason}`,
+                  link: "/dashboard/schedule"
+                }]);
+              }
+              notifySuccess("Đã từ chối lịch trình");
+              setIsDetailOpen(false);
+              fetchData();
+            } catch (error) {
+              notifyError(error, "Không từ chối được lịch trình");
+            }
+          }}
         onUpdateEndTime={handleUpdateEndTime}
         onUpdateSchedule={handleUpdateSchedule}
         onResubmitSchedule={handleResubmitSchedule}

@@ -11,12 +11,13 @@ interface RejectScheduleDialogProps {
   isOpen: boolean;
   setIsOpen: (v: boolean) => void;
   scheduleTitle?: string;
+  description?: string;
   onConfirm: (reason: string) => void | Promise<void>;
 }
 
 const MIN_LEN = 10;
 
-export default function RejectScheduleDialog({ isOpen, setIsOpen, scheduleTitle, onConfirm }: RejectScheduleDialogProps) {
+export default function RejectScheduleDialog({ isOpen, setIsOpen, scheduleTitle, description, onConfirm }: RejectScheduleDialogProps) {
   const [reason, setReason] = React.useState("");
   const [submitting, setSubmitting] = React.useState(false);
 
@@ -50,9 +51,9 @@ export default function RejectScheduleDialog({ isOpen, setIsOpen, scheduleTitle,
             <DialogTitle className="text-[17px] font-semibold text-slate-900">Từ chối lịch trình</DialogTitle>
           </div>
           <DialogDescription className="text-sm font-medium text-slate-500 leading-relaxed">
-            {scheduleTitle
+            {description || (scheduleTitle
               ? <>Nhập lý do từ chối lịch <span className="font-semibold text-slate-700">&ldquo;{scheduleTitle}&rdquo;</span> để người tạo có thể chỉnh sửa và gửi lại.</>
-              : 'Nhập lý do từ chối để người tạo có thể chỉnh sửa và gửi lại.'}
+              : 'Nhập lý do từ chối để người tạo có thể chỉnh sửa và gửi lại.')}
           </DialogDescription>
         </DialogHeader>
 

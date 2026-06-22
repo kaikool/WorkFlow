@@ -24,6 +24,7 @@ import { useScheduleDetail } from "../_hooks/useScheduleDetail";
 import { confirmDialog } from "@/components/ui/confirm-dialog";
 import ScheduleEditForm from "./ScheduleEditForm";
 import RejectedBanner from "./RejectedBanner";
+import RejectScheduleDialog from "./RejectScheduleDialog";
 import { createClient } from "@/utils/supabase/client";
 
 // --- Sub-component: Hiển thị danh sách người tham gia (Read Mode) ---
@@ -119,6 +120,7 @@ interface ScheduleDetailDialogProps {
   departments: any[];
   currentProfile: any;
   onAssignVehicle: (scheduleId: string, vehicleId: string | null, driverId: string | null) => void;
+  onRejectSchedule?: (scheduleId: string, reason: string) => void | Promise<void>;
   onUpdateEndTime: (scheduleId: string, newEndTime: string) => void;
   onUpdateSchedule: (scheduleId: string, updates: any) => void;
   onResubmitSchedule?: (scheduleId: string, changeReason: string, editedPayload: any) => void;
@@ -126,7 +128,7 @@ interface ScheduleDetailDialogProps {
 }
 
 export default function ScheduleDetailDialog({
-  isOpen, setIsOpen, schedule, schedules, vehicles, rooms, allProfiles, departments, currentProfile, onAssignVehicle, onUpdateEndTime, onUpdateSchedule, onResubmitSchedule, onDeleteSchedule
+  isOpen, setIsOpen, schedule, schedules, vehicles, rooms, allProfiles, departments, currentProfile, onAssignVehicle, onRejectSchedule, onUpdateEndTime, onUpdateSchedule, onResubmitSchedule, onDeleteSchedule
 }: ScheduleDetailDialogProps) {
   const detail = useScheduleDetail({
     isOpen, schedule, schedules, vehicles, rooms, allProfiles, currentProfile,
@@ -135,6 +137,7 @@ export default function ScheduleDetailDialog({
   const isCoordinator = detail.canCoord;
   const supabase = createClient();
   const [safeLeave, setSafeLeave] = React.useState<any>(null);
+  const [rejectVehicleOpen, setRejectVehicleOpen] = React.useState(false);
 
   // Khi mở chi tiết đơn nghỉ phép mà caller không phải chủ đơn → gọi RPC server-side
   // để lấy payload đã được lọc (title/description ẩn nếu không có quyền)
@@ -375,7 +378,11 @@ export default function ScheduleDetailDialog({
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="flex justify-end pt-1">
+                <div className="flex justify-end gap-2 pt-1">
+                  <Button variant="outline"
+                    onClick={() => setRejectVehicleOpen(true)}
+                    className="min-h-11 px-4 rounded-xl text-sm font-medium border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 active:scale-95 transition-all whitespace-nowrap"
+                  >Từ chối không có xe</Button>
                   <Button
                     disabled={!detail.tempVehicleId}
                     onClick={() => onAssignVehicle(schedule.id, detail.tempVehicleId, detail.tempDriverId)}
@@ -410,6 +417,19 @@ export default function ScheduleDetailDialog({
             <Button variant="ghost" className="min-h-11 px-4 rounded-xl font-medium text-slate-600 text-[13px] bg-slate-100 hover:bg-slate-200 active:scale-95 transition-all whitespace-nowrap" onClick={() => setIsOpen(false)}>Đóng cửa sổ</Button>
           </DialogFooter>
       </DialogContent>
+
+      <RejectScheduleDialog
+        isOpen={rejectVehicleOpen}
+        setIsOpen={setRejectVehicleOpen}
+        scheduleTitle={schedule?.title}
+        description="Không có phương tiện phù hợp cho lịch trình này. Nhập lý do để người tạo biết và có thể điều chỉnh."
+        onConfirm={async (reason) => {
+          if (onRejectSchedule) {
+            await onRejectSchedule(schedule.id, reason);
+            setRejectVehicleOpen(false);
+          }
+        }}
+      />
     </Dialog>
   );
 }
