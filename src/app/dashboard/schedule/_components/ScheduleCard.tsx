@@ -165,12 +165,13 @@ export default React.memo(function ScheduleCard({ item, profile, onSelect, onSta
                 <div className="flex gap-2 pt-3 border-t border-slate-50 relative z-10">
                   {item.use_vehicle && !item.vehicle_id ? (
                     <>
-                      <span className="text-xs font-medium text-amber-600 bg-amber-50 rounded-xl px-3 py-2 border border-amber-100 flex-1 text-center">
-                        Mở để gán xe
-                      </span>
+                      <Button size="sm" variant="outline"
+                        onClick={(e) => { e.stopPropagation(); onSelect(item); }}
+                        className="flex-1 min-h-10 rounded-xl font-semibold text-sm border-amber-200 text-amber-700 hover:bg-amber-50 hover:text-amber-800 px-4"
+                      >Mở để gán xe</Button>
                       <Button size="sm" variant="outline"
                         onClick={(e) => { e.stopPropagation(); setRejectVehicleOpen(true); }}
-                        className="min-h-10 rounded-xl font-semibold text-sm border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 px-4"
+                        className="flex-1 min-h-10 rounded-xl font-semibold text-sm border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 px-4"
                       >Từ chối</Button>
                     </>
                   ) : (
