@@ -737,11 +737,11 @@ USING (
 );
 
 -- Policy UPDATE: Lái xe được quyền cập nhật (progress/status/start_km/end_km/etc) chuyến đi của mình
+-- WITH CHECK cho phép driver set driver_id = null (từ chối lịch)
 CREATE POLICY "Driver can update schedules they are assigned to"
 ON schedules FOR UPDATE
-USING (
-    driver_id = auth.uid()
-);
+USING (driver_id = auth.uid())
+WITH CHECK (driver_id = auth.uid() OR driver_id IS NULL);
 
 -- Tùy chọn (Tùy chọn di chuyển dữ liệu cũ): Nếu bạn muốn, có thể cập nhật driver_id dựa trên một logic nào đó, nhưng thường bỏ qua vì dữ liệu mới sẽ gán trực tiếp.
 
