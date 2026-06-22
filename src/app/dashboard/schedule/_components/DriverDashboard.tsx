@@ -51,6 +51,9 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
   const [selectedIssueSchedule, setSelectedIssueSchedule] = useState<any>(null);
   const [issueText, setIssueText] = useState("");
 
+  // Dialog Từ chối lịch
+  const [selectedRejectSchedule, setSelectedRejectSchedule] = useState<any>(null);
+
   // Thống kê toàn bộ chuyến từ CSDL toàn thời gian (All-Time Sync)
   const [driverStats, setDriverStats] = useState({ totalTrips: 0 });
 
@@ -186,6 +189,46 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
       notifyError(e, "Không xác nhận được lịch");
     } finally {
       setConfirming(false);
+    }
+  };
+
+  const handleRejectTrip = async (schedule: any, reason: string) => {
+    setUpdating(true);
+    try {
+      const meta = schedule.metadata || {};
+      const newMeta = {
+        ...meta,
+        driver_rejected_at: new Date().toISOString(),
+        driver_rejected_reason: reason,
+        driver_rejected_by: profile?.id,
+      };
+
+      // Clear driver_id + lưu lý do từ chối vào metadata, trả lịch về pending để coordinator xử lý
+      const { error } = await supabase.from('schedules').update({
+        driver_id: null,
+        metadata: newMeta,
+      }).eq('id', schedule.id);
+      if (error) throw error;
+
+      // Thông báo cho bộ phận điều phối
+      if (coordinatorTargets.length > 0) {
+        await supabase.from('notifications').insert(
+          coordinatorTargets.map((target: any) => ({
+            user_id: target.id,
+            title: "🚗 Lái xe từ chối lịch",
+            content: `Tài xế ${profile?.full_name} từ chối chuyến "${schedule.title}". Lý do: ${reason}. Vui lòng điều phối lại.`,
+            link: "/dashboard/schedule"
+          }))
+        );
+      }
+
+      notifySuccess("Đã từ chối lịch", "Bộ phận điều phối đã được thông báo.");
+      setSelectedRejectSchedule(null);
+      fetchData();
+    } catch (e) {
+      notifyError(e, "Không từ chối được lịch");
+    } finally {
+      setUpdating(false);
     }
   };
 
@@ -326,6 +369,7 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
               onStart={(t) => { setSelectedStartSchedule(t); setIsStartOpen(true); }}
               onEnd={(t) => { setSelectedEndSchedule(t); setIsEndOpen(true); }}
               onReportIssue={(t) => { setSelectedIssueSchedule(t); setIsIssueOpen(true); }}
+              onReject={(t, reason) => handleRejectTrip(t, reason)}
             />
           ))}
         </div>

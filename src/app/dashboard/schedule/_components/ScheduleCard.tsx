@@ -98,6 +98,11 @@ export default React.memo(function ScheduleCard({ item, profile, onSelect, onSta
                       <XCircle className="w-2.5 h-2.5 mr-0.5 shrink-0" /> Cần sửa
                     </Badge>
                   )}
+                  {item.metadata?.driver_rejected_at && isCoordinator && item.use_vehicle && (
+                    <Badge className="bg-red-50 text-red-700 border border-red-200 font-semibold text-xs px-2.5 py-1 rounded-md">
+                      <XCircle className="w-2.5 h-2.5 mr-0.5 shrink-0" /> Lái xe từ chối
+                    </Badge>
+                  )}
                   <Badge className={cn("text-xs font-semibold px-2.5 py-1 rounded-md", status.color)}>
                     {status.label}
                   </Badge>

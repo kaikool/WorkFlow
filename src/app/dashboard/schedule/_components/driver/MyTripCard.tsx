@@ -1,10 +1,13 @@
 'use client'
 
 import React from "react";
-import { AlertTriangle, Car, CheckCircle2, Clock, MapPin, Navigation, Users } from "lucide-react";
+import { AlertTriangle, Car, CheckCircle2, Clock, MapPin, Navigation, Users, XCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 
 interface Props {
   trip: any;
@@ -12,12 +15,16 @@ interface Props {
   onStart: (trip: any) => void;
   onEnd: (trip: any) => void;
   onReportIssue: (trip: any) => void;
+  onReject: (trip: any, reason: string) => void;
 }
 
 const fmtDt = (d: Date) =>
   d.toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
-export default function MyTripCard({ trip, onConfirm, onStart, onEnd, onReportIssue }: Props) {
+export default function MyTripCard({ trip, onConfirm, onStart, onEnd, onReportIssue, onReject }: Props) {
+  const [rejectOpen, setRejectOpen] = React.useState(false);
+  const [rejectReason, setRejectReason] = React.useState("");
+  const [rejectSubmitting, setRejectSubmitting] = React.useState(false);
   const hasStarted = trip.status === 'in_progress' || trip.status === 'completed' || !!trip.metadata?.trip_started_at;
   const hasEnded = trip.status === 'completed' || !!trip.metadata?.trip_ended_at;
   const isConfirmed = !!trip.metadata?.driver_confirmed_at;
@@ -153,12 +160,21 @@ export default function MyTripCard({ trip, onConfirm, onStart, onEnd, onReportIs
       {!hasEnded && (
         <div className="flex items-center gap-2 px-5 pb-5 pt-1 bg-slate-50/10">
           {!isConfirmed && trip.status === 'approved' && !hasStarted ? (
-            <Button
-              onClick={() => onConfirm(trip)}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold min-h-11 text-sm gap-1.5 shadow-sm active:scale-95 transition-all duration-150"
-            >
-              <CheckCircle2 className="w-3.5 h-3.5" /> Xác nhận lịch
-            </Button>
+            <>
+              <Button
+                onClick={() => onConfirm(trip)}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold min-h-11 text-sm gap-1.5 shadow-sm active:scale-95 transition-all duration-150"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5" /> Xác nhận lịch
+              </Button>
+              <Button
+                onClick={() => setRejectOpen(true)}
+                variant="outline"
+                className="flex-1 min-h-11 rounded-xl font-bold text-sm border-red-200 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 gap-1.5 active:scale-95 transition-all duration-150"
+              >
+                <XCircle className="w-3.5 h-3.5" /> Từ chối
+              </Button>
+            </>
           ) : !hasStarted ? (
             <Button
               onClick={() => onStart(trip)}
@@ -184,6 +200,66 @@ export default function MyTripCard({ trip, onConfirm, onStart, onEnd, onReportIs
           </Button>
         </div>
       )}
+
+      {/* Dialog từ chối */}
+      <Dialog open={rejectOpen} onOpenChange={setRejectOpen}>
+        <DialogContent className="rounded-3xl border-none shadow-2xl max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-2">
+              <XCircle className="icon-md text-red-600" />
+              <DialogTitle className="text-[17px] font-semibold text-slate-900">Từ chối lịch chạy xe</DialogTitle>
+            </div>
+            <DialogDescription className="text-sm font-medium text-slate-500 leading-relaxed">
+              Nhập lý do từ chối chuyến <span className="font-semibold text-slate-700">&ldquo;{trip.title}&rdquo;</span> để bộ phận điều phối biết và sắp xếp lại.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="item-stack">
+            <Textarea
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              placeholder="Vd: Bận việc gia đình, đã có lịch ngoài giờ..."
+              rows={4}
+              className="resize-none"
+              autoFocus
+            />
+            <p className={cn(
+              "text-xs font-medium",
+              rejectReason.trim().length >= 10 ? "text-slate-400" : "text-amber-600"
+            )}>
+              {rejectReason.trim().length >= 10
+                ? `${rejectReason.trim().length} ký tự`
+                : `Cần thêm ${10 - rejectReason.trim().length} ký tự (tối thiểu 10).`}
+            </p>
+          </div>
+
+          <DialogFooter className="mt-2 gap-3">
+            <Button
+              variant="ghost"
+              onClick={() => { setRejectOpen(false); setRejectReason(""); }}
+              disabled={rejectSubmitting}
+              className="rounded-xl min-h-11 font-medium"
+            >Huỷ</Button>
+            <Button
+              onClick={async () => {
+                if (rejectReason.trim().length < 10 || rejectSubmitting) return;
+                setRejectSubmitting(true);
+                try {
+                  await onReject(trip, rejectReason.trim());
+                  setRejectOpen(false);
+                  setRejectReason("");
+                } finally {
+                  setRejectSubmitting(false);
+                }
+              }}
+              disabled={rejectReason.trim().length < 10 || rejectSubmitting}
+              className="rounded-xl min-h-11 font-medium px-6 bg-red-600 hover:bg-red-700 text-white border-none"
+            >
+              {rejectSubmitting ? 'Đang gửi...' : 'Xác nhận từ chối'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

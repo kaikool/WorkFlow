@@ -1,7 +1,7 @@
 'use client'
 
 import React from "react";
-import { MapPin, Car, UserCheck, Pencil, Clock, MoreVertical, Trash2, CheckCircle2, Ban } from "lucide-react";
+import { MapPin, Car, UserCheck, Pencil, Clock, MoreVertical, Trash2, CheckCircle2, Ban, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -333,6 +333,19 @@ export default function ScheduleDetailDialog({
                     </div>
                   )}
                 </div>
+              </div>
+            )}
+
+            {/* Driver từ chối — hiển thị cho coordinator biết */}
+            {schedule.metadata?.driver_rejected_at && isCoordinator && schedule.use_vehicle && (
+              <div className="p-4 bg-red-50 rounded-2xl border border-red-100 space-y-1">
+                <div className="flex items-center gap-2">
+                  <XCircle className="w-4 h-4 text-red-600 shrink-0" />
+                  <p className="text-[13px] font-semibold text-red-700">Lái xe đã từ chối</p>
+                </div>
+                <p className="text-sm text-red-600 pl-6">
+                  {schedule.metadata?.driver_rejected_reason || "Không có lý do"}
+                </p>
               </div>
             )}
 
