@@ -107,7 +107,7 @@ export default React.memo(function ScheduleCard({ item, profile, onSelect, onSta
                     {status.label}
                   </Badge>
                 </div>
-                <h3 className="text-[17px] font-semibold text-slate-900 leading-snug pt-1.5 pb-0.5">{displayTitle}</h3>
+                <h3 className="text-[14px] font-semibold text-slate-900 leading-snug pt-1.5 pb-0.5">{displayTitle}</h3>
               </div>
             </div>
 
@@ -115,7 +115,7 @@ export default React.memo(function ScheduleCard({ item, profile, onSelect, onSta
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
               <div className="flex items-center gap-2">
                 <Clock className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                <span className="text-sm font-medium text-slate-700">{timeRange}</span>
+                <span className="text-[12px] font-medium text-slate-700">{timeRange}</span>
               </div>
               {sortedParticipants.length > 0 && (
                 <div className="flex items-center gap-2">
@@ -138,13 +138,13 @@ export default React.memo(function ScheduleCard({ item, profile, onSelect, onSta
               {item.room && (
                 <div className="flex items-center gap-1.5">
                   <DoorOpen className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                  <span className="text-sm font-medium text-slate-600 truncate max-w-[160px]">{item.room.name}</span>
+                  <span className="text-[12px] font-medium text-slate-600 truncate max-w-[160px]">{item.room.name}</span>
                 </div>
               )}
               {item.vehicle && (
                 <div className="flex items-center gap-1.5">
                   <Car className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                  <span className="text-sm font-medium text-amber-700 truncate max-w-[160px]">
+                  <span className="text-[12px] font-medium text-amber-700 truncate max-w-[160px]">
                     {(item.vehicle as any).name} · {(item.vehicle as any).plate_number}
                   </span>
                 </div>
@@ -152,7 +152,7 @@ export default React.memo(function ScheduleCard({ item, profile, onSelect, onSta
               {driverName && (
                 <div className="flex items-center gap-1.5">
                   <UserCheck className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                  <span className="text-sm font-medium text-slate-600 truncate max-w-[180px]">
+                  <span className="text-[12px] font-medium text-slate-600 truncate max-w-[180px]">
                     {driverName}{driverPhone ? ` · ${driverPhone}` : ''}
                   </span>
                 </div>
@@ -160,7 +160,7 @@ export default React.memo(function ScheduleCard({ item, profile, onSelect, onSta
               {!item.room && !item.vehicle && item.location && (
                 <div className="flex items-center gap-1.5">
                   <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                  <span className="text-sm font-medium text-slate-600 truncate max-w-[200px]">{item.location}</span>
+                  <span className="text-[12px] font-medium text-slate-600 truncate max-w-[200px]">{item.location}</span>
                 </div>
               )}
             </div>
