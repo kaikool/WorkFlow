@@ -94,11 +94,12 @@ export default function DirectorTimeline({
                     <div className="relative w-full h-full z-10 flex items-center">
                       {dirSchedules.map(sched => {
                         const rawStart = new Date(sched.start_time);
-                        // BGĐ: bar kéo dài theo thời gian thực tế đến khi có người bấm kết thúc
+                        // BGĐ: nếu đã quá giờ bắt đầu và chưa kết thúc → kéo đến hiện tại
+                        const isOngoing = sched.status !== 'completed' && sched.status !== 'rejected' && rawStart <= now;
                         const hasActualEnd = sched.status === 'completed' && sched.metadata?.trip_ended_at;
                         const rawEnd = hasActualEnd
                           ? new Date(sched.metadata.trip_ended_at)
-                          : sched.status === 'in_progress'
+                          : isOngoing
                             ? now
                             : new Date(sched.end_time);
                         const sTime = rawStart < selectedStart ? selectedStart : rawStart;
