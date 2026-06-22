@@ -436,38 +436,53 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
               const endDt = new Date(trip.end_time);
               const fmtShort = (d: Date) => d.toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 
-              const statusChip = hasStarted && !hasEnded
-                ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
-                : hasEnded
-                  ? "bg-slate-100 text-slate-500 border border-slate-200"
-                  : "bg-amber-50 text-amber-700 border border-amber-100";
-
               return (
                 <div 
                   key={trip.id} 
-                  className="flex items-start gap-3 bg-white rounded-2xl border border-slate-100 px-4 py-3.5 transition-all hover:border-slate-200 hover:shadow-sm"
+                  className="bg-white rounded-2xl border border-slate-100 overflow-hidden transition-all hover:border-slate-200 hover:shadow-sm"
                 >
-                  <Avatar className="w-9 h-9 shrink-0 border-2 border-white shadow-sm">
-                    <AvatarImage src={trip.driver?.avatar_url} />
-                    <AvatarFallback className="bg-slate-100 text-xs font-bold text-slate-700">
-                      {driverName.charAt(0)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0 space-y-1">
-                    <div className="flex items-center gap-1.5">
-                      <p className="text-sm font-bold text-slate-800">{driverName}</p>
-                      <Badge variant="outline" className="shrink-0 rounded px-1 py-0 text-[10px] font-medium text-slate-400">
-                        {(trip.vehicle as any)?.plate_number}
-                      </Badge>
-                    </div>
-                    <Badge className={`rounded-full px-2.5 py-1 text-[10px] font-medium ${statusChip}`}>
+                  {/* Header status bar */}
+                  <div className={cn(
+                    "px-4 py-1.5 border-b",
+                    hasStarted && !hasEnded
+                      ? "bg-emerald-50 border-emerald-100"
+                      : hasEnded
+                        ? "bg-slate-50 border-slate-100"
+                        : "bg-amber-50 border-amber-100"
+                  )}>
+                    <Badge className={cn(
+                      "rounded-full px-2.5 py-0.5 text-[10px] font-semibold",
+                      hasStarted && !hasEnded
+                        ? "bg-emerald-600 text-white"
+                        : hasEnded
+                          ? "bg-slate-400 text-white"
+                          : "bg-amber-600 text-white"
+                    )}>
                       {hasStarted && !hasEnded ? "Đang chạy" : hasEnded ? "Hoàn thành" : "Chờ khởi hành"}
                     </Badge>
-                    <p className="text-xs text-slate-500 leading-snug">{trip.title}</p>
-                    <p className="text-[10px] font-semibold text-slate-400 tabular-nums flex items-center gap-1">
-                      <Clock className="w-2.5 h-2.5 shrink-0" />
-                      {fmtShort(startDt)} – {fmtShort(endDt)}
-                    </p>
+                  </div>
+
+                  {/* Body */}
+                  <div className="flex items-start gap-3 px-4 py-3">
+                    <Avatar className="w-9 h-9 shrink-0 border-2 border-white shadow-sm">
+                      <AvatarImage src={trip.driver?.avatar_url} />
+                      <AvatarFallback className="bg-slate-100 text-xs font-bold text-slate-700">
+                        {driverName.charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0 space-y-1">
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-sm font-bold text-slate-800">{driverName}</p>
+                        <Badge variant="outline" className="shrink-0 rounded px-1 py-0 text-[10px] font-medium text-slate-400">
+                          {(trip.vehicle as any)?.plate_number}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-slate-500 leading-snug">{trip.title}</p>
+                      <p className="text-[10px] font-semibold text-slate-400 tabular-nums flex items-center gap-1">
+                        <Clock className="w-2.5 h-2.5 shrink-0" />
+                        {fmtShort(startDt)} – {fmtShort(endDt)}
+                      </p>
+                    </div>
                   </div>
                 </div>
               );
