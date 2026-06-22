@@ -60,6 +60,13 @@ export async function updateScheduleAction(p: UpdateScheduleParams) {
     if (schedule.status === 'completed' && updates.end_time && new Date(updates.end_time) > new Date()) {
       scheduleUpdates.status = 'in_progress';
     }
+    // Nếu schedule chuyển thành completed → ghi trip_ended_at
+    if (scheduleUpdates.status === 'completed') {
+      scheduleUpdates.metadata = {
+        ...(schedule.metadata || {}),
+        trip_ended_at: new Date().toISOString(),
+      };
+    }
     const participantConflicts = isLeave ? [] : await findParticipantConflicts({
       participantIds: nextParticipantIds,
       start: nextStart,
