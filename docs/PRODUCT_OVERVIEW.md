@@ -412,7 +412,7 @@ Mọi assignee picker dùng `<PeoplePicker>` shared (`src/components/ui/people-p
   - **Sub-dashboard nhúng**:
     - `ResourcesManagerDashboard` (chỉ bộ phận điều phối/secretary/admin) — bảng điều phối phòng họp + xe, nhưng dữ liệu lịch vẫn bị RLS siết theo quy tắc lịch có xe/BGĐ/phòng.
     - `LeaveApprovalDashboard` (chỉ user có quyền `canApproveLeave`) — list đơn pending + duyệt 1 click.
-    - `DirectorTimeline` — timeline 07:00-19:00 dành cho BGĐ, refresh 30s. Bar `in_progress` kéo dài đến `end_time` đăng ký. Legend hiển thị "Công tác" nếu đang có trip `in_progress`/`approved`.
+    - **`DirectorTimeline`** — timeline 07:00-19:00 dành cho BGĐ, refresh 30s. Bar BGĐ kéo dài theo thời gian thực tế: nếu đã quá `start_time` và chưa kết thúc → dùng `now`; nếu completed → dùng `metadata.trip_ended_at`. Không cần legend riêng — tên BGĐ hiển thị trực tiếp trên bar (màu trắng, nền tương phản).
 
 #### 3.4.3 Luồng duyệt nghỉ phép
 
@@ -438,9 +438,12 @@ Người duyệt mở LeaveApprovalDashboard → bấm Approve/Reject
 
 #### 3.4.4 Lifecycle hoàn thành lịch
 
-- `meeting`, `event`, `leave`: sau khi đã `approved` và quá `end_time` **15 phút**, RPC `complete_finished_schedules()` tự chuyển sang `completed`. Điều kiện bắt buộc: không dùng xe (`use_vehicle=false`, `vehicle_id IS NULL`, `driver_id IS NULL`).
-- Lịch xe/công tác (`trip`, `use_vehicle=true`, có `vehicle_id` hoặc `driver_id`) **không auto-complete** theo giờ đăng ký; lái xe hoặc điều phối xác nhận kết thúc thực tế để tránh báo xe rảnh sai.
-- Cron `/api/cron/notifications` gọi RPC này hằng ngày; trang lịch trình cũng gọi fallback khi fetch dữ liệu để trạng thái được dọn ngay khi user mở lịch.
+- **Auto-complete** (không xe + không BGĐ): sau khi `approved` và quá `end_time` **15 phút**, RPC `complete_finished_schedules()` tự chuyển `completed`. Áp dụng cho:
+  - `meeting`, `event`, `leave`: không dùng xe (`use_vehicle=false`, `vehicle_id IS NULL`, `driver_id IS NULL`)
+  - `trip`: không dùng xe (cùng điều kiện)
+  - **KHÔNG auto-complete** nếu có BGĐ tham gia (phải có người bấm kết thúc)
+- Lịch có xe / có BGĐ: lái xe hoặc người tham gia bấm kết thúc thủ công. Khi kết thúc, hệ thống ghi `metadata.trip_ended_at` để timeline BGĐ hiển thị thời gian thực tế.
+- Cron `/api/cron/notifications` gọi RPC hằng ngày; trang lịch trình cũng gọi fallback khi fetch dữ liệu.
 
 #### 3.4.5 Workspace Lái xe (DriverDashboard)
 
@@ -459,9 +462,10 @@ URL vẫn là `/dashboard/schedule` nhưng auto-detect role `driver` → render 
 
 Quy tắc xe:
 1. Người tạo lịch công tác chỉ bật "Sử dụng xe cơ quan" để đưa lịch vào hàng chờ điều phối; không tự chọn xe/lái xe.
-2. Secretary / admin / manager phòng điều phối mở `ScheduleDetailDialog`, chọn xe trong bảng `vehicles`; hệ thống tự lấy `driver_id` chuyên trách của xe và số điện thoại từ `profiles.phone` của lái xe.
-3. Ngay sau khi điều phối gán xe + lái xe, schedule được cập nhật `status='approved'` và notification được gửi cho driver "Bạn được phân công lịch chạy xe …". Không có bước phê duyệt riêng sau điều phối.
+2. Secretary / admin / manager phòng điều phối mở `ScheduleDetailDialog`, chọn xe → tự gán lái xe mặc định của xe (và ngược lại: chọn lái xe → tự tìm xe của lái đó).
+3. Ngay sau khi điều phối gán xe + lái xe, schedule được cập nhật `status='approved'` và notification được gửi cho driver. Không có bước phê duyệt riêng sau điều phối.
 4. Lịch không có xe và không có BGĐ tham gia được tự động `approved`, không cần điều phối/phê duyệt.
+5. **Cảnh báo overlap xe**: khi chọn xe đang có lịch `approved` / `in_progress` trùng giờ, dialog hiển thị banner cam + nút gán chuyển màu cam — vẫn cho phép gán (không chặn).
 
 #### 3.4.6 Conflict detection
 

@@ -453,8 +453,13 @@ CREATE TABLE schedules (
 
 #### Lifecycle tự hoàn thành
 
-- RPC `complete_finished_schedules()` tự chuyển `approved → completed` cho lịch `meeting` / `event` / `leave` **không dùng xe** khi `end_time < NOW() - interval '15 minutes'`.
-- Điều kiện loại trừ lịch xe/công tác: `use_vehicle = false`, `vehicle_id IS NULL`, `driver_id IS NULL`; lịch `trip` / lịch có xe vẫn do lái xe hoặc điều phối xác nhận thực tế.
+- RPC `complete_finished_schedules()` tự chuyển `approved → completed` cho lịch **không xe + không BGĐ** khi `end_time < NOW() - interval '15 minutes'`.
+- Điều kiện:
+  - `type IN ('meeting','event','leave')`: `use_vehicle = false`, `vehicle_id IS NULL`, `driver_id IS NULL`
+  - `type = 'trip'`: `use_vehicle = false`, `vehicle_id IS NULL`, `driver_id IS NULL`
+  - **KHÔNG auto-complete** nếu có BGĐ tham gia (`NOT EXISTS schedule_participants JOIN profiles WHERE role = 'director'`)
+- Lịch có xe / có lái xe / có BGĐ: do lái xe hoặc người tham gia bấm kết thúc thủ công.
+- Khi bấm kết thúc (`handleUpdateEndTime` / `updateScheduleAction`): ghi `metadata.trip_ended_at` để timeline BGĐ hiển thị thời gian thực tế.
 - Caller: `/api/cron/notifications` (service role) và fallback client `fetchScheduleData()` để dọn trạng thái ngay khi người dùng mở trang lịch trình.
 
 #### `schedule_participants` (N–N)
