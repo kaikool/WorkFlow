@@ -416,49 +416,40 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
         </div>
       )}
 
-      {/* Xe khác đang hoạt động */}
+      {/* Xe khác */}
       {otherTrips.length > 0 && (
         <div className="space-y-4 pt-4">
           <div className="flex items-center gap-2 px-1">
             <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center">
               <Navigation className="w-3.5 h-3.5 text-slate-500" />
             </div>
-            <h3 className="text-sm font-semibold text-slate-500">Xe khác đang hoạt động</h3>
+            <h3 className="text-sm font-semibold text-slate-500">Xe khác</h3>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {otherTrips.map(trip => {
-              const hasStarted = !!trip.metadata?.trip_started_at;
-              const hasEnded = !!trip.metadata?.trip_ended_at;
               const driverName = trip.driver?.full_name
                 || trip.participants?.find((p: any) => p.role === 'driver')?.profile?.full_name
                 || "Lái xe";
               const startDt = new Date(trip.start_time);
               const endDt = new Date(trip.end_time);
               const fmtShort = (d: Date) => d.toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+              const isRunning = trip.status === 'in_progress';
 
               return (
                 <div 
                   key={trip.id} 
                   className="bg-white rounded-2xl border border-slate-100 overflow-hidden transition-all hover:border-slate-200 hover:shadow-sm"
                 >
-                  {/* Header status bar */}
+                  {/* Header status */}
                   <div className={cn(
                     "px-4 py-1.5 border-b",
-                    hasStarted && !hasEnded
-                      ? "bg-emerald-50 border-emerald-100"
-                      : hasEnded
-                        ? "bg-slate-50 border-slate-100"
-                        : "bg-amber-50 border-amber-100"
+                    isRunning ? "bg-emerald-50 border-emerald-100" : "bg-amber-50 border-amber-100"
                   )}>
                     <Badge className={cn(
                       "rounded-full px-2.5 py-0.5 text-[10px] font-semibold",
-                      hasStarted && !hasEnded
-                        ? "bg-emerald-600 text-white"
-                        : hasEnded
-                          ? "bg-slate-400 text-white"
-                          : "bg-amber-600 text-white"
+                      isRunning ? "bg-emerald-600 text-white" : "bg-amber-600 text-white"
                     )}>
-                      {hasStarted && !hasEnded ? "Đang chạy" : hasEnded ? "Hoàn thành" : "Chờ khởi hành"}
+                      {isRunning ? "Đang chạy" : "Chờ khởi hành"}
                     </Badge>
                   </div>
 
