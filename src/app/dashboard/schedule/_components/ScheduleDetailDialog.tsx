@@ -88,7 +88,7 @@ function DetailHeader({ schedule, badgeColor, headerBg, isAllowedToView }: {
         <Badge className={cn("bg-white/60 backdrop-blur-md shadow-sm font-bold text-[10px] px-3 py-1 whitespace-nowrap w-fit", badgeColor)}>
           {typeLabels[schedule.type]?.label}
         </Badge>
-        <DialogTitle className="text-lg sm:text-xl font-bold leading-tight tabular-nums text-slate-900 break-words pr-2">
+        <DialogTitle className="text-lg sm:text-xl font-bold leading-tight tabular-nums text-slate-900 w-full break-words">
           {isAllowedToView ? schedule.title : `Nghỉ phép (${schedule.creator?.full_name || 'Cán bộ'})`}
         </DialogTitle>
         <div className="flex flex-wrap items-center gap-2 text-slate-600 text-[13px] font-semibold pt-1">
