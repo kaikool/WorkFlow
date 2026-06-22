@@ -1,14 +1,13 @@
 'use client'
 
 import React from "react";
-import { Clock, MapPin, Users, Car, DoorOpen, XCircle, UserCheck } from "lucide-react";
+import { Clock, Users, Car, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn, compareProfilesByHierarchy, canViewLeaveDetails } from "@/lib/utils";
 import { format, isSameDay } from "date-fns";
 import { typeLabels, statusLabels } from "../_lib/constants";
-import { AvatarStack } from "@/components/ui/people-picker";
 import { canCoordinateSharedResources } from "@/lib/permissions";
 import RejectScheduleDialog from "./RejectScheduleDialog";
 
@@ -54,6 +53,26 @@ export default React.memo(function ScheduleCard({ item, profile, onSelect, onSta
   const driverPhone = item.driver?.phone
     || (item.vehicle as any)?.default_driver?.phone
     || null;
+
+  // Phân loại participants: BGĐ (director) và còn lại
+  const bgdParticipants = sortedParticipants.filter((p: any) => p.profile?.role === 'director');
+  const otherCount = sortedParticipants.length - bgdParticipants.length;
+  // Tạo label hiển thị BGĐ — 1 dòng, nếu nhiều thì "Người cao nhất + ... N người khác"
+  const bgdLabel = (() => {
+    if (bgdParticipants.length === 0) return null;
+    const names = bgdParticipants.map((p: any) => p.profile?.full_name).filter(Boolean);
+    if (names.length <= 2) return names.join(', ');
+    return `${names[0]} và ${names.length - 1} người khác`;
+  })();
+  // Label tổng
+  const participantLabel = (() => {
+    if (sortedParticipants.length === 0) return null;
+    if (bgdLabel) {
+      if (otherCount > 0) return `${bgdLabel}, ${otherCount} người khác`;
+      return bgdLabel;
+    }
+    return `${sortedParticipants.length} người tham gia`;
+  })();
 
   // Format time range
   const isOverdue = item.status === 'in_progress' && new Date() > endTime;
@@ -111,61 +130,37 @@ export default React.memo(function ScheduleCard({ item, profile, onSelect, onSta
               </div>
             </div>
 
-            {/* Hàng 2: Giờ + Participants */}
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-              <span className="inline-flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                <span className="text-[12px] font-medium text-slate-700">{timeRange}</span>
-              </span>
-              {sortedParticipants.length > 0 && (
-                <span className="inline-flex items-center gap-1.5">
-                  <Users className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                  <AvatarStack
-                    people={sortedParticipants.map((p: any) => ({
-                      id: p.profile?.id ?? '',
-                      full_name: p.profile?.full_name ?? null,
-                      avatar_url: p.profile?.avatar_url ?? null,
-                    }))}
-                    max={4}
-                    size="sm"
-                  />
-                </span>
-              )}
-            </div>
-
-            {/* Hàng 3: Xe + Lái xe — gộp 1 dòng, không tách rời */}
-            {(item.vehicle || driverName) && (
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-                {item.vehicle && (
-                  <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-amber-700">
-                    <Car className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                    <span className="truncate max-w-[180px]">{(item.vehicle as any).name} · {(item.vehicle as any).plate_number}</span>
-                  </span>
-                )}
-                {driverName && (
-                  <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-slate-600">
-                    <UserCheck className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                    <span className="truncate max-w-[200px]">{driverName}{driverPhone ? ` · ${driverPhone}` : ''}</span>
-                  </span>
-                )}
+            {/* Hàng 2: Thành phần — BGĐ + số lượng người khác, 1 dòng */}
+            {participantLabel && (
+              <div className="flex items-center gap-1.5 text-[12px] font-medium text-slate-600 truncate">
+                <Users className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                <span className="truncate">{participantLabel}</span>
               </div>
             )}
 
-            {/* Hàng 4: Phòng họp / Địa điểm (nếu có) */}
-            {(item.room || (!item.vehicle && !driverName && item.location)) && (
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-                {item.room && (
-                  <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-slate-600">
-                    <DoorOpen className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                    <span className="truncate max-w-[200px]">{item.room.name}</span>
-                  </span>
-                )}
-                {!item.room && !item.vehicle && item.location && (
-                  <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-slate-600">
-                    <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                    <span className="truncate max-w-[200px]">{item.location}</span>
-                  </span>
-                )}
+            {/* Hàng 3: Thời gian + Địa điểm — 1 dòng */}
+            <div className="flex items-center gap-1.5 text-[12px] font-medium text-slate-700 truncate">
+              <Clock className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+              <span className="truncate">
+                {timeRange}
+                {item.location && ` · ${item.location}`}
+                {item.room && ` · ${item.room.name}`}
+              </span>
+            </div>
+
+            {/* Hàng 4: Xe + Lái xe — nếu có */}
+            {(item.vehicle || driverName) && (
+              <div className="flex items-center gap-1.5 text-[12px] font-medium text-amber-700 truncate">
+                <Car className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                <span className="truncate">
+                  {item.vehicle && `${(item.vehicle as any).name} · ${(item.vehicle as any).plate_number}`}
+                  {item.vehicle && driverName && ' — '}
+                  {driverName && (
+                    driverPhone
+                      ? <a href={`tel:${driverPhone}`} className="hover:underline text-amber-800" onClick={(e) => e.stopPropagation()}>{driverName} · {driverPhone}</a>
+                      : driverName
+                  )}
+                </span>
               </div>
             )}
 
