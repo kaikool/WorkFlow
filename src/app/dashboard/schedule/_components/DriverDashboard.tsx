@@ -215,7 +215,7 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
         await supabase.from('notifications').insert(
           coordinatorTargets.map((target: any) => ({
             user_id: target.id,
-            title: "🚗 Lái xe từ chối lịch",
+            title: "Lái xe từ chối lịch",
             content: `Tài xế ${profile?.full_name} từ chối chuyến "${schedule.title}". Lý do: ${reason}. Vui lòng điều phối lại.`,
             link: "/dashboard/schedule"
           }))

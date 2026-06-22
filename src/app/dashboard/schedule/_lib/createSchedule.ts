@@ -177,8 +177,8 @@ export async function createSchedule(p: CreateScheduleParams) {
             user_id: user.id,
             title: isLeave ? "Đơn xin nghỉ phép mới" : "Yêu cầu lịch trình mới",
             content: isLeave
-              ? `${profile?.full_name} xin nghỉ phép: ${newSchedule.title}. Vui lòng phê duyệt đơn.`
-              : `${profile?.full_name} vừa đăng ký lịch: ${newSchedule.title}. Vui lòng điều phối xe/phòng.`,
+              ? `${profile?.full_name} xin nghỉ phép: ${newSchedule.title}. Vui lòng phê duyệt.`
+              : `${profile?.full_name} đã đăng ký lịch: ${newSchedule.title}. Vui lòng kiểm tra và xử lý.`,
             link: "/dashboard/schedule"
           }))
         );

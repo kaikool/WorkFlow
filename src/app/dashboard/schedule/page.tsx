@@ -139,15 +139,15 @@ function ScheduleContent() {
                 const vehicle = vehicles.find(v => v.id === vId);
                 await sendNotifications([{
                   user_id: dId,
-                  title: "Bạn được phân công lịch chạy xe",
-                  content: `Bạn được phân công điều khiển xe ${vehicle?.name || ''} (${vehicle?.plate_number || ''}) cho chuyến: "${schedule.title}" – ${new Date(schedule.start_time).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}.`,
+                  title: "Bạn được phân công lái xe",
+                  content: `Bạn được phân công lái xe ${vehicle?.name || ''} (${vehicle?.plate_number || ''}) cho chuyến: "${schedule.title}" – ${new Date(schedule.start_time).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}.`,
                   link: "/dashboard/schedule"
                 }]);
               } else if (!vId && schedule?.driver_id) {
                 await sendNotifications([{
                   user_id: schedule.driver_id,
-                  title: "Hủy phân công lịch chạy xe",
-                  content: `Lịch chạy xe "${schedule.title}" đã bị hủy phân công. Vui lòng liên hệ phòng Tổ chức Tổng hợp để biết thêm thông tin.`,
+                  title: "Đã hủy phân công lái xe",
+                  content: `Lịch lái xe "${schedule.title}" đã bị hủy. Vui lòng liên hệ điều phối để biết thêm thông tin.`,
                   link: "/dashboard/schedule"
                 }]);
               }
@@ -172,8 +172,8 @@ function ScheduleContent() {
               if (schedule?.created_by) {
                 await sendNotifications([{
                   user_id: schedule.created_by,
-                  title: "Lịch trình Từ Chối",
-                  content: `Lịch trình "${schedule.title}" bị từ chối do không có phương tiện. Lý do: ${reason}`,
+                  title: "Lịch trình đã từ chối",
+                  content: `Lịch trình "${schedule.title}" bị từ chối. Lý do: ${reason}`,
                   link: "/dashboard/schedule"
                 }]);
               }

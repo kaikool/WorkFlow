@@ -341,8 +341,8 @@ export function useSchedule() {
           user_id: schedule.created_by,
           title: status === 'approved' ? "Lịch trình Đã Duyệt" : "Lịch trình Từ Chối",
           content: status === 'approved'
-            ? `Lịch trình "${schedule.title}" đã được phê duyệt. Chúc bạn có một buổi làm việc hiệu quả.`
-            : `Lịch trình "${schedule.title}" bị từ chối. Lý do: ${reason || 'Không có lý do được ghi lại.'}`,
+            ? `Lịch trình "${schedule.title}" đã được phê duyệt.`
+            : `Lịch trình "${schedule.title}" bị từ chối. Lý do: ${reason || 'Không có lý do.'}`,
           link: "/dashboard/schedule"
         }]);
       }
@@ -390,7 +390,7 @@ export function useSchedule() {
         await sendNotifications(
           approverIds.map((uid: string) => ({
             user_id: uid,
-            title: "Lịch trình được đẩy lại duyệt 🔁",
+            title: "Lịch trình được gửi lại duyệt",
             content: `Lịch "${editedPayload.title || schedule.title}" đã được chỉnh sửa và gửi lại để duyệt. Lý do thay đổi: ${changeReason}`,
             link: "/dashboard/schedule"
           }))
@@ -505,11 +505,14 @@ export function useSchedule() {
           .filter(Boolean);
         
         if (otherParticipantIds.length > 0) {
+          const isCompletion = newStatus === 'completed' && schedule.status === 'in_progress';
           await sendNotifications(
             otherParticipantIds.map((uid: string) => ({
               user_id: uid,
-              title: isEndEarly ? "Lịch trình kết thúc sớm" : "Lịch trình thay đổi thời gian",
-              content: `${profile?.full_name || 'Ai đó'} vừa cập nhật thời gian kết thúc của "${schedule.title}" thành ${String(newEndTime.getHours()).padStart(2, '0')}:${String(newEndTime.getMinutes()).padStart(2, '0')} ${String(newEndTime.getDate()).padStart(2, '0')}/${String(newEndTime.getMonth() + 1).padStart(2, '0')}.`,
+              title: isCompletion ? "Lịch trình đã kết thúc" : "Lịch trình thay đổi thời gian",
+              content: isCompletion
+                ? `${profile?.full_name || 'Người điều phối'} đã kết thúc lịch trình "${schedule.title}" lúc ${String(newEndTime.getHours()).padStart(2, '0')}:${String(newEndTime.getMinutes()).padStart(2, '0')} ${String(newEndTime.getDate()).padStart(2, '0')}/${String(newEndTime.getMonth() + 1).padStart(2, '0')}.`
+                : `${profile?.full_name || 'Người điều phối'} đã cập nhật thời gian kết thúc của "${schedule.title}" thành ${String(newEndTime.getHours()).padStart(2, '0')}:${String(newEndTime.getMinutes()).padStart(2, '0')} ${String(newEndTime.getDate()).padStart(2, '0')}/${String(newEndTime.getMonth() + 1).padStart(2, '0')}.`,
               link: "/dashboard/schedule"
             }))
           );

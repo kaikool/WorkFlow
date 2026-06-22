@@ -111,7 +111,7 @@ export async function updateScheduleAction(p: UpdateScheduleParams) {
           title: addedParticipantIds.includes(uid) ? "Bạn được thêm vào lịch trình" : `Lịch trình đã được cập nhật`,
           content: addedParticipantIds.includes(uid)
             ? `${profile?.full_name || 'Người dùng'} đã thêm bạn vào lịch trình "${scheduleUpdates.title || schedule.title}".`
-            : `${profile?.full_name || 'Người dùng'} vừa cập nhật lịch trình "${scheduleUpdates.title || schedule.title}".`,
+            : `${profile?.full_name || 'Người dùng'} đã cập nhật lịch trình "${scheduleUpdates.title || schedule.title}".`,
           link: "/dashboard/schedule"
         }))
       );
