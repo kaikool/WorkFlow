@@ -1,7 +1,7 @@
 'use client'
 
 import React from "react";
-import { MapPin, Car, UserCheck, Pencil, Clock, MoreVertical, Trash2, CheckCircle2, Ban, XCircle } from "lucide-react";
+import { MapPin, Car, UserCheck, Pencil, Clock, MoreVertical, Trash2, CheckCircle2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -233,8 +233,8 @@ export default function ScheduleDetailDialog({
         </Button>
       )}
       {showCancelVehicle && (
-        <Button variant="ghost" size="icon" title="Hủy gán xe" onClick={() => onAssignVehicle(schedule.id, null, null)} className="h-10 w-10 rounded-xl text-amber-600 bg-amber-50 hover:bg-amber-100 border border-amber-100">
-          <Ban className="h-4 w-4" />
+        <Button variant="ghost" size="icon" title="Hủy gán xe" onClick={() => onAssignVehicle(schedule.id, null, null)} className="h-10 w-10 rounded-xl text-red-600 bg-red-50 hover:bg-red-100 border border-red-100">
+          <Car className="h-4 w-4" />
         </Button>
       )}
       {showReassignVehicle && (
