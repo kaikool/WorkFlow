@@ -21,6 +21,15 @@ export async function fetchScheduleData(
   selectedDate: Date,
   currentProfile: any
 ): Promise<FetchedScheduleData> {
+  // Fallback dọn trạng thái: lịch họp/sự kiện/nghỉ phép không xe tự completed sau end_time + 15 phút.
+  // Ignore lỗi để UI vẫn tải được nếu migration RPC chưa được deploy kịp.
+  try {
+    const { error } = await supabase.rpc('complete_finished_schedules');
+    if (error) throw error;
+  } catch (error) {
+    console.warn('Schedule auto-complete skipped:', error);
+  }
+
   const start = startOfWeek(selectedDate, { weekStartsOn: 1 });
   const end = new Date(Math.max(
     endOfWeek(selectedDate, { weekStartsOn: 1 }).getTime(),

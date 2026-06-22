@@ -436,7 +436,13 @@ Người duyệt mở LeaveApprovalDashboard → bấm Approve/Reject
 
 **Quyền riêng tư**: nội dung đơn nghỉ phép (description, title chi tiết) được bảo vệ bởi RPC helper `can_view_leave_detail()` ([`migration_leave_privacy.sql`](supabase/migration_leave_privacy.sql)). Cán bộ khác phòng chỉ thấy "phòng X có người Y nghỉ" chứ không thấy lý do.
 
-#### 3.4.4 Workspace Lái xe (DriverDashboard)
+#### 3.4.4 Lifecycle hoàn thành lịch
+
+- `meeting`, `event`, `leave`: sau khi đã `approved` và quá `end_time` **15 phút**, RPC `complete_finished_schedules()` tự chuyển sang `completed`. Điều kiện bắt buộc: không dùng xe (`use_vehicle=false`, `vehicle_id IS NULL`, `driver_id IS NULL`).
+- Lịch xe/công tác (`trip`, `use_vehicle=true`, có `vehicle_id` hoặc `driver_id`) **không auto-complete** theo giờ đăng ký; lái xe hoặc điều phối xác nhận kết thúc thực tế để tránh báo xe rảnh sai.
+- Cron `/api/cron/notifications` gọi RPC này hằng ngày; trang lịch trình cũng gọi fallback khi fetch dữ liệu để trạng thái được dọn ngay khi user mở lịch.
+
+#### 3.4.5 Workspace Lái xe (DriverDashboard)
 
 URL vẫn là `/dashboard/schedule` nhưng auto-detect role `driver` → render `DriverDashboard`:
 

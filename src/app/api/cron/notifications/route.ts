@@ -37,6 +37,17 @@ export async function GET(request: Request) {
       console.error('Recurring fire error:', recurringErr);
     }
 
+    // 0.6. Auto-complete lịch họp / sự kiện / nghỉ phép không dùng xe đã quá end_time 15 phút.
+    // Lịch công tác / lịch xe để lái xe hoặc điều phối xác nhận thực tế.
+    let completedSchedules = 0;
+    try {
+      const { data, error } = await supabase.rpc('complete_finished_schedules');
+      if (error) throw error;
+      completedSchedules = data ?? 0;
+    } catch (scheduleCompleteErr) {
+      console.error('Schedule auto-complete error:', scheduleCompleteErr);
+    }
+
     // 1. CHECK OVERDUE TASKS — chỉ notify, KHÔNG mark status='late' (late là derived)
     const { data: overdueTasks } = await supabase
       .from('tasks')
@@ -174,6 +185,7 @@ export async function GET(request: Request) {
       success: true,
       processed_overdue: overdueTasks?.length || 0,
       processed_upcoming: upcomingTasks?.length || 0,
+      completed_schedules: completedSchedules,
       notifications_sent: notifications.length
     });
 

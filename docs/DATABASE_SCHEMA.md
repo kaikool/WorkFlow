@@ -451,6 +451,12 @@ CREATE TABLE schedules (
 );
 ```
 
+#### Lifecycle tự hoàn thành
+
+- RPC `complete_finished_schedules()` tự chuyển `approved → completed` cho lịch `meeting` / `event` / `leave` **không dùng xe** khi `end_time < NOW() - interval '15 minutes'`.
+- Điều kiện loại trừ lịch xe/công tác: `use_vehicle = false`, `vehicle_id IS NULL`, `driver_id IS NULL`; lịch `trip` / lịch có xe vẫn do lái xe hoặc điều phối xác nhận thực tế.
+- Caller: `/api/cron/notifications` (service role) và fallback client `fetchScheduleData()` để dọn trạng thái ngay khi người dùng mở trang lịch trình.
+
 #### `schedule_participants` (N–N)
 
 ```sql
@@ -669,15 +675,17 @@ public.get_leave_safe(p_schedule_id)         -- RPC client gọi để lấy det
 ### 7.4 Maintenance function
 
 ```sql
-public.auto_archive_and_cleanup()  -- RETURNS void
-public.cleanup_expired_ooo()       -- RETURNS integer (số row bị xoá)
+public.auto_archive_and_cleanup()     -- RETURNS void
+public.cleanup_expired_ooo()          -- RETURNS integer (số row bị xoá)
+public.complete_finished_schedules()  -- RETURNS integer (số lịch auto-completed)
 ```
 
 - `auto_archive_and_cleanup()`:
   - Archive task `done`/`closed` quá 60 ngày (`is_archived = true`).
   - DELETE notifications quá 30 ngày.
 - `cleanup_expired_ooo()` (Phase 2): DELETE `out_of_office WHERE ends_at < NOW()` — trả về số row đã xoá.
-- Cả hai được cron Vercel `/api/cron/notifications` gọi hằng ngày 8:00 ICT.
+- `complete_finished_schedules()`: UPDATE lịch `meeting/event/leave` không xe từ `approved` sang `completed` sau `end_time + 15 phút`; không đụng lịch `trip`, lịch `use_vehicle`, `vehicle_id` hoặc `driver_id`.
+- Các maintenance RPC được cron Vercel `/api/cron/notifications` gọi hằng ngày 8:00 ICT; riêng `complete_finished_schedules()` còn được gọi fallback khi client fetch lịch.
 
 ---
 
@@ -726,6 +734,7 @@ public.cleanup_expired_ooo()       -- RETURNS integer (số row bị xoá)
 | `current_user_role` | — | `TEXT` | bất kỳ authenticated | Helper cached cho RLS (cũng gọi được từ client) |
 | `current_user_department` | — | `UUID` | bất kỳ authenticated | Helper cached cho RLS |
 | `current_user_is_head` | — | `BOOLEAN` | bất kỳ authenticated | Helper cached cho RLS |
+| `complete_finished_schedules` | — | `INTEGER` | authenticated hoặc service role | Auto-complete lịch `meeting/event/leave` không xe sau `end_time + 15 phút`; dùng bởi cron + fallback fetch lịch |
 
 ### 8.4 Maintenance (cron)
 
@@ -733,6 +742,7 @@ public.cleanup_expired_ooo()       -- RETURNS integer (số row bị xoá)
 |-----|--------|---------|------------------|----------|
 | `auto_archive_and_cleanup` | — | `VOID` | gọi qua cron (service role) | Archive task cũ + xoá notification cũ |
 | `cleanup_expired_ooo` | — | `INTEGER` | gọi qua cron (service role) | Xoá row `out_of_office` đã hết hạn — trả về số row đã xoá |
+| `complete_finished_schedules` | — | `INTEGER` | cron service role + authenticated fallback | Auto-complete lịch họp/sự kiện/nghỉ phép không xe quá end_time 15 phút |
 
 > **Pattern client gọi RPC** (xem `ARCHITECTURE.md §6.3`):
 >
