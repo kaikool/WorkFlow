@@ -445,29 +445,31 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
               return (
                 <div 
                   key={trip.id} 
-                  className="flex items-center gap-3 bg-white rounded-2xl border border-slate-100 px-4 py-3.5 transition-all hover:border-slate-200 hover:shadow-sm"
+                  className="flex items-start gap-3 bg-white rounded-2xl border border-slate-100 px-4 py-3.5 transition-all hover:border-slate-200 hover:shadow-sm"
                 >
-                  <Avatar className="w-9 h-9 shrink-0 border-2 border-white shadow-sm">
+                  <Avatar className="w-9 h-9 shrink-0 border-2 border-white shadow-sm mt-0.5">
                     <AvatarImage src={trip.driver?.avatar_url} />
                     <AvatarFallback className="bg-slate-100 text-xs font-bold text-slate-700">
                       {driverName.charAt(0)}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <p className="text-sm font-bold text-slate-800">{driverName}</p>
-                      <Badge variant="outline" className="shrink-0 rounded px-1 py-0 text-[10px] font-medium text-slate-400">
-                        {(trip.vehicle as any)?.plate_number}
+                  <div className="flex-1 min-w-0 space-y-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <p className="text-sm font-bold text-slate-800 whitespace-nowrap">{driverName}</p>
+                        <Badge variant="outline" className="shrink-0 rounded px-1 py-0 text-[10px] font-medium text-slate-400">
+                          {(trip.vehicle as any)?.plate_number}
+                        </Badge>
+                      </div>
+                      <Badge className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-medium ${statusChip}`}>
+                        {hasStarted && !hasEnded ? "Đang chạy" : hasEnded ? "Hoàn thành" : "Chờ khởi hành"}
                       </Badge>
                     </div>
-                    <p className="text-xs text-slate-500 mt-0.5 leading-snug">{trip.title}</p>
-                    <p className="text-[10px] font-semibold text-slate-400 mt-1 tabular-nums">
-                      {fmtShort(startDt)} – {fmtShort(endDt)}
+                    <p className="text-xs text-slate-500 leading-snug">{trip.title}</p>
+                    <p className="text-[10px] font-semibold text-slate-400 tabular-nums">
+                      🕐 {fmtShort(startDt)} – {fmtShort(endDt)}
                     </p>
                   </div>
-                  <Badge className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-medium ${statusChip}`}>
-                    {hasStarted && !hasEnded ? "Đang chạy" : hasEnded ? "Hoàn thành" : "Chờ khởi hành"}
-                  </Badge>
                 </div>
               );
             })}
