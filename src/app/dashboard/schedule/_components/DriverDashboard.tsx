@@ -466,8 +466,9 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
                       </Badge>
                     </div>
                     <p className="text-xs text-slate-500 leading-snug">{trip.title}</p>
-                    <p className="text-[10px] font-semibold text-slate-400 tabular-nums">
-                      🕐 {fmtShort(startDt)} – {fmtShort(endDt)}
+                    <p className="text-[10px] font-semibold text-slate-400 tabular-nums flex items-center gap-1">
+                      <Clock className="w-2.5 h-2.5 shrink-0" />
+                      {fmtShort(startDt)} – {fmtShort(endDt)}
                     </p>
                   </div>
                 </div>
