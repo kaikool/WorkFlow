@@ -168,22 +168,22 @@ export default React.memo(function ScheduleCard({ item, profile, onSelect, onSta
                     <>
                       <Button size="sm" variant="outline"
                         onClick={(e) => { e.stopPropagation(); onSelect(item); }}
-                        className="flex-1 h-8 rounded-xl font-semibold text-[11px] border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 hover:text-amber-800 px-2.5"
+                        className="flex-1 h-7 rounded-lg font-semibold text-[10px] border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 hover:text-amber-800 px-2"
                       >Mở để gán xe</Button>
                       <Button size="sm" variant="outline"
                         onClick={(e) => { e.stopPropagation(); setRejectVehicleOpen(true); }}
-                        className="flex-1 h-8 rounded-xl font-semibold text-[11px] border-red-200 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 px-2.5"
+                        className="flex-1 h-7 rounded-lg font-semibold text-[10px] border-red-200 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 px-2"
                       >Từ chối</Button>
                     </>
                   ) : (
                     <>
                       <Button size="sm"
                         onClick={(e) => { e.stopPropagation(); onStatusUpdate(item.id, 'approved'); }}
-                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 h-8 rounded-xl font-semibold text-[11px] shadow-sm px-2.5"
+                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 h-7 rounded-lg font-semibold text-[10px] shadow-sm px-2"
                       >Xác nhận</Button>
                       <Button size="sm" variant="outline"
                         onClick={(e) => { e.stopPropagation(); setRejectOpen(true); }}
-                        className="flex-1 h-8 rounded-xl font-semibold text-[11px] border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 px-2.5"
+                        className="flex-1 h-7 rounded-lg font-semibold text-[10px] border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 px-2"
                       >Từ chối</Button>
                     </>
                   )}
