@@ -259,7 +259,7 @@ export default function ScheduleEditForm({
                   <div key={idx} className="flex items-center gap-2 relative">
                     <div className="relative flex-1">
                       <Input
-                        placeholder={`Điểm đến ${idx + 1} — VD: 108 Trần Hưng Đạo, Bắc Ninh...`}
+                        placeholder={`VD: 108 Trần Hưng Đạo, Bắc Ninh...`}
                         className="h-11 bg-slate-50 border-none rounded-xl font-medium px-4 shadow-sm text-sm"
                         value={dest.location}
                         onChange={(e) => {

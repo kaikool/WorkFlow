@@ -346,7 +346,7 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
                       <div className="relative flex-1">
                         <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                         <Input
-                          placeholder={`Điểm đến ${idx + 1} — VD: 108 Trần Hưng Đạo, Bắc Ninh...`}
+                          placeholder={`VD: 108 Trần Hưng Đạo, Bắc Ninh...`}
                           className="h-11 bg-white border-none rounded-xl font-medium pl-11 pr-10 shadow-sm text-sm"
                           value={dest.location}
                           onChange={(e) => {
