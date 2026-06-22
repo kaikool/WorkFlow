@@ -454,14 +454,17 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0 space-y-1">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <p className="text-sm font-bold text-slate-800 whitespace-nowrap">{driverName}</p>
-                        <Badge variant="outline" className="shrink-0 rounded px-1 py-0 text-[10px] font-medium text-slate-400">
-                          {(trip.vehicle as any)?.plate_number}
-                        </Badge>
+                    <div className="flex items-start gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <p className="text-sm font-bold text-slate-800 truncate">{driverName}</p>
+                          <Badge variant="outline" className="shrink-0 rounded px-1 py-0 text-[10px] font-medium text-slate-400">
+                            {(trip.vehicle as any)?.plate_number}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-slate-500 leading-snug mt-0.5">{trip.title}</p>
                       </div>
-                      <Badge className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-medium ${statusChip}`}>
+                      <Badge className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-medium ${statusChip} mt-0.5`}>
                         {hasStarted && !hasEnded ? "Đang chạy" : hasEnded ? "Hoàn thành" : "Chờ khởi hành"}
                       </Badge>
                     </div>
