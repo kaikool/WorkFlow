@@ -53,8 +53,8 @@ export default function ResourcesManagerDashboard({ schedules, vehicles, rooms, 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Đội xe */}
         <div className="space-y-4">
-          <h3 className="text-sm font-medium text-slate-500 flex items-center gap-2">
-            <Car className="w-4 h-4 text-slate-900 shrink-0" />
+          <h3 className="text-[12px] font-semibold text-slate-500 flex items-center gap-2">
+            <Car className="w-3.5 h-3.5 text-slate-900 shrink-0" />
             <span>Giám sát Đội xe</span>
           </h3>
           <div className="space-y-3">
@@ -95,13 +95,13 @@ export default function ResourcesManagerDashboard({ schedules, vehicles, rooms, 
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <Badge className={cn(
-                        "rounded-full font-bold text-xs px-3 py-1.5 whitespace-nowrap",
+                        "rounded-full font-semibold text-[10px] px-2 py-1 whitespace-nowrap",
                         isInProgress ? "bg-slate-900 text-white" :
                         isBusy ? "bg-amber-600 text-white" :
                         nextTrip ? "bg-amber-50 text-amber-700 border border-amber-100" :
                         "bg-slate-100 text-slate-700"
                       )}>
-                        {isInProgress ? "Đang chạy" : isBusy ? "Bận" : nextTrip ? "Sẵn sàng" : "Rảnh"}
+                        {isInProgress ? "Đang chạy" : isBusy ? "Sắp đi" : nextTrip ? "Sắp đi" : "Rảnh"}
                       </Badge>
                       {clickTarget && (
                         <ChevronRight className={cn(
@@ -191,8 +191,8 @@ export default function ResourcesManagerDashboard({ schedules, vehicles, rooms, 
 
         {/* Phòng họp */}
         <div className="space-y-4">
-          <h3 className="text-sm font-medium text-slate-500 flex items-center gap-2">
-            <DoorOpen className="w-4 h-4 text-slate-900 shrink-0" />
+          <h3 className="text-[12px] font-semibold text-slate-500 flex items-center gap-2">
+            <DoorOpen className="w-3.5 h-3.5 text-slate-900 shrink-0" />
             <span>Tình trạng Phòng họp</span>
           </h3>
           <div className="space-y-3">
@@ -232,12 +232,12 @@ export default function ResourcesManagerDashboard({ schedules, vehicles, rooms, 
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <Badge className={cn(
-                        "rounded-full font-bold text-xs px-3 py-1.5 whitespace-nowrap",
+                        "rounded-full font-semibold text-[10px] px-2 py-1 whitespace-nowrap",
                         isBusy ? "bg-slate-900 text-white" :
                         nextMeeting ? "bg-amber-50 text-amber-700 border border-amber-100" :
                         "bg-slate-100 text-slate-700"
                       )}>
-                        {isBusy ? "Đang họp" : nextMeeting ? "Trống" : "Trống"}
+                        {isBusy ? "Đang họp" : nextMeeting ? "Sắp họp" : "Trống"}
                       </Badge>
                       {clickTarget && (
                         <ChevronRight className={cn(
