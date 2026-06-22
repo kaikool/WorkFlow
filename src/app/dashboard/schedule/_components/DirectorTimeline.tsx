@@ -27,6 +27,11 @@ export default function DirectorTimeline({
   const bgdProfiles = filterBGD(allProfiles);
   const selectedStart = startOfDay(selectedDate);
   const selectedEnd = endOfDay(selectedDate);
+  const [now, setNow] = React.useState(new Date());
+  React.useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 30000);
+    return () => clearInterval(timer);
+  }, []);
 
   return (
     <div className="space-y-6 overflow-hidden animate-in fade-in duration-150">
@@ -94,7 +99,7 @@ export default function DirectorTimeline({
                         const rawEnd = hasActualEnd
                           ? new Date(sched.metadata.trip_ended_at)
                           : sched.status === 'in_progress'
-                            ? new Date()
+                            ? now
                             : new Date(sched.end_time);
                         const sTime = rawStart < selectedStart ? selectedStart : rawStart;
                         const eTime = rawEnd > selectedEnd ? selectedEnd : rawEnd;
