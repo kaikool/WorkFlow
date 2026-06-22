@@ -50,62 +50,35 @@ interface SectionProps {
 
 function ScheduleSection({ icon, label, count, color, defaultOpen = true, children }: SectionProps) {
   const colorMap = {
-    red: {
-      badge: "bg-red-100 text-red-700",
-      header: "text-red-600",
-      bg: "bg-red-50/40",
-      leftBar: "bg-red-400",
-    },
-    amber: {
-      badge: "bg-amber-100 text-amber-700",
-      header: "text-amber-600",
-      bg: "bg-amber-50/40",
-      leftBar: "bg-amber-400",
-    },
-    green: {
-      badge: "bg-emerald-100 text-emerald-700",
-      header: "text-emerald-600",
-      bg: "bg-emerald-50/40",
-      leftBar: "bg-emerald-400",
-    },
-    blue: {
-      badge: "bg-blue-100 text-blue-700",
-      header: "text-blue-600",
-      bg: "bg-blue-50/40",
-      leftBar: "bg-blue-400",
-    },
-    slate: {
-      badge: "bg-slate-100 text-slate-500",
-      header: "text-slate-400",
-      bg: "bg-slate-50/40",
-      leftBar: "bg-slate-300",
-    },
+    red: { badge: "bg-red-100 text-red-700", header: "text-red-600", bg: "bg-red-50/30", leftBar: "bg-red-400" },
+    amber: { badge: "bg-amber-100 text-amber-700", header: "text-amber-600", bg: "bg-amber-50/30", leftBar: "bg-amber-400" },
+    green: { badge: "bg-emerald-100 text-emerald-700", header: "text-emerald-600", bg: "bg-emerald-50/30", leftBar: "bg-emerald-400" },
+    blue: { badge: "bg-blue-100 text-blue-700", header: "text-blue-600", bg: "bg-blue-50/30", leftBar: "bg-blue-400" },
+    slate: { badge: "bg-slate-100 text-slate-500", header: "text-slate-400", bg: "bg-slate-50/30", leftBar: "bg-slate-300" },
   };
   const c = colorMap[color];
 
   if (count === 0) return null;
 
   return (
-    <Collapsible defaultOpen={defaultOpen && count > 0} className="space-y-2">
+    <Collapsible defaultOpen={defaultOpen && count > 0} className="space-y-1.5">
       <CollapsibleTrigger
         className={cn(
-          "group w-full flex items-center gap-2.5 px-3 py-2 rounded-xl",
-          c.bg, "hover:brightness-[0.97] transition-all duration-200",
+          "group w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg",
+          c.bg, "hover:brightness-[0.96] transition-all",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20"
         )}
       >
-        <div className={cn("w-1 h-6 rounded-full shrink-0", c.leftBar)} />
+        <div className={cn("w-1 h-4 rounded-full shrink-0", c.leftBar)} />
         <span className={cn("shrink-0", c.header)}>{icon}</span>
-        <span className={cn("text-sm font-bold tracking-tight", c.header)}>{label}</span>
-        <Badge className={cn("h-5 min-w-5 rounded-full border-0 px-2 text-[10px] font-extrabold", c.badge)}>
+        <span className={cn("text-xs font-bold tracking-tight", c.header)}>{label}</span>
+        <Badge className={cn("h-4.5 min-w-4.5 rounded-full border-0 px-1.5 text-[9px] font-extrabold leading-none flex items-center justify-center", c.badge)}>
           {count}
         </Badge>
-        <ChevronDown
-          className="ml-auto w-3.5 h-3.5 text-slate-400 transition-transform duration-200 group-data-[state=open]:rotate-180 shrink-0"
-        />
+        <ChevronDown className="ml-auto w-3 h-3 text-slate-400 transition-transform duration-200 group-data-[state=open]:rotate-180 shrink-0" />
       </CollapsibleTrigger>
       <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1.5">
           {children}
         </div>
       </CollapsibleContent>
@@ -348,11 +321,11 @@ export default function CalendarView(props: CalendarViewProps) {
 
           {/* 🟢 Hôm nay */}
           {todaySchedules.length > 0 && (
-            <div className="space-y-2">
-              <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-emerald-50/40">
-                <div className="w-1 h-6 rounded-full shrink-0 bg-emerald-400" />
-                <Clock className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                <span className="text-sm font-bold tracking-tight text-emerald-600">Lịch trình ngày {format(selectedDate, 'dd/MM/yyyy')}</span>
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-emerald-50/30">
+                <div className="w-1 h-4 rounded-full shrink-0 bg-emerald-400" />
+                <Clock className="w-3 h-3 text-emerald-600 shrink-0" />
+                <span className="text-xs font-bold tracking-tight text-emerald-600">Lịch trình ngày {format(selectedDate, 'dd/MM/yyyy')}</span>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {todaySchedules.map(item => (
