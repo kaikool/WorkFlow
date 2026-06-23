@@ -12,15 +12,29 @@ const SCHEDULE_SELECT = `*, metadata, creator:profiles!schedules_created_by_fkey
 
 function formatDateTime(iso: string): { time: string; date: string; full: string } {
   const d = new Date(iso);
-  const h = d.getHours().toString().padStart(2, '0');
-  const m = d.getMinutes().toString().padStart(2, '0');
-  const day = d.getDate();
-  const month = d.getMonth() + 1;
-  const year = d.getFullYear();
+  const vn = toVietnamTime(d);
+  const h = vn.h.toString().padStart(2, '0');
+  const m = vn.m.toString().padStart(2, '0');
+  const day = vn.d;
+  const month = vn.M;
+  const year = vn.y;
   return {
     time: `${h} giờ ${m}`,
     date: `ngày ${day} tháng ${month} năm ${year}`,
     full: `${h} giờ ${m} ngày ${day} tháng ${month} năm ${year}`,
+  };
+}
+
+/** Chuyển Date về múi giờ Việt Nam (UTC+7) */
+function toVietnamTime(date: Date): { h: number; m: number; d: number; M: number; y: number } {
+  const vietnamOffset = 7 * 60 * 60 * 1000;
+  const vn = new Date(date.getTime() + vietnamOffset);
+  return {
+    h: vn.getUTCHours(),
+    m: vn.getUTCMinutes(),
+    d: vn.getUTCDate(),
+    M: vn.getUTCMonth() + 1,
+    y: vn.getUTCFullYear(),
   };
 }
 
@@ -230,7 +244,8 @@ async function generateVehicleRequestDocx(schedule: any): Promise<Buffer> {
 
   // ===== Time / Location / Reason =====
   const d = new Date(schedule.start_time);
-  const timeStr = `${zeroPad(d.getHours())} giờ ${zeroPad(d.getMinutes())} ngày ${zeroPad(d.getDate())} tháng ${zeroPad(d.getMonth() + 1)} năm ${d.getFullYear()}`;
+  const vn = toVietnamTime(d);
+  const timeStr = `${zeroPad(vn.h)} giờ ${zeroPad(vn.m)} ngày ${zeroPad(vn.d)} tháng ${zeroPad(vn.M)} năm ${vn.y}`;
   const destinations = schedule.metadata?.destinations;
   const location = destinations
     ? destinations.map((dd: any) => dd.location).filter(Boolean).join(', ')
@@ -255,7 +270,7 @@ async function generateVehicleRequestDocx(schedule: any): Promise<Buffer> {
   );
 
   // ===== Date =====
-  const signingDate = `ngày ${d.getDate()} tháng ${d.getMonth() + 1} năm ${d.getFullYear()}`;
+  const signingDate = `ngày ${vn.d} tháng ${vn.M} năm ${vn.y}`;
   children.push(
     emptyP(),
     new Paragraph({
