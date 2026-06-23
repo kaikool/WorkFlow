@@ -353,7 +353,7 @@ async function sendEmailWithAttachment(params: {
   if (!smtpHost || !smtpUser || !smtpPass) {
     throw new Error(
       'Thiếu cấu hình SMTP. Vui lòng đặt:\n'
-      + 'SMTP_HOST (ví dụ: smtp-relay.brevo.com)\n'
+      + 'SMTP_HOST (ví dụ: smtp.gmail.com)\\n'
       + 'SMTP_PORT (ví dụ: 587)\n'
       + 'SMTP_USER (email gửi)\n'
       + 'SMTP_PASS (SMTP key/password)'
