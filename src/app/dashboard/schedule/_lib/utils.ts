@@ -184,10 +184,16 @@ export function checkDeputyDirectorLimit(params: {
     !p.full_name?.toLowerCase().includes('admin')
   )?.id;
 
-  // Lọc ra Phó giám đốc từ danh sách BGĐ được chọn (loại Giám đốc)
-  const phoGiamDocIds = bdgProfileIds.filter((id: string) => id !== giamDocId);
+  // Lấy tất cả Phó giám đốc trong hệ thống (không chỉ những người được chọn)
+  const allPhoIds = allProfiles
+    .filter((p: any) =>
+      (p.role === 'director' || p.title?.toLowerCase().includes('giám đốc')) &&
+      p.id !== giamDocId &&
+      !p.full_name?.toLowerCase().includes('admin')
+    )
+    .map((p: any) => p.id);
 
-  if (phoGiamDocIds.length === 0) return [];
+  if (allPhoIds.length === 0) return [];
 
   try {
     const startString = `${format(startDate, 'yyyy-MM-dd')}T${startTime}`;
@@ -195,9 +201,9 @@ export function checkDeputyDirectorLimit(params: {
     const newStart = new Date(startString);
     const newEnd = new Date(endString);
 
-    // Track xem mỗi Phó giám đốc đã có bao nhiêu lịch overlap
-    const busyPhoMap = new Map<string, { count: number; titles: string[] }>();
-    phoGiamDocIds.forEach((id: string) => busyPhoMap.set(id, { count: 0, titles: [] }));
+    // Đếm Phó giám đốc đã có lịch overlap trong khung giờ này
+    const busyPhoSet = new Set<string>();
+    const busyNamesList: string[] = [];
 
     schedules.forEach((s: any) => {
       if (s.id === ignoreScheduleId || s.status === 'rejected' || s.status === 'completed') return;
@@ -209,48 +215,33 @@ export function checkDeputyDirectorLimit(params: {
 
       (s.participants || []).forEach((p: any) => {
         const pid = p.profile?.id;
-        if (pid && phoGiamDocIds.includes(pid)) {
-          const entry = busyPhoMap.get(pid)!;
-          entry.count += 1;
-          if (!entry.titles.includes(s.title)) {
-            entry.titles.push(s.title);
-          }
+        if (pid && allPhoIds.includes(pid)) {
+          busyPhoSet.add(pid);
         }
       });
     });
 
-    // Đếm số Phó giám đốc đã có lịch bận
-    let busyPhoCount = 0;
-    const busyNames: string[] = [];
-    const phoProfiles = allProfiles.filter((p: any) => phoGiamDocIds.includes(p.id));
-
-    busyPhoMap.forEach((entry, pid) => {
-      if (entry.count > 0) {
-        busyPhoCount += 1;
-        const profile = allProfiles.find((p: any) => p.id === pid);
-        if (profile) busyNames.push(profile.full_name);
-      }
+    // Lấy tên PGĐ đã bận
+    busyPhoSet.forEach((pid) => {
+      const profile = allProfiles.find((p: any) => p.id === pid);
+      if (profile) busyNamesList.push(profile.full_name);
     });
 
-    // Tổng số Phó giám đốc hiện có (trong DB)
-    const totalPhoInDb = allProfiles.filter((p: any) =>
-      (p.role === 'director' || p.title?.toLowerCase().includes('giám đốc')) &&
-      p.id !== giamDocId &&
-      !p.full_name?.toLowerCase().includes('admin')
-    ).length;
+    // Lọc PGĐ được chọn tham gia lịch mới (loại Giám đốc)
+    const selectedPhoIds = bdgProfileIds.filter((id: string) => id !== giamDocId);
+
+    // Tổng số PGĐ sẽ bận = PGĐ đã bận + PGĐ mới được thêm (không tính trùng)
+    const allBusyAfter = new Set([...busyPhoSet, ...selectedPhoIds]);
 
     // Luôn để 1 Phó giám đốc ở lại trực
-    const maxPhoCanGo = Math.max(0, totalPhoInDb - 1);
-
-    // Số phó giám đốc sẽ bận nếu tạo lịch này
-    const phoWillBeBusy = busyPhoCount + phoGiamDocIds.length;
+    const maxPhoCanGo = Math.max(0, allPhoIds.length - 1);
 
     const warnings: string[] = [];
-    if (phoWillBeBusy > maxPhoCanGo) {
-      const busyList = busyNames.length > 0 ? ` (${busyNames.join(', ')})` : '';
+    if (allBusyAfter.size > maxPhoCanGo) {
+      const busyList = busyNamesList.length > 0 ? ` (${busyNamesList.join(', ')})` : '';
       warnings.push(
-        `Hiện có ${busyPhoCount} Phó giám đốc đã có lịch trong khung giờ này${busyList}. ` +
-        `Theo quy định, phải để ít nhất 1 Phó giám đốc ở lại trực (tối đa ${maxPhoCanGo}/${totalPhoInDb} được đi). ` +
+        `Hiện có ${busyPhoSet.size} Phó giám đốc đã có lịch trong khung giờ này${busyList}. ` +
+        `Theo quy định, phải để ít nhất 1 Phó giám đốc ở lại trực (tối đa ${maxPhoCanGo}/${allPhoIds.length} được đi). ` +
         `Vui lòng cân nhắc điều chỉnh thành phần tham gia.`
       );
     }
