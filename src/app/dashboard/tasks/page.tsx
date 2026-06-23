@@ -56,10 +56,11 @@ function TasksContent() {
       router.replace('/dashboard');
       return;
     }
-    if (currentProfile.role === 'admin' || currentProfile.role === 'director') setTab('branch');
-    else if (currentProfile.role === 'manager') setTab('dept');
+    const role = currentProfile.role;
+    if (role === 'admin' || role === 'director') setTab('branch');
+    else if (role === 'manager') setTab('dept');
     else setTab('mine');
-    if (['admin', 'director', 'manager'].includes(currentProfile.role)) setRenderTabs(true);
+    setRenderTabs(role === 'admin' || role === 'director' || role === 'manager');
   }, [currentProfile?.id, router]);
 
   const scope = tabToScope(tab);

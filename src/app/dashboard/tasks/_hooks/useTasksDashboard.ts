@@ -36,12 +36,15 @@ export function useTasksDashboard(opts: UseTasksDashboardOptions = {}) {
   const [hasMore, setHasMore] = useState(false);
 
   const refetchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const requestSeq = useRef(0);
 
-  const fetchPage = useCallback(async (reset: boolean) => {
+  const fetchPage = useCallback(async () => {
     if (!enabled) return;
+    const seq = ++requestSeq.current;
     const { data, error } = await supabase.rpc('tasks_dashboard', {
       p_scope: scope,
     } as any);
+    if (seq !== requestSeq.current) return;
     if (error) { console.error('tasks_dashboard error:', error?.message ?? error); setLoading(false); return; }
     const res = data as unknown as TasksDashboardResult;
     setCounts(res?.counts ?? EMPTY_COUNTS);
@@ -53,7 +56,7 @@ export function useTasksDashboard(opts: UseTasksDashboardOptions = {}) {
   }, [supabase, scope, enabled]);
 
   const refetch = useCallback(async () => {
-    await fetchPage(true);
+    await fetchPage();
   }, [fetchPage]);
 
   const loadMore = useCallback(async () => {}, []);
@@ -63,33 +66,31 @@ export function useTasksDashboard(opts: UseTasksDashboardOptions = {}) {
     refetchTimer.current = setTimeout(refetch, 300);
   }, [refetch]);
 
-  // Initial load
+  // Initial load + scope change. Một effect duy nhất để tránh gọi RPC 2 lần khi profile vừa sẵn sàng.
   useEffect(() => {
     if (!enabled) return;
     let active = true;
     (async () => {
-      await fetchPage(true);
-      if (active) setLoading(false);
-    })().catch(() => { if (active) setLoading(false); });
-    return () => { active = false; };
-  }, [enabled]); // eslint-disable-next-line react-hooks/exhaustive-deps
-
-  // Scope change → refresh ngầm, giữ data cũ
-  useEffect(() => {
-    if (!enabled) return;
-    let active = true;
-    (async () => {
-      setRefreshing(true);
-      await fetchPage(true);
-      if (active) setRefreshing(false);
-    })();
+      if (items.length === 0) setLoading(true);
+      else setRefreshing(true);
+      await fetchPage();
+      if (active) {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    })().catch(() => {
+      if (active) {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    });
     return () => { active = false; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scope, enabled]);
 
-  // Realtime — gộp event, bỏ extension_requests (detail channel tự xử lý)
+  // Realtime chạy sau initial load để không tranh network với RPC đầu trang.
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || loading) return;
     const channel = supabase
       .channel('tasks_realtime_sync')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, scheduleRefetch)
@@ -99,7 +100,7 @@ export function useTasksDashboard(opts: UseTasksDashboardOptions = {}) {
       if (refetchTimer.current) clearTimeout(refetchTimer.current);
       supabase.removeChannel(channel);
     };
-  }, [supabase, scheduleRefetch, enabled]);
+  }, [supabase, scheduleRefetch, enabled, loading]);
 
   return {
     loading,
