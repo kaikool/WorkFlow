@@ -88,7 +88,7 @@ function TasksContent() {
   const handleCloseCreate = () => setUrlParam('create', null);
 
   const filteredItems = useMemo(() => {
-    let list = dash.items;
+    let list = dash.items.filter(t => t.task_type === 'report');
     if (statusFilter !== 'all') {
       if (statusFilter === 'overdue') {
         list = list.filter(t => t.is_overdue);

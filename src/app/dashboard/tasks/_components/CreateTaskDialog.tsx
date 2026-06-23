@@ -11,7 +11,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarPicker } from '@/components/ui/calendar';
 import {
@@ -27,7 +26,6 @@ import { cn } from '@/lib/utils';
 import { useAppData } from '@/hooks/use-app-data';
 import { notifyError, notifyValidation, notifySuccess } from '@/lib/notify';
 import {
-  canAssignTaskToOthers,
   canRequestReport,
   canTargetCrossDepartment,
   getProfileDepartmentCode,
@@ -37,7 +35,7 @@ import { fetchAssignableProfiles } from '../_lib/fetchTasks';
 import { PeoplePicker } from '@/components/ui/people-picker';
 import { DepartmentPicker } from '@/components/ui/department-picker';
 import { TimePicker } from '@/components/ui/time-picker';
-import type { TaskType, TaskPriority } from '../_lib/types';
+import type { TaskPriority } from '../_lib/types';
 
 interface ProfileItem {
   id: string;
@@ -52,7 +50,6 @@ interface ProfileItem {
 
 
 const createTaskSchema = z.object({
-  formType: z.enum(['task', 'report']),
   title: z.string().trim().min(1, 'Vui lòng nhập tiêu đề'),
   description: z.string(),
   dueDate: z.date({ required_error: 'Vui lòng chọn hạn hoàn thành' }),
@@ -74,13 +71,12 @@ function defaultDueDate(): Date {
 
 function defaultValues(profile?: { id: string; role?: string | null } | null): CreateTaskFormValues {
   return {
-    formType: 'task',
     title: '',
     description: '',
     dueDate: defaultDueDate(),
     priority: 'medium',
     reportTarget: 'department',
-    selectedAssignees: profile?.role === 'staff' ? [profile.id] : [],
+    selectedAssignees: [],
     selectedDepartments: [],
     requiresApproval: false,
   };
@@ -114,12 +110,9 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
   const requiresApproval = form.watch('requiresApproval');
 
   const isStaff = profile?.role === 'staff';
-  const isLockedToSelf = isStaff;
-  const canAssignTask = canAssignTaskToOthers(profile);
+  // Luôn là report mode — đã xoá tab "Giao việc"
   const canMakeReport = canRequestReport(profile);
   const canCrossDept = canTargetCrossDepartment(profile);
-  const showTaskTab = canAssignTask || isStaff;
-  const showReportTab = canMakeReport;
 
   useEffect(() => {
     if (!isOpen) return;
@@ -170,11 +163,7 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
   const handleSubmit = async (values: CreateTaskFormValues) => {
     setLoading(true);
     try {
-      const actualTarget = (isLockedToSelf && values.formType === 'task')
-        ? 'profile'
-        : values.reportTarget;
-
-      if (actualTarget === 'department') {
+      if (values.reportTarget === 'department') {
         if (values.selectedDepartments.length === 0) {
           notifyValidation('Vui lòng chọn ít nhất một phòng ban');
           setLoading(false); return;
@@ -184,41 +173,23 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
           const res = await createTask({
             title: values.title.trim(),
             description: values.description.trim() || null,
-            task_type: values.formType,
+            task_type: 'report',
             priority: values.priority,
             due_date: values.dueDate.toISOString(),
             dept_id: deptId,
             assignee_ids: null,
-            requires_approval: values.formType === 'report' ? values.requiresApproval : false,
+            requires_approval: values.requiresApproval,
             batch_id: batchId,
           });
           if (!res.ok) {
-            notifyError(res.error, values.formType === 'task' ? 'Không tạo được công việc' : 'Không tạo được báo cáo');
+            notifyError(res.error, 'Không tạo được báo cáo');
             setLoading(false); return;
           }
         }
         notifySuccess(
-          values.formType === 'task' ? 'Đã giao việc cho phòng' : 'Đã gửi yêu cầu',
+          'Đã gửi yêu cầu',
           `${values.selectedDepartments.length} phòng — Trưởng phòng sẽ phân công lại`,
         );
-      } else if (values.formType === 'task') {
-        if (values.selectedAssignees.length === 0) {
-          notifyValidation('Vui lòng chọn người nhận');
-          setLoading(false); return;
-        }
-        const firstAssignee = profiles.find(p => p.id === values.selectedAssignees[0]);
-        const deptId = firstAssignee?.department_id ?? profile?.department_id ?? null;
-        const res = await createTask({
-          title: values.title.trim(),
-          description: values.description.trim() || null,
-          task_type: 'task',
-          priority: values.priority,
-          due_date: values.dueDate.toISOString(),
-          dept_id: deptId,
-          assignee_ids: values.selectedAssignees,
-        });
-        if (!res.ok) { notifyError(res.error, 'Không tạo được công việc'); setLoading(false); return; }
-        notifySuccess('Đã giao việc', `${values.selectedAssignees.length} người sẽ nhận thông báo`);
       } else {
         if (values.selectedAssignees.length === 0) {
           notifyValidation('Vui lòng chọn người nhận');
@@ -258,35 +229,16 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
       <DialogContent className="app-dialog-sheet app-dialog-sheet--2xl shadow-2xl">
         <DialogHeader className="app-dialog-sheet-header">
           <DialogTitle className="heading-section">
-            {formType === 'task' ? 'Giao việc' : 'Yêu cầu báo cáo'}
+            Yêu cầu báo cáo
           </DialogTitle>
           <DialogDescription className="text-subtitle">
-            {formType === 'task'
-              ? (canCrossDept
-                  ? 'Đích danh cán bộ phòng mình hoặc giao cho cả phòng (Trưởng phòng tự phân công).'
-                  : 'Đích danh người nhận và đặt hạn hoàn thành.')
-              : 'Gửi đến cả phòng (Trưởng phòng tự phân công) hoặc cán bộ cụ thể.'}
+            Gửi đến cả phòng (Trưởng phòng tự phân công) hoặc cán bộ cụ thể.
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={form.handleSubmit(handleSubmit, handleInvalid)} className="contents">
           <div className="app-dialog-sheet-body">
             <div className="px-[var(--app-page-x)] py-4 group-stack">
-              {showTaskTab && showReportTab && (
-                <Tabs
-                  value={formType}
-                  onValueChange={(v) => form.setValue('formType', v as TaskType, { shouldValidate: true })}
-                >
-                  <TabsList className="grid grid-cols-2 min-h-11">
-                    <TabsTrigger value="task" className="rounded-lg font-semibold data-[state=active]:bg-white data-[state=active]:shadow-sm">
-                      Giao việc
-                    </TabsTrigger>
-                    <TabsTrigger value="report" className="rounded-lg font-semibold data-[state=active]:bg-white data-[state=active]:shadow-sm">
-                      Yêu cầu báo cáo
-                    </TabsTrigger>
-                  </TabsList>
-                </Tabs>
-              )}
 
               <div className="tight-stack">
                 <Label className="text-label">Tiêu đề</Label>
@@ -312,11 +264,9 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
               </div>
 
               <div className="group-stack">
-                <Label className="text-label">
-                  {isLockedToSelf && formType === 'task' ? 'Người nhận' : 'Đối tượng nhận'}
-                </Label>
+                <Label className="text-label">Đối tượng nhận</Label>
 
-                {!isLockedToSelf && canCrossDept && (
+                {canCrossDept && (
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       type="button"
@@ -355,10 +305,6 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
                   <div className="flex items-center justify-center py-6">
                     <Loader2 className="icon-md animate-spin text-slate-400" />
                   </div>
-                ) : isLockedToSelf && formType === 'task' ? (
-                  <p className="text-subtitle italic px-1 py-2 bg-slate-50 rounded-xl">
-                    Bạn đang tự ghi chú việc cho chính mình.
-                  </p>
                 ) : reportTarget === 'department' ? (
                   <DepartmentPicker
                     items={cachedDepts}
@@ -453,8 +399,7 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
                 </div>
               </div>
 
-              {formType === 'report' && (
-                <label className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 cursor-pointer">
+              <label className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 cursor-pointer">
                   <Switch
                     checked={requiresApproval}
                     onCheckedChange={(v) => form.setValue('requiresApproval', v, { shouldValidate: true })}
@@ -486,10 +431,7 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
               disabled={loading}
               className="min-h-11 px-5 rounded-xl font-semibold bg-primary hover:bg-primary/90 text-white"
             >
-              {loading ? <Loader2 className="icon-sm animate-spin" /> : (
-                isLockedToSelf && formType === 'task' ? 'Tạo công việc' :
-                  formType === 'task' ? 'Giao việc' : 'Gửi yêu cầu'
-              )}
+              {loading ? <Loader2 className="icon-sm animate-spin" /> : 'Gửi yêu cầu'}
             </Button>
           </DialogFooter>
         </form>
