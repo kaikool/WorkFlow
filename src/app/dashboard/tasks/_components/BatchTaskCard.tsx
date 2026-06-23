@@ -98,7 +98,7 @@ export const BatchTaskCard = React.memo(function BatchTaskCard({ representative,
       </div>
     </button>
   );
-}
+});
 
 function SegmentedProgressBar({ progress }: { progress: ReturnType<typeof batchProgress> }) {
   const { total, done, submitted, doing } = progress;
@@ -110,4 +110,4 @@ function SegmentedProgressBar({ progress }: { progress: ReturnType<typeof batchP
       {doing > 0 && <div className="bg-amber-400" style={{ width: `${seg(doing)}%` }} />}
     </div>
   );
-});
+}
