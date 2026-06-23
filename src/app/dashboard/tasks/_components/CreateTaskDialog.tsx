@@ -108,7 +108,6 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
   const selectedDepartments = form.watch('selectedDepartments');
   const requiresApproval = form.watch('requiresApproval');
 
-  // Luôn là report mode — đã xoá tab "Giao việc"
   const canMakeReport = canRequestReport(profile);
   const canCrossDept = canTargetCrossDepartment(profile);
 
