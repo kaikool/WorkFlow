@@ -92,14 +92,7 @@ export async function createSchedule(p: CreateScheduleParams) {
       start,
       end
     });
-    if (participantConflicts.length > 0) {
-      const ok = await confirmDialog({
-        title: 'Có người tham gia bị trùng lịch',
-        description: `${participantConflicts[0]}\n\nBạn có muốn tiếp tục đăng ký lịch này không?`,
-        confirmText: 'Vẫn tiếp tục',
-      });
-      if (!ok) return;
-    }
+    // Không chặn bằng popup — inline banner + ConflictWarningPopup đã đủ
 
     const hasDirectorParticipant = !isLeave && finalParticipants.some((uid: string) => {
       const participant = allProfiles.find((x: any) => x.id === uid);
