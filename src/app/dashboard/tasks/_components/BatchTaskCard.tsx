@@ -22,7 +22,7 @@ interface Props {
 
 const BADGE_BASE = 'px-2 py-0.5 rounded-full';
 
-export function BatchTaskCard({ representative, children, onOpen }: Props) {
+export const BatchTaskCard = React.memo(function BatchTaskCard({ representative, children, onOpen }: Props) {
   const p = batchProgress(children);
   const TypeIcon = FileText;
   const dueLabel = representative.due_date
@@ -110,4 +110,4 @@ function SegmentedProgressBar({ progress }: { progress: ReturnType<typeof batchP
       {doing > 0 && <div className="bg-amber-400" style={{ width: `${seg(doing)}%` }} />}
     </div>
   );
-}
+});

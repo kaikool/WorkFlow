@@ -27,7 +27,7 @@ interface Props {
   currentProfile?: { id: string; role: string; department_id: string | null } | null;
 }
 
-export function TaskCard({ task, onOpen, currentProfile }: Props) {
+export const TaskCard = React.memo(function TaskCard({ task, onOpen, currentProfile }: Props) {
   const isPending = !!task._pending;
 
   // Báo cáo đang chờ user (TP/BGĐ) duyệt — show dot đỏ + label nhỏ
@@ -136,4 +136,4 @@ export function TaskCard({ task, onOpen, currentProfile }: Props) {
       </div>
     </button>
   );
-}
+});

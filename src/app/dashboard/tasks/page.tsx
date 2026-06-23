@@ -168,7 +168,7 @@ function TasksContent() {
 
       {dash.loading ? (
         <ListSkeleton rows={6} variant="card" />
-      ) : filteredItems.length === 0 ? (
+      ) : filteredItems.length === 0 && !dash.refreshing ? (
         <EmptyState
           icon={<Inbox className="icon-lg" />}
           title="Không có công việc nào"
@@ -187,7 +187,7 @@ function TasksContent() {
             </div>
             {isManagerPlus && (tab === 'dept' || tab === 'branch') && (dash.resourceView.length > 0 || dash.loading) && (
               <div className="lg:col-span-4">
-                <ResourceView data={dash.resourceView} loading={dash.loading} />
+                <ResourceView data={dash.resourceView} loading={dash.loading || dash.refreshing} />
               </div>
             )}
           </div>

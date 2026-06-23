@@ -26,7 +26,9 @@ export function useTasksDashboard(opts: UseTasksDashboardOptions = {}) {
   const scope = opts.scope ?? 'mine';
   const enabled = opts.enabled ?? true;
 
+  // loading = lần đầu (show skeleton). refreshing = tab switch (giữ data cũ, refresh ngầm)
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [counts, setCounts] = useState<DashboardCounts>(EMPTY_COUNTS);
   const [items, setItems] = useState<TaskListItem[]>([]);
@@ -80,6 +82,7 @@ export function useTasksDashboard(opts: UseTasksDashboardOptions = {}) {
     refetchTimer.current = setTimeout(refetch, 300);
   }, [refetch]);
 
+  // Initial load
   useEffect(() => {
     if (!enabled) return;
     let active = true;
@@ -90,22 +93,29 @@ export function useTasksDashboard(opts: UseTasksDashboardOptions = {}) {
       if (active) setLoading(false);
     })();
     return () => { active = false; };
-  }, [fetchPage, enabled]);
+  }, []); // chỉ mount lần đầu — eslint-disable-next-line react-hooks/exhaustive-deps
 
+  // Scope change → refresh ngầm, giữ data cũ
   useEffect(() => {
     if (!enabled) return;
-    // Realtime narrowing: tách INSERT/UPDATE/DELETE — tránh '*' (bao gồm TRUNCATE).
-    // task_comments KHÔNG còn invalidate dashboard — comment chỉ ảnh hưởng detail dialog
-    // (channel `task_${taskId}` đã tự subscribe). Tiết kiệm refetch khi user comment task khác.
+    let active = true;
+    (async () => {
+      setRefreshing(true);
+      offsetRef.current = 0;
+      await fetchPage(true);
+      if (active) setRefreshing(false);
+    })();
+    return () => { active = false; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scope, enabled]);
+
+  // Realtime — gộp event, bỏ extension_requests (detail channel tự xử lý)
+  useEffect(() => {
+    if (!enabled) return;
     const channel = supabase
       .channel('tasks_realtime_sync')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'tasks' }, scheduleRefetch)
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'tasks' }, scheduleRefetch)
-      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'tasks' }, scheduleRefetch)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'task_assignees' }, scheduleRefetch)
-      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'task_assignees' }, scheduleRefetch)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'task_extension_requests' }, scheduleRefetch)
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'task_extension_requests' }, scheduleRefetch)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, scheduleRefetch)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'task_assignees' }, scheduleRefetch)
       .subscribe();
     return () => {
       if (refetchTimer.current) clearTimeout(refetchTimer.current);
@@ -115,10 +125,10 @@ export function useTasksDashboard(opts: UseTasksDashboardOptions = {}) {
 
   return {
     loading,
+    refreshing,
     loadingMore,
     counts,
     items,
-    setItems,
     resourceView,
     role,
     refetch,
