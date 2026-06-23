@@ -101,7 +101,6 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
     defaultValues: defaultValues(profile),
   });
 
-  const formType = form.watch('formType');
   const dueDate = form.watch('dueDate');
   const priority = form.watch('priority');
   const reportTarget = form.watch('reportTarget');
@@ -109,7 +108,6 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
   const selectedDepartments = form.watch('selectedDepartments');
   const requiresApproval = form.watch('requiresApproval');
 
-  const isStaff = profile?.role === 'staff';
   // Luôn là report mode — đã xoá tab "Giao việc"
   const canMakeReport = canRequestReport(profile);
   const canCrossDept = canTargetCrossDepartment(profile);
@@ -125,7 +123,7 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
     setFetching(true);
     (async () => {
       const list = await fetchAssignableProfiles({
-        context: formType === 'task' ? 'create-task' : 'create-report',
+        context: 'create-report',
         caller: {
           id: profile.id,
           role: profile.role ?? null,
@@ -141,7 +139,7 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
       setFetching(false);
     })();
     return () => { active = false; };
-  }, [isOpen, profile?.id, formType, cachedDepts]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isOpen, profile?.id, cachedDepts]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!canCrossDept) form.setValue('reportTarget', 'profile');
@@ -243,7 +241,7 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
               <div className="tight-stack">
                 <Label className="text-label">Tiêu đề</Label>
                 <Input
-                  placeholder={formType === 'task' ? 'Tên công việc cần làm...' : 'Tên báo cáo yêu cầu...'}
+                  placeholder="Tên báo cáo yêu cầu..."
                   {...form.register('title')}
                   className="min-h-11 rounded-xl bg-slate-50 border-none px-4"
                 />
@@ -254,11 +252,7 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
                 <Textarea
                   rows={3}
                   {...form.register('description')}
-                  placeholder={
-                    formType === 'task'
-                      ? 'Kế hoạch, yêu cầu, mục tiêu công việc...'
-                      : 'Số liệu, biểu mẫu, lưu ý khi nộp...'
-                  }
+                  placeholder="Số liệu, biểu mẫu, lưu ý khi nộp..."
                   className="rounded-xl bg-slate-50 border-none resize-none px-4 py-3"
                 />
               </div>
@@ -310,7 +304,7 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
                     items={cachedDepts}
                     selected={selectedDepartments}
                     onChange={(ids) => form.setValue('selectedDepartments', ids, { shouldValidate: true })}
-                    triggerLabel={formType === 'task' ? 'Chọn phòng ban nhận việc' : 'Chọn phòng ban nhận báo cáo'}
+                    triggerLabel="Chọn phòng ban nhận báo cáo"
                   />
                 ) : (
                   <PeoplePicker

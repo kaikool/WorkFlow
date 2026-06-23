@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
@@ -17,8 +16,6 @@ import { cn } from '@/lib/utils';
 import { useAppData } from '@/hooks/use-app-data';
 import { notifyError, notifyValidation, notifySuccess } from '@/lib/notify';
 import {
-  canAssignTaskToOthers,
-  canRequestReport,
   canTargetCrossDepartment,
   getProfileDepartmentCode,
 } from '@/lib/permissions';
@@ -28,7 +25,7 @@ import { PeoplePicker } from '@/components/ui/people-picker';
 import { DepartmentPicker } from '@/components/ui/department-picker';
 import { CronScheduleSelector } from './CronScheduleSelector';
 import type { RecurringTemplate, ScheduleKind } from '../_lib/recurringHelpers';
-import type { TaskType, TaskPriority } from '../_lib/types';
+import type { TaskPriority } from '../_lib/types';
 
 interface Props {
   isOpen: boolean;
@@ -44,13 +41,10 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [taskType, setTaskType] = useState<TaskType>('report');
   const [priority, setPriority] = useState<TaskPriority>('medium');
   const [target, setTarget] = useState<'department' | 'profile'>('department');
   const [deptIds, setDeptIds] = useState<string[]>([]);
   const [userIds, setUserIds] = useState<string[]>([]);
-  // Cán bộ mặc định nhận task sinh từ template (chỉ áp dụng khi giao báo cáo cho phòng).
-  // NULL → fallback Trưởng phòng — đúng hành vi của task ad-hoc.
   const [defaultAssigneeId, setDefaultAssigneeId] = useState<string | null>(null);
   const [kind, setKind] = useState<ScheduleKind>('weekly');
   const [weeklyDow, setWeeklyDow] = useState<number | null>(5);
@@ -64,7 +58,7 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
     if (!isOpen || !profile) return;
     (async () => {
       const list = await fetchAssignableProfiles({
-        context: taskType === 'task' ? 'create-task' : 'create-report',
+        context: 'create-report',
         caller: {
           id: profile.id,
           role: profile.role ?? null,
@@ -74,14 +68,13 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
       });
       setProfiles(list);
     })();
-  }, [isOpen, profile?.id, taskType, cachedDepts]);
+  }, [isOpen, profile?.id, cachedDepts]);
 
   useEffect(() => {
     if (!isOpen) return;
     if (editing) {
       setTitle(editing.title);
       setDescription(editing.description ?? '');
-      setTaskType(editing.task_type);
       setPriority(editing.priority);
       setDeptIds(editing.target_department_ids ?? []);
       setUserIds(editing.target_user_ids ?? []);
@@ -95,7 +88,7 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
       setDueDays(editing.due_days_after_fire);
     } else {
       setTitle(''); setDescription('');
-      setTaskType('report'); setPriority('medium');
+      setPriority('medium');
       setTarget('department'); setDeptIds([]); setUserIds([]);
       setDefaultAssigneeId(null);
       setKind('weekly'); setWeeklyDow(5); setWeeklyTime('15:00');
@@ -104,14 +97,7 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
     }
   }, [isOpen, editing]);
 
-  const canAssign = canAssignTaskToOthers(profile);
-  const canMakeReport = canRequestReport(profile);
-  // "Cả phòng ban" toggle — hub manager/staff + admin/director. Non-hub manager
-  // bị siết về phòng mình nên không có nhu cầu chọn phòng (chỉ phòng mình → vô nghĩa).
   const canCrossDept = canTargetCrossDepartment(profile);
-  // Tab "Giao việc": admin/director/manager. Tab "Báo cáo": + staff hub.
-  const showTaskTab = canAssign;
-  const showReportTab = canMakeReport;
 
   // Nếu không cross-dept thì force chọn cá nhân (cá nhân đã filter sẵn phòng mình).
   useEffect(() => {
@@ -119,19 +105,11 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
   }, [canCrossDept]);
 
   // default_assignee_id chỉ có nghĩa khi giao cho phòng (target='department').
-  // Khi target='profile' → mỗi cán bộ chỉ định trực tiếp, không cần override TP.
   useEffect(() => {
     if (target === 'profile') {
       setDefaultAssigneeId(null);
     }
   }, [target]);
-
-  // Khi mở dialog mới (không edit) — chọn tab mặc định theo quyền.
-  useEffect(() => {
-    if (!isOpen || editing) return;
-    if (!canAssign && canMakeReport) setTaskType('report');
-    else if (canAssign && !canMakeReport) setTaskType('task');
-  }, [isOpen, editing, canAssign, canMakeReport]);
 
   const handleSave = async () => {
     if (!title.trim()) { notifyValidation('Vui lòng nhập tiêu đề'); return; }
@@ -157,13 +135,10 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
       id: editing?.id ?? null,
       title: title.trim(),
       description: description.trim() || null,
-      task_type: taskType,
+      task_type: 'report',
       priority,
-      // Hub manager Luồng A: giao việc qua phòng → reuse auto-fill TP của recurring_fire_due.
-      // Cá nhân hay phòng đều dùng chung target — không còn ràng buộc theo task_type.
       target_department_ids: target === 'department' ? deptIds : [],
       target_user_ids: target === 'profile' ? userIds : [],
-      // default_assignee_id chỉ có nghĩa khi giao qua phòng (target='department').
       default_assignee_id: target === 'department' ? defaultAssigneeId : null,
       schedule_kind: kind,
       weekly_dow: kind === 'weekly' ? weeklyDow : null,
@@ -185,39 +160,21 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
       <DialogContent className="app-dialog-sheet app-dialog-sheet--2xl shadow-2xl">
         <DialogHeader className="app-dialog-sheet-header">
           <DialogTitle className="heading-section">
-            {editing
-              ? (taskType === 'task' ? 'Sửa lịch giao việc định kỳ' : 'Sửa lịch báo cáo định kỳ')
-              : (taskType === 'task' ? 'Lịch giao việc định kỳ' : 'Lịch báo cáo định kỳ')}
+            {editing ? 'Sửa lịch báo cáo định kỳ' : 'Lịch báo cáo định kỳ'}
           </DialogTitle>
           <DialogDescription className="text-subtitle">
-            {taskType === 'task'
-              ? 'Giao việc định kỳ.'
-              : 'Giao báo cáo định kỳ.'}
+            Giao báo cáo định kỳ.
           </DialogDescription>
         </DialogHeader>
 
         <div className="app-dialog-sheet-body">
           <div className="px-[var(--app-page-x)] py-4 group-stack">
-            {/* Tabs A/B — chỉ hiện khi có cả 2 quyền và không edit (edit khoá type) */}
-            {!editing && showTaskTab && showReportTab && (
-              <Tabs value={taskType} onValueChange={(v) => setTaskType(v as TaskType)}>
-                <TabsList className="grid grid-cols-2 min-h-11">
-                  <TabsTrigger value="task" className="rounded-lg font-semibold data-[state=active]:bg-white data-[state=active]:shadow-sm">
-                    Giao việc
-                  </TabsTrigger>
-                  <TabsTrigger value="report" className="rounded-lg font-semibold data-[state=active]:bg-white data-[state=active]:shadow-sm">
-                    Yêu cầu báo cáo
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
-            )}
-
             <div className="tight-stack">
               <Label className="text-label">Tiêu đề</Label>
               <Input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder={taskType === 'task' ? 'Tên công việc sinh ra mỗi kỳ...' : 'Tên báo cáo sinh ra mỗi kỳ...'}
+                placeholder="Tên báo cáo sinh ra mỗi kỳ..."
                 className="min-h-11 rounded-xl bg-slate-50 border-none"
               />
             </div>
@@ -228,17 +185,13 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
                 rows={2}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder={taskType === 'task'
-                  ? 'Kế hoạch, yêu cầu, mục tiêu công việc...'
-                  : 'Số liệu, biểu mẫu, lưu ý khi nộp...'}
+                placeholder="Số liệu, biểu mẫu, lưu ý khi nộp..."
                 className="rounded-xl bg-slate-50 border-none resize-none"
               />
             </div>
 
             <div className="group-stack">
               <Label className="text-label">{target === 'profile' ? 'Người nhận' : 'Đối tượng nhận'}</Label>
-              {/* Toggle "Cả phòng ban / Cán bộ cụ thể" — chỉ hiện cho user được phép cross-dept.
-                  Áp cho cả Luồng A (hub manager giao task qua phòng → TP nhận) lẫn Luồng B. */}
               {canCrossDept && (
                 <div className="grid grid-cols-2 gap-2">
                   <button
@@ -293,10 +246,7 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
               )}
             </div>
 
-            {/* Cán bộ mặc định — chỉ hiện khi giao qua phòng (cả task lẫn report).
-                Để trống = Trưởng phòng nhận (đúng hành vi task ad-hoc).
-                Có người = mỗi kỳ giao thẳng cho người này, TP đỡ phải phân công lại.
-                Dùng chung PeoplePicker thay vì Select riêng — đồng bộ pattern với Giao việc. */}
+            {/* Cán bộ mặc định — chỉ hiện khi giao qua phòng */}
             {target === 'department' && (
               <div className="tight-stack">
                 <Label className="text-label">Cán bộ mặc định (tuỳ chọn)</Label>
@@ -325,7 +275,7 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
             )}
 
             <div className="group-stack">
-              <Label className="text-label">Lịch sinh task</Label>
+              <Label className="text-label">Lịch sinh</Label>
               <CronScheduleSelector
                 kind={kind}
                 onKindChange={setKind}
@@ -342,9 +292,7 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
 
             <div className="grid grid-cols-2 gap-3">
               <div className="tight-stack">
-                <Label className="text-label">
-                  {taskType === 'task' ? 'Hạn làm xong = sau N ngày' : 'Hạn nộp = sau N ngày'}
-                </Label>
+                <Label className="text-label">Hạn nộp = sau N ngày</Label>
                 <Input
                   type="number"
                   min={1}

@@ -80,7 +80,7 @@ export function RecurringTemplateCard({ template, onEdit, onChanged }: Props) {
 
       <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100">
         <Badge variant="outline" className="rounded-full px-2 py-0.5 font-medium bg-slate-50 border-slate-200 text-slate-600">
-          {template.task_type === 'report' ? 'Báo cáo' : 'Công việc'}
+          Báo cáo
         </Badge>
         <Badge variant="outline" className="rounded-full px-2 py-0.5 font-medium bg-slate-50 border-slate-200 text-slate-600">
           {totalTargets > 0
