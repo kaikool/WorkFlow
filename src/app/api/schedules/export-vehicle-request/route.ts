@@ -368,7 +368,7 @@ async function sendEmailWithAttachment(params: {
   });
 
   await transporter.sendMail({
-    from: '"Workflow - Chi nhánh Hoàng Mai" <workflow.cn136@gmail.com>',
+    from: `"Workflow - Chi nhánh Hoàng Mai" <${smtpUser}>`,
     to: to.join(', '),
     subject,
     text,
