@@ -51,7 +51,7 @@ export async function GET(request: Request) {
     // 1. CHECK OVERDUE TASKS — chỉ notify, KHÔNG mark status='late' (late là derived)
     const { data: overdueTasks } = await supabase
       .from('tasks')
-      .select('id, title, assignee_id, created_by, due_date, status, task_type')
+      .select('id, title, assignee_id, created_by, due_date, status')
       .lt('due_date', now.toISOString())
       .not('status', 'in', '(done,canceled,submitted)')
       .eq('is_archived', false);

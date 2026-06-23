@@ -32,8 +32,7 @@ export const TaskCard = React.memo(function TaskCard({ task, onOpen, currentProf
 
   // Báo cáo đang chờ user (TP/BGĐ) duyệt — show dot đỏ + label nhỏ
   const isPendingApprove =
-    task.task_type === 'report'
-    && task.status === 'submitted'
+    task.status === 'submitted'
     && task.requires_approval
     && canApproveReport(currentProfile ?? null, task);
 

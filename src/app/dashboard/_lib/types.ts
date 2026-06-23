@@ -11,7 +11,6 @@ export interface DashboardCounts {
 export interface TodayTaskItem {
   id: string;
   title: string;
-  task_type: string | null;
   status: 'todo' | 'doing' | 'submitted';
   priority: 'low' | 'medium' | 'high' | null;
   due_date: string | null;

@@ -26,7 +26,6 @@ export type UserRole =
 export type TaskStatus = "todo" | "doing" | "submitted" | "done" | "canceled";
 export type TaskPriority = "low" | "medium" | "high";
 
-export type TaskType = "task" | "report";
 export type ExtensionStatus = "pending" | "approved" | "rejected";
 
 export type ScheduleType = "meeting" | "trip" | "event" | "leave";
@@ -114,7 +113,6 @@ export interface Database {
           description: string | null;
           status: TaskStatus;
           priority: TaskPriority;
-          task_type: TaskType | null;
           assignee_id: Uuid | null;
           created_by: Uuid | null;
           department_id: Uuid | null;
@@ -134,7 +132,6 @@ export interface Database {
           description?: string | null;
           status?: TaskStatus;
           priority?: TaskPriority;
-          task_type?: TaskType | null;
           assignee_id?: Uuid | null;
           created_by?: Uuid | null;
           department_id?: Uuid | null;
@@ -228,7 +225,6 @@ export interface Database {
           id: Uuid;
           title: string;
           description: string | null;
-          task_type: "task" | "report";
           priority: TaskPriority;
           target_department_ids: Uuid[];
           target_user_ids: Uuid[];
@@ -649,7 +645,6 @@ export interface Database {
             description: string | null;
             status: TaskStatus;
             priority: TaskPriority;
-            task_type: TaskType | null;
             assignee_id: Uuid | null;
             created_by: Uuid | null;
             department_id: Uuid | null;
@@ -683,7 +678,6 @@ export interface Database {
         Args: {
           p_title: string;
           p_description?: string | null;
-          p_task_type: TaskType;
           p_priority?: TaskPriority | null;
           p_due_date: Timestamp;
           p_dept_id?: Uuid | null;
@@ -742,7 +736,6 @@ export interface Database {
           p_id?: Uuid | null;
           p_title: string;
           p_description?: string | null;
-          p_task_type: string;
           p_priority?: TaskPriority | null;
           p_target_department_ids?: Uuid[];
           p_target_user_ids?: Uuid[];

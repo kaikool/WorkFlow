@@ -1,5 +1,5 @@
 // Hằng số UI cho module Công việc — status/priority label, màu, icon class.
-import type { TaskStatus, TaskPriority, TaskType } from './types';
+import type { TaskStatus, TaskPriority } from './types';
 
 export const STATUS_LABEL: Record<TaskStatus, string> = {
   todo: 'Chưa làm',
@@ -28,11 +28,6 @@ export const PRIORITY_BADGE_CLASS: Record<TaskPriority, string> = {
   low: 'status-neutral-bg',
   medium: 'status-info-bg',
   high: 'status-danger-bg',
-};
-
-export const TASK_TYPE_LABEL: Record<TaskType, string> = {
-  task: 'Công việc',
-  report: 'Báo cáo',
 };
 
 export const SCOPE_LABEL: Record<'mine' | 'dept' | 'branch', string> = {

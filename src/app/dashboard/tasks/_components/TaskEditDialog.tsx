@@ -1,7 +1,7 @@
 'use client';
 
 // Sửa nội dung công việc — title/description/priority/due_date.
-// Department/assignee/task_type/requires_approval đã chốt từ lúc tạo, không cho sửa
+// Department/assignee/requires_approval đã chốt từ lúc tạo, không cho sửa
 // (đổi assignee → Phân công lại; đổi loại → tạo mới).
 // Gate: creator + admin/director, mọi status trừ canceled/archived.
 // Batch: nếu task thuộc lô (batch_id), hỏi user áp cho cả lô hay chỉ task này.

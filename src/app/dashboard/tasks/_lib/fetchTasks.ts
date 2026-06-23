@@ -79,18 +79,12 @@ function isHubCaller(caller: CallerProfile): boolean {
 }
 
 /**
- * Fetch profiles có thể giao việc / yêu cầu báo cáo, filter sẵn ở DB:
+ * Fetch profiles có thể yêu cầu báo cáo, filter sẵn ở DB:
  *
- *   create-task (Luồng A):
- *     - Staff (any, kể cả hub): chỉ chính mình.
- *     - Manager (any, kể cả hub): chỉ phòng mình.
- *     - Admin/Director: toàn nhánh.
- *
- *   create-report (Luồng B):
- *     - Staff non-hub: empty (UI ẩn tab).
- *     - Manager / Staff (any role) trong phạm vi cá nhân: CHỈ phòng mình.
- *       Cross-dept phải đi qua DepartmentPicker (giao cho phòng → TP nhận).
- *     - Admin/Director: toàn nhánh.
+ *   Staff non-hub: empty (UI ẩn tab).
+ *   Manager / Staff trong phạm vi cá nhân: CHỈ phòng mình.
+ *     Cross-dept phải đi qua DepartmentPicker (giao cho phòng → TP nhận).
+ *   Admin/Director: toàn nhánh.
  *
  *   delegate: theo task.department_id.
  *

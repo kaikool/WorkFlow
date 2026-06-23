@@ -48,7 +48,6 @@ import AnniversaryDialog from "./AnniversaryDialog";
 import DesktopSidebar from "./DesktopSidebar";
 import MobileBottomNav from "./MobileBottomNav";
 import MobileCreateFab from "./MobileCreateFab";
-import MustChangePasswordBanner from "./MustChangePasswordBanner";
 
 interface DashboardLayoutProps {
  children: React.ReactNode;
@@ -409,7 +408,6 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
  <main
  className="relative flex-1 max-w-full overflow-x-hidden p-4 pb-mobile-nav lg:p-8"
  >
- <MustChangePasswordBanner show={profile?.must_change_password === true} />
  {children}
  </main>
  </div>

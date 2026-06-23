@@ -140,16 +140,7 @@ export function canAccessTasksModule(profile: any): boolean {
   return !['driver', 'secretary', 'hr_officer'].includes(profile.role);
 }
 
-// Giao việc (Luồng A — task_type='task') cho người khác.
-// CHỈ admin/director/manager. Staff (kể cả phòng đầu mối) bị khoá tự-ghi-chú
-// vì nhiệm vụ là chiều dọc — staff không có quyền sai bảo người khác.
-export function canAssignTaskToOthers(profile: any): boolean {
-  if (!profile) return false;
-  return ['admin', 'director', 'manager'].includes(profile.role);
-}
-
-// Yêu cầu báo cáo (Luồng B — task_type='report').
-// Admin/director/manager + cán bộ phòng đầu mối được tạo yêu cầu báo cáo.
+// Yêu cầu báo cáo.
 export function canRequestReport(profile: any): boolean {
   if (!profile) return false;
   if (['admin', 'director', 'manager'].includes(profile.role)) return true;

@@ -44,6 +44,7 @@ function TasksContent() {
   const [profile, setProfile] = useState<any>(null);
   const [tab, setTab] = useState<TabValue>('mine');
   const [openBatchId, setOpenBatchId] = useState<string | null>(null);
+  const [renderTabs, setRenderTabs] = useState(false);
 
   const { currentProfile } = useAppData();
 
@@ -58,6 +59,7 @@ function TasksContent() {
     if (currentProfile.role === 'admin' || currentProfile.role === 'director') setTab('branch');
     else if (currentProfile.role === 'manager') setTab('dept');
     else setTab('mine');
+    if (['admin', 'director', 'manager'].includes(currentProfile.role)) setRenderTabs(true);
   }, [currentProfile?.id, router]);
 
   const scope = tabToScope(tab);
@@ -76,7 +78,7 @@ function TasksContent() {
   const handleCloseCreate = () => setUrlParam('create', null);
 
   const filteredItems = useMemo(() => {
-    let list = dash.items.filter(t => t.task_type === 'report');
+    let list = dash.items;
     if (statusFilter !== 'all') {
       if (statusFilter === 'overdue') {
         list = list.filter(t => t.is_overdue);
@@ -152,23 +154,23 @@ function TasksContent() {
         </div>
       )}
 
+      {renderTabs && (
       <Tabs value={tab} onValueChange={(v) => setTab(v as TabValue)} className="w-full">
-        <TabsList className={`min-h-11 ${isManagerPlus ? 'grid grid-cols-2' : ''}`}>
+        <TabsList className="min-h-11 grid grid-cols-2">
           <TabsTrigger value="mine" className="rounded-lg py-1.5 font-semibold text-[13px] flex items-center justify-center gap-1.5">
             <span>Của tôi</span>
           </TabsTrigger>
-          {isManagerPlus && (
-            <TabsTrigger value={isAdminOrDirector ? 'branch' : 'dept'} className="rounded-lg py-1.5 font-semibold text-[13px] flex items-center justify-center gap-1.5">
-              {isAdminOrDirector ? <Globe className="icon-sm" /> : <Building2 className="icon-sm" />}
-              <span>{isAdminOrDirector ? 'Chi nhánh' : 'Phòng tôi'}</span>
-            </TabsTrigger>
-          )}
+          <TabsTrigger value={isAdminOrDirector ? 'branch' : 'dept'} className="rounded-lg py-1.5 font-semibold text-[13px] flex items-center justify-center gap-1.5">
+            {isAdminOrDirector ? <Globe className="icon-sm" /> : <Building2 className="icon-sm" />}
+            <span>{isAdminOrDirector ? 'Chi nhánh' : 'Phòng tôi'}</span>
+          </TabsTrigger>
         </TabsList>
       </Tabs>
+      )}
 
       {dash.loading ? (
         <ListSkeleton rows={6} variant="card" />
-      ) : filteredItems.length === 0 && !dash.refreshing ? (
+      ) : filteredItems.length === 0 ? (
         <EmptyState
           icon={<Inbox className="icon-lg" />}
           title="Không có công việc nào"

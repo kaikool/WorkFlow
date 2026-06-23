@@ -4,7 +4,6 @@ export interface RecurringTemplate {
   id: string;
   title: string;
   description: string | null;
-  task_type: 'task' | 'report';
   priority: 'low' | 'medium' | 'high';
   target_department_ids: string[];
   target_user_ids: string[];

@@ -2,7 +2,7 @@
 // return { ok: true, data } | { ok: false, error } — caller chỉ cần `if (!res.ok) notifyError(res.error)`.
 
 import { createClient } from '@/utils/supabase/client';
-import type { TaskStatus, TaskPriority, TaskType, ActionResult } from './types';
+import type { TaskStatus, TaskPriority, ActionResult } from './types';
 
 // Module-level supabase client là intentional — chỉ dùng trong client component
 const supabase = createClient();
@@ -10,7 +10,6 @@ const supabase = createClient();
 export async function createTask(input: {
   title: string;
   description?: string | null;
-  task_type: TaskType;
   priority?: TaskPriority | null;
   due_date: string;
   dept_id?: string | null;
@@ -22,7 +21,6 @@ export async function createTask(input: {
   const { data, error } = await supabase.rpc('task_create', {
     p_title: input.title,
     p_description: input.description ?? null,
-    p_task_type: input.task_type,
     p_priority: input.priority ?? 'medium',
     p_due_date: input.due_date,
     p_dept_id: input.dept_id ?? null,
@@ -134,7 +132,7 @@ export async function cancelTask(taskId: string, reason?: string): Promise<Actio
 }
 
 // Sửa nội dung task. Chỉ sửa được title/description/priority/due_date —
-// department/assignee/task_type/requires_approval đã chốt từ lúc tạo.
+// department/assignee/requires_approval đã chốt từ lúc tạo.
 export async function updateTask(
   taskId: string,
   input: {

@@ -56,7 +56,7 @@ function RecurringContent() {
     <div className="page-container group-stack animate-fade-in-up">
       <PageHeader
         title="Lịch định kỳ"
-        description="Máy đóng vai 'kẻ đòi nợ' — tự sinh báo cáo định kỳ thay con người."
+        description="Tự động tạo báo cáo định kỳ theo template đã thiết lập."
         action={
           <Button onClick={handleNew} className="px-5 font-semibold shadow-sm">
             <Plus className="icon-sm" /> Tạo template

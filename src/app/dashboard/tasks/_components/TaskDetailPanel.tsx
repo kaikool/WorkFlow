@@ -19,7 +19,6 @@ import {
   STATUS_BADGE_CLASS,
   PRIORITY_LABEL,
   PRIORITY_BADGE_CLASS,
-  TASK_TYPE_LABEL,
 } from '../_lib/constants';
 import {
   canApproveReport, canDelegateTask,
@@ -78,7 +77,7 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, onClose, show
   const isApproveExtensionManager = canApproveExtension(currentProfile, task);
   const pendingExtension = (task.extension_requests ?? []).find(e => e.status === 'pending');
   const isAdminOrDirector = ['admin', 'director'].includes(currentProfile.role);
-  const isReport = task.task_type === 'report';
+  const isReport = true;
   const dueOverdue = !!(task.due_date && new Date(task.due_date) < new Date()
     && !['done', 'canceled'].includes(task.status));
 
@@ -251,7 +250,7 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, onClose, show
           </Badge>
         )}
         <Badge variant="outline" className="rounded-full px-2.5 py-0.5 font-medium bg-slate-50 border-slate-200 text-slate-600">
-          {isReport ? TASK_TYPE_LABEL.report : TASK_TYPE_LABEL.task}
+          Báo cáo
         </Badge>
         {dueOverdue && (
           <Badge className="rounded-full px-2.5 py-0.5 font-semibold bg-red-50 text-red-700 border border-red-200">
@@ -381,7 +380,7 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, onClose, show
             <Users className="icon-sm" />
             <span>{isReport ? 'Cán bộ được phân công' : 'Người nhận'}</span>
           </div>
-          {/* task_assignees không bao giờ rỗng — RPC auto-fill TP khi report giao cho phòng.
+          {/* task_assignees không bao giờ rỗng — RPC auto-fill TP khi giao cho phòng.
               Đoạn fallback "Chưa phân công" cũ đã bỏ. */}
           {task.assignees && task.assignees.length > 0 && (
             <SelectionPill

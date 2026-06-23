@@ -98,11 +98,8 @@ Hệ thống có **7 role** khai báo ở enum `user_role` (Postgres) + type `Us
 
 | Hành động | admin | director | manager hub | manager non-hub | staff hub | staff non-hub |
 |-----------|:-:|:-:|:-:|:-:|:-:|:-:|
-| Luồng A — Giao việc đích danh phòng mình | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
-| Luồng A — Giao việc cho phòng khác (qua "Cả phòng ban") | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| Luồng A — Tự ghi chú task cho mình | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Luồng B — Yêu cầu báo cáo phòng mình | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Luồng B — Yêu cầu báo cáo phòng khác (qua "Cả phòng ban") | ✅ | ✅ | ✅ | ❌ | ✅ | ❌ |
+| Yêu cầu báo cáo phòng mình | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
+| Yêu cầu báo cáo phòng khác (qua "Cả phòng ban") | ✅ | ✅ | ✅ | ❌ | ✅ | ❌ |
 | Tạo template định kỳ (recurring) | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
 | Delegate / Approve / Reject submission (TP cùng phòng) | ✅ | ✅ | ✅ (phòng mình) | ✅ (phòng mình) | ❌ | ❌ |
 | Reopen `done → doing` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
@@ -313,14 +310,9 @@ Trang đích sau login. **Hiển thị view khác nhau theo role**:
 > Analytics: `/dashboard/tasks/analytics` · Recurring: `/dashboard/tasks/recurring`
 > Code: [`src/app/dashboard/tasks/`](src/app/dashboard/tasks/)
 
-#### 3.3.1 Hai luồng nghiệp vụ
+#### 3.3.1 Một luồng nghiệp vụ (Báo cáo)
 
-Cùng bảng `tasks`, phân biệt qua `task_type`:
-
-| `task_type` | Luồng | Đặc trưng |
-|-------------|-------|-----------|
-| `'task'` | **A — Giao việc** | Admin/Director/Manager giao đích danh hoặc qua phòng (hub user). Multi-assignee. Vòng đời: `todo → doing → done` (+ `canceled`). |
-| `'report'` | **B — Yêu cầu báo cáo** | Mở rộng cho thêm staff phòng đầu mối. Có thể giao cả phòng (assignee rỗng → auto-fill TP) hoặc cá nhân. Vòng đời: `todo → doing → submitted → done` (+ `canceled`, trả về `submitted → doing` kèm comment). Nếu `requires_approval=TRUE` → TP duyệt; nếu FALSE → submit = done luôn. |
+Chỉ `task_type = 'report'` (báo cáo).
 
 **Status enum** (`task_status`): `todo`, `doing`, `submitted`, `done`, `canceled`. Hai value cũ `late`/`closed` đã deprecated (migrate sang `doing`/`done+is_archived`).
 
@@ -330,12 +322,11 @@ Cùng bảng `tasks`, phân biệt qua `task_type`:
 - **Auto-fill TP làm assignee mặc định** — invariant: `task_assignees` không bao giờ rỗng. Khi giao qua phòng (`dept_id` non-null, `assignee_ids` rỗng) → RPC `task_create`/`recurring_fire_due` resolve qua `_resolve_default_assignee(p_dept_id, p_override)`: ưu tiên `is_department_head=true`, fallback manager active đầu tiên. UI bỏ hẳn label "Chưa phân công".
 - **`batch_id`** — gộp nhiều phòng/người trong 1 lần tạo. Counter dashboard đếm theo batch (1 lần gửi cho 3 phòng = 1 batch, không phải 3 task rời).
 - **Comment** — bảng `task_comments`, RLS đi qua `user_can_see_task`. Comment prefix `[Hệ thống]` được render ở Timeline.
-- **File đính kèm** — bảng `task_attachments`, bucket Storage `task-attachments` (private + signed URL), tối đa 20MB/file, mime allowlist (PDF/Word/Excel/jpg/png). Dùng được cả luồng A và B.
 - **Xin gia hạn** — bảng `task_extension_requests`. NV submit `new_due_date` + reason, TP duyệt popup → cập `tasks.due_date`.
-- **Phân công (Delegate)** ở luồng B — TP nhận report cấp phòng → bấm "Phân công" chọn NV trong phòng.
+- **Phân công (Delegate)** — TP nhận report cấp phòng → bấm "Phân công" chọn NV trong phòng.
 - **Sửa nội dung (Edit)** — creator + admin/director sửa title/description/priority/due_date qua RPC `task_edit`. Field bất biến (dept/assignee/task_type/requires_approval) chỉ thay qua RPC chuyên biệt.
-- **Xóa hẳn (Hard delete)** — creator có thể xóa hoàn toàn công việc/báo cáo khỏi hệ thống ở bất kỳ trạng thái và thời gian nào, không còn giới hạn "xóa nháp 10 phút". Dữ liệu sẽ bị xóa triệt để.
-- **Ghi nhận hoàn thành** — creator, manager và admin có thể chủ động ấn "Đã nhận" (force complete) để đóng công việc/báo cáo và chuyển sang `done` ngay cả khi người được giao chưa nộp.
+- **Xóa hẳn (Hard delete)** — creator có thể xóa hoàn toàn báo cáo khỏi hệ thống ở bất kỳ trạng thái và thời gian nào, không còn giới hạn "xóa nháp 10 phút". Dữ liệu sẽ bị xóa triệt để.
+- **Ghi nhận hoàn thành** — creator, manager và admin có thể chủ động ấn "Đã nhận" (force complete) để đóng báo cáo và chuyển sang `done` ngay cả khi người được giao chưa nộp.
 - **Recurring** — bảng `task_recurring_templates`. Admin/Director/Manager + staff hub đặt lịch (weekly thứ X giờ, hoặc monthly ngày X giờ). RPC `recurring_fire_due()` sinh task khi `next_run_at <= now`. pg_cron 15p (nếu enabled), fallback Vercel cron daily 8h.
 - **`default_assignee_id` (override TP)** — trong `task_recurring_templates`. Khi giao báo cáo định kỳ qua phòng, có thể chỉ định trực tiếp 1 cán bộ — mỗi kỳ giao thẳng cho người đó, TP không phải phân công lại. NULL = fallback TP. Chỉ áp khi `target_department_ids` non-empty.
 - **Analytics** — RPC `tasks_analytics(p_from, p_to, p_dept_id)` trả counts + daily + by_department + top_people + recurring_active. Trang `/analytics` có export CSV (UTF-8 BOM cho Excel).
@@ -343,20 +334,17 @@ Cùng bảng `tasks`, phân biệt qua `task_type`:
 - **Optimistic UI** — swipe Done trên TaskCard (mobile). State patch local + rollback nếu RPC fail.
 - **Auto-archive**: cron daily 8:00 ICT gọi `auto_archive_and_cleanup()` — done/canceled quá 60 ngày → `is_archived = true`.
 
-#### 3.3.3 Phân quyền tạo task / báo cáo (matrix theo phòng đầu mối)
+#### 3.3.3 Phân quyền tạo báo cáo
 
 Phòng đầu mối ("hub") gồm 6 mã: `13618` (Phòng chuyên trách Hub), `13601` (BGĐ), `13602` (Tổ chức Tổng hợp), `13605`, `13609`, `13603`. Helper `isHubDepartment(profile)` + `_is_hub_department(dept_id)` (SQL) đồng bộ.
 
-| Vai trò | Luồng A — Giao việc | Luồng B — Yêu cầu báo cáo |
-|---|---|---|
-| `admin` | Mọi cán bộ / mọi phòng | Mọi cán bộ / mọi phòng |
-| `director` | Mọi cán bộ / mọi phòng | Mọi cán bộ / mọi phòng |
-| `manager` (hub) | Cán bộ phòng mình **HOẶC** giao qua phòng khác (auto-fill TP) | Cán bộ phòng mình **HOẶC** giao qua phòng khác (auto-fill TP) |
-| `manager` (non-hub) | Chỉ cán bộ trong phòng mình | Chỉ trong phòng mình |
-| `staff` (hub) | ❌ (chỉ tự ghi chú cho mình, `department_id = NULL` để ẩn khỏi Trưởng phòng) | Cán bộ phòng mình **HOẶC** giao qua phòng khác |
-| `staff` (non-hub) | ❌ (chỉ tự ghi chú cho mình, `department_id = NULL` để ẩn khỏi Trưởng phòng) | ❌ |
-
-**Quy tắc quan trọng:** Cá nhân cross-dept = bypass TP → cấm cho hub user. Muốn yêu cầu/giao việc phòng khác thì dùng toggle **"Cả phòng ban"** — đầu mối là TP phòng nhận (auto-fill). Manager non-hub bị siết về phòng mình; phải leo lên BGĐ nếu cần cross-dept.
+| Vai trò | Yêu cầu báo cáo |
+|---------|----------------|
+| `admin` | ✅ Mọi cán bộ / mọi phòng |
+| `director` | ✅ Mọi cán bộ / mọi phòng |
+| `manager` | ✅ Cán bộ phòng mình hoặc giao qua phòng khác (auto-fill TP) |
+| `staff` | ❌ |
+| `secretary`/`hr_officer`/`driver` | ❌ |
 
 #### 3.3.4 Defense-in-depth — 5 lớp bảo vệ
 
@@ -739,7 +727,7 @@ Query string `?q=...&status=...` đẩy vào URL → mỗi page tự đọc và 
 
 ---
 
-**Phiên bản:** 1.4 — 2026-05-26 (Tasks: bổ sung ma trận quyền 6-row theo phòng đầu mối (admin/director/manager hub/manager non-hub/staff hub/staff non-hub × Luồng A/B); làm rõ 5 layer defense-in-depth (UI helper → fetch filter → RPC `task_create` → RPC `recurring_template_upsert` → worker `recurring_fire_due`); doc `default_assignee_id` override TP + auto-fill TP + `batch_id` + cửa sổ xoá nháp 10 phút).
+**Phiên bản:** 1.5 — 2026-06-23 (Cleanup: xoá hẳn task_type column, task_attachments, guard_task_assignee_role; task_create chỉ nhận report; khoá CHECK constraint).
 #### 3.4.7 Theo dõi thời gian thực
 - `DirectorTimeline` và `ResourcesManagerDashboard` có `now` stateful refresh 30 giây để cập nhật trạng thái xe/người mà không cần reload trang.
 - Khi lịch `in_progress` quá giờ dự kiến: card hiển thị giờ hiện tại (không phải "quá giờ"), timeline dừng ở `end_time` đăng ký, nhưng legend/trạng thái xe vẫn hiển thị "Công tác"/"Đang chạy" cho đến khi có người bấm kết thúc.

@@ -135,7 +135,6 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
       id: editing?.id ?? null,
       title: title.trim(),
       description: description.trim() || null,
-      task_type: 'report',
       priority,
       target_department_ids: target === 'department' ? deptIds : [],
       target_user_ids: target === 'profile' ? userIds : [],

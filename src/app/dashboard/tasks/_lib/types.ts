@@ -1,7 +1,7 @@
 // Type chung cho module Công việc. Lấy gốc từ database.types.ts + extend cho UI nhu cầu.
-import type { TaskStatus, TaskPriority, TaskType, ExtensionStatus, Tables } from '@/types/database.types';
+import type { TaskStatus, TaskPriority, ExtensionStatus, Tables } from '@/types/database.types';
 
-export type { TaskStatus, TaskPriority, TaskType, ExtensionStatus };
+export type { TaskStatus, TaskPriority, ExtensionStatus };
 
 type Json = string | number | boolean | null | { [k: string]: Json } | Json[];
 
@@ -12,7 +12,6 @@ export interface TaskListItem {
   description: string | null;
   status: TaskStatus;
   priority: TaskPriority;
-  task_type: TaskType | null;
   assignee_id: string | null;
   created_by: string | null;
   department_id: string | null;

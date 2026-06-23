@@ -15,7 +15,6 @@ export interface UseTasksDashboardOptions {
   enabled?: boolean;
 }
 
-const PAGE_SIZE = 50;
 const EMPTY_COUNTS: DashboardCounts = {
   todo: 0, doing: 0, submitted: 0, done: 0, canceled: 0,
   overdue: 0, awaiting_approval: 0, extensions_pending: 0,
@@ -37,45 +36,27 @@ export function useTasksDashboard(opts: UseTasksDashboardOptions = {}) {
   const [hasMore, setHasMore] = useState(false);
 
   const refetchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const offsetRef = useRef(0);
 
   const fetchPage = useCallback(async (reset: boolean) => {
     if (!enabled) return;
-    const offset = reset ? 0 : offsetRef.current;
     const { data, error } = await supabase.rpc('tasks_dashboard', {
       p_scope: scope,
-      p_filter: {} as any,
-      p_limit: PAGE_SIZE,
-      p_offset: offset,
     } as any);
-    if (error) { console.error('tasks_dashboard error:', error); return; }
-    const res = data as unknown as TasksDashboardResult & { has_more: boolean };
+    if (error) { console.error('tasks_dashboard error:', error?.message ?? error); setLoading(false); return; }
+    const res = data as unknown as TasksDashboardResult;
     setCounts(res?.counts ?? EMPTY_COUNTS);
     const newItems = (res?.lists ?? []) as TaskListItem[];
-    if (reset) {
-      setItems(newItems);
-    } else {
-      setItems(prev => {
-        const seen = new Set(prev.map(p => p.id));
-        return [...prev, ...newItems.filter(n => !seen.has(n.id))];
-      });
-    }
+    setItems(newItems);
     setResourceView((res?.resource_view ?? []) as ResourceViewItem[]);
     setRole(res?.role ?? 'staff');
-    setHasMore(!!res?.has_more);
-    offsetRef.current = offset + PAGE_SIZE;
+    setHasMore(false);
   }, [supabase, scope, enabled]);
 
   const refetch = useCallback(async () => {
     await fetchPage(true);
   }, [fetchPage]);
 
-  const loadMore = useCallback(async () => {
-    if (loadingMore || !hasMore) return;
-    setLoadingMore(true);
-    await fetchPage(false);
-    setLoadingMore(false);
-  }, [fetchPage, loadingMore, hasMore]);
+  const loadMore = useCallback(async () => {}, []);
 
   const scheduleRefetch = useCallback(() => {
     if (refetchTimer.current) clearTimeout(refetchTimer.current);
@@ -87,13 +68,11 @@ export function useTasksDashboard(opts: UseTasksDashboardOptions = {}) {
     if (!enabled) return;
     let active = true;
     (async () => {
-      setLoading(true);
-      offsetRef.current = 0;
       await fetchPage(true);
       if (active) setLoading(false);
-    })();
+    })().catch(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, []); // chỉ mount lần đầu — eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enabled]); // eslint-disable-next-line react-hooks/exhaustive-deps
 
   // Scope change → refresh ngầm, giữ data cũ
   useEffect(() => {
@@ -101,7 +80,6 @@ export function useTasksDashboard(opts: UseTasksDashboardOptions = {}) {
     let active = true;
     (async () => {
       setRefreshing(true);
-      offsetRef.current = 0;
       await fetchPage(true);
       if (active) setRefreshing(false);
     })();

@@ -1,5 +1,5 @@
 import { createClient } from '@/utils/supabase/client';
-import type { ActionResult, TaskType, TaskPriority } from './types';
+import type { ActionResult, TaskPriority } from './types';
 import type { ScheduleKind } from './recurringHelpers';
 
 const supabase = createClient();
@@ -8,7 +8,6 @@ export interface UpsertTemplateInput {
   id?: string | null;
   title: string;
   description?: string | null;
-  task_type: TaskType;
   priority: TaskPriority;
   target_department_ids: string[];
   target_user_ids: string[];
@@ -28,7 +27,6 @@ export async function upsertRecurringTemplate(input: UpsertTemplateInput): Promi
     p_id: input.id ?? null,
     p_title: input.title,
     p_description: input.description ?? null,
-    p_task_type: input.task_type,
     p_priority: input.priority,
     p_target_department_ids: input.target_department_ids,
     p_target_user_ids: input.target_user_ids,

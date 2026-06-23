@@ -170,7 +170,6 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
           const res = await createTask({
             title: values.title.trim(),
             description: values.description.trim() || null,
-            task_type: 'report',
             priority: values.priority,
             due_date: values.dueDate.toISOString(),
             dept_id: deptId,
@@ -199,7 +198,6 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
           const res = await createTask({
             title: values.title.trim(),
             description: values.description.trim() || null,
-            task_type: 'report',
             priority: values.priority,
             due_date: values.dueDate.toISOString(),
             dept_id: deptId,
