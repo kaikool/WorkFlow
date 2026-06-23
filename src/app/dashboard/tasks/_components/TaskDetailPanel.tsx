@@ -24,7 +24,7 @@ import {
   canApproveReport, canDelegateTask,
   canRejectSubmission, canReopenDone,
   canEditTask, canDeleteTask, canForceCompleteTask,
-  canApproveExtension,
+  canApproveExtension, canArchiveTask, canComposeTaskComment,
 } from '@/lib/permissions';
 import { updateTaskStatus, archiveTask, deleteTask } from '../_lib/taskActions';
 import { fetchTaskAttachments } from '../_lib/attachmentHelpers';
@@ -63,8 +63,7 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, onClose, show
   const [openApprove, setOpenApprove] = useState(false);
   const [openEdit, setOpenEdit] = useState(false);
   const [openApproveExtension, setOpenApproveExtension] = useState<any>(null);
-  // Đếm attachment để gate "Xoá nháp" (chỉ cho xoá khi 0 file + 0 comment user).
-  // Tự fetch vì TaskDetail không kèm attachments — chỉ probe trong cửa sổ 10 phút.
+  // Đếm attachment liên quan phục vụ các action destructive.
   const [attachmentCount, setAttachmentCount] = useState<number | null>(null);
 
   if (!currentProfile) return null;
@@ -76,7 +75,7 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, onClose, show
   const isManagerApprove = canApproveReport(currentProfile, task);
   const isApproveExtensionManager = canApproveExtension(currentProfile, task);
   const pendingExtension = (task.extension_requests ?? []).find(e => e.status === 'pending');
-  const isAdminOrDirector = ['admin', 'director'].includes(currentProfile.role);
+  const canArchive = canArchiveTask(currentProfile);
   const isReport = true;
   const dueOverdue = !!(task.due_date && new Date(task.due_date) < new Date()
     && !['done', 'canceled'].includes(task.status));
@@ -263,7 +262,7 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, onClose, show
             Lưu trữ
           </Badge>
         )}
-        {showArchive && isAdminOrDirector && (task.status === 'done' || task.status === 'canceled') && (
+        {showArchive && canArchive && (task.status === 'done' || task.status === 'canceled') && (
           <Button
             variant="ghost"
             size="sm"
@@ -551,7 +550,7 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, onClose, show
             return !isSystem;
           })}
           onAdded={onChanged}
-          canCompose={currentProfile.role !== 'admin'}
+          canCompose={canComposeTaskComment(currentProfile)}
         />
       </div>
 

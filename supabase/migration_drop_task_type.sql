@@ -42,15 +42,23 @@ DECLARE
   v_uid          UUID := auth.uid();
   v_role         TEXT;
   v_dept         UUID;
+  v_dept_code    TEXT;
+  v_is_hub       BOOLEAN;
   v_task_id      UUID;
   v_a            UUID;
   v_creator_name TEXT;
 BEGIN
   IF v_uid IS NULL THEN RAISE EXCEPTION 'Chưa đăng nhập'; END IF;
-  SELECT role, department_id, full_name INTO v_role, v_dept, v_creator_name
-  FROM profiles WHERE id = v_uid;
+  SELECT p.role, p.department_id, d.code, p.full_name
+    INTO v_role, v_dept, v_dept_code, v_creator_name
+    FROM profiles p
+    LEFT JOIN departments d ON d.id = p.department_id
+   WHERE p.id = v_uid;
 
-  IF v_role IN ('driver', 'secretary', 'hr_officer', 'staff') THEN
+  v_is_hub := COALESCE(v_dept_code IN ('13618', '13601', '13602', '13605', '13609', '13603'), FALSE);
+
+  IF v_role IN ('driver', 'secretary', 'hr_officer')
+     OR (v_role = 'staff' AND NOT v_is_hub) THEN
     RAISE EXCEPTION 'Bạn không có quyền tạo báo cáo';
   END IF;
   IF p_title IS NULL OR length(trim(p_title)) = 0 THEN
@@ -58,6 +66,23 @@ BEGIN
   END IF;
   IF p_due_date IS NULL THEN
     RAISE EXCEPTION 'Vui lòng chọn hạn hoàn thành';
+  END IF;
+  IF (p_assignee_ids IS NULL OR array_length(p_assignee_ids, 1) IS NULL) AND p_dept_id IS NULL THEN
+    RAISE EXCEPTION 'Vui lòng chọn người nhận hoặc phòng ban';
+  END IF;
+  IF v_role = 'manager' AND NOT v_is_hub AND p_dept_id IS DISTINCT FROM v_dept THEN
+    RAISE EXCEPTION 'Trưởng phòng chỉ được yêu cầu báo cáo trong phòng mình';
+  END IF;
+  IF p_assignee_ids IS NOT NULL
+     AND array_length(p_assignee_ids, 1) > 0
+     AND v_role NOT IN ('admin', 'director')
+     AND EXISTS (
+       SELECT 1
+       FROM profiles p
+       WHERE p.id = ANY(p_assignee_ids)
+         AND p.department_id IS DISTINCT FROM v_dept
+     ) THEN
+    RAISE EXCEPTION 'Chỉ được chọn cán bộ trong phòng mình';
   END IF;
 
   INSERT INTO tasks (
@@ -220,6 +245,91 @@ END $$;
 GRANT EXECUTE ON FUNCTION tasks_dashboard(TEXT, JSONB) TO authenticated;
 
 -- =====================================================================
+-- 3b. RPC task_update / task_delete — đồng bộ action frontend
+-- =====================================================================
+DROP FUNCTION IF EXISTS task_update(UUID, TEXT, TEXT, task_priority, TIMESTAMPTZ);
+DROP FUNCTION IF EXISTS task_delete(UUID);
+
+CREATE OR REPLACE FUNCTION task_update(
+  p_task_id     UUID,
+  p_title       TEXT,
+  p_description TEXT DEFAULT NULL,
+  p_priority    task_priority DEFAULT 'medium',
+  p_due_date    TIMESTAMPTZ DEFAULT NULL
+)
+RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  v_uid          UUID := auth.uid();
+  v_role         TEXT;
+  v_dept         UUID;
+  v_task         tasks%ROWTYPE;
+  v_creator_dept UUID;
+BEGIN
+  IF v_uid IS NULL THEN RAISE EXCEPTION 'Chưa đăng nhập'; END IF;
+  SELECT role, department_id INTO v_role, v_dept FROM profiles WHERE id = v_uid;
+
+  SELECT * INTO v_task FROM tasks WHERE id = p_task_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Không tìm thấy công việc'; END IF;
+  IF v_task.status = 'canceled' OR v_task.is_archived THEN
+    RAISE EXCEPTION 'Không thể sửa công việc đã đóng hoặc đã lưu trữ';
+  END IF;
+  SELECT department_id INTO v_creator_dept FROM profiles WHERE id = v_task.created_by;
+
+  IF NOT (
+    v_role IN ('admin', 'director')
+    OR v_task.created_by = v_uid
+    OR (v_role = 'manager' AND v_dept = v_creator_dept)
+  ) THEN
+    RAISE EXCEPTION 'Bạn không có quyền sửa công việc này';
+  END IF;
+  IF p_title IS NULL OR length(trim(p_title)) = 0 THEN
+    RAISE EXCEPTION 'Vui lòng nhập tiêu đề';
+  END IF;
+  IF p_due_date IS NULL THEN
+    RAISE EXCEPTION 'Vui lòng chọn hạn hoàn thành';
+  END IF;
+
+  UPDATE tasks
+     SET title = trim(p_title),
+         description = NULLIF(trim(COALESCE(p_description, '')), ''),
+         priority = COALESCE(p_priority, 'medium'),
+         due_date = p_due_date,
+         updated_at = NOW()
+   WHERE id = p_task_id;
+END $$;
+
+GRANT EXECUTE ON FUNCTION task_update(UUID, TEXT, TEXT, task_priority, TIMESTAMPTZ) TO authenticated;
+
+CREATE OR REPLACE FUNCTION task_delete(p_task_id UUID)
+RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  v_uid          UUID := auth.uid();
+  v_role         TEXT;
+  v_dept         UUID;
+  v_task         tasks%ROWTYPE;
+  v_creator_dept UUID;
+BEGIN
+  IF v_uid IS NULL THEN RAISE EXCEPTION 'Chưa đăng nhập'; END IF;
+  SELECT role, department_id INTO v_role, v_dept FROM profiles WHERE id = v_uid;
+
+  SELECT * INTO v_task FROM tasks WHERE id = p_task_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Không tìm thấy công việc'; END IF;
+  SELECT department_id INTO v_creator_dept FROM profiles WHERE id = v_task.created_by;
+
+  IF NOT (
+    v_role IN ('admin', 'director')
+    OR v_task.created_by = v_uid
+    OR (v_role = 'manager' AND v_dept = v_creator_dept)
+  ) THEN
+    RAISE EXCEPTION 'Bạn không có quyền xoá công việc này';
+  END IF;
+
+  DELETE FROM tasks WHERE id = p_task_id;
+END $$;
+
+GRANT EXECUTE ON FUNCTION task_delete(UUID) TO authenticated;
+
+-- =====================================================================
 -- 4. RPC recurring_template_upsert — bỏ p_task_type
 -- =====================================================================
 DROP FUNCTION IF EXISTS recurring_template_upsert(UUID, TEXT, TEXT, TEXT, task_priority, UUID[], UUID[], TEXT, INT, TEXT, INT, TEXT, TEXT, INT, BOOLEAN, UUID);
@@ -244,11 +354,49 @@ CREATE OR REPLACE FUNCTION recurring_template_upsert(
 )
 RETURNS UUID LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE
-  v_uid  UUID := auth.uid();
-  v_id   UUID;
-  v_next TIMESTAMPTZ;
+  v_uid       UUID := auth.uid();
+  v_role      TEXT;
+  v_dept      UUID;
+  v_dept_code TEXT;
+  v_is_hub    BOOLEAN;
+  v_id        UUID;
+  v_next      TIMESTAMPTZ;
 BEGIN
   IF v_uid IS NULL THEN RAISE EXCEPTION 'Chưa đăng nhập'; END IF;
+  SELECT p.role, p.department_id, d.code
+    INTO v_role, v_dept, v_dept_code
+    FROM profiles p
+    LEFT JOIN departments d ON d.id = p.department_id
+   WHERE p.id = v_uid;
+
+  v_is_hub := COALESCE(v_dept_code IN ('13618', '13601', '13602', '13605', '13609', '13603'), FALSE);
+  IF v_role IN ('driver', 'secretary', 'hr_officer')
+     OR (v_role = 'staff' AND NOT v_is_hub) THEN
+    RAISE EXCEPTION 'Bạn không có quyền tạo lịch báo cáo định kỳ';
+  END IF;
+  IF p_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM task_recurring_templates WHERE id = p_id AND created_by = v_uid) THEN
+    RAISE EXCEPTION 'Bạn không có quyền sửa template này';
+  END IF;
+  IF COALESCE(array_length(p_target_department_ids, 1), 0) = 0
+     AND COALESCE(array_length(p_target_user_ids, 1), 0) = 0 THEN
+    RAISE EXCEPTION 'Vui lòng chọn người nhận hoặc phòng ban';
+  END IF;
+  IF v_role = 'manager' AND NOT v_is_hub AND EXISTS (
+    SELECT 1 FROM unnest(p_target_department_ids) AS target_dept_id
+    WHERE target_dept_id IS DISTINCT FROM v_dept
+  ) THEN
+    RAISE EXCEPTION 'Trưởng phòng chỉ được tạo lịch báo cáo cho phòng mình';
+  END IF;
+  IF COALESCE(array_length(p_target_user_ids, 1), 0) > 0
+     AND v_role NOT IN ('admin', 'director')
+     AND EXISTS (
+       SELECT 1
+       FROM profiles p
+       WHERE p.id = ANY(p_target_user_ids)
+         AND p.department_id IS DISTINCT FROM v_dept
+     ) THEN
+    RAISE EXCEPTION 'Chỉ được chọn cán bộ trong phòng mình';
+  END IF;
 
   v_next := _recurring_next_run(
     p_schedule_kind, p_weekly_dow, p_weekly_time,
@@ -391,23 +539,33 @@ CREATE OR REPLACE FUNCTION tasks_analytics(
 )
 RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE
-  v_uid  UUID := auth.uid();
-  v_role TEXT;
-  v_dept UUID;
-  v_result JSONB;
+  v_uid       UUID := auth.uid();
+  v_role      TEXT;
+  v_dept      UUID;
+  v_dept_code TEXT;
+  v_scope_dept UUID;
+  v_can_branch BOOLEAN;
+  v_result    JSONB;
 BEGIN
   IF v_uid IS NULL THEN RAISE EXCEPTION 'Chưa đăng nhập'; END IF;
-  SELECT role, department_id INTO v_role, v_dept FROM profiles WHERE id = v_uid;
-  IF v_role NOT IN ('admin', 'director', 'manager') THEN
+  SELECT p.role, p.department_id, d.code
+    INTO v_role, v_dept, v_dept_code
+    FROM profiles p
+    LEFT JOIN departments d ON d.id = p.department_id
+   WHERE p.id = v_uid;
+
+  v_can_branch := v_role IN ('admin', 'director') OR v_dept_code = '13602';
+  IF v_role NOT IN ('admin', 'director', 'manager') AND NOT (v_role = 'staff' AND v_dept_code = '13602') THEN
     RAISE EXCEPTION 'Không có quyền xem thống kê';
   END IF;
-  IF p_dept_id IS NULL THEN p_dept_id := v_dept; END IF;
+  v_scope_dept := CASE WHEN v_can_branch THEN p_dept_id ELSE v_dept END;
 
   WITH base AS (
     SELECT t.*
     FROM tasks t
     WHERE t.created_at BETWEEN p_from AND p_to
-      AND (v_role IN ('admin', 'director') OR t.department_id = p_dept_id)
+      AND (v_scope_dept IS NULL OR t.department_id = v_scope_dept)
+      AND t.is_archived = FALSE
   )
   SELECT jsonb_build_object(
     'total', COUNT(*),

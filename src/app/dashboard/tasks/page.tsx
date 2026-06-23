@@ -21,7 +21,14 @@ import { ResourceView } from './_components/ResourceView';
 import { TaskDetailDialog } from './_components/TaskDetailDialog';
 import { BatchTaskDetailDialog } from './_components/BatchTaskDetailDialog';
 import { CreateTaskDialog } from './_components/CreateTaskDialog';
-import { canAccessTasksModule, canViewTaskAnalytics, canCreateRecurringTemplate } from '@/lib/permissions';
+import {
+  canAccessTasksModule,
+  canViewTaskAnalytics,
+  canCreateRecurringTemplate,
+  canViewBranchTaskScope,
+  canViewTaskScopeTabs,
+  getDefaultTaskScope,
+} from '@/lib/permissions';
 import type { TaskScope } from './_lib/types';
 
 type TabValue = 'mine' | 'dept' | 'branch';
@@ -56,11 +63,8 @@ function TasksContent() {
       router.replace('/dashboard');
       return;
     }
-    const role = currentProfile.role;
-    if (role === 'admin' || role === 'director') setTab('branch');
-    else if (role === 'manager') setTab('dept');
-    else setTab('mine');
-    setRenderTabs(role === 'admin' || role === 'director' || role === 'manager');
+    setTab(getDefaultTaskScope(currentProfile));
+    setRenderTabs(canViewTaskScopeTabs(currentProfile));
   }, [currentProfile?.id, router]);
 
   const scope = tabToScope(tab);
@@ -97,8 +101,8 @@ function TasksContent() {
     return list;
   }, [dash.items, searchQuery, statusFilter]);
 
-  const isManagerPlus = ['admin', 'director', 'manager'].includes(profile?.role);
-  const isAdminOrDirector = ['admin', 'director'].includes(profile?.role);
+  const showScopeTabs = canViewTaskScopeTabs(profile);
+  const isBranchScopeViewer = canViewBranchTaskScope(profile);
   const showAnalyticsLink = canViewTaskAnalytics(profile);
   const showRecurringLink = canCreateRecurringTemplate(profile);
 
@@ -161,9 +165,9 @@ function TasksContent() {
           <TabsTrigger value="mine" className="rounded-lg py-1.5 font-semibold text-[13px] flex items-center justify-center gap-1.5">
             <span>Của tôi</span>
           </TabsTrigger>
-          <TabsTrigger value={isAdminOrDirector ? 'branch' : 'dept'} className="rounded-lg py-1.5 font-semibold text-[13px] flex items-center justify-center gap-1.5">
-            {isAdminOrDirector ? <Globe className="icon-sm" /> : <Building2 className="icon-sm" />}
-            <span>{isAdminOrDirector ? 'Chi nhánh' : 'Phòng tôi'}</span>
+          <TabsTrigger value={isBranchScopeViewer ? 'branch' : 'dept'} className="rounded-lg py-1.5 font-semibold text-[13px] flex items-center justify-center gap-1.5">
+            {isBranchScopeViewer ? <Globe className="icon-sm" /> : <Building2 className="icon-sm" />}
+            <span>{isBranchScopeViewer ? 'Chi nhánh' : 'Phòng tôi'}</span>
           </TabsTrigger>
         </TabsList>
       </Tabs>
@@ -188,7 +192,7 @@ function TasksContent() {
                 currentProfile={profile}
               />
             </div>
-            {isManagerPlus && (tab === 'dept' || tab === 'branch') && (dash.resourceView.length > 0 || dash.loading) && (
+            {showScopeTabs && (tab === 'dept' || tab === 'branch') && (dash.resourceView.length > 0 || dash.loading) && (
               <div className="lg:col-span-4">
                 <ResourceView data={dash.resourceView} loading={dash.loading || dash.refreshing} />
               </div>

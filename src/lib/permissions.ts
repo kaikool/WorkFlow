@@ -140,6 +140,23 @@ export function canAccessTasksModule(profile: any): boolean {
   return !['driver', 'secretary', 'hr_officer'].includes(profile.role);
 }
 
+export type TaskScopeValue = 'mine' | 'dept' | 'branch';
+
+export function getDefaultTaskScope(profile: any): TaskScopeValue {
+  if (!profile) return 'mine';
+  if (profile.role === 'admin' || profile.role === 'director') return 'branch';
+  if (profile.role === 'manager') return 'dept';
+  return 'mine';
+}
+
+export function canViewTaskScopeTabs(profile: any): boolean {
+  return !!profile && ['admin', 'director', 'manager'].includes(profile.role);
+}
+
+export function canViewBranchTaskScope(profile: any): boolean {
+  return !!profile && ['admin', 'director'].includes(profile.role);
+}
+
 // Yêu cầu báo cáo.
 export function canRequestReport(profile: any): boolean {
   if (!profile) return false;
@@ -221,6 +238,22 @@ export function canDeleteTask(
   if (profile.role === 'admin' || profile.role === 'director') return true;
   if (task.created_by === profile.id) return true;
   return profile.role === 'manager' && profile.department_id === task.creator?.department_id;
+}
+
+export function canArchiveTask(profile: any): boolean {
+  return !!profile && ['admin', 'director'].includes(profile.role);
+}
+
+export function canComposeTaskComment(profile: any): boolean {
+  return !!profile && profile.role !== 'admin';
+}
+
+export function shouldDefaultAssignTaskToSelf(profile: any): boolean {
+  return !!profile && profile.role === 'staff';
+}
+
+export function canSelectSpecificAssigneesAcrossDepartments(profile: any): boolean {
+  return !!profile && ['admin', 'director'].includes(profile.role);
 }
 
 // Chủ động ghi nhận hoàn thành (Force Complete) — creator + manager của creator + admin/director.

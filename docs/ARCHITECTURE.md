@@ -763,16 +763,19 @@ const showAllTab = profile?.role === "admin" || profile?.role === "director";
 
 **Tasks module — phân quyền chi tiết theo phòng đầu mối (hub):**
 - `getProfileDepartmentCode(profile)` — trích code phòng từ profile (xử lý cả object lẫn array shape của Supabase select)
-- `isHubDepartment(profile)` — true nếu phòng thuộc 5 mã hub: `13618 / 13602 / 13605 / 13609 / 13603`
+- `isHubDepartment(profile)` — true nếu phòng thuộc mã hub: `13618 / 13601 / 13602 / 13605 / 13609 / 13603`
 - `canAccessTasksModule(profile)` — mọi role trừ `driver`/`secretary`/`hr_officer`
+- `getDefaultTaskScope(profile)` — scope mặc định của trang Công việc (`branch` cho admin/director, `dept` cho manager, `mine` cho staff)
+- `canViewTaskScopeTabs(profile)` — hiển thị tabs scope cho admin/director/manager
+- `canViewBranchTaskScope(profile)` — tab Chi nhánh cho admin/director
 - `canRequestReport(profile)` — yêu cầu báo cáo: `admin / director / manager` + `staff` thuộc phòng đầu mối
 - `canTargetCrossDepartment(profile)` — bật toggle "Cả phòng ban" cho `admin / director` + `manager / staff` thuộc hub. Manager non-hub bị siết về phòng mình
 - `canDelegateTask(profile, task)` — phân công (TP cùng phòng + admin/director)
 - `canApproveReport(profile, task)` — duyệt `submitted → done` (cùng quyền delegate)
 - `canRejectSubmission(profile, task)` — trả về `submitted → doing` (người tạo + TP cùng phòng + admin/director)
-- `canReopenDone(profile, task)` — mở lại `done → doing` (người tạo + admin; TP/BGĐ không phải creator không được reopen)
-- `canEditTask(profile, task)` — sửa title/description/priority/due_date (creator + admin/director, không cho khi `canceled/archived`)
-- `canDeleteTask(profile, task)` — Xóa hẳn (Hard delete) task/report khỏi hệ thống (chỉ dành cho creator)
+- `canReopenDone(profile, task)` — mở lại `done → doing` (người tạo + manager phòng người tạo/phòng nhận + admin/director)
+- `canEditTask(profile, task)` — sửa title/description/priority/due_date (creator + manager của creator + admin/director, không cho khi `canceled/archived`)
+- `canDeleteTask(profile, task)` — Xóa hẳn task/report khỏi hệ thống (creator + manager của creator + admin/director)
 - `canForceCompleteTask(profile, task)` — Cho phép creator/manager/admin chủ động Ghi nhận hoàn thành dù assignee chưa nộp
 - `canApproveExtension(profile, task)` — duyệt xin gia hạn (TP cùng phòng + admin/director + người tạo task)
 - `canCreateRecurringTemplate(profile)` — tạo template định kỳ (cùng quyền `canRequestReport`)

@@ -1,5 +1,6 @@
 // Fetch detail 1 task — gọi trực tiếp (không qua RPC) vì cần join phong phú cho timeline + comments.
 import { createClient } from '@/utils/supabase/client';
+import { canSelectSpecificAssigneesAcrossDepartments } from '@/lib/permissions';
 import type { TaskDetail } from './types';
 
 const supabase = createClient();
@@ -124,7 +125,7 @@ export async function fetchAssignableProfiles(opts: AssignOpts) {
     // Hub manager muốn giao cho phòng khác → đi qua DepartmentPicker (auto-fill TP).
     if (!caller.department_id) return [];
     q = q.eq('department_id', caller.department_id);
-  } else if (context === 'create-report' && !['admin', 'director'].includes(caller.role ?? '')) {
+  } else if (context === 'create-report' && !canSelectSpecificAssigneesAcrossDepartments(caller)) {
     // Mọi role (manager/staff, kể cả hub) chọn cán bộ cụ thể: chỉ phòng mình.
     // Cross-dept đi qua DepartmentPicker → TP phòng nhận tự phân công.
     if (!caller.department_id) return [];
@@ -146,8 +147,7 @@ export async function fetchAssignableProfiles(opts: AssignOpts) {
 }
 
 // Lấy danh sách task cùng batch (kể cả task hiện tại). Caller tự filter theo
-// status/is_archived tuỳ nghiệp vụ (edit cho phép mọi status trừ canceled,
-// cancel chỉ áp todo/doing/submitted, delete-draft chỉ áp todo + 10 phút).
+// status/is_archived tuỳ nghiệp vụ.
 export interface BatchSibling {
   id: string;
   status: string;

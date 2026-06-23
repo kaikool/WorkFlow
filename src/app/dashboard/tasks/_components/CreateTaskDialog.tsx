@@ -29,6 +29,7 @@ import {
   canRequestReport,
   canTargetCrossDepartment,
   getProfileDepartmentCode,
+  shouldDefaultAssignTaskToSelf,
 } from '@/lib/permissions';
 import { createTask } from '../_lib/taskActions';
 import { fetchAssignableProfiles } from '../_lib/fetchTasks';
@@ -132,7 +133,7 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
       });
       if (!active) return;
       setProfiles(list as ProfileItem[]);
-      if (profile.role === 'staff') {
+      if (shouldDefaultAssignTaskToSelf(profile)) {
         form.setValue('selectedAssignees', [profile.id], { shouldValidate: true });
       }
       setFetching(false);

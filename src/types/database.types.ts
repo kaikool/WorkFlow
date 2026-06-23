@@ -692,6 +692,20 @@ export interface Database {
         Args: { p_task_id: Uuid; p_new_status: TaskStatus; p_comment?: string | null };
         Returns: void;
       };
+      task_update: {
+        Args: {
+          p_task_id: Uuid;
+          p_title: string;
+          p_description?: string | null;
+          p_priority?: TaskPriority | null;
+          p_due_date: Timestamp;
+        };
+        Returns: void;
+      };
+      task_delete: {
+        Args: { p_task_id: Uuid };
+        Returns: void;
+      };
       task_delegate: {
         Args: { p_task_id: Uuid; p_assignee_ids: Uuid[] };
         Returns: void;
