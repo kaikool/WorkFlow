@@ -433,7 +433,7 @@ export function useSchedule() {
       if (schedule?.created_by) {
         await sendNotifications([{
           user_id: schedule.created_by,
-          title: vehicleId ? "Xác nhận điều phối phương tiện 🚗" : "Hủy điều phối phương tiện",
+          title: vehicleId ? "Xác nhận điều phối phương tiện" : "Hủy điều phối phương tiện",
           content: vehicleId
             ? `Bộ phận điều phối đã bố trí phương tiện ${vehicle?.plate_number} (${vehicle?.name}) cho chuyến công tác "${schedule.title}". Lịch trình đã được phê duyệt.`
             : `Phương tiện cho chuyến công tác "${schedule.title}" đã bị hủy do thay đổi kế hoạch điều phối. Vui lòng kiểm tra lại.`,
@@ -445,7 +445,7 @@ export function useSchedule() {
       if (driverId) {
         await sendNotifications([{
           user_id: driverId,
-          title: "Thông báo điều động Lái xe 🚗",
+          title: "Thông báo điều động Lái xe",
           content: `Bạn vừa được phân công phụ trách chuyến công tác "${schedule.title}" với xe ${vehicle?.plate_number}. Vui lòng kiểm tra lịch trình để chuẩn bị.`,
           link: "/dashboard/schedule"
         }]);

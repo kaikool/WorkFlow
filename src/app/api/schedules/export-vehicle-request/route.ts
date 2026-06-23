@@ -38,11 +38,6 @@ function toVietnamTime(date: Date): { h: number; m: number; d: number; M: number
   };
 }
 
-function vietnameseMonthDay(iso: string): string {
-  const d = new Date(iso);
-  return `ngày ${d.getDate()} tháng ${d.getMonth() + 1} năm ${d.getFullYear()}`;
-}
-
 async function generateVehicleRequestDocx(schedule: any): Promise<Buffer> {
   const creator = schedule.creator || {};
   const department = schedule.department || {};

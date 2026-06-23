@@ -124,6 +124,7 @@ export function checkConflicts(params: {
     });
     return Array.from(new Set(foundConflicts));
   } catch (e) {
+    console.warn('checkConflicts error:', e);
     return [];
   }
 }
@@ -248,6 +249,7 @@ export function checkDeputyDirectorLimit(params: {
 
     return warnings;
   } catch (e) {
+    console.warn('checkDeputyDirectorLimit error:', e);
     return [];
   }
 }

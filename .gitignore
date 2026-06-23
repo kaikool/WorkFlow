@@ -43,3 +43,5 @@ next-env.d.ts
 !AGENTS.md
 
 data/
+# Generated docx test files
+*.docx

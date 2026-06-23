@@ -2,7 +2,6 @@
 // Nhận state đã được chuẩn hoá và trả về Promise<void>.
 
 import { resolveParticipantIds } from "./utils";
-import { confirmDialog } from "@/components/ui/confirm-dialog";
 import { notifyError, notifySuccess, notifyValidation } from "@/lib/notify";
 
 interface CreateScheduleParams {
