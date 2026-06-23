@@ -70,14 +70,6 @@ export async function createSchedule(p: CreateScheduleParams) {
     notifyValidation(resourceConflicts[0], "Tài nguyên đang bận");
     return;
   }
-  if (!isLeave && conflicts.length > 0) {
-    const ok = await confirmDialog({
-      title: 'Có người tham gia bị trùng lịch',
-      description: `${conflicts[0]}\n\nBạn có muốn tiếp tục đăng ký lịch này không?`,
-      confirmText: 'Vẫn tiếp tục',
-    });
-    if (!ok) return;
-  }
 
   try {
     const { use_vehicle, participants, vehicle_id, target_profile_id, destinations, location: originLocation, ...insertData } = newSchedule;

@@ -439,7 +439,7 @@ export async function POST(request: Request) {
           for (const u of authData.users) {
             if (u.email) emailMap.set(u.id, u.email);
           }
-          toList = profileIds.map((id: string) => emailMap.get(id)).filter(Boolean);
+          toList = profileIds.map((id: string) => emailMap.get(id)).filter((e): e is string => !!e);
         }
       } catch (err: any) {
         console.error('[VEHICLE-REQUEST] Error fetching user emails:', err);

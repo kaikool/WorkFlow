@@ -4,7 +4,7 @@ import { createClient } from "@/utils/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { notifyError, notifySuccess, notifyValidation } from "@/lib/notify";
 import { addDays, endOfDay, isSameDay, startOfWeek, endOfWeek, eachDayOfInterval } from "date-fns";
-import { resolveParticipantIds, checkConflicts, checkResourceConflicts } from "../_lib/utils";
+import { resolveParticipantIds, checkConflicts, checkResourceConflicts, checkDeputyDirectorLimit } from "../_lib/utils";
 import { canApproveLeave, canCoordinateSharedResources, canUseDriverWorkspace } from "@/lib/permissions";
 import { confirmDialog } from "@/components/ui/confirm-dialog";
 import { createSchedule as createScheduleHelper } from "../_lib/createSchedule";
@@ -158,7 +158,25 @@ export function useSchedule() {
       selectedParticipants, bgdMode, selectedBGD, deptMode, filterDepts, participantMode, allProfiles
     });
     const finalCheckIds = Array.from(new Set([profile?.id, ...checkIds].filter(Boolean))) as string[];
-    return checkConflicts({ checkIds: finalCheckIds, startDate, endDate, startTime, endTime, schedules });
+
+    // Xung đột thời gian cá nhân
+    const timeConflicts = checkConflicts({ checkIds: finalCheckIds, startDate, endDate, startTime, endTime, schedules });
+
+    // Giới hạn số Phó giám đốc
+    const bdgProfileIds = allProfiles
+      .filter((p: any) => finalCheckIds.includes(p.id))
+      .filter((p: any) =>
+        p.role === 'director' || p.title?.toLowerCase().includes('giám đốc')
+      )
+      .map((p: any) => p.id);
+
+    const deputyWarnings = checkDeputyDirectorLimit({
+      bdgProfileIds,
+      startDate, endDate, startTime, endTime,
+      schedules, allProfiles,
+    });
+
+    return [...timeConflicts, ...deputyWarnings];
   }, [startDate, endDate, startTime, endTime, selectedParticipants, selectedBGD, bgdMode, deptMode, participantMode, allProfiles, schedules, filterDepts, profile?.id]);
 
   const resourceConflicts = useMemo(() => {

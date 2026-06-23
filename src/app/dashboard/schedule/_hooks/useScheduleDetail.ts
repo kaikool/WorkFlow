@@ -2,7 +2,7 @@
 
 import React from "react";
 import { format } from "date-fns";
-import { filterBGD, filterStaff, resolveParticipantIds, checkConflicts, checkResourceConflicts } from "../_lib/utils";
+import { filterBGD, filterStaff, resolveParticipantIds, checkConflicts, checkResourceConflicts, checkDeputyDirectorLimit } from "../_lib/utils";
 import { confirmDialog } from "@/components/ui/confirm-dialog";
 import { canCoordinateSharedResources } from "@/lib/permissions";
 
@@ -135,7 +135,26 @@ export function useScheduleDetail({
       ignoreScheduleId: schedule?.id
     });
 
-    return [...pConflicts, ...rConflicts];
+    // Giới hạn số Phó giám đốc
+    const bdgProfileIds = allProfiles
+      .filter((p: any) => finalParticipantIds.includes(p.id))
+      .filter((p: any) =>
+        p.role === 'director' || p.title?.toLowerCase().includes('giám đốc')
+      )
+      .map((p: any) => p.id);
+
+    const deputyWarnings = checkDeputyDirectorLimit({
+      bdgProfileIds,
+      startDate: editStartDate,
+      endDate: editEndDate,
+      startTime: editStartTime,
+      endTime: editEndTime,
+      schedules,
+      allProfiles,
+      ignoreScheduleId: schedule?.id,
+    });
+
+    return [...pConflicts, ...rConflicts, ...deputyWarnings];
   }, [editStartDate, editEndDate, editStartTime, editEndTime, selectedParticipants, bgdMode, selectedBGD, deptMode, filterDepts, participantMode, allProfiles, schedules, editData.location, editData.room_id, editData.use_vehicle, editData.vehicle_id, editData.type, schedule?.id]);
 
   // --- Tính toán phái sinh ---

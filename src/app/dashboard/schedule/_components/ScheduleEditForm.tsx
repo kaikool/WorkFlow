@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { timeOptions } from "../_lib/constants";
 import ParticipantSelector from "./ParticipantSelector";
+import ConflictWarningPopup from "./ConflictWarningPopup";
 
 interface ScheduleEditFormProps {
   isOpen: boolean;
@@ -41,6 +42,7 @@ export default function ScheduleEditForm({
   const reasonLen = (detail.changeReason || '').trim().length;
   const reasonValid = reasonLen >= 10;
   const canCoord = !!detail.canCoord;
+  const [showConflictPopup, setShowConflictPopup] = React.useState(false);
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -365,7 +367,13 @@ export default function ScheduleEditForm({
                     ? "bg-red-600 hover:bg-red-700 text-white shadow-red-600/20"
                     : "bg-primary hover:bg-primary/90 text-white shadow-primary/20"
               )}
-              onClick={detail.handleSaveSchedule}
+              onClick={() => {
+                if (detail.editData.type !== 'leave' && detail.conflicts.length > 0) {
+                  setShowConflictPopup(true);
+                } else {
+                  detail.handleSaveSchedule();
+                }
+              }}
               disabled={isResubmit && !reasonValid}
             >
               {isResubmit
@@ -373,6 +381,16 @@ export default function ScheduleEditForm({
                 : (detail.editData.type !== 'leave' && detail.conflicts.length > 0 ? 'Vẫn tiếp tục lưu?' : 'Lưu lịch trình')}
             </Button>
           </div>
+
+        <ConflictWarningPopup
+          isOpen={showConflictPopup}
+          onClose={() => setShowConflictPopup(false)}
+          onConfirm={() => {
+            setShowConflictPopup(false);
+            detail.handleSaveSchedule();
+          }}
+          conflicts={detail.conflicts || []}
+        />
       </DialogContent>
     </Dialog>
   );

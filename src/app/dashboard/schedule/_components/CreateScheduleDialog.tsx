@@ -30,6 +30,7 @@ import { format } from "date-fns";
 import { viLocale as vi } from "@/lib/locale";
 import { notifyValidation } from "@/lib/notify";
 import ParticipantSelector from "./ParticipantSelector";
+import ConflictWarningPopup from "./ConflictWarningPopup";
 
 interface CreateScheduleDialogProps {
   isOpen: boolean;
@@ -88,6 +89,7 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
 
   const isLeave = newSchedule.type === 'leave';
   const showEmployeeSelector = isLeave && ['hr_officer', 'secretary', 'admin'].includes(profile?.role);
+  const [showConflictPopup, setShowConflictPopup] = React.useState(false);
   const sortedProfiles = React.useMemo(() => {
     const sorted = [...allProfiles];
     return sortProfilesByHierarchy(sorted);
@@ -414,7 +416,13 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
         </div>
         <DialogFooter className="app-dialog-sheet-footer flex flex-row justify-end gap-2 sm:gap-3">
           <Button
-            onClick={onSubmit}
+            onClick={() => {
+              if (!isLeave && conflicts.length > 0) {
+                setShowConflictPopup(true);
+              } else {
+                onSubmit();
+              }
+            }}
             className={cn(
               "w-full h-11 rounded-xl font-semibold active:scale-[0.98] transition-all duration-300 ease-in-out",
               !isLeave && conflicts.length > 0
@@ -425,6 +433,16 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
             {isLeave ? 'Gửi đơn nghỉ phép' : (!isLeave && conflicts.length > 0 ? 'Vẫn tiếp tục đặt lịch?' : 'Xác nhận đăng ký')}
           </Button>
         </DialogFooter>
+
+        <ConflictWarningPopup
+          isOpen={showConflictPopup}
+          onClose={() => setShowConflictPopup(false)}
+          onConfirm={() => {
+            setShowConflictPopup(false);
+            onSubmit();
+          }}
+          conflicts={conflicts}
+        />
       </DialogContent>
     </Dialog>
   );
