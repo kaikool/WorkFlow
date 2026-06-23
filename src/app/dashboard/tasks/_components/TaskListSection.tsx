@@ -11,8 +11,6 @@ interface Props {
   items: TaskListItem[];
   onOpen?: (taskId: string) => void;
   onOpenBatch?: (batchId: string) => void;
-  onSwipeDone?: (taskId: string) => void;
-  canSwipeDone?: boolean;
   currentProfile?: { id: string; role: string; department_id: string | null } | null;
 }
 
@@ -31,52 +29,47 @@ function classifyTask(item: TaskListItem): DateGroup {
 
 const GROUP_ORDER: DateGroup[] = ['overdue', 'today', 'this_week', 'later', 'no_deadline'];
 
-export function TaskListSection({ items, onOpen, onOpenBatch, onSwipeDone, canSwipeDone, currentProfile }: Props) {
+export function TaskListSection({ items, onOpen, onOpenBatch, currentProfile }: Props) {
   const entries = useMemo(() => groupByBatch(items), [items]);
 
   const grouped = useMemo(() => {
     const map = new Map<DateGroup, typeof entries>();
     for (const g of GROUP_ORDER) map.set(g, []);
     for (const entry of entries) {
-      const ref = entry.kind === 'batch' ? entry.representative : entry.task;
-      const g = classifyTask(ref);
-      map.get(g)!.push(entry);
+      const dateGroup = entry.kind === 'single'
+        ? classifyTask(entry.task)
+        : classifyTask(entry.representative);
+      map.get(dateGroup)?.push(entry);
     }
-    return map;
+    return Array.from(map.entries()).filter(([, v]) => v.length > 0);
   }, [entries]);
 
   return (
     <div className="space-y-6">
-      {GROUP_ORDER.map(group => {
-        const list = grouped.get(group) ?? [];
-        if (list.length === 0) return null;
-        return (
-          <section key={group} className="space-y-2">
-            <h3 className="text-meta font-bold uppercase tracking-wide px-1">
-              {DATE_GROUP_LABEL[group]} ({list.length})
-            </h3>
-            <div className="space-y-2">
-              {list.map(entry => entry.kind === 'batch' ? (
-                <BatchTaskCard
-                  key={entry.batchId}
-                  representative={entry.representative}
-                  children={entry.children}
-                  onOpen={(id) => onOpenBatch?.(id)}
-                />
-              ) : (
+      {grouped.map(([group, groupItems]) => (
+        <section key={group} className="space-y-3">
+          <h3 className="text-[13px] font-bold text-slate-900 px-0.5">{DATE_GROUP_LABEL[group]}</h3>
+          <div className="space-y-2">
+            {groupItems.map(entry =>
+              entry.kind === 'single' ? (
                 <TaskCard
                   key={entry.task.id}
                   task={entry.task}
                   onOpen={onOpen}
-                  onSwipeDone={onSwipeDone}
-                  canSwipeDone={canSwipeDone}
                   currentProfile={currentProfile}
                 />
-              ))}
-            </div>
-          </section>
-        );
-      })}
+              ) : (
+                <BatchTaskCard
+                  key={entry.batchId}
+                  representative={entry.representative}
+                  children={entry.children}
+                  onOpen={onOpenBatch!}
+                />
+              )
+            )}
+          </div>
+        </section>
+      ))}
     </div>
   );
 }

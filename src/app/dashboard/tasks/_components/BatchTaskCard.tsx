@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { FileText, ListTodo, AlertTriangle, Calendar, Users } from 'lucide-react';
+import { FileText, AlertTriangle, Calendar, Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -24,7 +24,7 @@ const BADGE_BASE = 'px-2 py-0.5 rounded-full';
 
 export function BatchTaskCard({ representative, children, onOpen }: Props) {
   const p = batchProgress(children);
-  const TypeIcon = representative.task_type === 'report' ? FileText : ListTodo;
+  const TypeIcon = FileText;
   const dueLabel = representative.due_date
     ? format(new Date(representative.due_date), 'dd/MM', { locale: vi })
     : null;

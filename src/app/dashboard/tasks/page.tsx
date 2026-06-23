@@ -16,13 +16,11 @@ import { EmptyState } from '@/components/ui/empty-state';
 
 import { useAppData } from '@/hooks/use-app-data';
 import { useTasksDashboard } from './_hooks/useTasksDashboard';
-import { useOptimisticAction } from './_hooks/useOptimisticAction';
 import { TaskListSection } from './_components/TaskListSection';
 import { ResourceView } from './_components/ResourceView';
 import { TaskDetailDialog } from './_components/TaskDetailDialog';
 import { BatchTaskDetailDialog } from './_components/BatchTaskDetailDialog';
 import { CreateTaskDialog } from './_components/CreateTaskDialog';
-import { updateTaskStatus } from './_lib/taskActions';
 import { canAccessTasksModule, canViewTaskAnalytics, canCreateRecurringTemplate } from '@/lib/permissions';
 import type { TaskScope } from './_lib/types';
 
@@ -64,16 +62,6 @@ function TasksContent() {
 
   const scope = tabToScope(tab);
   const dash = useTasksDashboard({ scope, enabled: !!profile });
-
-  const { run: runOptimistic } = useOptimisticAction(dash.items, dash.setItems);
-  const handleSwipeDone = async (taskId: string) => {
-    await runOptimistic(
-      taskId,
-      { status: 'done' } as any,
-      () => updateTaskStatus(taskId, 'done'),
-      'Không hoàn thành được',
-    );
-  };
 
   const setUrlParam = (key: string, value: string | null) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -194,8 +182,6 @@ function TasksContent() {
                 items={filteredItems}
                 onOpen={handleOpenTask}
                 onOpenBatch={setOpenBatchId}
-                onSwipeDone={handleSwipeDone}
-                canSwipeDone
                 currentProfile={profile}
               />
             </div>
