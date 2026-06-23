@@ -367,7 +367,6 @@ CREATE TABLE task_recurring_templates (
     description           TEXT,
     target_department_ids UUID[] DEFAULT '{}',
     target_user_ids       UUID[] DEFAULT '{}',
-    default_assignee_id   UUID REFERENCES profiles(id) ON DELETE SET NULL,
     schedule_kind         TEXT CHECK (schedule_kind IN ('weekly','monthly')),
     weekly_dow            SMALLINT,
     weekly_time           TIME,
@@ -384,7 +383,6 @@ CREATE TABLE task_recurring_templates (
 );
 ```
 
-`default_assignee_id` — người nhận mặc định khi giao định kỳ qua phòng. NULL hoặc không thuộc phòng đang sinh việc → fallback theo RPC `_resolve_default_assignee(p_dept_id)`. Người nhận mặc định phải active và không thuộc `admin/director/driver/secretary/hr_officer`.
 
 RLS: template định kỳ chỉ người tạo được SELECT; mọi INSERT/UPDATE/DELETE trực tiếp bị chặn, thao tác qua RPC `recurring_template_upsert`, `recurring_template_toggle`, `recurring_template_delete`.
 
@@ -399,6 +397,7 @@ Engine fire: `recurring_fire_due()` quét `WHERE is_active AND next_run_at <= no
 5. `migration_tasks_access_workflow_recurring_fix.sql` — chuẩn hoá access/workflow Tasks.
 6. `migration_drop_task_type.sql` — chuẩn hoá module Công việc quanh một entity `tasks`.
 7. `migration_tasks_head_manager_and_naming.sql` — phân biệt Trưởng phòng với manager thường, private recurring templates, chặn BGĐ/admin làm người nhận và chuẩn hoá RPC/counter theo scope mới.
+8. `migration_tasks_receiver_cleanup.sql` — bỏ người nhận mặc định của mẫu định kỳ, chặn BGĐ làm phòng nhận việc.
 
 ### 4.5 Module Lịch trình
 
@@ -695,7 +694,7 @@ public.complete_finished_schedules()  -- RETURNS integer (số lịch auto-compl
 | `task_delete` | `p_task_id UUID` | `VOID` | creator + Trưởng phòng của creator + admin/director | Xoá công việc khỏi hệ thống; cascade comments/assignees theo FK |
 | `task_request_extension` | `p_task_id UUID, p_new_due_date TIMESTAMPTZ, p_reason TEXT` | `UUID` (request id) | assignee | Xin gia hạn (status=`pending`) |
 | `task_decide_extension` | `p_extension_id UUID, p_approve BOOLEAN, p_comment TEXT` | `VOID` | Trưởng phòng phòng nhận + admin/director + creator task | Duyệt / từ chối + (nếu approve) cập `tasks.due_date` |
-| `recurring_template_upsert` | `p_title, p_description, p_priority, p_target_department_ids UUID[], p_target_user_ids UUID[], p_schedule_kind, p_weekly_dow, p_weekly_time, p_monthly_dom, p_monthly_time, p_timezone, p_due_days_after_fire INT, p_is_active BOOLEAN, p_default_assignee_id UUID, p_id UUID` | `UUID` (template id) | cùng matrix `task_create`; chỉ creator sửa template đã có | Tạo / cập công việc định kỳ. Tính `next_run_at` từ schedule |
+| `recurring_template_upsert` | `p_title, p_description, p_priority, p_target_department_ids UUID[], p_target_user_ids UUID[], p_schedule_kind, p_weekly_dow, p_weekly_time, p_monthly_dom, p_monthly_time, p_timezone, p_due_days_after_fire INT, p_is_active BOOLEAN, p_id UUID` | `UUID` (template id) | cùng matrix `task_create`; chỉ creator sửa template đã có | Tạo / cập công việc định kỳ. Tính `next_run_at` từ schedule; phòng BGĐ không phải phòng nhận |
 | `recurring_template_toggle` | `p_id UUID, p_active BOOLEAN` | `VOID` | creator | Bật/tắt template |
 | `recurring_template_delete` | `p_id UUID` | `VOID` | creator | Xoá template |
 | `recurring_fire_due` | — | `INTEGER` (số task sinh) | service role (cron) | Worker quét template due → sinh công việc. Template private; task sinh ra hiển thị cho assignee/creator/Trưởng phòng theo `user_can_see_task` |
@@ -1179,4 +1178,4 @@ npx supabase gen types typescript --project-id <ref> > src/types/database.types.
 
 ---
 
-**Phiên bản:** 1.3 — 2026-05-26 (bổ sung Tasks: `requires_approval` + `batch_id` vào `tasks`; `default_assignee_id` vào `task_recurring_templates`; §8 chia nhóm RPC + thêm 12 RPC Tasks; helper nội bộ `_is_hub_department` / `_resolve_default_assignee`; §15 refresh migration order khớp 7 file thực tế trong `supabase/`).
+**Phiên bản:** 1.3 — 2026-05-26 (bổ sung Tasks: `requires_approval` + `batch_id` vào `tasks`; §8 chia nhóm RPC + thêm RPC Tasks; helper nội bộ `_is_hub_department` / `_resolve_default_assignee`; §15 refresh migration order khớp migration thực tế trong `supabase/`).

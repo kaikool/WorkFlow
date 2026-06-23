@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@/components/ui/dialog';
@@ -45,7 +45,6 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
   const [target, setTarget] = useState<'department' | 'profile'>('department');
   const [deptIds, setDeptIds] = useState<string[]>([]);
   const [userIds, setUserIds] = useState<string[]>([]);
-  const [defaultAssigneeId, setDefaultAssigneeId] = useState<string | null>(null);
   const [kind, setKind] = useState<ScheduleKind>('weekly');
   const [weeklyDow, setWeeklyDow] = useState<number | null>(5);
   const [weeklyTime, setWeeklyTime] = useState('15:00');
@@ -79,7 +78,6 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
       setDeptIds(editing.target_department_ids ?? []);
       setUserIds(editing.target_user_ids ?? []);
       setTarget(editing.target_user_ids?.length > 0 ? 'profile' : 'department');
-      setDefaultAssigneeId(editing.default_assignee_id ?? null);
       setKind(editing.schedule_kind);
       setWeeklyDow(editing.weekly_dow);
       setWeeklyTime(editing.weekly_time?.slice(0, 5) ?? '15:00');
@@ -90,7 +88,6 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
       setTitle(''); setDescription('');
       setPriority('medium');
       setTarget('department'); setDeptIds([]); setUserIds([]);
-      setDefaultAssigneeId(null);
       setKind('weekly'); setWeeklyDow(5); setWeeklyTime('15:00');
       setMonthlyDom(1); setMonthlyTime('09:00');
       setDueDays(7);
@@ -98,18 +95,23 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
   }, [isOpen, editing]);
 
   const canCrossDept = canTargetCrossDepartment(profile);
+  const receiverDepartments = useMemo(
+    () => cachedDepts.filter((d: any) => d.code !== '13601'),
+    [cachedDepts],
+  );
+  const receiverDepartmentIds = useMemo(
+    () => new Set(receiverDepartments.map((d: any) => d.id)),
+    [receiverDepartments],
+  );
 
   // Nếu không cross-dept thì force chọn cá nhân (cá nhân đã filter sẵn phòng mình).
   useEffect(() => {
     if (!canCrossDept) setTarget('profile');
   }, [canCrossDept]);
 
-  // default_assignee_id chỉ có nghĩa khi giao cho phòng (target='department').
   useEffect(() => {
-    if (target === 'profile') {
-      setDefaultAssigneeId(null);
-    }
-  }, [target]);
+    setDeptIds(prev => prev.filter(id => receiverDepartmentIds.has(id)));
+  }, [receiverDepartmentIds]);
 
   const handleSave = async () => {
     if (!title.trim()) { notifyValidation('Vui lòng nhập tiêu đề'); return; }
@@ -138,7 +140,6 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
       priority,
       target_department_ids: target === 'department' ? deptIds : [],
       target_user_ids: target === 'profile' ? userIds : [],
-      default_assignee_id: target === 'department' ? defaultAssigneeId : null,
       schedule_kind: kind,
       weekly_dow: kind === 'weekly' ? weeklyDow : null,
       weekly_time: kind === 'weekly' ? weeklyTime : null,
@@ -162,7 +163,7 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
             {editing ? 'Sửa công việc định kỳ' : 'Công việc định kỳ'}
           </DialogTitle>
           <DialogDescription className="text-subtitle">
-            Hệ thống tự sinh công việc theo lịch cho phòng ban hoặc cán bộ được chọn.
+            Hệ thống tự sinh công việc theo lịch cho phòng nhận hoặc người thực hiện.
           </DialogDescription>
         </DialogHeader>
 
@@ -205,7 +206,7 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
                   >
                     <div className="flex items-center gap-2">
                       <Building2 className="icon-md text-amber-500" />
-                      <span className="heading-card">Giao cho phòng ban khác</span>
+                      <span className="heading-card">Phòng khác</span>
                     </div>
                   </button>
                   <button
@@ -220,17 +221,17 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
                   >
                     <div className="flex items-center gap-2">
                       <UserIcon className="icon-md text-primary" />
-                      <span className="heading-card">Giao cho cán bộ trong phòng mình</span>
+                      <span className="heading-card">Trong phòng</span>
                     </div>
                   </button>
                 </div>
               )}
               {target === 'department' ? (
                 <DepartmentPicker
-                  items={cachedDepts}
+                  items={receiverDepartments}
                   selected={deptIds}
                   onChange={setDeptIds}
-                  triggerLabel="Chọn phòng ban nhận việc"
+                  triggerLabel="Chọn phòng nhận"
                 />
               ) : (
                 <PeoplePicker
@@ -245,33 +246,6 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
               )}
             </div>
 
-            {/* Cán bộ mặc định — chỉ hiện khi giao qua phòng */}
-            {target === 'department' && (
-              <div className="tight-stack">
-                <Label className="text-label">Cán bộ mặc định (tuỳ chọn)</Label>
-                <p className="text-meta italic">
-                  Để trống: giao cho Trưởng phòng của phòng nhận. Chọn người: mỗi kỳ giao thẳng cho người đó.
-                </p>
-                <PeoplePicker
-                  profiles={profiles}
-                  currentUserId={profile?.id}
-                  myDepartmentId={profile?.department_id ?? null}
-                  myDepartmentName={profile?.departments?.name ?? null}
-                  selected={defaultAssigneeId ? [defaultAssigneeId] : []}
-                  onChange={(ids) => setDefaultAssigneeId(ids[0] ?? null)}
-                  mode="single"
-                />
-                {defaultAssigneeId && (
-                  <button
-                    type="button"
-                    onClick={() => setDefaultAssigneeId(null)}
-                    className="text-meta text-primary self-start hover:underline min-h-9"
-                  >
-                    Bỏ chọn — giao cho Trưởng phòng
-                  </button>
-                )}
-              </div>
-            )}
 
             <div className="group-stack">
               <Label className="text-label">Lịch sinh</Label>

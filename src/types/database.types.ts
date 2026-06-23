@@ -228,7 +228,6 @@ export interface Database {
           priority: TaskPriority;
           target_department_ids: Uuid[];
           target_user_ids: Uuid[];
-          default_assignee_id: Uuid | null;
           schedule_kind: "weekly" | "monthly";
           weekly_dow: number | null;
           weekly_time: string | null;
@@ -761,7 +760,6 @@ export interface Database {
           p_timezone?: string;
           p_due_days_after_fire?: number;
           p_is_active?: boolean;
-          p_default_assignee_id?: Uuid | null;
         };
         Returns: Uuid;
       };

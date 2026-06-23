@@ -769,7 +769,7 @@ const showAllTab = profile?.role === "admin" || profile?.role === "director";
 - `canViewTaskScopeTabs(profile)` — hiển thị tabs scope cho admin/director/Trưởng phòng
 - `canAssignTaskToOthers(profile)` — quyền tạo task cho người khác (admin/director/manager)
 - `canCreateTaskAssignment(profile)` — tạo công việc: `admin / director / manager` + `staff` thuộc phòng đầu mối
-- `canTargetCrossDepartment(profile)` — bật lựa chọn "Giao cho phòng ban khác" cho `admin / director` + `manager / staff` thuộc hub. Manager non-hub bị siết về phòng mình
+- `canTargetCrossDepartment(profile)` — bật lựa chọn "Phòng khác" cho `admin / director` + `manager / staff` thuộc hub. Manager non-hub bị siết về phòng mình; BGĐ không nằm trong danh sách phòng nhận việc
 - `canDelegateTask(profile, task)` — phân công lại task cấp phòng (admin/director + Trưởng phòng cùng phòng)
 - `canApproveTaskResult(profile, task)` — duyệt `submitted → done` (cùng quyền delegate)
 - `canRejectSubmission(profile, task)` — trả `submitted → doing` kèm lý do (cùng quyền delegate)

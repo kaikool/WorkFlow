@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -111,6 +111,14 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
 
   const canCreateAssignment = canCreateTaskAssignment(profile);
   const canCrossDept = canTargetCrossDepartment(profile);
+  const receiverDepartments = useMemo(
+    () => cachedDepts.filter((d: any) => d.code !== '13601'),
+    [cachedDepts],
+  );
+  const receiverDepartmentIds = useMemo(
+    () => new Set(receiverDepartments.map((d: any) => d.id)),
+    [receiverDepartments],
+  );
 
   useEffect(() => {
     if (!isOpen) return;
@@ -144,6 +152,13 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
   useEffect(() => {
     if (!canCrossDept) form.setValue('assignmentTarget', 'profile');
   }, [canCrossDept, form]);
+
+  useEffect(() => {
+    const next = selectedDepartments.filter(id => receiverDepartmentIds.has(id));
+    if (next.length !== selectedDepartments.length) {
+      form.setValue('selectedDepartments', next, { shouldValidate: true });
+    }
+  }, [selectedDepartments, receiverDepartmentIds, form]);
 
   const resetForm = () => form.reset(defaultValues(profile));
 
@@ -228,7 +243,7 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
             Tạo công việc
           </DialogTitle>
           <DialogDescription className="text-subtitle">
-            Giao việc cho phòng ban khác hoặc chọn trực tiếp cán bộ trong phòng mình.
+            Chọn phòng nhận việc hoặc người thực hiện trong phòng.
           </DialogDescription>
         </DialogHeader>
 
@@ -272,7 +287,7 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
                     >
                       <div className="flex items-center gap-2">
                         <Building2 className="icon-md text-amber-500" />
-                        <span className="heading-card">Giao cho phòng ban khác</span>
+                        <span className="heading-card">Phòng khác</span>
                       </div>
                     </button>
                     <button
@@ -287,7 +302,7 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
                     >
                       <div className="flex items-center gap-2">
                         <UserIcon className="icon-md text-primary" />
-                        <span className="heading-card">Giao cho cán bộ trong phòng mình</span>
+                        <span className="heading-card">Trong phòng</span>
                       </div>
                     </button>
                   </div>
@@ -299,10 +314,10 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
                   </div>
                 ) : assignmentTarget === 'department' ? (
                   <DepartmentPicker
-                    items={cachedDepts}
+                    items={receiverDepartments}
                     selected={selectedDepartments}
                     onChange={(ids) => form.setValue('selectedDepartments', ids, { shouldValidate: true })}
-                    triggerLabel="Chọn phòng ban nhận việc"
+                    triggerLabel="Chọn phòng nhận"
                   />
                 ) : (
                   <PeoplePicker

@@ -326,14 +326,13 @@ Trang đích sau login. **Hiển thị view khác nhau theo role**:
 - **Xóa hẳn** — creator + Trưởng phòng của creator + admin/director có thể xoá công việc khỏi hệ thống.
 - **Ghi nhận hoàn thành** — creator, Trưởng phòng và admin/director có thể chủ động ghi nhận hoàn thành.
 - **Recurring** — bảng `task_recurring_templates`. Admin/Director/Manager + staff hub đặt lịch. Template chỉ người tạo xem/sửa/xoá/bật tắt. Worker `recurring_fire_due()` sinh công việc cho phòng ban hoặc cán bộ được chọn khi `next_run_at <= now()`.
-- **`default_assignee_id`** — trong `task_recurring_templates`. Khi giao định kỳ qua phòng, có thể chỉ định trực tiếp một cán bộ. NULL = fallback theo `_resolve_default_assignee`.
 - **Analytics** — RPC `tasks_analytics(p_from, p_to, p_dept_id)` trả counts + daily + by_department + top_people + recurring_active. Trang `/analytics` có export CSV.
 - **Hủy** — bảng status `canceled`.
 - **Auto-archive**: cron daily 08:00 ICT gọi `auto_archive_and_cleanup()`.
 
 #### 3.3.3 Phân quyền tạo công việc
 
-Phòng đầu mối ("hub") gồm 6 mã: `13618` (Phòng chuyên trách Hub), `13601` (BGĐ), `13602` (Tổ chức Tổng hợp), `13605`, `13609`, `13603`. Helper `isHubDepartment(profile)` + `_is_hub_department(dept_id)` đồng bộ.
+Phòng đầu mối ("hub") gồm 6 mã: `13618` (Phòng chuyên trách Hub), `13601` (BGĐ), `13602` (Tổ chức Tổng hợp), `13605`, `13609`, `13603`. Helper `isHubDepartment(profile)` + `_is_hub_department(dept_id)` đồng bộ. BGĐ có quyền tạo/giao việc theo vai trò, nhưng không xuất hiện trong danh sách phòng nhận việc.
 
 | Vai trò | Tạo/giao công việc |
 |---------|--------------------|
@@ -351,7 +350,7 @@ Phân quyền Tasks được check lặp ở các layer độc lập:
 2. **Fetch profiles filter** ([`fetchAssignableProfiles`](src/app/dashboard/tasks/_lib/fetchTasks.ts)) — lọc người nhận theo scope; không list admin/director/driver/secretary/hr_officer.
 3. **RPC `task_create`** — kiểm tra quyền tạo, scope người nhận, role người nhận và auto-fill khi giao qua phòng.
 4. **RPC `recurring_template_upsert`** — chỉ creator sửa template; reject người nhận ngoài scope hoặc thuộc role không nhận công việc.
-5. **Worker `recurring_fire_due`** — sinh công việc theo template đã duyệt, gắn người nhận cụ thể qua `default_assignee_id` hoặc `_resolve_default_assignee`.
+5. **Worker `recurring_fire_due`** — sinh công việc theo template đã duyệt; khi giao qua phòng, hệ thống gắn Trưởng phòng của phòng nhận qua `_resolve_default_assignee`.
 
 #### 3.3.5 Phân quyền tầm nhìn task
 
@@ -368,7 +367,7 @@ Detail panel hiển thị các action theo quyền:
 - Secondary: Trả về / Phân công / Xin gia hạn.
 - Destructive: Huỷ / Xoá theo quyền.
 
-Mọi assignee picker dùng `<PeoplePicker>` shared (`src/components/ui/people-picker.tsx`) với grouping qua `groupProfilesByDepartment` từ `@/lib/profile-grouping`. Khi `canTargetCrossDepartment` → hiện lựa chọn "Giao cho phòng ban khác" / "Giao cho cán bộ trong phòng mình".
+Mọi assignee picker dùng `<PeoplePicker>` shared (`src/components/ui/people-picker.tsx`) với grouping qua `groupProfilesByDepartment` từ `@/lib/profile-grouping`. Khi `canTargetCrossDepartment` → hiện lựa chọn "Phòng khác" / "Trong phòng".
 
 ---
 

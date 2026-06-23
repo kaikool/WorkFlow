@@ -7,7 +7,6 @@ export interface RecurringTemplate {
   priority: 'low' | 'medium' | 'high';
   target_department_ids: string[];
   target_user_ids: string[];
-  default_assignee_id: string | null;
   schedule_kind: ScheduleKind;
   weekly_dow: number | null;
   weekly_time: string | null;
