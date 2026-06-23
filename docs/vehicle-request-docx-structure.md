@@ -63,7 +63,7 @@ Line  | - Lý do công tác: Chúc mừng sinh nhật           | LEFT, 24
         | [cách 200]
 ```
 
-## III. CHỮ KÝ — Signature
+## III. CHỮ KÝ — Signature (bảng 2x2, không viền)
 
 ```
         | [cách 60]
@@ -71,20 +71,20 @@ Line  | - Lý do công tác: Chúc mừng sinh nhật           | LEFT, 24
 Line 20 | Hà Nội, ngày 14 tháng 05 năm 2026              | Italic, 24, RIGHT
         | [cách 60]
 
-=== KẺ BẢNG: 2 cột, không border (không viền), mỗi cột 2500 DXA ===
+=== BẢNG 2 HÀNG × 2 CỘT, KHÔNG VIỀN, mỗi cột 2500 DXA ===
 
- BẢNG:
  ┌──────────────────────────────┬──────────────────────────────┐
- │        CỘT 1                 │        CỘT 2                │
- │                              │                              │
- │  XÁC NHẬN TRƯỞNG PHÒNG/BAN   │   NGƯỜI ĐỀ NGHỊ             │
+ │         CỘT 1                │         CỘT 2               │
+ ├──────────────────────────────┼──────────────────────────────┤
+ │  XÁC NHẬN TRƯỞNG PHÒNG/BAN   │  NGƯỜI ĐỀ NGHỊ              │
  │  QUẢN LÝ CÁN BỘ             │                              │
- │                              │                              │
- │  (chừa chỗ ký: before 400)   │   (chừa chỗ ký: before 400) │
+ │  (chừa chỗ ký: before 400)   │  (chừa chỗ ký: before 400)  │
+ ├──────────────────────────────┼──────────────────────────────┤
+ │  PHÒNG TCTH                  │  GIÁM ĐỐC DUYỆT             │
+ │  (chừa chỗ ký: before 300)   │  (chừa chỗ ký: before 300)  │
  └──────────────────────────────┴──────────────────────────────┘
-  CỘT 3 				cột 4
-PHÒNG TCTH 				GIÁM ĐỐC 
- BẢNG NÀY LÀ 4 CỘT FULL HÀNG NGANG, CĂN GIỮA TEXT BÊN TRONG MỖI CỘT. CHIỀU DÀI VỪA ĐỦ CHỖ KÝ  KHOẢNG 800 HAY HƠN
+
+Tất cả text trong bảng: CENTER, Bold, 22 twip (11pt), Times New Roman.
 
 ## IV. MARGIN (lề trang)
 
@@ -97,12 +97,10 @@ Left: 1440
 
 ---
 
-## MẤY CHỖ CON NGHI NGỜ CẦN BỐ CHỈNH:
+## MẤY CHỖ CON NGHI NGỜ:
 
-1. **Bảng chữ ký** — hiện tại con kẻ 2 cột. Đúng hay phải 3 cột (thêm cột giữa trống)?
-2. **"PHÒNG TCTH" và "GIÁM ĐỐC DUYỆT"** — để CENTER riêng từng dòng, hay gộp vào hàng cuối của bảng?
-3. **Font size** — "22" = 11pt, "24" = 12pt, "28" = 14pt. Có đúng không?
-4. **Khoảng cách "Chức vụ:"** — 2 space giữa tên và "Chức vụ:" có đúng không?
-5. **Số người** — có zero-pad (03 người) hay không (3 người)?
+1. **Font size** — "22" = 11pt, "24" = 12pt, "28" = 14pt. Có đúng không?
+2. **Khoảng cách "Chức vụ:"** — 2 space giữa tên và "Chức vụ:" có đúng không?
+3. **Số người** — có zero-pad (03 người) hay không (3 người)?
 
 Bố sửa thoải mái trong file md này, xong con làm lại theo đúng format ạ.
