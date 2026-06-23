@@ -4,6 +4,7 @@
 import { createClient } from '@/utils/supabase/client';
 import type { TaskStatus, TaskPriority, TaskType, ActionResult } from './types';
 
+// Module-level supabase client là intentional — chỉ dùng trong client component
 const supabase = createClient();
 
 export async function createTask(input: {

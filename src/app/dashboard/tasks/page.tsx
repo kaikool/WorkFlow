@@ -199,9 +199,9 @@ function TasksContent() {
                 currentProfile={profile}
               />
             </div>
-            {isManagerPlus && (tab === 'dept' || tab === 'branch') && dash.resourceView.length > 0 && (
+            {isManagerPlus && (tab === 'dept' || tab === 'branch') && (dash.resourceView.length > 0 || dash.loading) && (
               <div className="lg:col-span-4">
-                <ResourceView data={dash.resourceView} />
+                <ResourceView data={dash.resourceView} loading={dash.loading} />
               </div>
             )}
           </div>

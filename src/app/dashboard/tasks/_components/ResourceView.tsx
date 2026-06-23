@@ -12,9 +12,32 @@ import type { ResourceViewItem } from '../_lib/types';
 
 interface Props {
   data: ResourceViewItem[];
+  loading?: boolean;
 }
 
-export function ResourceView({ data }: Props) {
+export function ResourceView({ data, loading }: Props) {
+  if (loading) {
+    return (
+      <section className="premium-card p-5 border-none space-y-4">
+        <div className="flex items-center gap-2">
+          <Users className="icon-md text-primary" />
+          <h2 className="text-sm font-bold text-slate-900">Ai đang ôm bao nhiêu</h2>
+        </div>
+        <div className="space-y-3">
+          {[1,2,3,4].map(i => (
+            <div key={i} className="flex items-center gap-3 animate-pulse">
+              <div className="w-8 h-8 rounded-full bg-slate-200" />
+              <div className="flex-1 space-y-2">
+                <div className="h-3 w-24 bg-slate-200 rounded" />
+                <div className="h-2 w-full bg-slate-100 rounded" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    );
+  }
+
   if (!data || data.length === 0) return null;
 
   const maxActive = Math.max(...data.map(d => d.active_count), 1);
