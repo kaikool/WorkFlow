@@ -1,34 +1,21 @@
-const CACHE_NAME = 'workflow-v1';
-const STATIC_CACHE = 'workflow-static-v1';
+// === Service Worker — WorkFlow CN Hoàng Mai ===
+// Build: __BUILD_VERSION__
 
-// Tài nguyên immutable (có hash trong tên file) — cache vĩnh viễn
-const PRECACHE_URLS = [
-  '/',
-  '/dashboard',
-];
+var STATIC_CACHE = 'workflow-' + '__BUILD_VERSION__';
 
 self.addEventListener('install', function(event) {
-  console.log('[Service Worker] Installing...');
+  console.log('[SW] Installing (version: __BUILD_VERSION__)...');
   self.skipWaiting();
-
-  event.waitUntil(
-    caches.open(STATIC_CACHE).then(function(cache) {
-      return cache.addAll(PRECACHE_URLS).catch(function(err) {
-        console.warn('[Service Worker] Precache failed (non-critical):', err);
-      });
-    })
-  );
 });
 
 self.addEventListener('activate', function(event) {
-  console.log('[Service Worker] Activating...');
-  // Xoá cache cũ nếu có
+  console.log('[SW] Activating (version: __BUILD_VERSION__)...');
   event.waitUntil(
     caches.keys().then(function(cacheNames) {
       return Promise.all(
         cacheNames.map(function(name) {
-          if (name !== STATIC_CACHE && name !== CACHE_NAME) {
-            console.log('[Service Worker] Deleting old cache:', name);
+          if (name !== STATIC_CACHE) {
+            console.log('[SW] Deleting old cache:', name);
             return caches.delete(name);
           }
         })
@@ -39,14 +26,26 @@ self.addEventListener('activate', function(event) {
   );
 });
 
-// Cache-first cho _next/static (immutable), network-first cho API/data
 self.addEventListener('fetch', function(event) {
-  const url = new URL(event.request.url);
-
-  // Chỉ xử lý request cùng origin
+  var url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
 
-  // Cache-first: _next/static có hash → immutable
+  // Navigation (HTML pages): network-first, cache fallback for offline
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request).then(function(response) {
+        return caches.open(STATIC_CACHE).then(function(cache) {
+          cache.put(event.request, response.clone());
+          return response;
+        });
+      }).catch(function() {
+        return caches.match(event.request);
+      })
+    );
+    return;
+  }
+
+  // Static assets (hash in filename → immutable): cache-first
   if (url.pathname.startsWith('/_next/static/')) {
     event.respondWith(
       caches.match(event.request).then(function(cached) {
@@ -61,7 +60,7 @@ self.addEventListener('fetch', function(event) {
     return;
   }
 
-  // Cache-first: font, image, icon file
+  // Fonts + images: cache-first
   if (url.pathname.match(/\.(woff2?|ttf|otf|svg|png|jpg|jpeg|gif|ico|webp)$/)) {
     event.respondWith(
       caches.match(event.request).then(function(cached) {
@@ -77,13 +76,12 @@ self.addEventListener('fetch', function(event) {
   }
 });
 
-// Push notification (giữ nguyên)
 self.addEventListener('push', function(event) {
   if (event.data) {
     try {
-      const data = event.data.json();
-      const title = data.title || 'Thông báo mới từ WorkFlow';
-      const options = {
+      var data = event.data.json();
+      var title = data.title || 'Thông báo mới từ WorkFlow';
+      var options = {
         body: data.body || 'Bạn có một cập nhật mới trong công việc.',
         icon: '/icon-512.png',
         badge: '/icon-512.png',
@@ -93,14 +91,14 @@ self.addEventListener('push', function(event) {
       };
       event.waitUntil(self.registration.showNotification(title, options));
     } catch (e) {
-      console.error('[Service Worker] Error parsing push data:', e);
+      console.error('[SW] Error parsing push data:', e);
     }
   }
 });
 
 self.addEventListener('notificationclick', function(event) {
   event.notification.close();
-  const urlToOpen = event.notification.data.url;
+  var urlToOpen = event.notification.data.url;
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(windowClients) {
       for (var i = 0; i < windowClients.length; i++) {

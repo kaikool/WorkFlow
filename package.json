@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack -p 9002",
-    "build": "NODE_ENV=production next build",
+    "dev": "node scripts/prebuild-sw.js && next dev --turbopack -p 9002",
+    "build": "node scripts/prebuild-sw.js && next build",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit"
