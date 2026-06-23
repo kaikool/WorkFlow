@@ -369,17 +369,36 @@ export default function ScheduleDetailDialog({
 
             {/* Cảnh báo xung đột cho coordinator */}
             {isCoordinator && scheduleConflicts.length > 0 && (
-              <div className="p-3 bg-amber-50/50 rounded-2xl border border-amber-100 space-y-2">
-                <div className="flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 text-amber-600" />
-                  <span className="text-[13px] font-semibold text-amber-700">Cảnh báo trùng lịch / quá số Phó giám đốc</span>
-                </div>
-                <ul className="list-disc pl-5 text-xs font-medium text-amber-700/80 space-y-1">
-                  {scheduleConflicts.map((c, i) => (
-                    <li key={i} className="leading-relaxed">{c}</li>
-                  ))}
-                </ul>
-              </div>
+              <>
+                {/* Cảnh báo trùng lịch */}
+                {scheduleConflicts.filter(c => !c.toLowerCase().includes('phó giám đốc') && !c.toLowerCase().includes('tối đa')).length > 0 && (
+                  <div className="p-3 bg-red-50/50 rounded-2xl border border-red-100 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 text-red-600" />
+                      <span className="text-[13px] font-semibold text-red-700">Cảnh báo trùng lịch</span>
+                    </div>
+                    <ul className="list-disc pl-5 text-xs font-medium text-red-600/80 space-y-1">
+                      {scheduleConflicts.filter(c => !c.toLowerCase().includes('phó giám đốc') && !c.toLowerCase().includes('tối đa')).map((c, i) => (
+                        <li key={i} className="leading-relaxed">{c}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {/* Cảnh báo quá số Phó giám đốc */}
+                {scheduleConflicts.filter(c => c.toLowerCase().includes('phó giám đốc') || c.toLowerCase().includes('tối đa')).length > 0 && (
+                  <div className="p-3 bg-amber-50/50 rounded-2xl border border-amber-100 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 text-amber-600" />
+                      <span className="text-[13px] font-semibold text-amber-700">Giới hạn Phó giám đốc</span>
+                    </div>
+                    <ul className="list-disc pl-5 text-xs font-medium text-amber-700/80 space-y-1">
+                      {scheduleConflicts.filter(c => c.toLowerCase().includes('phó giám đốc') || c.toLowerCase().includes('tối đa')).map((c, i) => (
+                        <li key={i} className="leading-relaxed">{c}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </>
             )}
 
             {/* Thông tin xe & lái xe — chỉ hiển thị khi đã gán xe */}
