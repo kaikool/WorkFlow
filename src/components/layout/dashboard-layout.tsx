@@ -69,7 +69,7 @@ function TopNavActionsContent() {
   // Define configurations for pages that need search/filter
   const configMap: Record<string, { placeholder: string, hasStatusFilter?: boolean }> = {
     '/dashboard/team': { placeholder: 'Tìm kiếm cán bộ, phòng ban...' },
-    '/dashboard/tasks': { placeholder: 'Tìm kiếm công việc, báo cáo...', hasStatusFilter: true },
+    '/dashboard/tasks': { placeholder: 'Tìm kiếm công việc...', hasStatusFilter: true },
     '/dashboard/handover': { placeholder: 'Tìm mã hồ sơ, tiêu đề, khách hàng...', hasStatusFilter: true },
     '/dashboard/admin': { placeholder: 'Tìm kiếm tài khoản, dữ liệu...' },
     '/dashboard/settings/users': { placeholder: 'Tìm kiếm người dùng...' },

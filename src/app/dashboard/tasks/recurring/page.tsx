@@ -56,10 +56,10 @@ function RecurringContent() {
     <div className="page-container group-stack animate-fade-in-up">
       <PageHeader
         title="Lịch định kỳ"
-        description="Tự động tạo báo cáo định kỳ theo template đã thiết lập."
+        description="Tự động tạo công việc định kỳ theo mẫu đã thiết lập."
         action={
           <Button onClick={handleNew} className="px-5 font-semibold shadow-sm">
-            <Plus className="icon-sm" /> Tạo template
+            <Plus className="icon-sm" /> Tạo mẫu định kỳ
           </Button>
         }
       />
@@ -69,9 +69,9 @@ function RecurringContent() {
       ) : items.length === 0 ? (
         <EmptyState
           icon={<CalendarClock className="icon-lg" />}
-          title="Chưa có lịch báo cáo nào"
-          description="Tạo template để máy tự sinh báo cáo định kỳ (vd: Thứ 6 15:00 hằng tuần)."
-          actionLabel="Tạo template đầu tiên"
+          title="Chưa có công việc định kỳ nào"
+          description="Tạo mẫu để hệ thống tự sinh công việc định kỳ."
+          actionLabel="Tạo mẫu định kỳ đầu tiên"
           onAction={handleNew}
         />
       ) : (

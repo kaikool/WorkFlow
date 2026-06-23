@@ -47,7 +47,7 @@ export async function updateTaskStatus(
   return { ok: true };
 }
 
-// Duyệt báo cáo (submitted → done). Nhận xét optional — nếu có sẽ vào timeline.
+// Duyệt kết quả (submitted → done). Nhận xét optional — nếu có sẽ vào timeline.
 export async function approveTask(
   taskId: string,
   comment?: string,
@@ -63,7 +63,7 @@ export async function rejectSubmission(
   return updateTaskStatus(taskId, 'doing', reason);
 }
 
-// Mở lại báo cáo đã hoàn thành (done → doing). Chỉ người tạo/admin, bắt buộc lý do.
+// Mở lại công việc đã hoàn thành (done → doing). Bắt buộc lý do.
 export async function reopenDone(
   taskId: string,
   reason: string,

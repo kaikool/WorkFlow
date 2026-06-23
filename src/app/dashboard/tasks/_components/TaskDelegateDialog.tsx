@@ -1,6 +1,6 @@
 'use client';
 
-// Dialog phân công lại NV (Manager+ giao báo cáo cấp phòng cho NV cụ thể).
+// Dialog phân công lại NV (Manager+ giao công việc cấp phòng cho NV cụ thể).
 // Dùng AssigneePicker collapsible — đồng bộ pattern với module Hồ sơ.
 
 import React, { useEffect, useState } from 'react';

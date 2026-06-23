@@ -21,7 +21,7 @@ import {
   PRIORITY_BADGE_CLASS,
 } from '../_lib/constants';
 import {
-  canApproveReport, canDelegateTask,
+  canApproveTaskResult, canDelegateTask,
   canRejectSubmission, canReopenDone,
   canEditTask, canDeleteTask, canForceCompleteTask,
   canApproveExtension, canArchiveTask, canComposeTaskComment,
@@ -34,7 +34,7 @@ import { batchScopeDialog } from '@/components/ui/batch-scope-dialog';
 import { TaskDelegateDialog } from './TaskDelegateDialog';
 import { TaskApproveExtensionDialog } from './TaskApproveExtensionDialog';
 import { TaskRequestExtensionDialog } from './TaskRequestExtensionDialog';
-import { TaskSubmitReportDialog } from './TaskSubmitReportDialog';
+import { TaskSubmitResultDialog } from './TaskSubmitResultDialog';
 import { TaskReturnDialog } from './TaskReturnDialog';
 import { TaskReopenDialog } from './TaskReopenDialog';
 import { TaskApproveDialog } from './TaskApproveDialog';
@@ -72,11 +72,10 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, onClose, show
   const isCreator = task.created_by === myId;
   const isAssignee = (task.assignees ?? []).some(a => a.id === myId);
   const isManagerOfTask = canDelegateTask(currentProfile, task);
-  const isManagerApprove = canApproveReport(currentProfile, task);
+  const isManagerApprove = canApproveTaskResult(currentProfile, task);
   const isApproveExtensionManager = canApproveExtension(currentProfile, task);
   const pendingExtension = (task.extension_requests ?? []).find(e => e.status === 'pending');
   const canArchive = canArchiveTask(currentProfile);
-  const isReport = true;
   const dueOverdue = !!(task.due_date && new Date(task.due_date) < new Date()
     && !['done', 'canceled'].includes(task.status));
 
@@ -98,28 +97,24 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, onClose, show
     onChanged();
   };
 
-  // TP/PP tự nộp báo cáo của chính mình → tự ghi nhận luôn (có audit comment ở RPC)
-  const isReportSelfApprove = isReport && isAssignee && isManagerOfTask;
+  const isSelfApprove = isAssignee && isManagerOfTask;
 
   // ─── Action gates ─────────────────────────────────────────────────
   // Bắt đầu (todo → doing): chỉ assignee. Manager-ngoài-assignee không cần "đập" Bắt đầu
-  // (Phân công lại đã tự move sang doing). Cho cả task lẫn report.
+  // (Phân công lại đã tự move sang doing). Áp dụng cho công việc.
   const canStart = isAssignee && task.status === 'todo';
 
   // Hoàn thành — chỉ hiện khi đang Đang làm (todo phải Bắt đầu trước cho rõ ý)
-  const canMarkDoneTask = !isReport && (isAssignee || isManagerOfTask)
-    && task.status === 'doing';
-  const canMarkDoneReport = isReport && isAssignee
+  const canMarkDone = isAssignee
     && task.status === 'doing'
-    && (!task.requires_approval || isReportSelfApprove);
-  const canMarkDone = canMarkDoneTask || canMarkDoneReport;
+    && (!task.requires_approval || isSelfApprove);
 
-  const canSubmit = isReport && isAssignee
+  const canSubmit = isAssignee
     && task.status === 'doing'
     && task.requires_approval
-    && !isReportSelfApprove;
+    && !isSelfApprove;
 
-  const canApproveSubmission = isReport && isManagerApprove && task.status === 'submitted';
+  const canApproveSubmission = isManagerApprove && task.status === 'submitted';
   const canReject = canRejectSubmission(currentProfile, task);
   const canReopen = canReopenDone(currentProfile, task);
   const canRequestExtension = isAssignee && task.status !== 'done' && task.status !== 'canceled';
@@ -139,7 +134,7 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, onClose, show
 
   const runForceComplete = async () => {
     const ok = await confirmDialog({
-      title: 'Xác nhận ghi nhận hoàn thành công việc/báo cáo?',
+      title: 'Xác nhận ghi nhận hoàn thành công việc?',
       description: 'Bạn có chắc chắn muốn ghi nhận hoàn thành? Việc này sẽ đóng công việc dù người nhận chưa nộp.',
       confirmText: 'Xác nhận',
     });
@@ -228,7 +223,7 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, onClose, show
     }, 100);
   };
 
-  // Cờ "Báo cáo bị trả về" — banner đỏ cam cho người được giao
+  // Cờ "Công việc bị trả về" — banner đỏ cam cho người được giao
   const lastReturnedAt = (task as any).last_returned_at as string | null | undefined;
   const lastReturnReason = (task as any).last_return_reason as string | null | undefined;
   const showReturnedBanner = !!(lastReturnedAt && lastReturnReason
@@ -249,7 +244,7 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, onClose, show
           </Badge>
         )}
         <Badge variant="outline" className="rounded-full px-2.5 py-0.5 font-medium bg-slate-50 border-slate-200 text-slate-600">
-          Báo cáo
+          Công việc
         </Badge>
         {dueOverdue && (
           <Badge className="rounded-full px-2.5 py-0.5 font-semibold bg-red-50 text-red-700 border border-red-200">
@@ -281,7 +276,7 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, onClose, show
         <div className="flex items-start gap-3 p-3 rounded-2xl bg-amber-50 border border-amber-200">
           <Undo2 className="icon-md text-amber-600 shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0">
-            <p className="text-label text-amber-800">Báo cáo bị trả về để sửa</p>
+            <p className="text-label text-amber-800">Công việc bị trả về để sửa</p>
             <p className="text-subtitle text-amber-900 mt-0.5 whitespace-pre-wrap">{lastReturnReason}</p>
             <p className="text-meta text-amber-700 mt-1">
               {format(new Date(lastReturnedAt!), 'EEEE, dd/MM/yyyy HH:mm', { locale: vi })}
@@ -335,10 +330,10 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, onClose, show
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 p-4 bg-slate-50 rounded-2xl">
-        {isReport && task.department && (
+        {task.department && (
           <MetaRow
             icon={<Building2 className="icon-md text-amber-500" />}
-            label="Phòng nhận báo cáo"
+            label="Phòng nhận việc"
             value={<span className="heading-card truncate">{task.department.name}</span>}
           />
         )}
@@ -353,13 +348,6 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, onClose, show
           }
         />
 
-        {!isReport && task.department && (
-          <MetaRow
-            icon={<Building2 className="icon-md text-slate-400" />}
-            label="Phòng ban"
-            value={<span className="heading-card truncate">{task.department.name}</span>}
-          />
-        )}
 
         <MetaRow
           icon={
@@ -377,10 +365,8 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, onClose, show
         <div className="sm:col-span-2 tight-stack">
           <div className="flex items-center gap-1.5 text-meta">
             <Users className="icon-sm" />
-            <span>{isReport ? 'Cán bộ được phân công' : 'Người nhận'}</span>
+            <span>Người thực hiện</span>
           </div>
-          {/* task_assignees không bao giờ rỗng — RPC auto-fill TP khi giao cho phòng.
-              Đoạn fallback "Chưa phân công" cũ đã bỏ. */}
           {task.assignees && task.assignees.length > 0 && (
             <SelectionPill
               avatars={task.assignees}
@@ -391,15 +377,15 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, onClose, show
               }
             />
           )}
-          {isReportSelfApprove && task.requires_approval && task.status === 'doing' && (
+          {isSelfApprove && task.requires_approval && task.status === 'doing' && (
             <p className="text-subtitle text-amber-700 font-medium italic flex items-center gap-2">
               <AlertTriangle className="icon-sm" />
-              Bạn là người duyệt báo cáo của chính mình — bấm "Hoàn thành" để hoàn thành.
+              Bạn là người duyệt công việc của chính mình — bấm "Hoàn thành" để hoàn thành.
             </p>
           )}
           {task.requires_approval && (
             <p className="text-meta italic">
-              Báo cáo này cần Trưởng phòng duyệt sau khi nộp.
+              Công việc này cần Trưởng phòng duyệt kết quả.
             </p>
           )}
         </div>
@@ -411,7 +397,7 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, onClose, show
         <div className="flex flex-wrap gap-2 items-center">
           {canSubmit && (
             <PrimaryAction
-              label="Nộp báo cáo"
+              label="Gửi kết quả"
               tone="primary"
               icon={<Send className="icon-md" />}
               onClick={() => setOpenSubmit(true)}
@@ -505,8 +491,8 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, onClose, show
       {(() => {
         const systemPatterns = [
           /đã hoàn thành\.?$/,
-          /trả lại báo cáo đã hoàn thành\. Lý do:/,
-          /trả về báo cáo để sửa\. Lý do:/,
+          /trả lại công việc đã hoàn thành\. Lý do:/,
+          /trả về công việc để sửa\. Lý do:/,
           /đã sửa:/,
           /^Đã hủy công việc/,
           /^Đã hoàn thành\.?$/
@@ -538,8 +524,8 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, onClose, show
           comments={task.comments.filter(c => {
             const systemPatterns = [
               /đã hoàn thành\.?$/,
-              /trả lại báo cáo đã hoàn thành\. Lý do:/,
-              /trả về báo cáo để sửa\. Lý do:/,
+              /trả lại công việc đã hoàn thành\. Lý do:/,
+              /trả về công việc để sửa\. Lý do:/,
               /đã sửa:/,
               /^Đã hủy công việc/,
               /^Đã hoàn thành\.?$/
@@ -570,7 +556,7 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, onClose, show
         />
       )}
       {openSubmit && (
-        <TaskSubmitReportDialog
+        <TaskSubmitResultDialog
           task={{ id: task.id, title: task.title }}
           onClose={() => setOpenSubmit(false)}
           onChanged={() => { setOpenSubmit(false); onChanged(); }}

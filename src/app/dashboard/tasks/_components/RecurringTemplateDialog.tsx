@@ -58,7 +58,7 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
     if (!isOpen || !profile) return;
     (async () => {
       const list = await fetchAssignableProfiles({
-        context: 'create-report',
+        context: 'create-assignment',
         caller: {
           id: profile.id,
           role: profile.role ?? null,
@@ -148,8 +148,8 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
       is_active: editing?.is_active ?? true,
     });
     setLoading(false);
-    if (!res.ok) { notifyError(res.error, 'Không lưu được template'); return; }
-    notifySuccess(editing ? 'Đã cập nhật' : 'Đã tạo template');
+    if (!res.ok) { notifyError(res.error, 'Không lưu được mẫu định kỳ'); return; }
+    notifySuccess(editing ? 'Đã cập nhật' : 'Đã tạo mẫu định kỳ');
     onSaved?.();
     setIsOpen(false);
   };
@@ -159,10 +159,10 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
       <DialogContent className="app-dialog-sheet app-dialog-sheet--2xl shadow-2xl">
         <DialogHeader className="app-dialog-sheet-header">
           <DialogTitle className="heading-section">
-            {editing ? 'Sửa lịch báo cáo định kỳ' : 'Lịch báo cáo định kỳ'}
+            {editing ? 'Sửa công việc định kỳ' : 'Công việc định kỳ'}
           </DialogTitle>
           <DialogDescription className="text-subtitle">
-            Giao báo cáo định kỳ.
+            Hệ thống tự sinh công việc theo lịch cho phòng ban hoặc cán bộ được chọn.
           </DialogDescription>
         </DialogHeader>
 
@@ -173,7 +173,7 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
               <Input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="Tên báo cáo sinh ra mỗi kỳ..."
+                placeholder="Tên công việc sinh ra mỗi kỳ..."
                 className="min-h-11 rounded-xl bg-slate-50 border-none"
               />
             </div>
@@ -184,13 +184,13 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
                 rows={2}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Số liệu, biểu mẫu, lưu ý khi nộp..."
+                placeholder="Nội dung, yêu cầu, lưu ý khi thực hiện..."
                 className="rounded-xl bg-slate-50 border-none resize-none"
               />
             </div>
 
             <div className="group-stack">
-              <Label className="text-label">{target === 'profile' ? 'Người nhận' : 'Đối tượng nhận'}</Label>
+              <Label className="text-label">{target === 'profile' ? 'Người nhận' : 'Cách giao việc'}</Label>
               {canCrossDept && (
                 <div className="grid grid-cols-2 gap-2">
                   <button
@@ -205,7 +205,7 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
                   >
                     <div className="flex items-center gap-2">
                       <Building2 className="icon-md text-amber-500" />
-                      <span className="heading-card">Cả phòng ban</span>
+                      <span className="heading-card">Giao cho phòng ban khác</span>
                     </div>
                   </button>
                   <button
@@ -220,7 +220,7 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
                   >
                     <div className="flex items-center gap-2">
                       <UserIcon className="icon-md text-primary" />
-                      <span className="heading-card">Cán bộ cụ thể</span>
+                      <span className="heading-card">Giao cho cán bộ trong phòng mình</span>
                     </div>
                   </button>
                 </div>
@@ -230,7 +230,7 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
                   items={cachedDepts}
                   selected={deptIds}
                   onChange={setDeptIds}
-                  triggerLabel="Chọn phòng ban"
+                  triggerLabel="Chọn phòng ban nhận việc"
                 />
               ) : (
                 <PeoplePicker
@@ -250,7 +250,7 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
               <div className="tight-stack">
                 <Label className="text-label">Cán bộ mặc định (tuỳ chọn)</Label>
                 <p className="text-meta italic">
-                  Để trống: TP của phòng nhận. Chọn người: mỗi kỳ giao thẳng — không cần TP phân công lại.
+                  Để trống: giao cho Trưởng phòng của phòng nhận. Chọn người: mỗi kỳ giao thẳng cho người đó.
                 </p>
                 <PeoplePicker
                   profiles={profiles}
@@ -267,7 +267,7 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
                     onClick={() => setDefaultAssigneeId(null)}
                     className="text-meta text-primary self-start hover:underline min-h-9"
                   >
-                    Bỏ chọn — về TP mặc định
+                    Bỏ chọn — giao cho Trưởng phòng
                   </button>
                 )}
               </div>

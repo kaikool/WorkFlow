@@ -61,8 +61,8 @@ Hệ thống có **7 role** khai báo ở enum `user_role` (Postgres) + type `Us
 | Role enum | Vai trò thực tế | Tóm tắt quyền |
 |-----------|----------------|---------------|
 | `admin` | Quản trị viên (IT) | Toàn quyền: duyệt account_requests, CRUD `document_categories` (kèm SLA), quản lý phòng họp/xe, reset password, set `is_active`, xem mọi hồ sơ/task/lịch. |
-| `director` | Giám đốc / Phó Giám đốc | Xem **toàn bộ hồ sơ** chi nhánh (read-only truy vết), xem mọi task, duyệt đơn nghỉ phép của cấp Trưởng phòng / lãnh đạo cùng cấp. Lịch trình của BGĐ public toàn chi nhánh. |
-| `manager` | Trưởng phòng / Phó phòng | Xem & update task của phòng. Duyệt đơn nghỉ phép nhân viên cùng phòng (chỉ khi `is_department_head = true` HOẶC creator không phải lãnh đạo cùng cấp). Nếu thuộc phòng **Tổ chức Tổng hợp** (code `13602`) → có quyền điều phối phòng họp/xe như `secretary`. |
+| `director` | Giám đốc / Phó Giám đốc | Xem toàn chi nhánh, tạo/giao công việc, duyệt đơn nghỉ phép của cấp Trưởng phòng / lãnh đạo cùng cấp. Không là người nhận công việc trong module Công việc. Lịch trình của BGĐ public toàn chi nhánh. |
+| `manager` | Trưởng phòng / Phó phòng | Trưởng phòng (`is_department_head = true`) quan sát và xử lý toàn bộ công việc của phòng. Manager khác chỉ thấy công việc mình tạo hoặc được giao. Nếu thuộc phòng **Tổ chức Tổng hợp** (code `13602`) → có quyền điều phối phòng họp/xe như `secretary`. |
 | `staff` | Nhân viên (RM, GDV, KSV, Kho quỹ, Pháp chế, IT, Tổ chức Tổng hợp…) | Tạo & luân chuyển hồ sơ vật lý, xem task được giao hoặc do mình tạo, đăng ký lịch họp/đặt xe, tạo đơn nghỉ phép. Phân biệt nhau qua `department_id`. |
 | `secretary` | Thư ký Ban Giám đốc | Điều phối phòng họp + xe ô tô (CRUD `rooms`, `vehicles`, gán xe/lái xe cho lịch có yêu cầu xe). Không xem lịch không xe nếu không phải creator/participant/cùng phòng/trừ lịch có BGĐ. |
 | `hr_officer` | Cán bộ Nhân sự | Workspace riêng (`HRDashboardView`), **read-only** đơn nghỉ phép toàn chi nhánh, xem danh bạ, xem mọi profile (tổng hợp data nhân sự). |
@@ -97,15 +97,15 @@ Hệ thống có **7 role** khai báo ở enum `user_role` (Postgres) + type `Us
 **Module Tasks — phân quyền theo phòng đầu mối (hub):**
 
 | Hành động | admin | director | manager hub | manager non-hub | staff hub | staff non-hub |
-|-----------|:-:|:-:|:-:|:-:|:-:|:-:|
-| Yêu cầu báo cáo phòng mình | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Yêu cầu báo cáo phòng khác (qua "Cả phòng ban") | ✅ | ✅ | ✅ | ❌ | ✅ | ❌ |
-| Tạo template định kỳ (recurring) | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Delegate / Approve / Reject submission (TP cùng phòng) | ✅ | ✅ | ✅ (phòng mình) | ✅ (phòng mình) | ❌ | ❌ |
-| Reopen `done → doing` | ✅ | ✅ | ✅ (phòng liên quan) | ✅ (phòng liên quan) | ✅ (nếu là người tạo) | ❌ |
+|-----------|-------|----------|-------------|-----------------|-----------|---------------|
+| Tạo công việc trong phòng mình | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
+| Giao công việc cho phòng ban khác | ✅ | ✅ | ✅ | ❌ | ✅ | ❌ |
+| Tạo công việc định kỳ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
+| Xem Analytics | ✅ | ✅ | ✅ | ✅ nếu `isCoordinatorDepartment` | ✅ nếu `isCoordinatorDepartment` | ❌ |
+| Xem task phòng mình | ✅ | ✅ | ✅ | ✅ | Theo assignee/creator | Theo assignee/creator |
 | Xem Analytics toàn chi nhánh | ✅ | ✅ | ✅ (Coordinator) | ❌ | ✅ (Coordinator) | ❌ |
 
-> **Hub department codes:** `13618`, `13601`, `13602`, `13605`, `13609`, `13603` — xem `isHubDepartment(profile)`. Manager non-hub bị siết về phòng mình; muốn yêu cầu báo cáo phòng khác phải leo lên BGĐ.
+> **Hub department codes:** `13618`, `13601`, `13602`, `13605`, `13609`, `13603` — xem `isHubDepartment(profile)`. Manager non-hub bị siết về phòng mình.
 
 > Helper chính thức: [`src/lib/permissions.ts`](src/lib/permissions.ts). Mọi check role/department phải đi qua helper, **cấm inline `profile.role === 'admin'` trong component** (xem `ARCHITECTURE.md §6.4`).
 
@@ -310,69 +310,65 @@ Trang đích sau login. **Hiển thị view khác nhau theo role**:
 > Analytics: `/dashboard/tasks/analytics` · Recurring: `/dashboard/tasks/recurring`
 > Code: [`src/app/dashboard/tasks/`](src/app/dashboard/tasks/)
 
-#### 3.3.1 Một luồng nghiệp vụ (Báo cáo)
+#### 3.3.1 Luồng nghiệp vụ công việc
 
-Chỉ `task_type = 'report'` (báo cáo).
-
-**Status enum** (`task_status`): `todo`, `doing`, `submitted`, `done`, `canceled`. Hai value cũ `late`/`closed` đã deprecated (migrate sang `doing`/`done+is_archived`).
+**Status enum** (`task_status`): `todo`, `doing`, `submitted`, `done`, `canceled`.
 
 #### 3.3.2 Tính năng cốt lõi
 
 - **Multi-assignee qua bảng N-N `task_assignees`** (junction `task_id × user_id`). RLS check qua `user_can_see_task(p_task_id)` SECURITY DEFINER.
-- **Auto-fill TP làm assignee mặc định** — invariant: `task_assignees` không bao giờ rỗng. Khi giao qua phòng (`dept_id` non-null, `assignee_ids` rỗng) → RPC `task_create`/`recurring_fire_due` resolve qua `_resolve_default_assignee(p_dept_id, p_override)`: ưu tiên `is_department_head=true`, fallback manager active đầu tiên. UI bỏ hẳn label "Chưa phân công".
-- **`batch_id`** — gộp nhiều phòng/người trong 1 lần tạo. Counter dashboard đếm theo batch (1 lần gửi cho 3 phòng = 1 batch, không phải 3 task rời).
-- **Comment** — bảng `task_comments`, RLS đi qua `user_can_see_task`. Comment prefix `[Hệ thống]` được render ở Timeline.
-- **Xin gia hạn** — bảng `task_extension_requests`. NV submit `new_due_date` + reason, TP duyệt popup → cập `tasks.due_date`.
-- **Phân công (Delegate)** — TP nhận report cấp phòng → bấm "Phân công" chọn NV trong phòng.
-- **Sửa nội dung (Edit)** — creator + manager của creator + admin/director sửa title/description/priority/due_date qua RPC `task_update`. Field bất biến (dept/assignee/requires_approval) chỉ thay qua RPC chuyên biệt.
-- **Xóa hẳn (Hard delete)** — creator + manager của creator + admin/director có thể xóa hoàn toàn báo cáo khỏi hệ thống. Dữ liệu liên quan được xử lý theo FK cascade.
-- **Ghi nhận hoàn thành** — creator, manager và admin có thể chủ động ấn "Đã nhận" (force complete) để đóng báo cáo và chuyển sang `done` ngay cả khi người được giao chưa nộp.
-- **Recurring** — bảng `task_recurring_templates`. Admin/Director/Manager + staff hub đặt lịch (weekly thứ X giờ, hoặc monthly ngày X giờ). RPC `recurring_fire_due()` sinh task khi `next_run_at <= now`. pg_cron 15p (nếu enabled), fallback Vercel cron daily 8h.
-- **`default_assignee_id` (override TP)** — trong `task_recurring_templates`. Khi giao báo cáo định kỳ qua phòng, có thể chỉ định trực tiếp 1 cán bộ — mỗi kỳ giao thẳng cho người đó, TP không phải phân công lại. NULL = fallback TP. Chỉ áp khi `target_department_ids` non-empty.
-- **Analytics** — RPC `tasks_analytics(p_from, p_to, p_dept_id)` trả counts + daily + by_department + top_people + recurring_active. Trang `/analytics` có export CSV (UTF-8 BOM cho Excel).
-- **Hủy** — bảng status `canceled`. Cả creator/assignee/manager đều bấm được. NV không có quyền Delete.
-- **Optimistic UI** — swipe Done trên TaskCard (mobile). State patch local + rollback nếu RPC fail.
-- **Auto-archive**: cron daily 8:00 ICT gọi `auto_archive_and_cleanup()` — done/canceled quá 60 ngày → `is_archived = true`.
+- **Auto-fill người nhận mặc định khi giao qua phòng** — `task_assignees` luôn có người thực hiện. Khi `dept_id` non-null và `assignee_ids` rỗng, RPC `task_create`/`recurring_fire_due` resolve qua `_resolve_default_assignee(p_dept_id)`: ưu tiên Trưởng phòng `is_department_head=true`, fallback manager active đầu tiên, sau đó user active trong phòng.
+- **`batch_id`** — gộp nhiều phòng/người trong 1 lần tạo. Counter dashboard đếm theo batch.
+- **Comment** — bảng `task_comments`, RLS đi qua `user_can_see_task`.
+- **Xin gia hạn** — bảng `task_extension_requests`. Người thực hiện submit `new_due_date` + reason; người có thẩm quyền duyệt cập `tasks.due_date`.
+- **Phân công** — Trưởng phòng nhận công việc cấp phòng và phân công cán bộ trong phòng.
+- **Sửa nội dung** — creator + Trưởng phòng của creator + admin/director sửa title/description/priority/due_date qua RPC `task_update`.
+- **Xóa hẳn** — creator + Trưởng phòng của creator + admin/director có thể xoá công việc khỏi hệ thống.
+- **Ghi nhận hoàn thành** — creator, Trưởng phòng và admin/director có thể chủ động ghi nhận hoàn thành.
+- **Recurring** — bảng `task_recurring_templates`. Admin/Director/Manager + staff hub đặt lịch. Template chỉ người tạo xem/sửa/xoá/bật tắt. Worker `recurring_fire_due()` sinh công việc cho phòng ban hoặc cán bộ được chọn khi `next_run_at <= now()`.
+- **`default_assignee_id`** — trong `task_recurring_templates`. Khi giao định kỳ qua phòng, có thể chỉ định trực tiếp một cán bộ. NULL = fallback theo `_resolve_default_assignee`.
+- **Analytics** — RPC `tasks_analytics(p_from, p_to, p_dept_id)` trả counts + daily + by_department + top_people + recurring_active. Trang `/analytics` có export CSV.
+- **Hủy** — bảng status `canceled`.
+- **Auto-archive**: cron daily 08:00 ICT gọi `auto_archive_and_cleanup()`.
 
-#### 3.3.3 Phân quyền tạo báo cáo
+#### 3.3.3 Phân quyền tạo công việc
 
-Phòng đầu mối ("hub") gồm 6 mã: `13618` (Phòng chuyên trách Hub), `13601` (BGĐ), `13602` (Tổ chức Tổng hợp), `13605`, `13609`, `13603`. Helper `isHubDepartment(profile)` + `_is_hub_department(dept_id)` (SQL) đồng bộ.
+Phòng đầu mối ("hub") gồm 6 mã: `13618` (Phòng chuyên trách Hub), `13601` (BGĐ), `13602` (Tổ chức Tổng hợp), `13605`, `13609`, `13603`. Helper `isHubDepartment(profile)` + `_is_hub_department(dept_id)` đồng bộ.
 
-| Vai trò | Yêu cầu báo cáo |
-|---------|----------------|
-| `admin` | ✅ Mọi cán bộ / mọi phòng |
-| `director` | ✅ Mọi cán bộ / mọi phòng |
-| `manager` | ✅ Cán bộ phòng mình hoặc giao qua phòng khác (auto-fill TP); manager non-hub giới hạn phòng mình |
-| `staff` | ✅ Nếu thuộc phòng đầu mối; staff non-hub không tạo báo cáo |
-| `secretary`/`hr_officer`/`driver` | ❌ |
+| Vai trò | Tạo/giao công việc |
+|---------|--------------------|
+| `admin` | Mọi cán bộ / mọi phòng |
+| `director` | Mọi cán bộ / mọi phòng; không là người nhận |
+| `manager` | Cán bộ phòng mình; manager hub được giao qua phòng khác; manager non-hub giới hạn phòng mình |
+| `staff` | Staff hub được tạo/giao; staff non-hub không tạo |
+| `secretary`/`hr_officer`/`driver` | Không tạo trong module Công việc |
 
-#### 3.3.4 Defense-in-depth — 5 lớp bảo vệ
+#### 3.3.4 Defense-in-depth
 
-Phân quyền Tasks không chỉ ở UI — được check lặp ở 5 layer độc lập:
+Phân quyền Tasks được check lặp ở các layer độc lập:
 
-1. **UI helpers** ([`src/lib/permissions.ts`](src/lib/permissions.ts)) — ẩn nút/toggle/tab dựa trên `canAssignTaskToOthers`, `canRequestReport`, `canTargetCrossDepartment`. Ngăn click; không phải bảo mật.
-2. **Fetch profiles filter** ([`fetchAssignableProfiles`](src/app/dashboard/tasks/_lib/fetchTasks.ts)) — query `profiles` ở client đã lọc theo scope (manager → phòng mình; hub user create-report → phòng mình). Picker không bao giờ list ra cán bộ ngoài scope.
-3. **RPC `task_create`** ([`migration_task_scope.sql`](supabase/migration_task_scope.sql) §1) — kiểm tra lại `assignee_ids` cùng phòng v_dept; hub user pick cá nhân cross-dept → RAISE EXCEPTION. Là backend authoritative cho ad-hoc.
-4. **RPC `recurring_template_upsert`** ([`migration_task_scope.sql`](supabase/migration_task_scope.sql) §2) — cùng ma trận như `task_create`. Reject nếu `target_user_ids` chứa cán bộ phòng khác.
-5. **Worker `recurring_fire_due`** — khi template fire ra task định kỳ, reuse `_resolve_default_assignee` (override > TP `is_department_head` > manager active đầu tiên). Đảm bảo invariant "không bao giờ rỗng assignee" + "giữ đúng scope đã được upsert duyệt".
-
-> **Tóm lại:** Đổi RPC mà quên đổi helper → UI hiện nút nhưng bấm vẫn lỗi (toast). Đổi helper mà quên đổi RPC → user nghịch DevTools vẫn không qua được. Luôn cập song song 2 layer.
+1. **UI helpers** ([`src/lib/permissions.ts`](src/lib/permissions.ts)) — ẩn nút/toggle/tab dựa trên `canCreateTaskAssignment`, `canTargetCrossDepartment`, `canViewTaskScopeTabs`.
+2. **Fetch profiles filter** ([`fetchAssignableProfiles`](src/app/dashboard/tasks/_lib/fetchTasks.ts)) — lọc người nhận theo scope; không list admin/director/driver/secretary/hr_officer.
+3. **RPC `task_create`** — kiểm tra quyền tạo, scope người nhận, role người nhận và auto-fill khi giao qua phòng.
+4. **RPC `recurring_template_upsert`** — chỉ creator sửa template; reject người nhận ngoài scope hoặc thuộc role không nhận công việc.
+5. **Worker `recurring_fire_due`** — sinh công việc theo template đã duyệt, gắn người nhận cụ thể qua `default_assignee_id` hoặc `_resolve_default_assignee`.
 
 #### 3.3.5 Phân quyền tầm nhìn task
 
-- `admin`/`director`: thấy mọi task.
-- `manager`: thấy task của phòng (`department_id = manager.department_id`).
-- `staff`: thấy task được giao (`assignee_id` hoặc có trong `task_assignees`) + task tự tạo (`created_by`).
-- Sidebar ẩn module với `driver` + `secretary` (lễ tân). `hr_officer` được MỞ.
+- `admin`/`director`: thấy toàn chi nhánh.
+- Trưởng phòng (`manager` + `is_department_head=true`): thấy công việc thuộc phòng mình.
+- Manager khác: chỉ thấy công việc mình tạo hoặc được giao.
+- `staff`: thấy công việc mình tạo hoặc được giao.
+- `secretary`, `hr_officer`, `driver`: không vào module Công việc.
 
 #### 3.3.6 Action UI
 
-Detail panel hiển thị 5 nút icon-only đồng bộ (h-11 w-11 rounded-full + Tooltip):
-- Primary CTA (filled): Bắt đầu / Hoàn thành / Nộp báo cáo / Duyệt báo cáo (tone amber-600 cho moment cao trào).
-- Secondary (outline): Trả về / Phân công / Xin gia hạn.
-- Destructive (ghost red): Huỷ (`X` icon, ml-auto).
+Detail panel hiển thị các action theo quyền:
+- Primary CTA: Bắt đầu / Hoàn thành / Gửi kết quả / Duyệt kết quả.
+- Secondary: Trả về / Phân công / Xin gia hạn.
+- Destructive: Huỷ / Xoá theo quyền.
 
-Mọi assignee picker dùng `<PeoplePicker>` shared (`src/components/ui/people-picker.tsx`) với grouping qua `groupProfilesByDepartment` từ `@/lib/profile-grouping`. AvatarStack hiển thị nhiều người chọn — không bao giờ chip-name hàng loạt. Khi `canTargetCrossDepartment` → hiện toggle "Cả phòng ban / Cán bộ cụ thể" (DepartmentPicker vs PeoplePicker).
+Mọi assignee picker dùng `<PeoplePicker>` shared (`src/components/ui/people-picker.tsx`) với grouping qua `groupProfilesByDepartment` từ `@/lib/profile-grouping`. Khi `canTargetCrossDepartment` → hiện lựa chọn "Giao cho phòng ban khác" / "Giao cho cán bộ trong phòng mình".
 
 ---
 
@@ -645,7 +641,7 @@ Mỗi page chính subscribe 1 channel Supabase Realtime, refetch toàn list khi 
 | `handover_realtime_sync` | documents, document_handovers, document_categories, document_comments | `/dashboard/handover` |
 | `schedule_realtime_sync` | schedules, schedule_participants, rooms, vehicles | `/dashboard/schedule` |
 | `notifications_realtime_<userId>` | notifications (filter user_id) | `<NotificationsDropdown>` |
-| `task_<id>` / `report_<id>` | tasks, task_comments | `/dashboard/tasks/[id]` |
+| `task_<id>` | tasks, task_comments | `/dashboard/tasks/[id]` |
 
 ### 5.3 Mobile-first UX
 
@@ -671,7 +667,7 @@ Mỗi page chính subscribe 1 channel Supabase Realtime, refetch toàn list khi 
 | Route | Placeholder | Có status filter |
 |-------|-------------|------------------|
 | `/dashboard/team` | "Tìm kiếm cán bộ, phòng ban..." | — |
-| `/dashboard/tasks` | "Tìm kiếm công việc, báo cáo..." | ✅ |
+| `/dashboard/tasks` | "Tìm kiếm công việc..." | ✅ |
 | `/dashboard/handover` | "Tìm mã hồ sơ, tiêu đề, khách hàng..." | ✅ |
 | `/dashboard/admin` | "Tìm kiếm tài khoản, dữ liệu..." | — |
 | `/dashboard/settings/users` | "Tìm kiếm người dùng..." | — |
@@ -690,7 +686,7 @@ Query string `?q=...&status=...` đẩy vào URL → mỗi page tự đọc và 
 
 | Job | Lịch | Nơi chạy | Tác dụng |
 |-----|------|----------|----------|
-| `/api/cron/notifications` | `0 8 * * *` daily 8:00 ICT (`vercel.json`) | Vercel cron — dùng `SUPABASE_SERVICE_ROLE_KEY` | (1) Gọi `auto_archive_and_cleanup()`. (2) Quét task quá hạn → insert notification "Quá hạn". (3) **Chúc sinh nhật toàn chi nhánh** (loại driver + người opt-out `birthday_notify_optout=true`; tự skip chính chủ thể). (4) **Kỷ niệm gắn bó** 5/10/15/20 năm — notify toàn chi nhánh. (5) Gọi RPC `cleanup_expired_ooo()` dọn OOO hết hạn. Bảo vệ bằng `CRON_SECRET` nếu được set. |
+| `/api/cron/notifications` | `0 1 * * *` daily 08:00 ICT (`vercel.json`, Vercel cron chạy UTC) | Vercel cron — dùng `SUPABASE_SERVICE_ROLE_KEY` | (1) Gọi `auto_archive_and_cleanup()`. (2) Quét task quá hạn → insert notification "Quá hạn". (3) **Chúc sinh nhật toàn chi nhánh** (loại driver + người opt-out `birthday_notify_optout=true`; tự skip chính chủ thể). (4) **Kỷ niệm gắn bó** 5/10/15/20 năm — notify toàn chi nhánh. (5) Gọi RPC `cleanup_expired_ooo()` dọn OOO hết hạn. Bảo vệ bằng `CRON_SECRET` nếu được set. |
 | Edge `cleanup-document-images` | `0 19 * * *` UTC = 02:00 ICT | Supabase Edge Function | Quét `documents` `COMPLETED > 30 ngày, attached_image_urls ≠ '{}'` → xoá file storage + clear mảng URLs. Giới hạn 200 hồ sơ/lượt. |
 | Edge `push-notification` | Trigger qua DB webhook (không phải cron) | Supabase Edge Function | Mỗi INSERT `notifications` → đọc `push_subscriptions` → fire Web Push VAPID tới mọi device. |
 
@@ -724,7 +720,7 @@ Query string `?q=...&status=...` đẩy vào URL → mỗi page tự đọc và 
 
 ---
 
-**Phiên bản:** 1.5 — 2026-06-23 (Cleanup: xoá hẳn task_type column, task_attachments, guard_task_assignee_role; task_create chỉ nhận report; khoá CHECK constraint).
+**Phiên bản:** 1.6 — 2026-06-23 (Module Công việc chuẩn hoá naming task, phân biệt Trưởng phòng với manager thường, private recurring templates, Vercel cron 08:00 ICT).
 #### 3.4.7 Theo dõi thời gian thực
 - `DirectorTimeline` và `ResourcesManagerDashboard` có `now` stateful refresh 30 giây để cập nhật trạng thái xe/người mà không cần reload trang.
 - Khi lịch `in_progress` quá giờ dự kiến: card hiển thị giờ hiện tại (không phải "quá giờ"), timeline dừng ở `end_time` đăng ký, nhưng legend/trạng thái xe vẫn hiển thị "Công tác"/"Đang chạy" cho đến khi có người bấm kết thúc.

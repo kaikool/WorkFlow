@@ -26,7 +26,7 @@ import { cn } from '@/lib/utils';
 import { useAppData } from '@/hooks/use-app-data';
 import { notifyError, notifyValidation, notifySuccess } from '@/lib/notify';
 import {
-  canRequestReport,
+  canCreateTaskAssignment,
   canTargetCrossDepartment,
   getProfileDepartmentCode,
   shouldDefaultAssignTaskToSelf,
@@ -55,7 +55,7 @@ const createTaskSchema = z.object({
   description: z.string(),
   dueDate: z.date({ required_error: 'Vui lòng chọn hạn hoàn thành' }),
   priority: z.enum(['low', 'medium', 'high']),
-  reportTarget: z.enum(['profile', 'department']),
+  assignmentTarget: z.enum(['profile', 'department']),
   selectedAssignees: z.array(z.string()),
   selectedDepartments: z.array(z.string()),
   requiresApproval: z.boolean(),
@@ -76,7 +76,7 @@ function defaultValues(profile?: { id: string; role?: string | null } | null): C
     description: '',
     dueDate: defaultDueDate(),
     priority: 'medium',
-    reportTarget: 'department',
+    assignmentTarget: 'department',
     selectedAssignees: [],
     selectedDepartments: [],
     requiresApproval: false,
@@ -104,12 +104,12 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
 
   const dueDate = form.watch('dueDate');
   const priority = form.watch('priority');
-  const reportTarget = form.watch('reportTarget');
+  const assignmentTarget = form.watch('assignmentTarget');
   const selectedAssignees = form.watch('selectedAssignees');
   const selectedDepartments = form.watch('selectedDepartments');
   const requiresApproval = form.watch('requiresApproval');
 
-  const canMakeReport = canRequestReport(profile);
+  const canCreateAssignment = canCreateTaskAssignment(profile);
   const canCrossDept = canTargetCrossDepartment(profile);
 
   useEffect(() => {
@@ -123,7 +123,7 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
     setFetching(true);
     (async () => {
       const list = await fetchAssignableProfiles({
-        context: 'create-report',
+        context: 'create-assignment',
         caller: {
           id: profile.id,
           role: profile.role ?? null,
@@ -142,7 +142,7 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
   }, [isOpen, profile?.id, cachedDepts]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (!canCrossDept) form.setValue('reportTarget', 'profile');
+    if (!canCrossDept) form.setValue('assignmentTarget', 'profile');
   }, [canCrossDept, form]);
 
   const resetForm = () => form.reset(defaultValues(profile));
@@ -161,7 +161,7 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
   const handleSubmit = async (values: CreateTaskFormValues) => {
     setLoading(true);
     try {
-      if (values.reportTarget === 'department') {
+      if (values.assignmentTarget === 'department') {
         if (values.selectedDepartments.length === 0) {
           notifyValidation('Vui lòng chọn ít nhất một phòng ban');
           setLoading(false); return;
@@ -179,13 +179,13 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
             batch_id: batchId,
           });
           if (!res.ok) {
-            notifyError(res.error, 'Không tạo được báo cáo');
+            notifyError(res.error, 'Không tạo được công việc');
             setLoading(false); return;
           }
         }
         notifySuccess(
-          'Đã gửi yêu cầu',
-          `${values.selectedDepartments.length} phòng — Trưởng phòng sẽ phân công lại`,
+          'Đã tạo công việc',
+          `${values.selectedDepartments.length} phòng sẽ nhận công việc`,
         );
       } else {
         if (values.selectedAssignees.length === 0) {
@@ -206,9 +206,9 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
             requires_approval: values.requiresApproval,
             batch_id: batchId,
           });
-          if (!res.ok) { notifyError(res.error, 'Không tạo được báo cáo'); setLoading(false); return; }
+          if (!res.ok) { notifyError(res.error, 'Không tạo được công việc'); setLoading(false); return; }
         }
-        notifySuccess('Đã gửi yêu cầu', `${values.selectedAssignees.length} cán bộ sẽ nhận yêu cầu báo cáo`);
+        notifySuccess('Đã tạo công việc', `${values.selectedAssignees.length} cán bộ sẽ nhận công việc`);
       }
       resetForm();
       setIsOpen(false);
@@ -225,10 +225,10 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
       <DialogContent className="app-dialog-sheet app-dialog-sheet--2xl shadow-2xl">
         <DialogHeader className="app-dialog-sheet-header">
           <DialogTitle className="heading-section">
-            Yêu cầu báo cáo
+            Tạo công việc
           </DialogTitle>
           <DialogDescription className="text-subtitle">
-            Gửi đến cả phòng (Trưởng phòng tự phân công) hoặc cán bộ cụ thể.
+            Giao việc cho phòng ban khác hoặc chọn trực tiếp cán bộ trong phòng mình.
           </DialogDescription>
         </DialogHeader>
 
@@ -239,7 +239,7 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
               <div className="tight-stack">
                 <Label className="text-label">Tiêu đề</Label>
                 <Input
-                  placeholder="Tên báo cáo yêu cầu..."
+                  placeholder="Tên công việc..."
                   {...form.register('title')}
                   className="min-h-11 rounded-xl bg-slate-50 border-none px-4"
                 />
@@ -250,44 +250,44 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
                 <Textarea
                   rows={3}
                   {...form.register('description')}
-                  placeholder="Số liệu, biểu mẫu, lưu ý khi nộp..."
+                  placeholder="Nội dung, yêu cầu, lưu ý khi thực hiện..."
                   className="rounded-xl bg-slate-50 border-none resize-none px-4 py-3"
                 />
               </div>
 
               <div className="group-stack">
-                <Label className="text-label">Đối tượng nhận</Label>
+                <Label className="text-label">Cách giao việc</Label>
 
                 {canCrossDept && (
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       type="button"
-                      onClick={() => form.setValue('reportTarget', 'department', { shouldValidate: true })}
+                      onClick={() => form.setValue('assignmentTarget', 'department', { shouldValidate: true })}
                       className={cn(
                         'min-h-16 p-3 rounded-xl border text-left transition-all',
-                        reportTarget === 'department'
+                        assignmentTarget === 'department'
                           ? 'bg-primary/10 border-primary'
                           : 'bg-white border-slate-200 hover:bg-slate-50',
                       )}
                     >
                       <div className="flex items-center gap-2">
                         <Building2 className="icon-md text-amber-500" />
-                        <span className="heading-card">Cả phòng ban</span>
+                        <span className="heading-card">Giao cho phòng ban khác</span>
                       </div>
                     </button>
                     <button
                       type="button"
-                      onClick={() => form.setValue('reportTarget', 'profile', { shouldValidate: true })}
+                      onClick={() => form.setValue('assignmentTarget', 'profile', { shouldValidate: true })}
                       className={cn(
                         'min-h-16 p-3 rounded-xl border text-left transition-all',
-                        reportTarget === 'profile'
+                        assignmentTarget === 'profile'
                           ? 'bg-primary/10 border-primary'
                           : 'bg-white border-slate-200 hover:bg-slate-50',
                       )}
                     >
                       <div className="flex items-center gap-2">
                         <UserIcon className="icon-md text-primary" />
-                        <span className="heading-card">Cán bộ cụ thể</span>
+                        <span className="heading-card">Giao cho cán bộ trong phòng mình</span>
                       </div>
                     </button>
                   </div>
@@ -297,12 +297,12 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
                   <div className="flex items-center justify-center py-6">
                     <Loader2 className="icon-md animate-spin text-slate-400" />
                   </div>
-                ) : reportTarget === 'department' ? (
+                ) : assignmentTarget === 'department' ? (
                   <DepartmentPicker
                     items={cachedDepts}
                     selected={selectedDepartments}
                     onChange={(ids) => form.setValue('selectedDepartments', ids, { shouldValidate: true })}
-                    triggerLabel="Chọn phòng ban nhận báo cáo"
+                    triggerLabel="Chọn phòng ban nhận việc"
                   />
                 ) : (
                   <PeoplePicker
@@ -398,9 +398,9 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
                     className="mt-0.5 shrink-0"
                   />
                   <div className="min-w-0 flex-1">
-                    <p className="text-subtitle font-semibold text-slate-900">Cần Trưởng phòng duyệt</p>
+                    <p className="text-subtitle font-semibold text-slate-900">Cần Trưởng phòng duyệt kết quả</p>
                     <p className="text-meta">
-                      Mặc định tắt — nộp xong là ghi nhận hoàn thành luôn. Bật khi cần kiểm soát chặt.
+                      Mặc định tắt — hoàn thành xong là ghi nhận luôn. Bật khi cần kiểm soát chặt.
                     </p>
                   </div>
                 </label>
@@ -422,7 +422,7 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
               disabled={loading}
               className="min-h-11 px-5 rounded-xl font-semibold bg-primary hover:bg-primary/90 text-white"
             >
-              {loading ? <Loader2 className="icon-sm animate-spin" /> : 'Gửi yêu cầu'}
+              {loading ? <Loader2 className="icon-sm animate-spin" /> : 'Tạo công việc'}
             </Button>
           </DialogFooter>
         </form>

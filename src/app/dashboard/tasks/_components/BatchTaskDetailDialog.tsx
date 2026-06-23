@@ -87,7 +87,7 @@ export function BatchTaskDetailDialog({ isOpen, setIsOpen, batchId, children, on
 
   const runForceCompleteBatch = async () => {
     const ok = await confirmDialog({
-      title: 'Xác nhận ghi nhận hoàn thành lô công việc/báo cáo?',
+      title: 'Xác nhận ghi nhận hoàn thành lô công việc?',
       description: `Bạn có chắc chắn muốn chủ động ghi nhận hoàn thành cho ${pendingChildren.length} công việc chưa nộp trong lô này? Việc này sẽ đóng tất cả công việc.`,
       confirmText: 'Xác nhận',
     });
@@ -158,7 +158,7 @@ export function BatchTaskDetailDialog({ isOpen, setIsOpen, batchId, children, on
             <div>
               <DialogTitle className="heading-section">{representative.title}</DialogTitle>
               <DialogDescription className="text-subtitle">
-                Báo cáo giao {children.length} phòng
+                Công việc giao {children.length} phòng
                 {representative.creator?.full_name && ` · ${representative.creator.full_name} giao`}
                 {dueLabel && ` · hạn ${dueLabel}`}
               </DialogDescription>

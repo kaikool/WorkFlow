@@ -69,7 +69,7 @@ export default function AnalyticsPage() {
   return (
     <div className="page-container group-stack animate-fade-in-up">
       <PageHeader
-        title="Báo cáo tổng hợp"
+        title="Thống kê công việc"
         description={`Từ ${format(from, 'dd/MM', { locale: vi })} đến ${format(to, 'dd/MM/yyyy', { locale: vi })}`}
         action={
           <Button

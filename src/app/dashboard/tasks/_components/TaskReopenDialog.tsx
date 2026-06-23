@@ -17,7 +17,7 @@ interface Props {
   onChanged: () => void;
 }
 
-// Mở lại báo cáo đã hoàn thành (done → doing). Chỉ người tạo/admin.
+// Mở lại công việc đã hoàn thành (done → doing). Chỉ người tạo/admin.
 // Tách riêng khỏi TaskReturnDialog để cảnh báo rõ "đảo ngược quyết định đã chốt".
 export function TaskReopenDialog({ task, onClose, onChanged }: Props) {
   const [reason, setReason] = useState('');
@@ -35,7 +35,7 @@ export function TaskReopenDialog({ task, onClose, onChanged }: Props) {
       notifyError(res.error, 'Không mở lại được');
       return;
     }
-    notifySuccess('Đã mở lại báo cáo', 'Người được giao sẽ nhận thông báo và làm lại.');
+    notifySuccess('Đã mở lại công việc', 'Người được giao sẽ nhận thông báo và làm lại.');
     onChanged();
   };
 
@@ -43,7 +43,7 @@ export function TaskReopenDialog({ task, onClose, onChanged }: Props) {
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="app-dialog-sheet shadow-2xl">
         <DialogHeader className="app-dialog-sheet-header">
-          <DialogTitle className="heading-section">Mở lại báo cáo đã hoàn thành</DialogTitle>
+          <DialogTitle className="heading-section">Mở lại công việc đã hoàn thành</DialogTitle>
           <DialogDescription className="text-subtitle line-clamp-1">{task.title}</DialogDescription>
         </DialogHeader>
 
@@ -52,7 +52,7 @@ export function TaskReopenDialog({ task, onClose, onChanged }: Props) {
             <div className="flex items-start gap-2 p-3 rounded-xl bg-amber-50 border border-amber-200">
               <AlertTriangle className="icon-sm text-amber-700 shrink-0 mt-0.5" />
               <p className="text-subtitle text-amber-800">
-                Báo cáo đang ở trạng thái <b>Hoàn thành</b>. Mở lại sẽ đưa về <b>Đang làm</b> để
+                Công việc đang ở trạng thái <b>Hoàn thành</b>. Mở lại sẽ đưa về <b>Đang làm</b> để
                 người được giao sửa, và ghi vào nhật ký truy vết.
               </p>
             </div>

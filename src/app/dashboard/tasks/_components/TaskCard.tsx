@@ -1,7 +1,7 @@
 'use client';
 
 // TaskCard — list item mobile-first. Click → mở dialog detail.
-// Báo cáo đang chờ duyệt hiển thị dot đỏ "Chờ bạn duyệt" cho TP/BGĐ.
+// Công việc đang chờ duyệt hiển thị dot đỏ "Chờ bạn duyệt" cho TP/BGĐ.
 
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
@@ -9,7 +9,7 @@ import { Calendar, Flag, Users, AlertTriangle, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { canApproveReport } from '@/lib/permissions';
+import { canApproveTaskResult } from '@/lib/permissions';
 import {
   STATUS_LABEL,
   STATUS_BADGE_CLASS,
@@ -30,11 +30,11 @@ interface Props {
 export const TaskCard = React.memo(function TaskCard({ task, onOpen, currentProfile }: Props) {
   const isPending = !!task._pending;
 
-  // Báo cáo đang chờ user (TP/BGĐ) duyệt — show dot đỏ + label nhỏ
+  // Công việc đang chờ user (TP/BGĐ) duyệt — show dot đỏ + label nhỏ
   const isPendingApprove =
     task.status === 'submitted'
     && task.requires_approval
-    && canApproveReport(currentProfile ?? null, task);
+    && canApproveTaskResult(currentProfile ?? null, task);
 
   const handleClick = () => {
     onOpen?.(task.id);

@@ -65,7 +65,7 @@ interface CallerProfile {
   department_code?: string | null;
 }
 
-export type AssignContext = 'create-task' | 'create-report' | 'delegate';
+export type AssignContext = 'create-task' | 'create-assignment' | 'delegate';
 
 interface AssignOpts {
   context: AssignContext;
@@ -73,14 +73,14 @@ interface AssignOpts {
   taskDepartmentId?: string | null;
 }
 
-const HUB_DEPT_CODES = new Set(['13618', '13602', '13605', '13609', '13603']);
+const HUB_DEPT_CODES = new Set(['13618', '13601', '13602', '13605', '13609', '13603']);
 
 function isHubCaller(caller: CallerProfile): boolean {
   return !!caller.department_code && HUB_DEPT_CODES.has(caller.department_code);
 }
 
 /**
- * Fetch profiles có thể yêu cầu báo cáo, filter sẵn ở DB:
+ * Fetch profiles có thể nhận công việc, filter sẵn ở DB:
  *
  *   Staff non-hub: empty (UI ẩn tab).
  *   Manager / Staff trong phạm vi cá nhân: CHỈ phòng mình.
@@ -106,8 +106,8 @@ export async function fetchAssignableProfiles(opts: AssignOpts) {
     return data ? [data] : [];
   }
 
-  // Staff non-hub không được tạo report
-  if (context === 'create-report' && caller.role === 'staff' && !isHub) {
+  // Staff non-hub không được giao công việc cho người khác
+  if (context === 'create-assignment' && caller.role === 'staff' && !isHub) {
     return [];
   }
 
@@ -125,7 +125,7 @@ export async function fetchAssignableProfiles(opts: AssignOpts) {
     // Hub manager muốn giao cho phòng khác → đi qua DepartmentPicker (auto-fill TP).
     if (!caller.department_id) return [];
     q = q.eq('department_id', caller.department_id);
-  } else if (context === 'create-report' && !canSelectSpecificAssigneesAcrossDepartments(caller)) {
+  } else if (context === 'create-assignment' && !canSelectSpecificAssigneesAcrossDepartments(caller)) {
     // Mọi role (manager/staff, kể cả hub) chọn cán bộ cụ thể: chỉ phòng mình.
     // Cross-dept đi qua DepartmentPicker → TP phòng nhận tự phân công.
     if (!caller.department_id) return [];

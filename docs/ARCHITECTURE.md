@@ -29,7 +29,7 @@
 | Image | `browser-image-compression` | 2.0.2 | Client-side compress trước khi upload |
 | Charts | `recharts` (qua shadcn chart) | — | |
 | Backend | **Supabase** | Postgres + Auth + Storage + Edge Functions | |
-| Deploy | Vercel | — | API route `/api/cron/notifications` chạy daily 8:00 |
+| Deploy | Vercel | — | API route `/api/cron/notifications` chạy daily 08:00 ICT (`0 1 * * *` UTC) |
 
 ### 1.2 Luồng dữ liệu cơ bản
 
@@ -103,7 +103,7 @@ WorkFlow/
 │   │   ├── register/
 │   │   ├── auth/                         # OAuth callback bounce → redirect '/'
 │   │   ├── api/
-│   │   │   └── cron/notifications/       # Vercel cron daily 8h
+│   │   │   └── cron/notifications/       # Vercel cron daily 08:00 ICT
 │   │   └── dashboard/                    # Protected (qua middleware + dashboard/layout)
 │   │       ├── layout.tsx                # RSC: getProfile() + DashboardLayout wrap
 │   │       ├── page.tsx                  # Trang dashboard chính
@@ -765,24 +765,23 @@ const showAllTab = profile?.role === "admin" || profile?.role === "director";
 - `getProfileDepartmentCode(profile)` — trích code phòng từ profile (xử lý cả object lẫn array shape của Supabase select)
 - `isHubDepartment(profile)` — true nếu phòng thuộc mã hub: `13618 / 13601 / 13602 / 13605 / 13609 / 13603`
 - `canAccessTasksModule(profile)` — mọi role trừ `driver`/`secretary`/`hr_officer`
-- `getDefaultTaskScope(profile)` — scope mặc định của trang Công việc (`branch` cho admin/director, `dept` cho manager, `mine` cho staff)
-- `canViewTaskScopeTabs(profile)` — hiển thị tabs scope cho admin/director/manager
-- `canViewBranchTaskScope(profile)` — tab Chi nhánh cho admin/director
-- `canRequestReport(profile)` — yêu cầu báo cáo: `admin / director / manager` + `staff` thuộc phòng đầu mối
-- `canTargetCrossDepartment(profile)` — bật toggle "Cả phòng ban" cho `admin / director` + `manager / staff` thuộc hub. Manager non-hub bị siết về phòng mình
-- `canDelegateTask(profile, task)` — phân công (TP cùng phòng + admin/director)
-- `canApproveReport(profile, task)` — duyệt `submitted → done` (cùng quyền delegate)
-- `canRejectSubmission(profile, task)` — trả về `submitted → doing` (người tạo + TP cùng phòng + admin/director)
+- `getDefaultTaskScope(profile)` — scope mặc định của trang Công việc (`branch` cho admin/director, `dept` cho Trưởng phòng, `mine` cho manager thường/staff)
+- `canViewTaskScopeTabs(profile)` — hiển thị tabs scope cho admin/director/Trưởng phòng
+- `canAssignTaskToOthers(profile)` — quyền tạo task cho người khác (admin/director/manager)
+- `canCreateTaskAssignment(profile)` — tạo công việc: `admin / director / manager` + `staff` thuộc phòng đầu mối
+- `canTargetCrossDepartment(profile)` — bật lựa chọn "Giao cho phòng ban khác" cho `admin / director` + `manager / staff` thuộc hub. Manager non-hub bị siết về phòng mình
+- `canDelegateTask(profile, task)` — phân công lại task cấp phòng (admin/director + Trưởng phòng cùng phòng)
+- `canApproveTaskResult(profile, task)` — duyệt `submitted → done` (cùng quyền delegate)
+- `canRejectSubmission(profile, task)` — trả `submitted → doing` kèm lý do (cùng quyền delegate)
 - `canReopenDone(profile, task)` — mở lại `done → doing` (người tạo + manager phòng người tạo/phòng nhận + admin/director)
-- `canEditTask(profile, task)` — sửa title/description/priority/due_date (creator + manager của creator + admin/director, không cho khi `canceled/archived`)
-- `canDeleteTask(profile, task)` — Xóa hẳn task/report khỏi hệ thống (creator + manager của creator + admin/director)
+- `canEditTask(profile, task)` — sửa title/description/priority/due_date (creator + Trưởng phòng của creator + admin/director, không cho khi `canceled/archived`)
+- `canDeleteTask(profile, task)` — Xóa hẳn task khỏi hệ thống (creator + Trưởng phòng của creator + admin/director)
 - `canForceCompleteTask(profile, task)` — Cho phép creator/manager/admin chủ động Ghi nhận hoàn thành dù assignee chưa nộp
-- `canApproveExtension(profile, task)` — duyệt xin gia hạn (TP cùng phòng + admin/director + người tạo task)
-- `canCreateRecurringTemplate(profile)` — tạo template định kỳ (cùng quyền `canRequestReport`)
+- `canCreateRecurringTemplate(profile)` — tạo template định kỳ (cùng quyền `canCreateTaskAssignment`)
 - `canViewTaskAnalytics(profile)` — vào Analytics (admin/director/manager + staff Coordinator)
 - `canViewBranchAnalytics(profile)` — Analytics phạm vi toàn chi nhánh (admin/director + Coordinator)
 
-> **Defense-in-depth** cho Tasks: helper UI chỉ là **layer 1**. Backend (RPC `task_create`, `recurring_template_upsert`, `recurring_fire_due`) check lại độc lập — xem `docs/PRODUCT_OVERVIEW.md §3.3` để biết đủ 5 layer.
+> **Defense-in-depth** cho Tasks: helper UI chỉ là **layer 1**. Backend (RPC `task_create`, `task_delegate`, `recurring_template_upsert`, `recurring_fire_due`) check lại độc lập — xem `docs/PRODUCT_OVERVIEW.md §3.3` để biết đủ 5 layer.
 
 **Khi thêm module mới**: thêm helper `can<Action><Entity>()` vào `permissions.ts` cùng comment tiếng Việt giải thích quy tắc.
 

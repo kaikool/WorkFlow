@@ -17,7 +17,7 @@ interface Props {
   onChanged: () => void;
 }
 
-// Duyệt báo cáo (submitted → done). Nhận xét tuỳ chọn — nếu nhập sẽ vào timeline.
+// Duyệt kết quả (submitted → done). Nhận xét tuỳ chọn — nếu nhập sẽ vào timeline.
 export function TaskApproveDialog({ task, onClose, onChanged }: Props) {
   const [comment, setComment] = useState('');
   const [loading, setLoading] = useState(false);
@@ -30,7 +30,7 @@ export function TaskApproveDialog({ task, onClose, onChanged }: Props) {
       notifyError(res.error, 'Không duyệt được');
       return;
     }
-    notifySuccess('Đã duyệt báo cáo', 'Người được giao sẽ nhận thông báo.');
+    notifySuccess('Đã duyệt kết quả', 'Người được giao sẽ nhận thông báo.');
     onChanged();
   };
 
@@ -38,7 +38,7 @@ export function TaskApproveDialog({ task, onClose, onChanged }: Props) {
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="app-dialog-sheet shadow-2xl">
         <DialogHeader className="app-dialog-sheet-header">
-          <DialogTitle className="heading-section">Duyệt báo cáo</DialogTitle>
+          <DialogTitle className="heading-section">Duyệt kết quả</DialogTitle>
           <DialogDescription className="text-subtitle line-clamp-1">{task.title}</DialogDescription>
         </DialogHeader>
 
@@ -49,12 +49,12 @@ export function TaskApproveDialog({ task, onClose, onChanged }: Props) {
               rows={4}
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              placeholder="Ghi nhận, lời khen hoặc lưu ý cho người báo cáo..."
+              placeholder="Ghi nhận, lời khen hoặc lưu ý cho người thực hiện..."
               className="rounded-xl bg-slate-50 border-none focus-visible:ring-0"
               autoFocus
             />
             <p className="text-meta italic">
-              Bỏ trống nếu không cần ghi chú. Duyệt sẽ chốt báo cáo ở trạng thái Hoàn thành.
+              Bỏ trống nếu không cần ghi chú. Duyệt sẽ chốt công việc ở trạng thái Hoàn thành.
             </p>
           </div>
         </div>

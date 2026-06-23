@@ -41,7 +41,7 @@ export function RecurringTemplateCard({ template, onEdit, onChanged }: Props) {
   const handleDelete = async () => {
     const ok = await confirmDialog({
       title: 'Xoá lịch định kỳ?',
-      description: `"${template.title}" sẽ bị xoá vĩnh viễn. Task đã sinh trước đó vẫn còn.`,
+      description: `"${template.title}" sẽ bị xoá vĩnh viễn. Công việc đã sinh trước đó vẫn còn.`,
       confirmText: 'Xoá',
       danger: true,
     });
@@ -50,7 +50,7 @@ export function RecurringTemplateCard({ template, onEdit, onChanged }: Props) {
     const res = await deleteRecurringTemplate(template.id);
     setBusy(null);
     if (!res.ok) { notifyError(res.error, 'Không xoá được'); return; }
-    notifySuccess('Đã xoá template');
+    notifySuccess('Đã xoá mẫu định kỳ');
     onChanged();
   };
 
@@ -80,7 +80,7 @@ export function RecurringTemplateCard({ template, onEdit, onChanged }: Props) {
 
       <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100">
         <Badge variant="outline" className="rounded-full px-2 py-0.5 font-medium bg-slate-50 border-slate-200 text-slate-600">
-          Báo cáo
+          Công việc
         </Badge>
         <Badge variant="outline" className="rounded-full px-2 py-0.5 font-medium bg-slate-50 border-slate-200 text-slate-600">
           {totalTargets > 0

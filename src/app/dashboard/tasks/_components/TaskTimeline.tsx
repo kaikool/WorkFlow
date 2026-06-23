@@ -56,9 +56,9 @@ export function TaskTimeline({ task }: Props) {
 
     const systemPatterns = [
       /đã hoàn thành\.?$/,
-      /đã duyệt báo cáo\.?$/,
-      /trả lại báo cáo đã hoàn thành\. Lý do:/,
-      /trả về báo cáo để sửa\. Lý do:/,
+      /đã duyệt kết quả\.?$/,
+      /trả lại công việc đã hoàn thành\. Lý do:/,
+      /trả về công việc để sửa\. Lý do:/,
       /đã cập nhật thông tin công việc\.?$/,
       /đã sửa:/,
       /^Đã hủy công việc/,

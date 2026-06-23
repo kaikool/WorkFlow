@@ -116,8 +116,8 @@ export function canCreateDocument(profile: any): boolean {
 
 // Module Công việc (Tasks) -----------------------------------------------------
 
-// Phòng đầu mối — code đặc biệt được phép yêu cầu báo cáo cho phòng khác,
-// kể cả cán bộ staff. Theo nghiệp vụ chi nhánh (phòng điều phối + 4 phòng đầu mối khác).
+// Phòng đầu mối — code đặc biệt được phép giao việc cho phòng khác,
+// kể cả cán bộ staff. Theo nghiệp vụ chi nhánh (phòng điều phối + các phòng đầu mối khác).
 const HUB_DEPARTMENT_CODES = ['13618', '13601', '13602', '13605', '13609', '13603'];
 
 // Trích code phòng từ profile — Supabase có thể trả `departments` dưới dạng
@@ -134,6 +134,14 @@ export function isHubDepartment(profile: any): boolean {
   return !!code && HUB_DEPARTMENT_CODES.includes(code);
 }
 
+export function isDepartmentHeadManager(profile: any): boolean {
+  return !!profile && profile.role === 'manager' && profile.is_department_head === true;
+}
+
+export function isManagerRole(profile: any): boolean {
+  return !!profile && profile.role === 'manager';
+}
+
 // Lái xe, lễ tân và nhân sự không thấy module Tasks.
 export function canAccessTasksModule(profile: any): boolean {
   if (!profile) return false;
@@ -145,49 +153,47 @@ export type TaskScopeValue = 'mine' | 'dept' | 'branch';
 export function getDefaultTaskScope(profile: any): TaskScopeValue {
   if (!profile) return 'mine';
   if (profile.role === 'admin' || profile.role === 'director') return 'branch';
-  if (profile.role === 'manager') return 'dept';
+  if (isDepartmentHeadManager(profile)) return 'dept';
   return 'mine';
 }
 
 export function canViewTaskScopeTabs(profile: any): boolean {
-  return !!profile && ['admin', 'director', 'manager'].includes(profile.role);
+  return !!profile && (['admin', 'director'].includes(profile.role) || isDepartmentHeadManager(profile));
 }
 
 export function canViewBranchTaskScope(profile: any): boolean {
   return !!profile && ['admin', 'director'].includes(profile.role);
 }
 
-// Yêu cầu báo cáo.
-export function canRequestReport(profile: any): boolean {
+// Tạo/giao công việc.
+export function canCreateTaskAssignment(profile: any): boolean {
   if (!profile) return false;
   if (['admin', 'director', 'manager'].includes(profile.role)) return true;
   return profile.role === 'staff' && isHubDepartment(profile);
 }
 
-// Cho phép chọn "Cả phòng ban" (giao qua phòng — đầu mối là TP của phòng đó).
-// Hub manager/staff điều phối chi nhánh; non-hub manager bị siết về phòng mình
-// nên không có nhu cầu chọn phòng (chỉ chính phòng mình → toggle vô nghĩa).
-// Admin/Director toàn quyền.
+// Cho phép giao cho phòng ban khác. Non-hub manager giao trực tiếp trong phòng mình.
 export function canTargetCrossDepartment(profile: any): boolean {
   if (!profile) return false;
   if (['admin', 'director'].includes(profile.role)) return true;
   return ['manager', 'staff'].includes(profile.role) && isHubDepartment(profile);
 }
 
-// Phân công (Delegate) báo cáo cấp phòng — chỉ TP cùng phòng + BGĐ + admin.
-export function canDelegateTask(profile: any, task: { department_id?: string | null } | null): boolean {
+// Quyền quản trị cấp phòng chỉ thuộc Trưởng phòng.
+export function canManageDepartmentTask(profile: any, task: { department_id?: string | null } | null): boolean {
   if (!profile || !task) return false;
   if (profile.role === 'admin' || profile.role === 'director') return true;
-  return profile.role === 'manager' && profile.department_id === task.department_id;
+  return isDepartmentHeadManager(profile) && profile.department_id === task.department_id;
 }
 
-// Duyệt báo cáo (Luồng B submitted → done) — cùng quyền với delegate.
-export function canApproveReport(profile: any, task: { department_id?: string | null } | null): boolean {
-  return canDelegateTask(profile, task);
+export function canDelegateTask(profile: any, task: { department_id?: string | null } | null): boolean {
+  return canManageDepartmentTask(profile, task);
 }
 
-// Trả về báo cáo đã nộp để sửa (submitted → doing).
-// Cho phép: người tạo (created_by) + TP cùng phòng + admin/director.
+export function canApproveTaskResult(profile: any, task: { department_id?: string | null } | null): boolean {
+  return canManageDepartmentTask(profile, task);
+}
+
 export function canRejectSubmission(
   profile: any,
   task: { department_id?: string | null; created_by?: string | null; status?: string | null } | null,
@@ -196,7 +202,7 @@ export function canRejectSubmission(
   if (task.status !== 'submitted') return false;
   if (profile.role === 'admin' || profile.role === 'director') return true;
   if (task.created_by === profile.id) return true;
-  return profile.role === 'manager' && profile.department_id === task.department_id;
+  return canManageDepartmentTask(profile, task);
 }
 
 export function canReopenDone(
@@ -207,14 +213,11 @@ export function canReopenDone(
   if (task.status !== 'done') return false;
   if (profile.role === 'admin' || profile.role === 'director') return true;
   if (task.created_by === profile.id) return true;
-  // Trưởng phòng của Người giao (Creator)
-  if (profile.role === 'manager' && profile.department_id === task.creator?.department_id) return true;
-  // Trưởng phòng của Người nhận (Assignee)
-  if (profile.role === 'manager' && profile.department_id === task.department_id) return true;
+  if (isDepartmentHeadManager(profile) && profile.department_id === task.creator?.department_id) return true;
+  if (isDepartmentHeadManager(profile) && profile.department_id === task.department_id) return true;
   return false;
 }
 
-// Sửa nội dung công việc (title/description/priority/due_date) — creator + manager của creator + admin/director.
 export function canEditTask(
   profile: any,
   task: { created_by?: string | null; status?: string | null; is_archived?: boolean | null; creator?: { department_id?: string | null } | null } | null,
@@ -223,10 +226,9 @@ export function canEditTask(
   if (task.status === 'canceled' || task.is_archived) return false;
   if (profile.role === 'admin' || profile.role === 'director') return true;
   if (task.created_by === profile.id) return true;
-  return profile.role === 'manager' && profile.department_id === task.creator?.department_id;
+  return isDepartmentHeadManager(profile) && profile.department_id === task.creator?.department_id;
 }
 
-// Xoá hoàn toàn công việc — creator + manager của creator + admin/director.
 export function canDeleteTask(
   profile: any,
   task: {
@@ -237,7 +239,7 @@ export function canDeleteTask(
   if (!profile || !task) return false;
   if (profile.role === 'admin' || profile.role === 'director') return true;
   if (task.created_by === profile.id) return true;
-  return profile.role === 'manager' && profile.department_id === task.creator?.department_id;
+  return isDepartmentHeadManager(profile) && profile.department_id === task.creator?.department_id;
 }
 
 export function canArchiveTask(profile: any): boolean {
@@ -256,7 +258,6 @@ export function canSelectSpecificAssigneesAcrossDepartments(profile: any): boole
   return !!profile && ['admin', 'director'].includes(profile.role);
 }
 
-// Chủ động ghi nhận hoàn thành (Force Complete) — creator + manager của creator + admin/director.
 export function canForceCompleteTask(
   profile: any,
   task: {
@@ -267,7 +268,6 @@ export function canForceCompleteTask(
   return canDeleteTask(profile, task);
 }
 
-// Duyệt xin gia hạn — TP cùng phòng + BGĐ + admin + người tạo task.
 export function canApproveExtension(
   profile: any,
   task: { department_id?: string | null; created_by?: string | null } | null,
@@ -275,10 +275,10 @@ export function canApproveExtension(
   if (!profile || !task) return false;
   if (profile.role === 'admin' || profile.role === 'director') return true;
   if (task.created_by === profile.id) return true;
-  return profile.role === 'manager' && profile.department_id === task.department_id;
+  return canManageDepartmentTask(profile, task);
 }
 
-// Tạo template Recurring Reports — BGĐ + TP + cán bộ phòng đầu mối.
+// Tạo công việc định kỳ — BGĐ + manager + cán bộ phòng đầu mối.
 export function canCreateRecurringTemplate(profile: any): boolean {
   if (!profile) return false;
   if (['admin', 'director', 'manager'].includes(profile.role)) return true;
@@ -287,17 +287,15 @@ export function canCreateRecurringTemplate(profile: any): boolean {
 
 // Xem Analytics module Tasks.
 //   • Admin/Director: toàn nhánh.
-//   • Manager (any): vào được, scope toàn nhánh nếu phòng điều phối, phòng mình nếu khác.
-//   • Staff phòng điều phối (Tổ chức Tổng hợp — code 13602): toàn nhánh.
-//   • Staff khác: KHÔNG xem được.
+//   • Trưởng phòng: phòng mình.
+//   • Coordinator: toàn nhánh.
 export function canViewTaskAnalytics(profile: any): boolean {
   if (!profile) return false;
-  if (['admin', 'director', 'manager'].includes(profile.role)) return true;
+  if (['admin', 'director'].includes(profile.role)) return true;
+  if (isDepartmentHeadManager(profile)) return true;
   return profile.role === 'staff' && isCoordinatorDepartment(profile);
 }
 
-// Xem Analytics ở phạm vi TOÀN NHÁNH (cho filter dept dropdown).
-// Manager ngoài phòng điều phối bị giới hạn phòng mình.
 export function canViewBranchAnalytics(profile: any): boolean {
   if (!profile) return false;
   if (['admin', 'director'].includes(profile.role)) return true;

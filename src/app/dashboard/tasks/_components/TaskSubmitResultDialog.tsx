@@ -18,14 +18,14 @@ interface Props {
   onChanged: () => void;
 }
 
-export function TaskSubmitReportDialog({ task, onClose, onChanged }: Props) {
+export function TaskSubmitResultDialog({ task, onClose, onChanged }: Props) {
   const [note, setNote] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
     setLoading(true);
     if (note.trim()) {
-      const cm = await addComment(task.id, `[Nộp báo cáo] ${note.trim()}`);
+      const cm = await addComment(task.id, `[Gửi kết quả] ${note.trim()}`);
       if (!cm.ok) {
         setLoading(false);
         notifyError(cm.error, 'Không lưu được ghi chú');
@@ -38,7 +38,7 @@ export function TaskSubmitReportDialog({ task, onClose, onChanged }: Props) {
       notifyError(res.error, 'Không nộp được');
       return;
     }
-    notifySuccess('Đã nộp báo cáo', 'Trưởng phòng sẽ duyệt sớm.');
+    notifySuccess('Đã gửi kết quả', 'Trưởng phòng sẽ duyệt kết quả.');
     onChanged();
   };
 
@@ -46,7 +46,7 @@ export function TaskSubmitReportDialog({ task, onClose, onChanged }: Props) {
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="app-dialog-sheet app-dialog-sheet--lg shadow-2xl">
         <DialogHeader className="app-dialog-sheet-header">
-          <DialogTitle className="heading-section">Nộp báo cáo</DialogTitle>
+          <DialogTitle className="heading-section">Gửi kết quả</DialogTitle>
           <DialogDescription className="text-subtitle line-clamp-1">{task.title}</DialogDescription>
         </DialogHeader>
 
@@ -75,7 +75,7 @@ export function TaskSubmitReportDialog({ task, onClose, onChanged }: Props) {
             Huỷ
           </Button>
           <Button onClick={handleSubmit} disabled={loading} className="rounded-xl bg-primary">
-            {loading ? <Loader2 className="icon-sm animate-spin" /> : 'Nộp báo cáo'}
+            {loading ? <Loader2 className="icon-sm animate-spin" /> : 'Gửi kết quả'}
           </Button>
         </DialogFooter>
       </DialogContent>
