@@ -19,7 +19,7 @@ import {
 import { cn, compareProfilesByHierarchy, canViewLeaveDetails } from "@/lib/utils";
 import { format } from "date-fns";
 import { typeLabels } from "../_lib/constants";
-import { filterBGD, filterStaff } from "../_lib/utils";
+import { filterBGD, filterStaff, checkConflicts, checkDeputyDirectorLimit } from "../_lib/utils";
 import { useScheduleDetail } from "../_hooks/useScheduleDetail";
 import { confirmDialog } from "@/components/ui/confirm-dialog";
 import ScheduleEditForm from "./ScheduleEditForm";
@@ -149,6 +149,47 @@ export default function ScheduleDetailDialog({
       new Date(s.end_time) > sStart
     ) || null;
   }, [detail.tempVehicleId, schedules, schedule?.id]);
+
+  // Xung đột lịch hiển thị cho coordinator
+  const scheduleConflicts = React.useMemo(() => {
+    if (!schedule || schedule.type === 'leave') return [];
+    const sStart = new Date(schedule.start_time);
+    const sEnd = new Date(schedule.end_time);
+    const participantIds = (schedule.participants || [])
+      .map((p: any) => p.profile?.id)
+      .filter(Boolean);
+
+    const timeConflicts = checkConflicts({
+      checkIds: participantIds,
+      startDate: sStart,
+      endDate: sEnd,
+      startTime: `${sStart.getHours().toString().padStart(2, '0')}:${sStart.getMinutes().toString().padStart(2, '0')}`,
+      endTime: `${sEnd.getHours().toString().padStart(2, '0')}:${sEnd.getMinutes().toString().padStart(2, '0')}`,
+      schedules,
+      ignoreScheduleId: schedule.id,
+    });
+
+    const bdgProfileIds = allProfiles
+      .filter((p: any) => participantIds.includes(p.id))
+      .filter((p: any) =>
+        p.role === 'director' || p.title?.toLowerCase().includes('giám đốc')
+      )
+      .map((p: any) => p.id);
+
+    const deputyWarnings = checkDeputyDirectorLimit({
+      bdgProfileIds,
+      startDate: sStart,
+      endDate: sEnd,
+      startTime: `${sStart.getHours().toString().padStart(2, '0')}:${sStart.getMinutes().toString().padStart(2, '0')}`,
+      endTime: `${sEnd.getHours().toString().padStart(2, '0')}:${sEnd.getMinutes().toString().padStart(2, '0')}`,
+      schedules,
+      allProfiles,
+      ignoreScheduleId: schedule.id,
+    });
+
+    return [...timeConflicts, ...deputyWarnings];
+  }, [schedule, schedules, allProfiles]);
+
   const supabase = createClient();
   const [safeLeave, setSafeLeave] = React.useState<any>(null);
   const [rejectVehicleOpen, setRejectVehicleOpen] = React.useState(false);
@@ -325,6 +366,21 @@ export default function ScheduleDetailDialog({
               <p className="text-[12px] font-medium text-slate-400">Thành phần tham gia</p>
               <RenderParticipants schedule={schedule} allProfiles={allProfiles} />
             </div>
+
+            {/* Cảnh báo xung đột cho coordinator */}
+            {isCoordinator && scheduleConflicts.length > 0 && (
+              <div className="p-3 bg-amber-50/50 rounded-2xl border border-amber-100 space-y-2">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-amber-600" />
+                  <span className="text-[13px] font-semibold text-amber-700">Cảnh báo trùng lịch / quá số Phó giám đốc</span>
+                </div>
+                <ul className="list-disc pl-5 text-xs font-medium text-amber-700/80 space-y-1">
+                  {scheduleConflicts.map((c, i) => (
+                    <li key={i} className="leading-relaxed">{c}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             {/* Thông tin xe & lái xe — chỉ hiển thị khi đã gán xe */}
             {schedule.use_vehicle && schedule.vehicle && (
