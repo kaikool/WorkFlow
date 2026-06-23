@@ -405,8 +405,7 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
                     </p>
                   </div>
                 </label>
-              )}
-            </div>
+              </div>
           </div>
 
           <DialogFooter className="app-dialog-sheet-footer flex flex-row justify-between items-center gap-2">
