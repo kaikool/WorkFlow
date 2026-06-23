@@ -86,11 +86,6 @@ export async function createSchedule(p: CreateScheduleParams) {
       ? [targetId].filter(Boolean)
       : Array.from(new Set([profile?.id, ...selectedParticipantIds].filter(Boolean)));
 
-    const participantConflicts = isLeave ? [] : await findParticipantConflicts({
-      participantIds: finalParticipants,
-      start,
-      end
-    });
     // Không chặn bằng popup — inline banner + ConflictWarningPopup đã đủ
 
     const hasDirectorParticipant = !isLeave && finalParticipants.some((uid: string) => {
