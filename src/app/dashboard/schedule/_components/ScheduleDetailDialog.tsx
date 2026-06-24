@@ -338,7 +338,7 @@ export default function ScheduleDetailDialog({
               </div>
               <div className="min-w-0">
                 <p className="text-[11px] text-slate-400 font-medium">Địa điểm</p>
-                <p className="text-[14px] font-semibold text-slate-700 truncate">
+                <p className="text-[14px] font-semibold text-slate-700 break-words">
                   {schedule.room?.name || schedule.location || "Chưa xác định"}
                 </p>
               </div>
