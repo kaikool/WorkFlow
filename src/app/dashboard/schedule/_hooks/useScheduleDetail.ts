@@ -222,7 +222,7 @@ export function useScheduleDetail({
 
     if (!editData.title?.trim()) return;
     if (!isLeaveType && isBranchLocation && (!editData.room_id || editData.room_id === 'none')) return;
-    if (!isLeaveType && !isBranchLocation && !editData.location?.trim()) return;
+    if (!isLeaveType && !isBranchLocation && !editData.destinations?.some((d: any) => d.location?.trim())) return;
 
     if (editMode === 'resubmit' && changeReason.trim().length < 10) return;
 

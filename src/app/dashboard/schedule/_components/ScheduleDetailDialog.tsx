@@ -513,15 +513,15 @@ export default function ScheduleDetailDialog({
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="flex justify-end gap-2 pt-1">
+                <div className="flex flex-wrap justify-end gap-2 pt-1">
                   <Button variant="outline"
                     onClick={() => setRejectVehicleOpen(true)}
-                    className="min-h-11 px-4 rounded-xl text-sm font-medium border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 active:scale-95 transition-all whitespace-nowrap"
-                  >Từ chối không có xe</Button>
+                    className="min-h-10 px-3 rounded-xl text-xs font-medium border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 active:scale-95 transition-all"
+                  >Từ chối</Button>
                   <Button variant="outline"
                     onClick={() => { onSelfArranged(schedule.id); setIsOpen(false); }}
-                    className="min-h-11 px-4 rounded-xl text-sm font-medium border-amber-300 text-amber-700 hover:bg-amber-50 hover:text-amber-800 active:scale-95 transition-all whitespace-nowrap"
-                  >Tự túc phương tiện</Button>
+                    className="min-h-10 px-3 rounded-xl text-xs font-medium border-amber-300 text-amber-700 hover:bg-amber-50 hover:text-amber-800 active:scale-95 transition-all"
+                  >Tự túc PT</Button>
                   <Button
                     disabled={!detail.tempVehicleId}
                     onClick={() => onAssignVehicle(schedule.id, detail.tempVehicleId, detail.tempDriverId)}

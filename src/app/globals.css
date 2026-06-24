@@ -706,6 +706,7 @@ body:has([data-radix-popper-content-wrapper]) [data-fab] {
   flex: 1 1 0%;
   min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
   overscroll-behavior: contain;
 }
 

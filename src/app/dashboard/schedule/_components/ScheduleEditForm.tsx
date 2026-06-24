@@ -126,7 +126,7 @@ export default function ScheduleEditForm({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-3">
                 <Label className="text-[12px] font-medium text-slate-500 pl-0.5">Loại lịch trình</Label>
-                <Select value={detail.editData.type} onValueChange={(v) => detail.setEditData({ ...detail.editData, type: v, use_vehicle: v === 'trip' ? true : detail.editData.use_vehicle })}>
+                <Select value={detail.editData.type} onValueChange={(v) => detail.setEditData((prev: any) => ({ ...prev, type: v, use_vehicle: v === 'trip' ? true : prev.use_vehicle }))}>
                   <SelectTrigger className="min-h-11 bg-slate-50 border-none rounded-xl font-medium text-sm"><SelectValue /></SelectTrigger>
                   <SelectContent className="rounded-xl border-none shadow-2xl">
                     <SelectItem value="meeting" className="text-base md:text-sm py-3 md:py-2">Họp nội bộ</SelectItem>
@@ -138,7 +138,7 @@ export default function ScheduleEditForm({
               </div>
               <div className="space-y-3">
                 <Label className="text-[12px] font-medium text-slate-500 pl-0.5">Hình thức địa điểm</Label>
-                <Select value={detail.editData.location === 'Chi nhánh' ? 'branch' : 'outside'} onValueChange={(v) => detail.setEditData({ ...detail.editData, location: v === 'branch' ? 'Chi nhánh' : '', room_id: v === 'branch' ? (rooms[0]?.id || 'none') : 'none' })}>
+                <Select value={detail.editData.location === 'Chi nhánh' ? 'branch' : 'outside'} onValueChange={(v) => detail.setEditData((prev: any) => ({ ...prev, location: v === 'branch' ? 'Chi nhánh' : '', room_id: v === 'branch' ? (rooms[0]?.id || 'none') : 'none' }))}>
                   <SelectTrigger className="min-h-11 bg-slate-50 border-none rounded-xl font-medium text-sm"><SelectValue /></SelectTrigger>
                   <SelectContent className="rounded-xl border-none shadow-2xl">
                     <SelectItem value="outside" className="text-base md:text-sm py-3 md:py-2">Địa điểm ngoài</SelectItem>
@@ -235,7 +235,7 @@ export default function ScheduleEditForm({
             {detail.editData.type !== 'leave' && detail.editData.location === 'Chi nhánh' ? (
               <div className="space-y-3">
                 <Label className="text-[12px] font-medium text-slate-500 pl-0.5">Phòng họp</Label>
-                <Select value={detail.editData.room_id || 'none'} onValueChange={(v) => detail.setEditData({ ...detail.editData, room_id: v })}>
+                <Select value={detail.editData.room_id || 'none'} onValueChange={(v) => detail.setEditData((prev: any) => ({ ...prev, room_id: v }))}>
                   <SelectTrigger className="min-h-11 bg-slate-50 border-none rounded-xl font-medium text-sm"><SelectValue placeholder="Chọn phòng họp" /></SelectTrigger>
                   <SelectContent className="rounded-xl border-none shadow-2xl">
                     {rooms.map(r => <SelectItem key={r.id} value={r.id} className="text-base md:text-sm py-3 md:py-2">{r.name} ({r.capacity} chỗ)</SelectItem>)}
@@ -249,8 +249,10 @@ export default function ScheduleEditForm({
                   <div 
                     role="button"
                     onClick={() => {
-                      const current = detail.editData.destinations || [{ location: '' }];
-                      detail.setEditData({ ...detail.editData, destinations: [...current, { location: '' }] });
+                      detail.setEditData((prev: any) => {
+                        const current = prev.destinations || [{ location: '' }];
+                        return { ...prev, destinations: [...current, { location: '' }] };
+                      });
                     }}
                     className="flex items-center h-7 text-xs font-medium text-primary hover:opacity-80 px-2 rounded-md cursor-pointer transition-colors"
                   >
