@@ -344,30 +344,34 @@ export default function ScheduleDetailDialog({
               </div>
             </div>
 
-            {/* RenderParticipants — danh sách đánh số */}
-            <div className="space-y-1">
-              <p className="text-[11px] font-medium text-slate-400">Thành phần tham gia</p>
-              <div className="text-[13px] text-slate-700 space-y-1">
-                {(() => {
-                  if (!schedule?.participants) return <p className="text-slate-400 italic">Chưa có</p>;
-                  const bgdProfiles = filterBGD(allProfiles);
-                  const participantIds = schedule.participants.map((p: any) => p.profile?.id);
-                  const hasAllBgd = bgdProfiles.length > 0 && bgdProfiles.every(p => participantIds.includes(p.id));
+            {/* Thành phần tham gia */}
+            {(() => {
+              if (!schedule?.participants) return null;
+              const bgdProfiles = filterBGD(allProfiles);
+              const participantIds = schedule.participants.map((p: any) => p.profile?.id);
+              const hasAllBgd = bgdProfiles.length > 0 && bgdProfiles.every(p => participantIds.includes(p.id));
 
-                  const names: string[] = [];
-                  schedule.participants.forEach((p: any) => {
-                    if (!p.profile?.full_name) return;
-                    if (hasAllBgd && bgdProfiles.some(bp => bp.id === p.profile?.id)) return;
-                    names.push(p.profile.full_name);
-                  });
+              const names: string[] = [];
+              schedule.participants.forEach((p: any) => {
+                if (!p.profile?.full_name) return;
+                if (hasAllBgd && bgdProfiles.some(bp => bp.id === p.profile?.id)) return;
+                names.push(p.profile.full_name);
+              });
 
-                  const allNames = hasAllBgd ? ['Toàn bộ BGĐ', ...names] : names;
-                  return allNames.map((name, i) => (
-                    <p key={i} className="pl-4">{i + 1}. {name}</p>
-                  ));
-                })()}
-              </div>
-            </div>
+              const allNames = hasAllBgd ? ['Toàn bộ Ban Giám đốc', ...names] : names;
+              if (allNames.length === 0) return null;
+
+              return (
+                <div className="p-3 bg-slate-50 rounded-xl space-y-1.5">
+                  <p className="text-[11px] font-medium text-slate-400">Thành phần tham gia</p>
+                  <div className="text-[13px] text-slate-700 leading-relaxed">
+                    {allNames.map((name, i) => (
+                      <p key={i}>{i + 1}. {name}</p>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Cảnh báo xung đột cho coordinator */}
             {isCoordinator && scheduleConflicts.length > 0 && (
