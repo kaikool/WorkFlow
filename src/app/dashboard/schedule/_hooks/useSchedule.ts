@@ -11,6 +11,7 @@ import { createSchedule as createScheduleHelper } from "../_lib/createSchedule";
 import { updateScheduleAction } from "../_lib/updateSchedule";
 import { fetchScheduleData } from "../_lib/fetchScheduleData";
 import { useAppData } from "@/hooks/use-app-data";
+import { HOUR_START, HOUR_END, HOUR_RANGE } from "../_lib/constants";
 
 export function useSchedule() {
   const supabase = createClient();
@@ -145,8 +146,8 @@ export function useSchedule() {
   const isTodaySelected = isSameDay(selectedDate, new Date());
   const now = new Date();
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
-  const startLimit = 5 * 60;
-  const endLimit = 20 * 60;
+  const startLimit = HOUR_START * 60;
+  const endLimit = HOUR_END * 60;
   const duration = endLimit - startLimit;
   const isWithinWorkingHours = currentMinutes >= startLimit && currentMinutes <= endLimit;
   const currentTimePercent = isWithinWorkingHours ? ((currentMinutes - startLimit) / duration) * 100 : -1;

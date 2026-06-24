@@ -88,9 +88,15 @@ export const directorColors = [
   }
 ];
 
-// Danh sách giờ từ 5h đến 20h
-export const timeOptions = Array.from({ length: 31 }).map((_, i) => {
-  const totalMinutes = 5 * 60 + i * 30;
+// === Khung giờ làm việc mặc định ===
+export const HOUR_START = 5;   // 05:00
+export const HOUR_END   = 20;  // 20:00
+export const HOUR_RANGE = HOUR_END - HOUR_START; // 15h
+export const MINUTE_STEP = 30; // bước nhảy mặc định
+
+// Danh sách giờ từ HOUR_START đến HOUR_END
+export const timeOptions = Array.from({ length: HOUR_RANGE * (60 / MINUTE_STEP) + 1 }).map((_, i) => {
+  const totalMinutes = HOUR_START * 60 + i * MINUTE_STEP;
   const hour = Math.floor(totalMinutes / 60).toString().padStart(2, '0');
   const minute = (totalMinutes % 60).toString().padStart(2, '0');
   return `${hour}:${minute}`;

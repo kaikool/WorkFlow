@@ -5,6 +5,7 @@ import { CalendarDays } from "lucide-react";
 import { cn, canViewLeaveDetails } from "@/lib/utils";
 import { endOfDay, format, startOfDay } from "date-fns";
 import { filterBGD, getDirectorColor } from "../_lib/utils";
+import { HOUR_START, HOUR_END, HOUR_RANGE } from "../_lib/constants";
 
 interface DirectorTimelineProps {
   allProfiles: any[];
@@ -43,9 +44,12 @@ export default function DirectorTimeline({
         <div className="min-w-[850px] space-y-4">
           {/* Tiêu đề giờ */}
           <div className="relative h-5 text-[10px] font-semibold text-slate-400 select-none w-full border-b border-slate-100 pb-1 mb-3">
-            {['05:00','06:00','07:00','08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00'].map((label, i) => (
-              <span key={label} className="absolute -translate-x-1/2 text-[10px] font-semibold text-slate-400" style={{ left: `${(i / 15) * 100}%` }}>{label}</span>
-            ))}
+            {Array.from({ length: HOUR_RANGE + 1 }).map((_, i) => {
+              const h = (HOUR_START + i).toString().padStart(2, '0');
+              return (
+              <span key={h} className="absolute -translate-x-1/2 text-[10px] font-semibold text-slate-400" style={{ left: `${(i / HOUR_RANGE) * 100}%` }}>{`${h}:00`}</span>
+              );
+            })}
           </div>
 
           {/* Dòng timeline cho từng Giám đốc */}

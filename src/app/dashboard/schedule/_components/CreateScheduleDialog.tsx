@@ -31,6 +31,7 @@ import { viLocale as vi } from "@/lib/locale";
 import { notifyValidation } from "@/lib/notify";
 import ParticipantSelector from "./ParticipantSelector";
 import ConflictWarningPopup from "./ConflictWarningPopup";
+import { HOUR_END } from "../_lib/constants";
 
 interface CreateScheduleDialogProps {
   isOpen: boolean;
@@ -162,7 +163,7 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
                 onChange={(v) => {
                   setStartTime(v);
                   const [h, m] = v.split(':');
-                  const endH = Math.min(parseInt(h) + 1, 20);
+                  const endH = Math.min(parseInt(h) + 1, HOUR_END);
                   if (!endTime) setEndTime(`${endH.toString().padStart(2, '0')}:${m}`);
                 }}
               />
