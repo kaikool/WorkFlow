@@ -352,28 +352,28 @@ export default function ScheduleDetailDialog({
               const participantIds = schedule.participants.map((p: any) => p.profile?.id);
               const hasAllBgd = bgdProfiles.length > 0 && bgdProfiles.every(p => participantIds.includes(p.id));
 
-              const pills: { label: string; color: string }[] = [];
-              if (hasAllBgd) pills.push({ label: 'Toàn bộ Ban Giám đốc', color: 'bg-red-50 text-red-700' });
-
-              const others: { name: string; role: string }[] = [];
+              const bgdPills: string[] = [];
+              const mgrPills: string[] = [];
+              const otherPills: string[] = [];
               schedule.participants.forEach((p: any) => {
                 if (!p.profile?.full_name) return;
                 if (hasAllBgd && bgdProfiles.some(bp => bp.id === p.profile?.id)) return;
-                others.push({ name: p.profile.full_name, role: p.profile?.role || '' });
+                const role = p.profile?.role;
+                const title = (p.profile?.title || '').toLowerCase();
+                if (role === 'director' || title.includes('giám đốc')) {
+                  bgdPills.push(p.profile.full_name);
+                } else if (role === 'manager' || p.profile?.is_department_head) {
+                  mgrPills.push(p.profile.full_name);
+                } else {
+                  otherPills.push(p.profile.full_name);
+                }
               });
 
-              // Sắp xếp: BGĐ → Quản lý → còn lại
-              const sorted = others.sort((a, b) => {
-                const rank = (r: string) => r === 'director' ? 0 : r === 'manager' ? 1 : 2;
-                return rank(a.role) - rank(b.role);
-              });
-              sorted.forEach(p => {
-                const c = p.role === 'director' ? 'bg-red-50/70 text-red-800'
-                  : p.role === 'manager' ? 'bg-blue-50/70 text-blue-800'
-                  : 'bg-white text-slate-700 border border-slate-200';
-                pills.push({ label: p.name, color: c });
-              });
-
+              const pills: { label: string; cls: string }[] = [];
+              if (hasAllBgd) pills.push({ label: 'Toàn bộ BGĐ', cls: 'bg-red-50 text-red-700 border-red-200' });
+              bgdPills.forEach(n => pills.push({ label: n, cls: 'bg-red-50/60 text-red-800 border-red-200/60' }));
+              mgrPills.forEach(n => pills.push({ label: n, cls: 'bg-blue-50/60 text-blue-800 border-blue-200/60' }));
+              if (otherPills.length > 0) pills.push({ label: `+ ${otherPills.length} người khác`, cls: 'bg-slate-50 text-slate-500 border-slate-200' });
               if (pills.length === 0) return null;
 
               return (
@@ -381,7 +381,7 @@ export default function ScheduleDetailDialog({
                   <h3 className="text-xs font-semibold text-slate-500">Thành phần tham gia</h3>
                   <div className="flex flex-wrap gap-1.5">
                     {pills.map((item, i) => (
-                      <span key={i} className={"inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full " + item.color}>
+                      <span key={i} className={"inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full border " + item.cls}>
                         {item.label}
                       </span>
                     ))}
