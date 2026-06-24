@@ -524,7 +524,7 @@ export default function ScheduleDetailDialog({
                           return (
                           <SelectItem key={v.id} value={v.id} className="text-xs py-2.5">
                             <span className="flex items-center justify-between w-full gap-2">
-                              <span className="font-semibold text-slate-800 truncate">{v.name} - {v.plate_number}</span>
+                              <span className="font-semibold text-slate-800 truncate">{v.name}</span>
                               <span className={"shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full " + (busy ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-700")}>
                                 {busy ? 'BẬN' : 'RẢNH'}
                               </span>
