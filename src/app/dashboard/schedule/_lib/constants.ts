@@ -88,9 +88,9 @@ export const directorColors = [
   }
 ];
 
-// Danh sách giờ từ 7h đến 18h
-export const timeOptions = Array.from({ length: 23 }).map((_, i) => {
-  const totalMinutes = 7 * 60 + i * 30;
+// Danh sách giờ từ 5h đến 20h
+export const timeOptions = Array.from({ length: 31 }).map((_, i) => {
+  const totalMinutes = 5 * 60 + i * 30;
   const hour = Math.floor(totalMinutes / 60).toString().padStart(2, '0');
   const minute = (totalMinutes % 60).toString().padStart(2, '0');
   return `${hour}:${minute}`;

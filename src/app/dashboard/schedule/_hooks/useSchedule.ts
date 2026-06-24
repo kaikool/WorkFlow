@@ -145,8 +145,8 @@ export function useSchedule() {
   const isTodaySelected = isSameDay(selectedDate, new Date());
   const now = new Date();
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
-  const startLimit = 7 * 60;
-  const endLimit = 19 * 60;
+  const startLimit = 5 * 60;
+  const endLimit = 20 * 60;
   const duration = endLimit - startLimit;
   const isWithinWorkingHours = currentMinutes >= startLimit && currentMinutes <= endLimit;
   const currentTimePercent = isWithinWorkingHours ? ((currentMinutes - startLimit) / duration) * 100 : -1;
