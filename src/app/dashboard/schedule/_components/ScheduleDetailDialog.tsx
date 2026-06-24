@@ -325,7 +325,7 @@ export default function ScheduleDetailDialog({
             {safeSchedule.description && isAllowedToView && (
               <div className="space-y-2">
                 <p className="text-[11px] font-medium text-slate-400">Nội dung chi tiết</p>
-                <p className="text-[14px] font-medium text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-xl">
+                <p className="text-[14px] font-medium text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-xl break-words">
                   {safeSchedule.description}
                 </p>
               </div>
