@@ -214,7 +214,7 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
                     <button
                       key={type.value}
                       type="button"
-                      onClick={() => setNewSchedule({ ...newSchedule, type: type.value, use_vehicle: type.value === 'trip' })}
+                      onClick={() => setNewSchedule((prev: any) => ({ ...prev, type: type.value, use_vehicle: type.value === 'trip' }))}
                       className={cn(
                         "min-h-10 rounded-xl px-2 text-[11px] font-semibold transition-all active:scale-[0.98] sm:text-xs",
                         isSelected
@@ -304,8 +304,8 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
                 <Tabs
                   value={newSchedule.location === 'Chi nhánh' ? 'branch' : 'outside'}
                   onValueChange={(value) => {
-                    if (value === 'branch') setNewSchedule({ ...newSchedule, location: 'Chi nhánh', room_id: rooms[0]?.id || 'none' });
-                    else setNewSchedule({ ...newSchedule, room_id: 'none', location: '' });
+                    if (value === 'branch') setNewSchedule((prev: any) => ({ ...prev, location: 'Chi nhánh', room_id: prev.room_id || rooms[0]?.id || 'none' }));
+                    else setNewSchedule((prev: any) => ({ ...prev, room_id: 'none', location: '' }));
                   }}
                   className="w-full sm:w-auto"
                 >
@@ -319,7 +319,7 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
               {newSchedule.location === 'Chi nhánh' ? (
                 <div className="space-y-2 animate-in fade-in zoom-in-95 duration-300">
                   <Label className="text-[10px] md:text-[13px] font-medium text-slate-500 whitespace-nowrap">Chọn phòng họp</Label>
-                  <Select value={newSchedule.room_id} onValueChange={(v) => setNewSchedule({ ...newSchedule, room_id: v })}>
+                  <Select value={newSchedule.room_id} onValueChange={(v) => setNewSchedule((prev: any) => ({ ...prev, room_id: v }))}>
                     <SelectTrigger className="h-11 bg-white border-none rounded-xl font-medium shadow-sm text-sm">
                       <SelectValue placeholder="Chọn phòng họp..." />
                     </SelectTrigger>
@@ -335,8 +335,10 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
                     <div 
                       role="button"
                       onClick={() => {
-                        const current = newSchedule.destinations || [{ location: '' }];
-                        setNewSchedule({ ...newSchedule, destinations: [...current, { location: '' }] });
+                        setNewSchedule((prev: any) => {
+                          const current = prev.destinations || [{ location: '' }];
+                          return { ...prev, destinations: [...current, { location: '' }] };
+                        });
                       }}
                       className="flex items-center h-7 text-xs font-medium text-primary hover:opacity-80 px-2 rounded-md cursor-pointer transition-colors"
                     >
@@ -352,9 +354,12 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
                           className="h-11 bg-white border-none rounded-xl font-medium pl-11 pr-10 shadow-sm text-sm"
                           value={dest.location}
                           onChange={(e) => {
-                            const newDests = [...(newSchedule.destinations || [{ location: '' }])];
-                            newDests[idx].location = e.target.value;
-                            setNewSchedule({ ...newSchedule, destinations: newDests });
+                            const val = e.target.value;
+                            setNewSchedule((prev: any) => {
+                              const newDests = [...(prev.destinations || [{ location: '' }])];
+                              newDests[idx] = { location: val };
+                              return { ...prev, destinations: newDests };
+                            });
                           }}
                         />
                       </div>
@@ -362,9 +367,11 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
                         <button
                           type="button"
                           onClick={() => {
-                            const newDests = [...newSchedule.destinations];
-                            newDests.splice(idx, 1);
-                            setNewSchedule({ ...newSchedule, destinations: newDests });
+                            setNewSchedule((prev: any) => {
+                              const newDests = [...(prev.destinations || [])];
+                              newDests.splice(idx, 1);
+                              return { ...prev, destinations: newDests };
+                            });
                           }}
                           className="shrink-0 text-slate-400 hover:text-red-500 hover:bg-transparent transition-colors p-2 text-xl leading-none"
                         >
@@ -379,12 +386,12 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
               <div className="flex items-center gap-3 p-3 bg-white rounded-2xl border border-slate-100 shadow-sm">
                 <Switch
                   checked={newSchedule.use_vehicle}
-                  onCheckedChange={(checked) => setNewSchedule({
-                    ...newSchedule,
+                  onCheckedChange={(checked) => setNewSchedule((prev: any) => ({
+                    ...prev,
                     use_vehicle: checked,
                     vehicle_id: 'none',
                     requested_vehicle_type: null,
-                  })}
+                  }))}
                   aria-label="Bật hoặc tắt sử dụng xe cơ quan"
                 />
                 <div className="flex flex-col flex-1 min-w-0">
