@@ -162,7 +162,7 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
                 onChange={(v) => {
                   setStartTime(v);
                   const [h, m] = v.split(':');
-                  const endH = Math.min(parseInt(h) + 1, 18);
+                  const endH = Math.min(parseInt(h) + 1, 20);
                   if (!endTime) setEndTime(`${endH.toString().padStart(2, '0')}:${m}`);
                 }}
               />

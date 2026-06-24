@@ -23,8 +23,8 @@ export interface TimePickerProps {
   value: string | null | undefined; // "HH:mm"
   onChange: (value: string) => void;
   minuteStep?: number; // mặc định 30 (giống Schedule). Đặt 5/15 nếu cần độ chính xác cao.
-  hourStart?: number;  // mặc định 7 (đầu giờ làm việc)
-  hourEnd?: number;    // mặc định 18 (cuối giờ làm việc, inclusive)
+  hourStart?: number;  // mặc định 5 (đầu giờ làm việc)
+  hourEnd?: number;    // mặc định 20 (cuối giờ làm việc, inclusive)
   placeholder?: string;
   disabled?: boolean;
   triggerClassName?: string;
@@ -38,8 +38,8 @@ export function TimePicker({
   value,
   onChange,
   minuteStep = 30,
-  hourStart = 7,
-  hourEnd = 18,
+  hourStart = 5,
+  hourEnd = 20,
   placeholder = 'Chọn giờ',
   disabled,
   triggerClassName,

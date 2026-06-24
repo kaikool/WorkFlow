@@ -158,7 +158,10 @@ export function checkResourceConflicts(params: {
 
 /**
  * Kiểm tra giới hạn số lượng Phó giám đốc đi công tác cùng lúc.
- * Tối đa 2 Phó giám đốc được phép đi cùng thời điểm.
+ * Chỉ tính các lịch khiến PGĐ vắng mặt tại chi nhánh (trip, leave, 
+ * meeting/event có xe hoặc địa điểm ngoài chi nhánh).
+ * Meeting tại chi nhánh không tính vì PGĐ vẫn trực được.
+ * Tối đa (tổng PGĐ - 1) được phép vắng cùng thời điểm.
  * Giám đốc (is_department_head = true) được miễn trừ.
  * Ai đăng ký trước được trước, ai đăng ký sau phải nhận cảnh báo.
  */
@@ -206,6 +209,19 @@ export function checkDeputyDirectorLimit(params: {
     const busyPhoSet = new Set<string>();
     const busyNamesList: string[] = [];
 
+    const isAbsent = (s: any) => {
+      // Chỉ tính là vắng mặt (không trực được) nếu PGĐ thực sự rời chi nhánh
+      if (s.type === 'trip') return true;               // công tác → vắng
+      if (s.type === 'leave') return true;               // nghỉ phép → vắng
+      // meeting/event: vắng nếu có xe hoặc địa điểm ngoài chi nhánh
+      if (s.type === 'meeting' || s.type === 'event') {
+        if (s.use_vehicle) return true;                  // có xe → đi ngoài
+        if (s.location && s.location !== 'Chi nhánh') return true;  // địa điểm ngoài
+        return false;                                    // họp tại chi nhánh → vẫn trực được
+      }
+      return true; // mặc định tính vắng nếu không xác định được
+    };
+
     schedules.forEach((s: any) => {
       if (s.id === ignoreScheduleId || s.status === 'rejected' || s.status === 'completed') return;
 
@@ -213,6 +229,9 @@ export function checkDeputyDirectorLimit(params: {
       const sEnd = new Date(s.end_time);
       const isOverlapping = newStart < sEnd && newEnd > sStart;
       if (!isOverlapping) return;
+
+      // Chỉ đếm PGĐ nếu lịch đó thực sự khiến họ vắng mặt tại chi nhánh
+      if (!isAbsent(s)) return;
 
       (s.participants || []).forEach((p: any) => {
         const pid = p.profile?.id;
