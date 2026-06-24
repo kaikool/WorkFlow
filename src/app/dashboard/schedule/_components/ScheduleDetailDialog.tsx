@@ -549,20 +549,20 @@ export default function ScheduleDetailDialog({
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="flex flex-wrap justify-end items-center gap-2 pt-1">
-                  <Button variant="outline" size="default"
+                <div className="grid grid-cols-3 gap-2 pt-1">
+                  <Button variant="outline"
                     onClick={() => setRejectVehicleOpen(true)}
-                    className="rounded-xl border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                    className="h-11 rounded-xl font-semibold border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 w-full"
                   >Từ chối</Button>
-                  <Button variant="outline" size="default"
+                  <Button variant="outline"
                     onClick={() => { onSelfArranged(schedule.id); setIsOpen(false); }}
-                    className="rounded-xl border-amber-300 text-amber-700 hover:bg-amber-50 hover:text-amber-800"
+                    className="h-11 rounded-xl font-semibold border-amber-300 text-amber-700 hover:bg-amber-50 hover:text-amber-800 w-full"
                   >Tự túc PT</Button>
-                  <Button size="default"
+                  <Button
                     disabled={!detail.tempVehicleId}
                     onClick={() => onAssignVehicle(schedule.id, detail.tempVehicleId, detail.tempDriverId)}
                     className={cn(
-                      "h-11 rounded-xl font-semibold active:scale-[0.98] transition-all duration-300 ease-in-out",
+                      "h-11 rounded-xl font-semibold active:scale-[0.98] transition-all duration-300 ease-in-out w-full",
                       vehicleConflict
                         ? "bg-amber-500 hover:bg-amber-600 text-white"
                         : "bg-primary hover:bg-primary/90 text-white"
