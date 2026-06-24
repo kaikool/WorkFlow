@@ -351,14 +351,27 @@ export default function ScheduleDetailDialog({
               const participantIds = schedule.participants.map((p: any) => p.profile?.id);
               const hasAllBgd = bgdProfiles.length > 0 && bgdProfiles.every(p => participantIds.includes(p.id));
 
-              const names: string[] = [];
+              // Sắp xếp: BGĐ đầu, Quản lý tiếp, còn lại sau
+              const directorNames: string[] = [];
+              const managerNames: string[] = [];
+              const otherNames: string[] = [];
               schedule.participants.forEach((p: any) => {
                 if (!p.profile?.full_name) return;
                 if (hasAllBgd && bgdProfiles.some(bp => bp.id === p.profile?.id)) return;
-                names.push(p.profile.full_name);
+                const role = p.profile?.role;
+                const title = (p.profile?.title || '').toLowerCase();
+                if (role === 'director' || title.includes('giám đốc')) {
+                  directorNames.push(p.profile.full_name);
+                } else if (role === 'manager' || p.profile?.is_department_head) {
+                  managerNames.push(p.profile.full_name);
+                } else {
+                  otherNames.push(p.profile.full_name);
+                }
               });
 
-              const allNames = hasAllBgd ? ['Toàn bộ Ban Giám đốc', ...names] : names;
+              const allNames: string[] = [];
+              if (hasAllBgd) allNames.push('Toàn bộ Ban Giám đốc');
+              allNames.push(...directorNames, ...managerNames, ...otherNames);
               if (allNames.length === 0) return null;
 
               return (
