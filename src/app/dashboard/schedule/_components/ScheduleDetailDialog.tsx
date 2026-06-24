@@ -1,7 +1,7 @@
 'use client'
 
 import React from "react";
-import { MapPin, Car, Pencil, Clock, MoreVertical, Trash2, CheckCircle2, XCircle, AlertTriangle, Mail } from "lucide-react";
+import { MapPin, Car, Pencil, Clock, MoreVertical, Trash2, CheckCircle2, XCircle, AlertTriangle, Mail, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -375,12 +375,17 @@ export default function ScheduleDetailDialog({
               if (allNames.length === 0) return null;
 
               return (
-                <div className="p-3 bg-slate-50 rounded-xl space-y-1.5">
-                  <p className="text-[11px] font-medium text-slate-400">Thành phần tham gia</p>
-                  <div className="text-[14px] font-semibold text-slate-700 leading-relaxed">
-                    {allNames.map((name, i) => (
-                      <p key={i}>{i + 1}. {name}</p>
-                    ))}
+                <div className="flex items-start gap-3 p-3 bg-slate-50 rounded-xl">
+                  <div className="p-2 bg-white rounded-lg shadow-sm shrink-0">
+                    <Users className="w-4 h-4 text-slate-500" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[11px] font-medium text-slate-400">Thành phần tham gia</p>
+                    <div className="text-[14px] font-semibold text-slate-700 leading-relaxed">
+                      {allNames.map((name, i) => (
+                        <p key={i}>{i + 1}. {name}</p>
+                      ))}
+                    </div>
                   </div>
                 </div>
               );
@@ -422,15 +427,22 @@ export default function ScheduleDetailDialog({
 
             {/* Thông tin xe & lái xe */}
             {schedule.use_vehicle && schedule.vehicle && (
-              <div className="text-[12px] text-slate-600 font-medium space-y-0.5 bg-slate-50 p-3 rounded-xl">
-                <p className="text-slate-400 text-[11px] mb-1">Lái xe và phương tiện</p>
-                <p>{schedule.driver?.full_name || detail.matchedVehicle?.default_driver?.full_name || detail.matchedVehicle?.driver_name || "Chưa có"}</p>
-                <p>{schedule.vehicle.name} - {schedule.vehicle.plate_number}</p>
-                {(schedule.driver?.phone || detail.matchedVehicle?.default_driver?.phone || detail.matchedVehicle?.driver_phone) && (
-                  <a href={`tel:${schedule.driver?.phone || detail.matchedVehicle.default_driver?.phone || detail.matchedVehicle.driver_phone}`}
-                    className="text-primary hover:underline">{schedule.driver?.phone || detail.matchedVehicle.default_driver?.phone || detail.matchedVehicle.driver_phone}
-                  </a>
-                )}
+              <div className="flex items-start gap-3 p-3 bg-slate-50 rounded-xl">
+                <div className="p-2 bg-white rounded-lg shadow-sm shrink-0">
+                  <Car className="w-4 h-4 text-slate-500" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[11px] font-medium text-slate-400 mb-1">Lái xe và phương tiện</p>
+                  <div className="text-[13px] text-slate-700 leading-relaxed">
+                    <p className="font-semibold">{schedule.driver?.full_name || detail.matchedVehicle?.default_driver?.full_name || detail.matchedVehicle?.driver_name || "Chưa có"}</p>
+                    <p className="text-slate-500">{schedule.vehicle.name} - {schedule.vehicle.plate_number}</p>
+                    {(schedule.driver?.phone || detail.matchedVehicle?.default_driver?.phone || detail.matchedVehicle?.driver_phone) && (
+                      <a href={`tel:${schedule.driver?.phone || detail.matchedVehicle.default_driver?.phone || detail.matchedVehicle.driver_phone}`}
+                        className="text-primary hover:underline text-[12px] font-medium">{schedule.driver?.phone || detail.matchedVehicle.default_driver?.phone || detail.matchedVehicle.driver_phone}
+                      </a>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
 
