@@ -364,7 +364,7 @@ export default function ScheduleDetailDialog({
               return (
                 <div className="p-3 bg-slate-50 rounded-xl space-y-1.5">
                   <p className="text-[11px] font-medium text-slate-400">Thành phần tham gia</p>
-                  <div className="text-[13px] text-slate-700 leading-relaxed">
+                  <div className="text-[14px] font-semibold text-slate-700 leading-relaxed">
                     {allNames.map((name, i) => (
                       <p key={i}>{i + 1}. {name}</p>
                     ))}
