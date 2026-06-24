@@ -151,6 +151,35 @@ export default function ScheduleDetailDialog({
     ) || null;
   }, [detail.tempVehicleId, schedules, schedule?.id]);
 
+  // Kiểm tra xe/lái xe có bận trong khung giờ của lịch hiện tại không
+  const vehicleBusyMap = React.useMemo(() => {
+    if (!schedule) return new Map<string, boolean>();
+    const sStart = new Date(schedule.start_time);
+    const sEnd = new Date(schedule.end_time);
+    const map = new Map<string, boolean>();
+    schedules.forEach((s: any) => {
+      if (s.id === schedule.id || s.status === 'rejected' || s.status === 'completed') return;
+      const isOverlap = new Date(s.start_time) < sEnd && new Date(s.end_time) > sStart;
+      if (!isOverlap) return;
+      if (s.vehicle_id) map.set(s.vehicle_id, true);
+    });
+    return map;
+  }, [schedules, schedule]);
+
+  const driverBusyMap = React.useMemo(() => {
+    if (!schedule) return new Map<string, boolean>();
+    const sStart = new Date(schedule.start_time);
+    const sEnd = new Date(schedule.end_time);
+    const map = new Map<string, boolean>();
+    schedules.forEach((s: any) => {
+      if (s.id === schedule.id || s.status === 'rejected' || s.status === 'completed') return;
+      const isOverlap = new Date(s.start_time) < sEnd && new Date(s.end_time) > sStart;
+      if (!isOverlap) return;
+      if (s.driver_id) map.set(s.driver_id, true);
+    });
+    return map;
+  }, [schedules, schedule]);
+
   // Xung đột lịch hiển thị cho coordinator
   const scheduleConflicts = React.useMemo(() => {
     if (!schedule || schedule.type === 'leave') return [];
@@ -490,11 +519,19 @@ export default function ScheduleDetailDialog({
                     </SelectTrigger>
                     <SelectContent className="rounded-xl border-none shadow-2xl">
                       {vehicles
-                        .map(v => (
-                          <SelectItem key={v.id} value={v.id} className="text-base md:text-sm py-3 md:py-2">
-                            <span className="font-bold text-slate-800">{v.name} - {v.plate_number}</span>
+                        .map(v => {
+                          const busy = vehicleBusyMap.has(v.id);
+                          return (
+                          <SelectItem key={v.id} value={v.id} className="text-xs py-2.5">
+                            <span className="flex items-center justify-between w-full gap-2">
+                              <span className="font-semibold text-slate-800 truncate">{v.name} - {v.plate_number}</span>
+                              <span className={"shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full " + (busy ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-700")}>
+                                {busy ? 'BẬN' : 'RẢNH'}
+                              </span>
+                            </span>
                           </SelectItem>
-                        ))}
+                          );
+                        })}
                     </SelectContent>
                   </Select>
 
@@ -503,13 +540,21 @@ export default function ScheduleDetailDialog({
                       <SelectValue placeholder="Chọn lái xe..." />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl border-none shadow-2xl">
-                      {allProfiles.filter(p => p.role === 'driver').map(p => (
-                        <SelectItem key={p.id} value={p.id} className="text-base md:text-sm py-3 md:py-2">
-                          <span className="font-bold text-slate-800">
-                            {p.full_name}{p.phone ? ` - ${p.phone}` : ''}
+                      {allProfiles.filter(p => p.role === 'driver').map(p => {
+                        const busy = driverBusyMap.has(p.id);
+                        return (
+                        <SelectItem key={p.id} value={p.id} className="text-xs py-2.5">
+                          <span className="flex items-center justify-between w-full gap-2">
+                            <span className="font-semibold text-slate-800 truncate">
+                              {p.full_name}{p.phone ? ` - ${p.phone}` : ''}
+                            </span>
+                            <span className={"shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full " + (busy ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-700")}>
+                              {busy ? 'BẬN' : 'RẢNH'}
+                            </span>
                           </span>
                         </SelectItem>
-                      ))}
+                        );
+                      })}
                     </SelectContent>
                   </Select>
                 </div>
