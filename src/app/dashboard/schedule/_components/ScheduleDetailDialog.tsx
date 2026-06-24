@@ -121,7 +121,8 @@ interface ScheduleDetailDialogProps {
   departments: any[];
   currentProfile: any;
   onAssignVehicle: (scheduleId: string, vehicleId: string | null, driverId: string | null) => void;
-  onRejectSchedule?: (scheduleId: string, reason: string) => void | Promise<void>;
+  onSelfArranged: (scheduleId: string) => void;
+  onRejectSchedule: (scheduleId: string, reason: string) => Promise<void>;
   onUpdateEndTime: (scheduleId: string, newEndTime: string) => void;
   onUpdateSchedule: (scheduleId: string, updates: any) => void;
   onResubmitSchedule?: (scheduleId: string, changeReason: string, editedPayload: any) => void;
@@ -129,7 +130,7 @@ interface ScheduleDetailDialogProps {
 }
 
 export default function ScheduleDetailDialog({
-  isOpen, setIsOpen, schedule, schedules, vehicles, rooms, allProfiles, departments, currentProfile, onAssignVehicle, onRejectSchedule, onUpdateEndTime, onUpdateSchedule, onResubmitSchedule, onDeleteSchedule
+  isOpen, setIsOpen, schedule, schedules, vehicles, rooms, allProfiles, departments, currentProfile, onAssignVehicle, onSelfArranged, onRejectSchedule, onUpdateEndTime, onUpdateSchedule, onResubmitSchedule, onDeleteSchedule
 }: ScheduleDetailDialogProps) {
   const detail = useScheduleDetail({
     isOpen, schedule, schedules, vehicles, rooms, allProfiles, currentProfile,
@@ -517,6 +518,10 @@ export default function ScheduleDetailDialog({
                     onClick={() => setRejectVehicleOpen(true)}
                     className="min-h-11 px-4 rounded-xl text-sm font-medium border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 active:scale-95 transition-all whitespace-nowrap"
                   >Từ chối không có xe</Button>
+                  <Button variant="outline"
+                    onClick={() => { onSelfArranged(schedule.id); setIsOpen(false); }}
+                    className="min-h-11 px-4 rounded-xl text-sm font-medium border-amber-300 text-amber-700 hover:bg-amber-50 hover:text-amber-800 active:scale-95 transition-all whitespace-nowrap"
+                  >Tự túc phương tiện</Button>
                   <Button
                     disabled={!detail.tempVehicleId}
                     onClick={() => onAssignVehicle(schedule.id, detail.tempVehicleId, detail.tempDriverId)}

@@ -28,6 +28,7 @@ interface CoordinatorViewProps {
   setIsDetailOpen: (v: boolean) => void;
   handleSelectSchedule: (s: any) => void;
   handleAssignVehicle: (id: string, vId: string | null, dId: string | null) => void;
+  handleSelfArranged: (id: string) => void;
   handleUpdateEndTime: (id: string, t: string) => void;
   handleUpdateSchedule: (id: string, u: any) => void;
 }
@@ -37,7 +38,7 @@ export default function CoordinatorDashboardView(props: CoordinatorViewProps) {
     profile, schedules, vehicles, rooms, allProfiles, departments,
     selectedDate, isTodaySelected, currentTimePercent, startLimit, duration,
     timelineContainerRef, selectedSchedule, isDetailOpen, setIsDetailOpen,
-    handleSelectSchedule, handleAssignVehicle, handleUpdateEndTime, handleUpdateSchedule
+    handleSelectSchedule, handleAssignVehicle, handleSelfArranged, handleUpdateEndTime, handleUpdateSchedule
   } = props;
 
   const pendingSchedules = schedules
@@ -160,6 +161,8 @@ export default function CoordinatorDashboardView(props: CoordinatorViewProps) {
         departments={departments}
         currentProfile={profile}
         onAssignVehicle={handleAssignVehicle}
+        onSelfArranged={handleSelfArranged}
+        onRejectSchedule={(id, reason) => Promise.resolve()}
         onUpdateEndTime={handleUpdateEndTime}
         onUpdateSchedule={handleUpdateSchedule}
       />

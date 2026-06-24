@@ -184,6 +184,32 @@ function ScheduleContent() {
               notifyError(error, "Không từ chối được lịch trình");
             }
           }}
+          onSelfArranged={async (id) => {
+            try {
+              const schedule = schedules.find(s => s.id === id);
+              const { error } = await supabase.from('schedules').update({
+                use_vehicle: false,
+                status: 'approved',
+                vehicle_id: null,
+                driver_id: null,
+              }).eq('id', id);
+              if (error) throw error;
+
+              if (schedule?.created_by) {
+                await sendNotifications([{
+                  user_id: schedule.created_by,
+                  title: "Lịch trình đã duyệt — Tự túc phương tiện",
+                  content: `Lịch trình "${schedule.title}" đã được duyệt. Phương tiện do các bạn tự sắp xếp.`,
+                  link: "/dashboard/schedule"
+                }]);
+              }
+              notifySuccess("Đã duyệt — tự túc phương tiện");
+              setIsDetailOpen(false);
+              fetchData();
+            } catch (error) {
+              notifyError(error, "Không duyệt được");
+            }
+          }}
         onUpdateEndTime={handleUpdateEndTime}
         onUpdateSchedule={handleUpdateSchedule}
         onResubmitSchedule={handleResubmitSchedule}
