@@ -4,7 +4,6 @@ import React from "react";
 import { MapPin, Car, UserCheck, Pencil, Clock, MoreVertical, Trash2, CheckCircle2, XCircle, AlertTriangle, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -16,7 +15,7 @@ import {
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
-import { cn, compareProfilesByHierarchy, canViewLeaveDetails } from "@/lib/utils";
+import { cn, canViewLeaveDetails } from "@/lib/utils";
 import { format } from "date-fns";
 import { typeLabels } from "../_lib/constants";
 import { filterBGD, filterStaff, checkConflicts, checkDeputyDirectorLimit } from "../_lib/utils";
@@ -37,71 +36,59 @@ function RenderParticipants({ schedule, allProfiles }: { schedule: any; allProfi
   const participantIds = schedule.participants.map((p: any) => p.profile?.id);
 
   const hasAllBgd = bgdProfiles.length > 0 && bgdProfiles.every(p => participantIds.includes(p.id));
-  const hasAllStaff = staffProfiles.length > 0 && staffProfiles.every(p => participantIds.includes(p.id));
 
-  const elements: React.ReactNode[] = [];
+  // Lọc participants: directors, managers/staff khác
+  const directors: string[] = [];
+  const managers: string[] = [];
+  const others: string[] = [];
 
-  if (hasAllBgd) {
-    elements.push(
-      <Badge key="all-bgd" variant="outline" className="bg-red-50 border-red-200 text-red-700 rounded-full px-3 py-1.5 flex items-center gap-2 font-bold shadow-sm whitespace-nowrap">
-        Toàn bộ Ban Giám đốc
-      </Badge>
-    );
-  }
-  if (hasAllStaff) {
-    elements.push(
-      <Badge key="all-staff" variant="outline" className="bg-blue-50 border-blue-200 text-blue-700 rounded-full px-3 py-1.5 flex items-center gap-2 font-bold shadow-sm whitespace-nowrap">
-        Toàn bộ Đơn vị / Phòng ban
-      </Badge>
-    );
-  }
-
-  const remaining = schedule.participants.filter((p: any) => {
-    const isBgd = bgdProfiles.some(bp => bp.id === p.profile?.id);
-    const isStaff = staffProfiles.some(sp => sp.id === p.profile?.id);
-    if (isBgd && hasAllBgd) return false;
-    if (isStaff && hasAllStaff) return false;
-    return true;
+  schedule.participants.forEach((p: any) => {
+    if (!p.profile?.full_name) return;
+    if (hasAllBgd && bgdProfiles.some(bp => bp.id === p.profile?.id)) return;
+    if (p.profile?.role === 'director' || p.profile?.title?.toLowerCase().includes('giám đốc')) {
+      directors.push(p.profile.full_name);
+    } else if (p.profile?.role === 'manager' || p.profile?.is_department_head) {
+      managers.push(p.profile.full_name);
+    } else {
+      others.push(p.profile.full_name);
+    }
   });
 
-  remaining.sort((a: any, b: any) => compareProfilesByHierarchy(a.profile, b.profile)).forEach((p: any, idx: number) => {
-    elements.push(
-      <Badge key={`p-${idx}`} variant="outline" className="bg-white border-slate-200 rounded-full px-3 py-1.5 flex items-center gap-2 font-semibold text-slate-700 shadow-sm whitespace-nowrap">
-        <Avatar className="h-5 w-5">
-          <AvatarImage src={p.profile?.avatar_url} />
-          <AvatarFallback className="text-[9px] bg-slate-100">{p.profile?.full_name?.[0]}</AvatarFallback>
-        </Avatar>
-        {p.profile?.full_name}
-      </Badge>
-    );
-  });
+  const parts: string[] = [];
+  if (hasAllBgd) parts.push('Toàn bộ BGĐ');
+  if (directors.length > 0) parts.push(directors.join(', '));
+  if (managers.length > 0) parts.push(managers.join(', '));
+  if (others.length > 0) parts.push(`... và ${others.length} người khác`);
 
-  return <div className="flex flex-wrap gap-2">{elements}</div>;
+  return (
+    <p className="text-sm font-medium text-slate-700 leading-relaxed">
+      {parts.join(' • ') || 'Chưa có'}
+    </p>
+  );
 }
 
 // --- Sub-component: Phần Header chung của Dialog ---
 function DetailHeader({ schedule, badgeColor, headerBg, isAllowedToView }: {
   schedule: any; badgeColor: string; headerBg: string; isAllowedToView: boolean;
 }) {
+  const timeText = schedule.status === 'completed' || !(format(new Date(schedule.end_time), 'HH:mm') === '23:59')
+    ? (schedule.status === 'in_progress' && new Date() > new Date(schedule.end_time)
+      ? `${format(new Date(schedule.start_time), 'HH:mm dd/MM')} - ${format(new Date(), 'HH:mm dd/MM')}`
+      : `${format(new Date(schedule.start_time), 'HH:mm dd/MM')} - ${format(new Date(schedule.end_time), 'HH:mm dd/MM')}`)
+    : `Bắt đầu từ: ${format(new Date(schedule.start_time), 'HH:mm dd/MM')}`;
+
   return (
-    <div className={cn("px-[var(--app-page-x)] py-5 sm:p-6 relative overflow-hidden backdrop-blur-xl border-b border-slate-100 flex items-start justify-between", headerBg)}>
-      <div className="relative z-10 space-y-3 flex-1 min-w-0 pr-4">
+    <div className={cn("px-[var(--app-page-x)] py-5 sm:p-6 relative overflow-hidden backdrop-blur-xl border-b border-slate-100", headerBg)}>
+      <div className="relative z-10 space-y-2.5 max-w-full">
         <Badge className={cn("bg-white/60 backdrop-blur-md shadow-sm font-bold text-[10px] px-3 py-1 whitespace-nowrap w-fit", badgeColor)}>
           {typeLabels[schedule.type]?.label}
         </Badge>
-        <DialogTitle className="text-lg sm:text-xl font-bold leading-tight tabular-nums text-slate-900 w-full break-words">
+        <DialogTitle className="text-lg sm:text-xl font-bold leading-tight tabular-nums text-slate-900 break-words">
           {isAllowedToView ? schedule.title : `Nghỉ phép (${schedule.creator?.full_name || 'Cán bộ'})`}
         </DialogTitle>
-        <div className="flex flex-wrap items-center gap-2 text-slate-600 text-[13px] font-semibold pt-1">
-          <div className="flex min-w-0 items-center gap-1.5">
-            <Clock className="w-4 h-4 text-slate-400 shrink-0" />
-            {schedule.status === 'completed' || !(format(new Date(schedule.end_time), 'HH:mm') === '23:59')
-              ? (schedule.status === 'in_progress' && new Date() > new Date(schedule.end_time)
-                ? `${format(new Date(schedule.start_time), 'HH:mm dd/MM')} - ${format(new Date(), 'HH:mm dd/MM')}`
-                : `${format(new Date(schedule.start_time), 'HH:mm dd/MM')} - ${format(new Date(schedule.end_time), 'HH:mm dd/MM')}`)
-              : `Bắt đầu từ: ${format(new Date(schedule.start_time), 'HH:mm dd/MM')}`
-            }
-          </div>
+        <div className="flex items-center gap-1.5 text-slate-600 text-[13px] font-semibold">
+          <Clock className="w-4 h-4 text-slate-400 shrink-0" />
+          <span className="break-words leading-snug">{timeText}</span>
         </div>
       </div>
       <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-white/60 rounded-full blur-3xl pointer-events-none" />
