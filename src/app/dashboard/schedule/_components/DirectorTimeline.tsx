@@ -59,8 +59,8 @@ export default function DirectorTimeline({
               const dirSchedules = schedules.filter(s => {
                 if (s.status === 'rejected') return false;
                 if (new Date(s.start_time) > selectedEnd || new Date(s.end_time) < selectedStart) return false;
-                // Meeting tại chi nhánh (có phòng họp) không vẽ lên timeline BGĐ
-                if (s.type === 'meeting' && (s.location === 'Chi nhánh' || s.room_id)) return false;
+                // Sự kiện nội bộ không vẽ lên timeline BGĐ
+                if (s.type === 'event' && (s.location === 'Chi nhánh' || s.room_id)) return false;
                 return s.participants?.some((p: any) => p.profile?.id === dir.id);
               });
 

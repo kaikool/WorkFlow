@@ -129,7 +129,6 @@ export default function ScheduleEditForm({
                 <Select value={detail.editData.type} onValueChange={(v) => detail.setEditData((prev: any) => ({ ...prev, type: v, use_vehicle: v === 'trip' ? true : prev.use_vehicle }))}>
                   <SelectTrigger className="min-h-11 bg-slate-50 border-none rounded-xl font-medium text-sm"><SelectValue /></SelectTrigger>
                   <SelectContent className="rounded-xl border-none shadow-2xl">
-                    <SelectItem value="meeting" className="text-base md:text-sm py-3 md:py-2">Họp nội bộ</SelectItem>
                     <SelectItem value="trip" className="text-base md:text-sm py-3 md:py-2">Đi công tác</SelectItem>
                     <SelectItem value="event" className="text-base md:text-sm py-3 md:py-2">Sự kiện</SelectItem>
                     <SelectItem value="leave" className="text-base md:text-sm py-3 md:py-2">Nghỉ phép</SelectItem>

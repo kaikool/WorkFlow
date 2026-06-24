@@ -161,13 +161,13 @@ export function useScheduleDetail({
   const matchedVehicle = schedule ? vehicles.find(v => v.id === schedule.vehicle_id) : null;
 
   const headerBgMap: any = {
-    meeting: "bg-blue-50/80",
+    meeting: "bg-orange-50/80",
     trip: "bg-orange-50/80",
     event: "bg-amber-50/80",
     leave: "bg-slate-100/80",
   };
   const badgeColorMap: any = {
-    meeting: "text-blue-700 border-blue-200/50",
+    meeting: "text-orange-700 border-orange-200/50",
     trip: "text-orange-700 border-orange-200/50",
     event: "text-amber-700 border-amber-200/50",
     leave: "text-slate-700 border-slate-200/50",

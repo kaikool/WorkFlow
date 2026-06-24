@@ -1,13 +1,12 @@
 import {
   Calendar as CalendarIcon,
   Users,
-  DoorOpen,
   Car,
   Palmtree,
 } from "lucide-react";
 
 export const typeLabels: any = {
-  meeting: { label: "Họp nội bộ", color: "bg-slate-50 text-slate-700 border-slate-200", icon: DoorOpen },
+  meeting: { label: "Đi công tác", color: "status-warning-bg", icon: Car },
   trip: { label: "Đi công tác", color: "status-warning-bg", icon: Car },
   event: { label: "Sự kiện chi nhánh", color: "bg-slate-50 text-slate-700 border-slate-200", icon: CalendarIcon },
   leave: { label: "Nghỉ phép", color: "status-neutral-bg border-slate-200", icon: Palmtree },

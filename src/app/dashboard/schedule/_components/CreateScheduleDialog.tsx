@@ -107,7 +107,6 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
   }, [sortedProfiles, profile?.id]);
 
   const scheduleTypes = [
-    { value: 'meeting', label: 'Họp nội bộ' },
     { value: 'trip', label: 'Công tác' },
     { value: 'event', label: 'Sự kiện' },
     { value: 'leave', label: 'Nghỉ phép' },
@@ -162,9 +161,6 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
                 value={startTime}
                 onChange={(v) => {
                   setStartTime(v);
-                  const [h, m] = v.split(':');
-                  const endH = Math.min(parseInt(h) + 1, HOUR_END);
-                  if (!endTime) setEndTime(`${endH.toString().padStart(2, '0')}:${m}`);
                 }}
               />
             </div>
