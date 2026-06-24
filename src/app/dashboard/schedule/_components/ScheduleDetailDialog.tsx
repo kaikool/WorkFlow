@@ -35,34 +35,34 @@ function RenderParticipants({ schedule, allProfiles }: { schedule: any; allProfi
   const participantIds = schedule.participants.map((p: any) => p.profile?.id);
   const hasAllBgd = bgdProfiles.length > 0 && bgdProfiles.every(p => participantIds.includes(p.id));
 
-  const list: { label: string; color: string }[] = [];
+  // Gom theo nhóm: BGĐ, Quản lý, Khác
+  const bgdList: string[] = [];
+  const mgrList: string[] = [];
+  const otherList: string[] = [];
 
-  if (hasAllBgd) {
-    list.push({ label: 'Toàn bộ BGĐ', color: 'bg-red-50 text-red-700 border-red-200' });
-  }
-
-  const others: string[] = [];
   schedule.participants.forEach((p: any) => {
     if (!p.profile?.full_name) return;
     if (hasAllBgd && bgdProfiles.some(bp => bp.id === p.profile?.id)) return;
     const role = p.profile?.role;
     const title = (p.profile?.title || '').toLowerCase();
     if (role === 'director' || title.includes('giám đốc')) {
-      list.push({ label: p.profile.full_name, color: 'bg-red-50/60 text-red-800 border-red-200/60' });
+      bgdList.push(p.profile.full_name);
     } else if (role === 'manager' || p.profile?.is_department_head) {
-      list.push({ label: p.profile.full_name, color: 'bg-blue-50/60 text-blue-800 border-blue-200/60' });
+      mgrList.push(p.profile.full_name);
     } else {
-      others.push(p.profile.full_name);
+      otherList.push(p.profile.full_name);
     }
   });
 
-  if (others.length > 0) {
-    list.push({ label: `+ ${others.length} người khác`, color: 'bg-slate-50 text-slate-500 border-slate-200' });
-  }
+  const pills: { label: string; color: string }[] = [];
+  if (hasAllBgd) pills.push({ label: 'Toàn bộ BGĐ', color: 'bg-red-50 text-red-700 border-red-200' });
+  bgdList.forEach(name => pills.push({ label: name, color: 'bg-red-50/60 text-red-800 border-red-200/60' }));
+  mgrList.forEach(name => pills.push({ label: name, color: 'bg-blue-50/60 text-blue-800 border-blue-200/60' }));
+  if (otherList.length > 0) pills.push({ label: `+ ${otherList.length} người khác`, color: 'bg-slate-50 text-slate-500 border-slate-200' });
 
   return (
     <div className="flex flex-wrap gap-1.5">
-      {list.map((item, i) => (
+      {pills.map((item, i) => (
         <span key={i} className={"inline-block text-[11px] font-semibold px-2.5 py-1 rounded-full border " + item.color}>
           {item.label}
         </span>
@@ -549,27 +549,25 @@ export default function ScheduleDetailDialog({
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="flex flex-wrap justify-end gap-2 pt-1">
-                  <Button variant="outline"
+                <div className="flex flex-wrap items-center gap-2 pt-1">
+                  <Button variant="outline" size="sm"
                     onClick={() => setRejectVehicleOpen(true)}
-                    className="min-h-10 px-3 rounded-xl text-xs font-medium border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 active:scale-95 transition-all"
+                    className="rounded-xl border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
                   >Từ chối</Button>
-                  <Button variant="outline"
+                  <Button variant="outline" size="sm"
                     onClick={() => { onSelfArranged(schedule.id); setIsOpen(false); }}
-                    className="min-h-10 px-3 rounded-xl text-xs font-medium border-amber-300 text-amber-700 hover:bg-amber-50 hover:text-amber-800 active:scale-95 transition-all"
+                    className="rounded-xl border-amber-300 text-amber-700 hover:bg-amber-50 hover:text-amber-800"
                   >Tự túc PT</Button>
-                  <Button
+                  <Button size="sm"
                     disabled={!detail.tempVehicleId}
                     onClick={() => onAssignVehicle(schedule.id, detail.tempVehicleId, detail.tempDriverId)}
                     className={cn(
-                      "min-h-11 px-6 rounded-xl text-sm font-medium active:scale-95 transition-all whitespace-nowrap shadow-lg",
+                      "rounded-xl shadow-sm",
                       vehicleConflict
-                        ? "bg-amber-500 hover:bg-amber-600 text-white shadow-amber-500/20"
-                        : "bg-primary text-white shadow-primary/20"
+                        ? "bg-amber-500 hover:bg-amber-600 text-white"
+                        : "bg-primary text-white"
                     )}
-                  >
-                    Xác nhận gán
-                  </Button>
+                  >Xác nhận gán</Button>
                 </div>
               </div>
             )}
