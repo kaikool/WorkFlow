@@ -310,7 +310,7 @@ export default function ScheduleDetailDialog({
 
         {/* Body */}
         <ScrollArea className="app-dialog-sheet-body">
-          <div className="space-y-6 px-[var(--app-page-x)] py-4">
+          <div className="space-y-6 px-[var(--app-page-x)] py-5">
 
             {/* Banner đỏ khi lịch đã bị từ chối */}
             {isRejected && (
@@ -324,21 +324,23 @@ export default function ScheduleDetailDialog({
             {/* Nội dung mô tả */}
             {safeSchedule.description && isAllowedToView && (
               <div className="space-y-2">
-                <p className="text-[11px] font-medium text-slate-400">Nội dung chi tiết</p>
-                <p className="text-[14px] font-medium text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-xl break-words">
-                  {safeSchedule.description}
-                </p>
+                <h3 className="text-xs font-semibold text-slate-500">Nội dung chi tiết</h3>
+                <div className="bg-slate-50 rounded-xl p-4">
+                  <p className="text-sm font-medium text-slate-700 leading-relaxed break-words">
+                    {safeSchedule.description}
+                  </p>
+                </div>
               </div>
             )}
 
             {/* Địa điểm / Phòng họp */}
-            <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
-              <div className="p-2 bg-white rounded-lg shadow-sm shrink-0">
-                <MapPin className="w-4 h-4 text-slate-500" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-[11px] text-slate-400 font-medium">Địa điểm</p>
-                <p className="text-[14px] font-semibold text-slate-700 break-words">
+            <div className="space-y-2">
+              <h3 className="text-xs font-semibold text-slate-500">Địa điểm</h3>
+              <div className="flex items-center gap-3 bg-slate-50 rounded-xl p-4">
+                <div className="p-2 bg-white rounded-xl shadow-sm shrink-0">
+                  <MapPin className="w-4 h-4 text-slate-500" />
+                </div>
+                <p className="text-sm font-medium text-slate-700 break-words">
                   {schedule.room?.name || schedule.location || "Chưa xác định"}
                 </p>
               </div>
@@ -351,7 +353,6 @@ export default function ScheduleDetailDialog({
               const participantIds = schedule.participants.map((p: any) => p.profile?.id);
               const hasAllBgd = bgdProfiles.length > 0 && bgdProfiles.every(p => participantIds.includes(p.id));
 
-              // Sắp xếp: BGĐ đầu, Quản lý tiếp, còn lại sau
               const directorNames: string[] = [];
               const managerNames: string[] = [];
               const otherNames: string[] = [];
@@ -375,13 +376,10 @@ export default function ScheduleDetailDialog({
               if (allNames.length === 0) return null;
 
               return (
-                <div className="flex items-start gap-3 p-3 bg-slate-50 rounded-xl">
-                  <div className="p-2 bg-white rounded-lg shadow-sm shrink-0">
-                    <Users className="w-4 h-4 text-slate-500" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[11px] font-medium text-slate-400">Thành phần tham gia</p>
-                    <div className="text-[14px] font-semibold text-slate-700 leading-relaxed">
+                <div className="space-y-2">
+                  <h3 className="text-xs font-semibold text-slate-500">Thành phần tham gia</h3>
+                  <div className="bg-slate-50 rounded-xl p-4">
+                    <div className="text-sm font-semibold text-slate-700 leading-relaxed space-y-0.5">
                       {allNames.map((name, i) => (
                         <p key={i}>{i + 1}. {name}</p>
                       ))}
@@ -394,9 +392,8 @@ export default function ScheduleDetailDialog({
             {/* Cảnh báo xung đột cho coordinator */}
             {isCoordinator && scheduleConflicts.length > 0 && (
               <>
-                {/* Cảnh báo trùng lịch */}
                 {scheduleConflicts.filter(c => !c.toLowerCase().includes('phó giám đốc') && !c.toLowerCase().includes('tối đa')).length > 0 && (
-                  <div className="p-3 bg-red-50/50 rounded-xl border border-red-100 space-y-2">
+                  <div className="p-4 bg-red-50/50 rounded-xl border border-red-100 space-y-2">
                     <div className="flex items-center gap-2">
                       <AlertTriangle className="w-4 h-4 text-red-600" />
                       <span className="text-[13px] font-semibold text-red-700">Cảnh báo trùng lịch</span>
@@ -408,9 +405,8 @@ export default function ScheduleDetailDialog({
                     </ul>
                   </div>
                 )}
-                {/* Cảnh báo quá số Phó giám đốc */}
                 {scheduleConflicts.filter(c => c.toLowerCase().includes('phó giám đốc') || c.toLowerCase().includes('tối đa')).length > 0 && (
-                  <div className="p-3 bg-amber-50/50 rounded-xl border border-amber-100 space-y-2">
+                  <div className="p-4 bg-amber-50/50 rounded-xl border border-amber-100 space-y-2">
                     <div className="flex items-center gap-2">
                       <AlertTriangle className="w-4 h-4 text-amber-600" />
                       <span className="text-[13px] font-semibold text-amber-700">Giới hạn Phó giám đốc</span>
@@ -427,18 +423,18 @@ export default function ScheduleDetailDialog({
 
             {/* Thông tin xe & lái xe */}
             {schedule.use_vehicle && schedule.vehicle && (
-              <div className="flex items-start gap-3 p-3 bg-slate-50 rounded-xl">
-                <div className="p-2 bg-white rounded-lg shadow-sm shrink-0">
-                  <Car className="w-4 h-4 text-slate-500" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[11px] font-medium text-slate-400 mb-1">Lái xe và phương tiện</p>
-                  <div className="text-[13px] text-slate-700 leading-relaxed">
+              <div className="space-y-2">
+                <h3 className="text-xs font-semibold text-slate-500">Lái xe và phương tiện</h3>
+                <div className="flex items-start gap-3 bg-slate-50 rounded-xl p-4">
+                  <div className="p-2 bg-white rounded-xl shadow-sm shrink-0">
+                    <Car className="w-4 h-4 text-slate-500" />
+                  </div>
+                  <div className="text-sm font-medium text-slate-700 leading-relaxed space-y-0.5">
                     <p className="font-semibold">{schedule.driver?.full_name || detail.matchedVehicle?.default_driver?.full_name || detail.matchedVehicle?.driver_name || "Chưa có"}</p>
                     <p className="text-slate-500">{schedule.vehicle.name} - {schedule.vehicle.plate_number}</p>
                     {(schedule.driver?.phone || detail.matchedVehicle?.default_driver?.phone || detail.matchedVehicle?.driver_phone) && (
                       <a href={`tel:${schedule.driver?.phone || detail.matchedVehicle.default_driver?.phone || detail.matchedVehicle.driver_phone}`}
-                        className="text-primary hover:underline text-[12px] font-medium">{schedule.driver?.phone || detail.matchedVehicle.default_driver?.phone || detail.matchedVehicle.driver_phone}
+                        className="text-primary hover:underline text-xs font-medium">{schedule.driver?.phone || detail.matchedVehicle.default_driver?.phone || detail.matchedVehicle.driver_phone}
                       </a>
                     )}
                   </div>
@@ -448,54 +444,53 @@ export default function ScheduleDetailDialog({
 
             {/* Driver từ chối */}
             {schedule.metadata?.driver_rejected_at && isCoordinator && schedule.use_vehicle && (
-              <div className="flex items-start gap-3 p-3 bg-red-50 rounded-xl border border-red-100">
+              <div className="flex items-start gap-3 p-4 bg-red-50 rounded-xl border border-red-100">
                 <XCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
                 <div>
                   <p className="text-[13px] font-semibold text-red-700">Lái xe đã từ chối</p>
-                  <p className="text-sm text-red-600 mt-0.5">{schedule.metadata?.driver_rejected_reason || "Không có lý do"}</p>
+                  <p className="text-xs font-medium text-red-600 mt-0.5">{schedule.metadata?.driver_rejected_reason || "Không có lý do"}</p>
                 </div>
               </div>
             )}
 
             {/* Điều phối xe */}
             {isCoordinator && schedule.use_vehicle && !schedule.vehicle_id && (
-              <div className="p-3 bg-slate-50 rounded-xl space-y-2.5">
-                <div className="flex items-center gap-2.5">
-                  <div className="p-1.5 bg-white rounded-lg shadow-sm shrink-0">
-                    <Car className="w-3.5 h-3.5 text-slate-500" />
+              <div className="bg-slate-50 rounded-xl p-4 space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-white rounded-xl shadow-sm shrink-0">
+                    <Car className="w-4 h-4 text-slate-500" />
                   </div>
                   <div>
-                    <p className="text-[12px] font-semibold text-slate-700">Điều phối phương tiện</p>
-                    <p className="text-[10px] font-medium text-slate-500">Chọn xe và lái xe phù hợp</p>
+                    <p className="text-xs font-semibold text-slate-700">Điều phối phương tiện</p>
+                    <p className="text-[11px] font-medium text-slate-500">Chọn xe và lái xe phù hợp</p>
                   </div>
                 </div>
 
-                {/* Cảnh báo xe đang đi chuyến khác */}
                 {vehicleConflict && (
-                  <div className="flex items-start gap-2 p-2.5 bg-amber-50 rounded-xl border border-amber-200">
-                    <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
+                  <div className="flex items-start gap-2.5 p-3 bg-amber-50 rounded-xl border border-amber-200">
+                    <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-[11px] font-semibold text-amber-800">Xe đã có lịch trùng giờ: "{vehicleConflict.title}"</p>
-                      <p className="text-[10px] text-amber-700 mt-0.5">
+                      <p className="text-[12px] font-semibold text-amber-800">Xe đã có lịch trùng giờ: "{vehicleConflict.title}"</p>
+                      <p className="text-[11px] text-amber-700 mt-0.5">
                         {new Date(vehicleConflict.start_time).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })} – {new Date(vehicleConflict.end_time).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
                       </p>
                     </div>
                   </div>
                 )}
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <Select value={detail.tempVehicleId || ''} onValueChange={detail.handleVehicleSelect}>
-                    <SelectTrigger className="min-h-9 bg-white border-none rounded-xl font-medium text-xs shadow-sm">
+                    <SelectTrigger className="min-h-11 bg-white border-none rounded-xl font-medium text-sm shadow-sm">
                       <SelectValue placeholder="Chọn xe..." />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl border-none shadow-lg p-1 min-w-[var(--radix-select-trigger-width)]">
                       {vehicles.map(v => {
                         const busy = vehicleBusyMap.has(v.id);
                         return (
-                        <SelectItem key={v.id} value={v.id} className="text-[11px] py-1.5 pr-3">
+                        <SelectItem key={v.id} value={v.id} className="text-xs py-2 pr-3">
                           <span className="grid grid-cols-[1fr_auto] items-center gap-2 w-full">
                             <span className="truncate font-semibold text-slate-800">{v.name} - {v.plate_number}</span>
-                            <span className={"shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded-full text-center " + (busy ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-700")}>
+                            <span className={"shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full text-center " + (busy ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-700")}>
                               {busy ? 'BẬN' : 'RẢNH'}
                             </span>
                           </span>
@@ -506,19 +501,19 @@ export default function ScheduleDetailDialog({
                   </Select>
 
                   <Select value={detail.tempDriverId || ''} onValueChange={detail.handleDriverSelect}>
-                    <SelectTrigger className="min-h-9 bg-white border-none rounded-xl font-medium text-xs shadow-sm">
+                    <SelectTrigger className="min-h-11 bg-white border-none rounded-xl font-medium text-sm shadow-sm">
                       <SelectValue placeholder="Chọn lái xe..." />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl border-none shadow-lg p-1 min-w-[var(--radix-select-trigger-width)]">
                       {allProfiles.filter(p => p.role === 'driver').map(p => {
                         const busy = driverBusyMap.has(p.id);
                         return (
-                        <SelectItem key={p.id} value={p.id} className="text-[11px] py-1.5 pr-3">
+                        <SelectItem key={p.id} value={p.id} className="text-xs py-2 pr-3">
                           <span className="grid grid-cols-[1fr_auto] items-center gap-2 w-full">
                             <span className="truncate font-semibold text-slate-800">
                               {p.full_name}{p.phone ? ` - ${p.phone}` : ''}
                             </span>
-                            <span className={"shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded-full text-center " + (busy ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-700")}>
+                            <span className={"shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full text-center " + (busy ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-700")}>
                               {busy ? 'BẬN' : 'RẢNH'}
                             </span>
                           </span>
@@ -529,20 +524,20 @@ export default function ScheduleDetailDialog({
                   </Select>
                 </div>
 
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-3 gap-3">
                   <Button variant="outline"
                     onClick={() => setRejectVehicleOpen(true)}
-                    className="min-h-9 rounded-xl text-xs font-semibold border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 w-full"
+                    className="min-h-11 rounded-xl text-xs font-semibold border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 w-full"
                   >Từ chối</Button>
                   <Button variant="outline"
                     onClick={() => { onSelfArranged(schedule.id); setIsOpen(false); }}
-                    className="min-h-9 rounded-xl text-xs font-semibold border-amber-300 text-amber-700 hover:bg-amber-50 hover:text-amber-800 w-full"
+                    className="min-h-11 rounded-xl text-xs font-semibold border-amber-300 text-amber-700 hover:bg-amber-50 hover:text-amber-800 w-full"
                   >Tự túc PT</Button>
                   <Button
                     disabled={!detail.tempVehicleId}
                     onClick={() => onAssignVehicle(schedule.id, detail.tempVehicleId, detail.tempDriverId)}
                     className={cn(
-                      "min-h-9 rounded-xl text-xs font-semibold active:scale-[0.98] transition-all duration-300 ease-in-out w-full",
+                      "min-h-11 rounded-xl text-xs font-semibold active:scale-[0.98] transition-all duration-300 ease-in-out w-full",
                       vehicleConflict
                         ? "bg-amber-500 hover:bg-amber-600 text-white"
                         : "bg-primary hover:bg-primary/90 text-white"
@@ -553,7 +548,7 @@ export default function ScheduleDetailDialog({
             )}
 
             {/* Người tạo */}
-            <p className="text-[11px] text-slate-400 italic leading-relaxed">
+            <p className="text-xs text-slate-400 italic leading-relaxed">
               Tạo bởi: {schedule.creator?.full_name || "Không xác định"}
               {schedule.type === 'leave' && schedule.created_by === schedule.creator?.id && ' (bạn)'}
             </p>
