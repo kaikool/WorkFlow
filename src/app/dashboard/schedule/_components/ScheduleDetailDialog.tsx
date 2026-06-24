@@ -1,9 +1,10 @@
 'use client'
 
 import React from "react";
-import { MapPin, Car, Pencil, Clock, MoreVertical, Trash2, CheckCircle2, XCircle, AlertTriangle, Mail, Users } from "lucide-react";
+import { MapPin, Car, Pencil, Clock, MoreVertical, Trash2, CheckCircle2, XCircle, AlertTriangle, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -352,40 +353,51 @@ export default function ScheduleDetailDialog({
               const participantIds = schedule.participants.map((p: any) => p.profile?.id);
               const hasAllBgd = bgdProfiles.length > 0 && bgdProfiles.every(p => participantIds.includes(p.id));
 
-              const bgdPills: string[] = [];
-              const mgrPills: string[] = [];
-              const otherPills: string[] = [];
+              const pills: React.ReactNode[] = [];
+              if (hasAllBgd) {
+                pills.push(
+                  <Badge key="all-bgd" variant="outline" className="bg-red-50 border-red-200 text-red-700 rounded-full px-3 py-1.5 flex items-center gap-2 font-bold shadow-sm whitespace-nowrap">
+                    Toàn bộ Ban Giám đốc
+                  </Badge>
+                );
+              }
+
+              // Gom theo nhóm: BGĐ → Quản lý → còn lại
+              const bgdList: string[] = [];
+              const mgrList: string[] = [];
+              const otherList: string[] = [];
               schedule.participants.forEach((p: any) => {
                 if (!p.profile?.full_name) return;
                 if (hasAllBgd && bgdProfiles.some(bp => bp.id === p.profile?.id)) return;
                 const role = p.profile?.role;
                 const title = (p.profile?.title || '').toLowerCase();
                 if (role === 'director' || title.includes('giám đốc')) {
-                  bgdPills.push(p.profile.full_name);
+                  bgdList.push(p.profile.full_name);
                 } else if (role === 'manager' || p.profile?.is_department_head) {
-                  mgrPills.push(p.profile.full_name);
+                  mgrList.push(p.profile.full_name);
                 } else {
-                  otherPills.push(p.profile.full_name);
+                  otherList.push(p.profile.full_name);
                 }
               });
 
-              const pills: { label: string; cls: string }[] = [];
-              if (hasAllBgd) pills.push({ label: 'Toàn bộ BGĐ', cls: 'bg-red-50 text-red-700 border-red-200' });
-              bgdPills.forEach(n => pills.push({ label: n, cls: 'bg-red-50/60 text-red-800 border-red-200/60' }));
-              mgrPills.forEach(n => pills.push({ label: n, cls: 'bg-blue-50/60 text-blue-800 border-blue-200/60' }));
-              if (otherPills.length > 0) pills.push({ label: `+ ${otherPills.length} người khác`, cls: 'bg-slate-50 text-slate-500 border-slate-200' });
+              [...bgdList, ...mgrList, ...otherList].forEach((name, i) => {
+                pills.push(
+                  <Badge key={`p-${i}`} variant="outline" className="bg-white border-slate-200 rounded-full px-3 py-1.5 flex items-center gap-2 font-semibold text-slate-700 shadow-sm whitespace-nowrap">
+                    <Avatar className="h-5 w-5">
+                      <AvatarImage src={schedule.participants.find((x: any) => x.profile?.full_name === name)?.profile?.avatar_url} />
+                      <AvatarFallback className="text-[9px] bg-slate-100">{name[0]}</AvatarFallback>
+                    </Avatar>
+                    {name}
+                  </Badge>
+                );
+              });
+
               if (pills.length === 0) return null;
 
               return (
                 <div className="space-y-2">
                   <h3 className="text-xs font-semibold text-slate-500">Thành phần tham gia</h3>
-                  <div className="flex flex-wrap gap-1.5">
-                    {pills.map((item, i) => (
-                      <span key={i} className={"inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full border " + item.cls}>
-                        {item.label}
-                      </span>
-                    ))}
-                  </div>
+                  <div className="flex flex-wrap gap-1.5">{pills}</div>
                 </div>
               );
             })()}
