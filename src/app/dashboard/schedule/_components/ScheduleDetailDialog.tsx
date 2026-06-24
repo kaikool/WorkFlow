@@ -345,7 +345,6 @@ export default function ScheduleDetailDialog({
                 </p>
               </div>
             </div>
-
             {/* Thành phần tham gia */}
             {(() => {
               if (!schedule?.participants) return null;
@@ -353,37 +352,39 @@ export default function ScheduleDetailDialog({
               const participantIds = schedule.participants.map((p: any) => p.profile?.id);
               const hasAllBgd = bgdProfiles.length > 0 && bgdProfiles.every(p => participantIds.includes(p.id));
 
-              const directorNames: string[] = [];
-              const managerNames: string[] = [];
-              const otherNames: string[] = [];
+              const pills: { label: string; color: string }[] = [];
+              if (hasAllBgd) pills.push({ label: 'Toàn bộ Ban Giám đốc', color: 'bg-red-50 text-red-700' });
+
+              const others: { name: string; role: string }[] = [];
               schedule.participants.forEach((p: any) => {
                 if (!p.profile?.full_name) return;
                 if (hasAllBgd && bgdProfiles.some(bp => bp.id === p.profile?.id)) return;
-                const role = p.profile?.role;
-                const title = (p.profile?.title || '').toLowerCase();
-                if (role === 'director' || title.includes('giám đốc')) {
-                  directorNames.push(p.profile.full_name);
-                } else if (role === 'manager' || p.profile?.is_department_head) {
-                  managerNames.push(p.profile.full_name);
-                } else {
-                  otherNames.push(p.profile.full_name);
-                }
+                others.push({ name: p.profile.full_name, role: p.profile?.role || '' });
               });
 
-              const allNames: string[] = [];
-              if (hasAllBgd) allNames.push('Toàn bộ Ban Giám đốc');
-              allNames.push(...directorNames, ...managerNames, ...otherNames);
-              if (allNames.length === 0) return null;
+              // Sắp xếp: BGĐ → Quản lý → còn lại
+              const sorted = others.sort((a, b) => {
+                const rank = (r: string) => r === 'director' ? 0 : r === 'manager' ? 1 : 2;
+                return rank(a.role) - rank(b.role);
+              });
+              sorted.forEach(p => {
+                const c = p.role === 'director' ? 'bg-red-50/70 text-red-800'
+                  : p.role === 'manager' ? 'bg-blue-50/70 text-blue-800'
+                  : 'bg-white text-slate-700 border border-slate-200';
+                pills.push({ label: p.name, color: c });
+              });
+
+              if (pills.length === 0) return null;
 
               return (
                 <div className="space-y-2">
                   <h3 className="text-xs font-semibold text-slate-500">Thành phần tham gia</h3>
-                  <div className="bg-slate-50 rounded-xl p-4">
-                    <div className="text-sm font-semibold text-slate-700 leading-relaxed space-y-0.5">
-                      {allNames.map((name, i) => (
-                        <p key={i}>{i + 1}. {name}</p>
-                      ))}
-                    </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {pills.map((item, i) => (
+                      <span key={i} className={"inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full " + item.color}>
+                        {item.label}
+                      </span>
+                    ))}
                   </div>
                 </div>
               );
