@@ -1,7 +1,7 @@
 'use client'
 
 import React from "react";
-import { MapPin, Car, UserCheck, Pencil, Clock, MoreVertical, Trash2, CheckCircle2, XCircle, AlertTriangle, Mail } from "lucide-react";
+import { MapPin, Car, Pencil, Clock, MoreVertical, Trash2, CheckCircle2, XCircle, AlertTriangle, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -18,7 +18,7 @@ import {
 import { cn, canViewLeaveDetails } from "@/lib/utils";
 import { format } from "date-fns";
 import { typeLabels } from "../_lib/constants";
-import { filterBGD, filterStaff, checkConflicts, checkDeputyDirectorLimit } from "../_lib/utils";
+import { filterBGD, checkConflicts, checkDeputyDirectorLimit } from "../_lib/utils";
 import { useScheduleDetail } from "../_hooks/useScheduleDetail";
 import { confirmDialog } from "@/components/ui/confirm-dialog";
 import ScheduleEditForm from "./ScheduleEditForm";
@@ -28,49 +28,6 @@ import VehicleRequestEmailDialog from "./VehicleRequestEmailDialog";
 import { createClient } from "@/utils/supabase/client";
 
 // --- Sub-component: Hiển thị danh sách người tham gia (Read Mode) ---
-function RenderParticipants({ schedule, allProfiles }: { schedule: any; allProfiles: any[] }) {
-  if (!schedule?.participants) return null;
-
-  const bgdProfiles = filterBGD(allProfiles);
-  const participantIds = schedule.participants.map((p: any) => p.profile?.id);
-  const hasAllBgd = bgdProfiles.length > 0 && bgdProfiles.every(p => participantIds.includes(p.id));
-
-  // Gom theo nhóm: BGĐ, Quản lý, Khác
-  const bgdList: string[] = [];
-  const mgrList: string[] = [];
-  const otherList: string[] = [];
-
-  schedule.participants.forEach((p: any) => {
-    if (!p.profile?.full_name) return;
-    if (hasAllBgd && bgdProfiles.some(bp => bp.id === p.profile?.id)) return;
-    const role = p.profile?.role;
-    const title = (p.profile?.title || '').toLowerCase();
-    if (role === 'director' || title.includes('giám đốc')) {
-      bgdList.push(p.profile.full_name);
-    } else if (role === 'manager' || p.profile?.is_department_head) {
-      mgrList.push(p.profile.full_name);
-    } else {
-      otherList.push(p.profile.full_name);
-    }
-  });
-
-  const pills: { label: string; color: string }[] = [];
-  if (hasAllBgd) pills.push({ label: 'Toàn bộ BGĐ', color: 'bg-red-50 text-red-700 border-red-200' });
-  bgdList.forEach(name => pills.push({ label: name, color: 'bg-red-50/60 text-red-800 border-red-200/60' }));
-  mgrList.forEach(name => pills.push({ label: name, color: 'bg-blue-50/60 text-blue-800 border-blue-200/60' }));
-  if (otherList.length > 0) pills.push({ label: `+ ${otherList.length} người khác`, color: 'bg-slate-50 text-slate-500 border-slate-200' });
-
-  return (
-    <div className="flex flex-wrap gap-1.5">
-      {pills.map((item, i) => (
-        <span key={i} className={"inline-block text-[11px] font-semibold px-2.5 py-1 rounded-full border " + item.color}>
-          {item.label}
-        </span>
-      ))}
-    </div>
-  );
-}
-
 // --- Sub-component: Phần Header chung của Dialog ---
 function DetailHeader({ schedule, badgeColor, headerBg, isAllowedToView }: {
   schedule: any; badgeColor: string; headerBg: string; isAllowedToView: boolean;
@@ -387,10 +344,29 @@ export default function ScheduleDetailDialog({
               </div>
             </div>
 
-            {/* Thành phần tham gia */}
-            <div className="space-y-2">
+            {/* RenderParticipants — danh sách đánh số */}
+            <div className="space-y-1">
               <p className="text-[11px] font-medium text-slate-400">Thành phần tham gia</p>
-              <RenderParticipants schedule={schedule} allProfiles={allProfiles} />
+              <div className="text-[13px] text-slate-700 space-y-1">
+                {(() => {
+                  if (!schedule?.participants) return <p className="text-slate-400 italic">Chưa có</p>;
+                  const bgdProfiles = filterBGD(allProfiles);
+                  const participantIds = schedule.participants.map((p: any) => p.profile?.id);
+                  const hasAllBgd = bgdProfiles.length > 0 && bgdProfiles.every(p => participantIds.includes(p.id));
+
+                  const names: string[] = [];
+                  schedule.participants.forEach((p: any) => {
+                    if (!p.profile?.full_name) return;
+                    if (hasAllBgd && bgdProfiles.some(bp => bp.id === p.profile?.id)) return;
+                    names.push(p.profile.full_name);
+                  });
+
+                  const allNames = hasAllBgd ? ['Toàn bộ BGĐ', ...names] : names;
+                  return allNames.map((name, i) => (
+                    <p key={i} className="pl-4">{i + 1}. {name}</p>
+                  ));
+                })()}
+              </div>
             </div>
 
             {/* Cảnh báo xung đột cho coordinator */}
@@ -429,41 +405,15 @@ export default function ScheduleDetailDialog({
 
             {/* Thông tin xe & lái xe */}
             {schedule.use_vehicle && schedule.vehicle && (
-              <div className="space-y-2">
-                <p className="text-[11px] font-medium text-slate-400">Phương tiện & Lái xe</p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
-                    <div className="p-2 bg-white rounded-lg shadow-sm shrink-0">
-                      <Car className="w-4 h-4 text-slate-500" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-[11px] text-slate-400 font-medium">Phương tiện</p>
-                      <p className="text-[14px] font-semibold text-slate-700 truncate">
-                        {schedule.vehicle ? `${schedule.vehicle.name} (${schedule.vehicle.plate_number})` : 'Chưa gán xe'}
-                      </p>
-                    </div>
-                  </div>
-
-                  {detail.matchedVehicle && (
-                    <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
-                      <div className="p-2 bg-white rounded-lg shadow-sm shrink-0">
-                        <UserCheck className="w-4 h-4 text-slate-500" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-[11px] text-slate-400 font-medium">Lái xe</p>
-                        <p className="text-[14px] font-semibold text-slate-700 truncate">
-                          {schedule.driver?.full_name || detail.matchedVehicle.default_driver?.full_name || detail.matchedVehicle.driver_name}
-                        </p>
-                        {(schedule.driver?.phone || detail.matchedVehicle.default_driver?.phone || detail.matchedVehicle.driver_phone) && (
-                          <a href={`tel:${schedule.driver?.phone || detail.matchedVehicle.default_driver?.phone || detail.matchedVehicle.driver_phone}`}
-                            className="text-[12px] font-medium text-primary hover:underline block mt-0.5">
-                            {schedule.driver?.phone || detail.matchedVehicle.default_driver?.phone || detail.matchedVehicle.driver_phone}
-                          </a>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
+              <div className="text-[12px] text-slate-600 font-medium space-y-0.5 bg-slate-50 p-3 rounded-xl">
+                <p className="text-slate-400 text-[11px] mb-1">Lái xe và phương tiện</p>
+                <p>{schedule.driver?.full_name || detail.matchedVehicle?.default_driver?.full_name || detail.matchedVehicle?.driver_name || "Chưa có"}</p>
+                <p>{schedule.vehicle.name} - {schedule.vehicle.plate_number}</p>
+                {(schedule.driver?.phone || detail.matchedVehicle?.default_driver?.phone || detail.matchedVehicle?.driver_phone) && (
+                  <a href={`tel:${schedule.driver?.phone || detail.matchedVehicle.default_driver?.phone || detail.matchedVehicle.driver_phone}`}
+                    className="text-primary hover:underline">{schedule.driver?.phone || detail.matchedVehicle.default_driver?.phone || detail.matchedVehicle.driver_phone}
+                  </a>
+                )}
               </div>
             )}
 
@@ -574,18 +524,10 @@ export default function ScheduleDetailDialog({
             )}
 
             {/* Người tạo */}
-            <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
-              <div className="p-2 bg-white rounded-lg shadow-sm shrink-0">
-                <UserCheck className="w-4 h-4 text-slate-500" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-[11px] text-slate-400 font-medium">Người tạo</p>
-                <p className="text-[14px] font-semibold text-slate-700 truncate">
-                  {schedule.creator?.full_name || "Không xác định"}
-                  {schedule.type === 'leave' && schedule.created_by === schedule.creator?.id && ' (bạn)'}
-                </p>
-              </div>
-            </div>
+            <p className="text-[11px] text-slate-400 italic leading-relaxed">
+              Tạo bởi: {schedule.creator?.full_name || "Không xác định"}
+              {schedule.type === 'leave' && schedule.created_by === schedule.creator?.id && ' (bạn)'}
+            </p>
 
           </div>
           </ScrollArea>
