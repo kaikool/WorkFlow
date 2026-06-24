@@ -23,14 +23,6 @@ export function getProfileBadgeStatus(
 ): ProfileStatus {
   if (!profile) return 'available';
 
-  // Birthday — match MM-DD
-  if (profile.birthday) {
-    const b = new Date(profile.birthday);
-    if (b.getMonth() === now.getMonth() && b.getDate() === now.getDate()) {
-      return 'birthday_today';
-    }
-  }
-
   // On leave / on trip — chỉ approved + in_progress, start <= now <= end
   const mine = todaySchedules.filter(s =>
     s.created_by === profile.id &&
@@ -70,7 +62,7 @@ export function matchProfileSearch(profile: any, query: string): boolean {
   return haystack.includes(q);
 }
 
-// Tính số năm gắn bó (anniversary). Trả về số nguyên năm hoặc null.
+// Tính số năm gắn bó. Trả về số nguyên năm hoặc null.
 export function getYearsOfService(branchJoinDate: string | null | undefined, now: Date = new Date()): number | null {
   if (!branchJoinDate) return null;
   const join = new Date(branchJoinDate);
@@ -79,23 +71,4 @@ export function getYearsOfService(branchJoinDate: string | null | undefined, now
   const m = now.getMonth() - join.getMonth();
   if (m < 0 || (m === 0 && now.getDate() < join.getDate())) years--;
   return years >= 0 ? years : null;
-}
-
-// MM-DD match — dùng cho birthday/anniversary check trong widget.
-export function isSameMMDD(date: string | Date, ref: Date = new Date()): boolean {
-  const d = typeof date === 'string' ? new Date(date) : date;
-  if (isNaN(d.getTime())) return false;
-  return d.getMonth() === ref.getMonth() && d.getDate() === ref.getDate();
-}
-
-// Lấy ngày MM-DD trong N ngày tới kể từ hôm nay (inclusive).
-export function isMMDDWithinDays(date: string | Date, days: number, ref: Date = new Date()): boolean {
-  const d = typeof date === 'string' ? new Date(date) : date;
-  if (isNaN(d.getTime())) return false;
-  for (let i = 0; i <= days; i++) {
-    const target = new Date(ref);
-    target.setDate(target.getDate() + i);
-    if (d.getMonth() === target.getMonth() && d.getDate() === target.getDate()) return true;
-  }
-  return false;
 }

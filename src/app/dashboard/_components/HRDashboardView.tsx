@@ -28,22 +28,22 @@ export default function HRDashboardView({ schedules, allProfiles }: HRViewProps)
   });
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-8 animate-fade-in-up pb-20">
+    <div className="page-container space-y-8 motion-safe:animate-fade-in-up pb-20">
       <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pt-4 sm:pt-0">
         <div className="space-y-1">
-          <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Bảng nhân sự</h1>
-          <p className="text-[13px] text-slate-500 font-medium">Theo dõi nghỉ phép và hồ sơ nhân sự toàn cơ quan.</p>
+          <h1 className="heading-page">Bảng nhân sự</h1>
+          <p className="text-subtitle">Theo dõi nghỉ phép và hồ sơ nhân sự toàn cơ quan.</p>
         </div>
         <div className="flex flex-wrap gap-3">
           <Button asChild variant="outline" className="rounded-xl border-primary/20 font-semibold text-primary hover:border-primary/40 hover:bg-primary/5">
             <Link href="/dashboard/schedule?type=leave" className="flex items-center justify-center gap-2">
-              <CalendarDays className="h-4 w-4 shrink-0" />
+              <CalendarDays className="icon-md shrink-0" />
               <span>Đăng ký nghỉ phép</span>
             </Link>
           </Button>
           <Button asChild className="rounded-xl font-semibold">
             <Link href="/dashboard/team" className="flex items-center justify-center gap-2">
-              <Users className="h-4 w-4 shrink-0" />
+              <Users className="icon-md shrink-0" />
               <span>Danh sách cán bộ</span>
             </Link>
           </Button>
@@ -58,7 +58,7 @@ export default function HRDashboardView({ schedules, allProfiles }: HRViewProps)
             </div>
             <p className="text-xs font-semibold text-slate-500">Nghỉ phép tuần này</p>
           </div>
-          <p className="text-3xl font-extrabold text-slate-900 tabular-nums">{thisWeekLeaves.length}</p>
+          <p className="text-3xl font-bold text-slate-900 tabular-nums">{thisWeekLeaves.length}</p>
         </div>
         <div className="premium-card border border-slate-100 bg-white">
           <div className="flex items-center gap-2 mb-3">
@@ -67,7 +67,7 @@ export default function HRDashboardView({ schedules, allProfiles }: HRViewProps)
             </div>
             <p className="text-xs font-semibold text-slate-500">Đang nghỉ hôm nay</p>
           </div>
-          <p className="text-3xl font-extrabold text-slate-900 tabular-nums">{activeLeaves.length}</p>
+          <p className="text-3xl font-bold text-slate-900 tabular-nums">{activeLeaves.length}</p>
         </div>
         <div className="premium-card border border-slate-100 bg-white">
           <div className="flex items-center gap-2 mb-3">
@@ -76,7 +76,7 @@ export default function HRDashboardView({ schedules, allProfiles }: HRViewProps)
             </div>
             <p className="text-xs font-semibold text-slate-500">Tổng cán bộ</p>
           </div>
-          <p className="text-3xl font-extrabold text-slate-900 tabular-nums">{allProfiles.length}</p>
+          <p className="text-3xl font-bold text-slate-900 tabular-nums">{allProfiles.length}</p>
         </div>
       </section>
 
@@ -84,7 +84,7 @@ export default function HRDashboardView({ schedules, allProfiles }: HRViewProps)
         <h3 className="text-sm font-semibold text-slate-500 flex items-center gap-2 px-1">
           <CalendarDays className="w-4 h-4 text-primary shrink-0" />
           Lịch nghỉ phép tuần này
-          <Badge className="ml-auto border-none bg-primary/10 px-2.5 py-0.5 text-xs font-bold text-primary">{thisWeekLeaves.length}</Badge>
+          <Badge className="ml-auto border-none bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">{thisWeekLeaves.length}</Badge>
         </h3>
 
         {thisWeekLeaves.length === 0 ? (
@@ -107,7 +107,7 @@ export default function HRDashboardView({ schedules, allProfiles }: HRViewProps)
                 <div key={leave.id} className="flex items-center gap-3 p-4 bg-white rounded-2xl border border-slate-100 hover:border-slate-200 hover:shadow-sm transition-all duration-200">
                   <Avatar className="h-10 w-10 border border-slate-100 shadow-sm shrink-0">
                     <AvatarImage src={leaveUser?.avatar_url} />
-                    <AvatarFallback className="font-semibold text-sm bg-slate-100 text-slate-600">
+                    <AvatarFallback className="font-semibold text-sm status-neutral-bg">
                       {leaveUser?.full_name?.[0]}
                     </AvatarFallback>
                   </Avatar>
@@ -115,13 +115,13 @@ export default function HRDashboardView({ schedules, allProfiles }: HRViewProps)
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-bold text-slate-900 truncate">{leaveUser?.full_name || "Cán bộ"}</p>
                       {isActive && (
-                        <Badge className="shrink-0 border border-amber-100 bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-700">
+                        <Badge className="shrink-0 border border-amber-100 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700">
                           Hôm nay
                         </Badge>
                       )}
                     </div>
                     <p className="text-xs text-slate-500 truncate mt-0.5">{leave.title || "Nghỉ phép"}</p>
-                    <p className="text-xs text-slate-400 mt-0.5 tabular-nums">
+                    <p className="text-xs text-slate-500 mt-0.5 tabular-nums">
                       {startDate.toLocaleDateString("vi-VN")} – {endDate.toLocaleDateString("vi-VN")}
                       {deptName ? ` · ${deptName}` : ""}
                     </p>

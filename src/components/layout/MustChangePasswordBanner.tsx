@@ -31,7 +31,7 @@ export default function MustChangePasswordBanner({ show }: Props) {
 
         <div className="flex h-8 shrink-0 items-center justify-center rounded-lg bg-amber-500/10 pl-3 pr-2 text-[12px] font-bold text-amber-700 transition-colors group-hover:bg-amber-500/20">
           <span className="hidden sm:inline mr-1">Đổi ngay</span>
-          <ChevronRight className="h-4 w-4" />
+          <ChevronRight className="icon-md" />
         </div>
       </Link>
     </div>

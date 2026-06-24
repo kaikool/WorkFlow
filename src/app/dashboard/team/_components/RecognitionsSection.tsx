@@ -41,12 +41,12 @@ export default function RecognitionsSection({
         <div className="rounded-2xl bg-white border border-slate-100 p-3 item-stack shadow-sm">
           <div className="flex items-center gap-2">
             <Select value={type} onValueChange={(v) => setType(v as RecognitionType)}>
-              <SelectTrigger className="h-10 rounded-xl text-[13px] font-semibold">
+              <SelectTrigger className="h-10 rounded-xl text-sm font-semibold">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 {(Object.keys(RECOGNITION_TYPES) as RecognitionType[]).map((k) => (
-                  <SelectItem key={k} value={k} className="text-[13px]">
+                  <SelectItem key={k} value={k} className="text-sm">
                     <span className="mr-1">{RECOGNITION_TYPES[k].emoji}</span> {RECOGNITION_TYPES[k].label}
                   </SelectItem>
                 ))}
@@ -57,7 +57,7 @@ export default function RecognitionsSection({
             value={content}
             onChange={(e) => setContent(e.target.value)}
             placeholder={`Viết lời ghi nhận cho ${receiverName}…`}
-            className="min-h-[72px] rounded-xl border-slate-200 text-[13px]"
+            className="min-h-[72px] rounded-xl border-slate-200 text-sm"
             maxLength={300}
           />
           <div className="flex items-center justify-between">
@@ -93,24 +93,24 @@ export default function RecognitionsSection({
             >
               <Avatar className="h-9 w-9 shrink-0 ring-1 ring-slate-100">
                 <AvatarImage src={sender.avatar_url} className="object-cover" />
-                <AvatarFallback className="text-[11px] bg-primary text-white">{sender.full_name?.[0] ?? '?'}</AvatarFallback>
+                <AvatarFallback className="text-xs bg-primary text-white">{sender.full_name?.[0] ?? '?'}</AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0 item-stack !gap-1">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-[13px] font-bold text-slate-900 truncate">{sender.full_name ?? 'Đồng nghiệp'}</span>
-                  <span className="text-[10px] font-semibold text-slate-400 shrink-0">
+                  <span className="text-sm font-bold text-slate-900 truncate">{sender.full_name ?? 'Đồng nghiệp'}</span>
+                  <span className="text-xs font-semibold text-slate-500 shrink-0">
                     {(() => { try { return format(new Date(r.created_at), "dd/MM HH:mm", { locale: vi }); } catch { return ''; } })()}
                   </span>
                 </div>
-                <span className="text-[11px] font-bold text-amber-700 inline-flex items-center gap-1 w-fit bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-full">
+                <span className="text-xs font-semibold text-amber-700 inline-flex items-center gap-1 w-fit bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-full">
                   <span>{meta.emoji}</span> {meta.label}
                 </span>
-                <p className="text-[13px] text-slate-700 whitespace-pre-wrap break-words">{r.content}</p>
+                <p className="text-sm text-slate-700 whitespace-pre-wrap break-words">{r.content}</p>
                 {isMine && !r._optimistic && (
                   <button
                     type="button"
                     onClick={() => onDelete(r.id)}
-                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-red-600 hover:text-red-700 w-fit mt-1 active:scale-95 transition-all"
+                    className="inline-flex items-center gap-1 text-xs font-semibold text-red-600 hover:text-red-700 w-fit mt-1 active:scale-95 transition-all"
                   >
                     <Trash2 className="h-3 w-3" /> Xoá
                   </button>

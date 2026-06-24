@@ -46,7 +46,7 @@ export default function TodayTaskList({ tasks }: { tasks: TodayTaskItem[] }) {
         </h3>
         <div className="flex items-center gap-2">
           {tasks.length > 0 && (
-            <span className="inline-flex items-center justify-center min-w-[22px] h-[22px] px-2 rounded-full bg-primary/10 text-primary text-[11px] font-bold">
+            <span className="inline-flex items-center justify-center min-w-[22px] h-[22px] px-2 rounded-full bg-primary/10 text-primary text-xs font-semibold">
               {tasks.length}
             </span>
           )}
@@ -88,7 +88,7 @@ export default function TodayTaskList({ tasks }: { tasks: TodayTaskItem[] }) {
                       <p className="text-sm font-bold text-slate-900 line-clamp-1 group-hover:text-primary transition-colors">
                         {t.title}
                       </p>
-                      <Badge className={cn('px-2 py-0.5 text-[11px] font-medium border-none rounded-full shrink-0', status.className)}>
+                      <Badge className={cn('px-2 py-0.5 text-xs font-medium border-none rounded-full shrink-0', status.className)}>
                         {status.label}
                       </Badge>
                     </div>

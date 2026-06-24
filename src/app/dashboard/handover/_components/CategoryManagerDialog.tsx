@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/ui/empty-state";
 import { notifyError, notifySuccess, notifyValidation } from "@/lib/notify";
 import { createClient } from "@/utils/supabase/client";
 import { confirmDialog } from "@/components/ui/confirm-dialog";
@@ -136,20 +137,20 @@ export default function CategoryManagerDialog({ isOpen, setIsOpen, categories, o
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="app-dialog-sheet app-dialog-sheet--xl shadow-2xl">
         <DialogHeader className="app-dialog-sheet-header">
-          <DialogTitle className="text-[17px] font-semibold text-slate-900">Quản lý nhóm hồ sơ</DialogTitle>
-          <DialogDescription className="text-[13px] text-slate-500 font-medium">
+          <DialogTitle className="text-lg font-semibold text-slate-900">Quản lý nhóm hồ sơ</DialogTitle>
+          <DialogDescription className="text-subtitle">
             Mỗi nhóm gắn một SLA (giờ) — người dùng chỉ chọn nhóm, hệ thống tự áp dụng SLA.
           </DialogDescription>
         </DialogHeader>
 
         <ScrollArea className="app-dialog-sheet-body">
-          <div className="space-y-6 px-[var(--app-page-x)] py-4">
+          <div className="group-stack px-[var(--app-page-x)] py-4">
             {/* Form thêm mới */}
-            <div className="space-y-3 p-4 bg-slate-50/50 rounded-2xl border border-slate-100">
-              <p className="text-[13px] font-semibold text-slate-700">Thêm nhóm mới</p>
+            <div className="item-stack p-4 bg-slate-50/50 rounded-2xl border border-slate-100">
+              <p className="text-sm font-semibold text-slate-700">Thêm nhóm mới</p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="space-y-1 sm:col-span-2">
-                  <Label className="text-[12px] font-medium text-slate-500">Tên nhóm</Label>
+                  <Label className="text-xs font-medium text-slate-500">Tên nhóm</Label>
                   <Input
                     value={newName}
                     onChange={(e) => setNewName(e.target.value)}
@@ -158,7 +159,7 @@ export default function CategoryManagerDialog({ isOpen, setIsOpen, categories, o
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-[12px] font-medium text-slate-500">SLA (giờ)</Label>
+                  <Label className="text-xs font-medium text-slate-500">SLA (giờ)</Label>
                   <Input
                     type="number"
                     min={1}
@@ -170,7 +171,7 @@ export default function CategoryManagerDialog({ isOpen, setIsOpen, categories, o
               </div>
               <div className="flex items-end gap-3">
                 <div className="space-y-1 flex-1">
-                  <Label className="text-[12px] font-medium text-slate-500">Màu badge</Label>
+                  <Label className="text-xs font-medium text-slate-500">Màu badge</Label>
                   <Select value={newColor} onValueChange={(v) => setNewColor(v as DocumentCategory["color"])}>
                     <SelectTrigger className="h-11 bg-white border-slate-200 rounded-xl font-medium">
                       <SelectValue />
@@ -195,7 +196,7 @@ export default function CategoryManagerDialog({ isOpen, setIsOpen, categories, o
 
             {/* Danh sách hiện có */}
             <div className="space-y-2">
-              <p className="text-[12px] font-medium text-slate-400">Hiện có {categories.length} nhóm</p>
+              <p className="text-xs font-medium text-slate-500">Hiện có {categories.length} nhóm</p>
               {categories.map((c) => {
                 const isEditing = editingId === c.id;
                 const colorOpt = COLOR_OPTIONS.find((o) => o.value === c.color);
@@ -245,7 +246,7 @@ export default function CategoryManagerDialog({ isOpen, setIsOpen, categories, o
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-10 w-10 rounded-lg text-slate-400 hover:bg-slate-100"
+                            className="h-10 w-10 rounded-lg text-slate-500 hover:bg-slate-100"
                             onClick={() => setEditingId(null)}
                           >
                             ✕
@@ -256,11 +257,11 @@ export default function CategoryManagerDialog({ isOpen, setIsOpen, categories, o
                       <>
                         <div className="flex-1 min-w-0 flex items-center gap-2">
                           {colorOpt && (
-                            <Badge className={colorOpt.chip + " font-semibold text-[11px]"}>
+                            <Badge className={colorOpt.chip + " font-semibold text-xs"}>
                               {c.name}
                             </Badge>
                           )}
-                          <span className="text-[12px] text-slate-500 font-medium">
+                          <span className="text-label">
                             SLA {c.sla_hours} giờ
                           </span>
                         </div>
@@ -288,9 +289,12 @@ export default function CategoryManagerDialog({ isOpen, setIsOpen, categories, o
                 );
               })}
               {categories.length === 0 && (
-                <p className="text-[13px] text-slate-400 font-medium text-center py-4">
-                  Chưa có nhóm hồ sơ nào. Thêm nhóm đầu tiên ở phía trên.
-                </p>
+                <EmptyState
+                  icon={<Plus className="icon-lg" />}
+                  title="Chưa có nhóm hồ sơ"
+                  description='Thêm nhóm đầu tiên ở phía trên.'
+                  variant="subtle"
+                />
               )}
             </div>
           </div>
@@ -300,7 +304,7 @@ export default function CategoryManagerDialog({ isOpen, setIsOpen, categories, o
           <Button
             variant="ghost"
             onClick={() => setIsOpen(false)}
-            className="min-h-11 px-4 rounded-xl font-medium text-slate-500 text-[13px]"
+            className="min-h-11 px-4 rounded-xl font-medium text-slate-500 text-sm"
           >
             Đóng
           </Button>

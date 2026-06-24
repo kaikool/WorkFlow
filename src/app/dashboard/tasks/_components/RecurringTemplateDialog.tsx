@@ -282,7 +282,7 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
                     <div className="flex items-center gap-2">
                       <Flag className={cn('icon-sm',
                         priority === 'high' ? 'text-red-500' :
-                          priority === 'low' ? 'text-slate-400' : 'text-slate-500')} />
+                          priority === 'low' ? 'text-slate-500' : 'text-slate-500')} />
                       <SelectValue />
                     </div>
                   </SelectTrigger>

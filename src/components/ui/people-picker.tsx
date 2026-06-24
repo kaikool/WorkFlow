@@ -126,7 +126,7 @@ export function PeoplePicker({
   return (
     <div className="item-stack">
       {totalMembers === 0 ? (
-        <p className="text-subtitle font-medium text-slate-400 text-center py-6">
+        <p className="text-subtitle font-medium text-slate-500 text-center py-6">
           Không có người phù hợp
         </p>
       ) : (

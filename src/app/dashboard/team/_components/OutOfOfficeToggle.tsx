@@ -96,16 +96,16 @@ export default function OutOfOfficeToggle({ userId, currentOoo, onChange }: OutO
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             placeholder="VD: Đi học CDIO, liên hệ chị Mai 1234…"
-            className="min-h-[64px] rounded-xl text-[13px]"
+            className="min-h-[64px] rounded-xl text-sm"
             maxLength={200}
           />
           <div className="item-stack !gap-1">
-            <label className="text-label">Hết hạn lúc</label>
+            <p className="text-label">Hết hạn lúc</p>
             <Input
               type="datetime-local"
               value={endsAt}
               onChange={(e) => setEndsAt(e.target.value)}
-              className="h-10 rounded-xl text-[13px]"
+              className="h-10 rounded-xl text-sm"
             />
             {currentOoo?.ends_at && (
               <span className="text-meta">

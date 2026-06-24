@@ -124,7 +124,7 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
         className="app-dialog-sheet app-dialog-sheet--lg shadow-2xl"
       >
         <DialogHeader className="app-dialog-sheet-header">
-          <DialogTitle className="text-[17px] font-semibold text-slate-900">Thiết lập lịch trình mới</DialogTitle>
+          <DialogTitle className="text-lg font-semibold text-slate-900">Thiết lập lịch trình mới</DialogTitle>
           <DialogDescription className="sr-only">Thiết lập chi tiết thời gian và thành phần tham gia cho lịch trình mới</DialogDescription>
         </DialogHeader>
         <div className="app-dialog-sheet-body">
@@ -133,11 +133,11 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
           {/* 1. Thời gian */}
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             <div className="space-y-2">
-              <Label className="text-[13px] font-medium text-slate-500 whitespace-nowrap">Từ ngày</Label>
+              <Label className="text-label whitespace-nowrap">Từ ngày</Label>
               <Popover open={isStartOpen} onOpenChange={setIsStartOpen}>
                 <PopoverTrigger asChild>
                   <Button variant="outline" className="w-full h-11 bg-slate-50 border-none rounded-xl font-medium justify-start text-left text-sm active:scale-[0.98] transition-all duration-300 ease-in-out truncate">
-                    <CalendarIcon className="mr-2 h-4 w-4 text-primary shrink-0" />
+                    <CalendarIcon className="mr-2 icon-md text-primary shrink-0" />
                     <span className="truncate">{startDate ? format(startDate, "dd/MM/yyyy") : "Chọn ngày"}</span>
                   </Button>
                 </PopoverTrigger>
@@ -157,7 +157,7 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
               </Popover>
             </div>
             <div className="space-y-2">
-              <Label className="text-[13px] font-medium text-slate-500 whitespace-nowrap">{isLeave ? 'Giờ bắt đầu' : 'Giờ đi'}</Label>
+              <Label className="text-label whitespace-nowrap">{isLeave ? 'Giờ bắt đầu' : 'Giờ đi'}</Label>
               <TimePicker
                 value={startTime}
                 onChange={(v) => {
@@ -170,11 +170,11 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-[13px] font-medium text-slate-500 whitespace-nowrap">Đến ngày</Label>
+              <Label className="text-label whitespace-nowrap">Đến ngày</Label>
               <Popover open={isEndOpen} onOpenChange={setIsEndOpen}>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" className={cn("w-full h-11 bg-slate-50 border-none rounded-xl font-medium justify-start text-left text-sm active:scale-[0.98] transition-all duration-300 ease-in-out truncate", !endDate && "text-slate-400")}>
-                    <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
+                  <Button variant="outline" className={cn("w-full h-11 bg-slate-50 border-none rounded-xl font-medium justify-start text-left text-sm active:scale-[0.98] transition-all duration-300 ease-in-out truncate", !endDate && "text-slate-500")}>
+                    <CalendarIcon className="mr-2 icon-md shrink-0" />
                     <span className="truncate">{endDate ? format(endDate, "dd/MM/yyyy") : "Tự động"}</span>
                   </Button>
                 </PopoverTrigger>
@@ -193,7 +193,7 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
               </Popover>
             </div>
             <div className="space-y-2">
-              <Label className="text-[13px] font-medium text-slate-500 whitespace-nowrap">{isLeave ? 'Giờ kết thúc' : 'Giờ về'}</Label>
+              <Label className="text-label whitespace-nowrap">{isLeave ? 'Giờ kết thúc' : 'Giờ về'}</Label>
               <TimePicker
                 value={endTime || null}
                 onChange={(v) => setEndTime(v)}
@@ -207,7 +207,7 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
           {/* 2. Loại hình & Tiêu đề */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label className="text-[13px] font-medium text-slate-500 whitespace-nowrap">Loại hình</Label>
+              <Label className="text-label whitespace-nowrap">Loại hình</Label>
               <div className="grid grid-cols-4 gap-1.5 rounded-2xl bg-slate-50 p-1.5">
                 {scheduleTypes.map((type) => {
                   const isSelected = newSchedule.type === type.value;
@@ -217,7 +217,7 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
                       type="button"
                       onClick={() => setNewSchedule((prev: any) => ({ ...prev, type: type.value, use_vehicle: type.value === 'trip' }))}
                       className={cn(
-                        "min-h-10 rounded-xl px-2 text-[11px] font-semibold transition-all active:scale-[0.98] sm:text-xs",
+                        "min-h-10 rounded-xl px-2 text-xs font-semibold transition-all active:scale-[0.98] sm:text-xs",
                         isSelected
                           ? "bg-blue-600 text-white shadow-sm shadow-blue-600/20"
                           : "bg-white text-slate-500 ring-1 ring-slate-100 hover:bg-slate-100 hover:text-slate-700"
@@ -230,7 +230,7 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
               </div>
             </div>
             <div className="space-y-2">
-              <Label className="text-[13px] font-medium text-slate-500 whitespace-nowrap">
+              <Label className="text-label whitespace-nowrap">
                 {isLeave ? 'Lý do' : 'Tiêu đề'}
               </Label>
               <Input
@@ -240,7 +240,7 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
                 value={newSchedule.title}
                 onChange={(e) => setNewSchedule({ ...newSchedule, title: e.target.value })}
               />
-              <p className="text-[11px] font-medium text-slate-400 text-right tabular-nums">
+              <p className="text-xs font-medium text-slate-500 text-right tabular-nums">
                 {(newSchedule.title || '').length}/200
               </p>
             </div>
@@ -249,7 +249,7 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
           {/* Chọn nhân sự nghỉ phép (chỉ dành cho HR Officer / Thư ký / Admin khi đăng ký Nghỉ phép) */}
           {showEmployeeSelector && (
             <div className="space-y-2 animate-in fade-in zoom-in-95 duration-200">
-              <Label className="text-[13px] font-medium text-slate-500">Nhân sự nghỉ phép</Label>
+              <Label className="text-label">Nhân sự nghỉ phép</Label>
               <Select
                 value={newSchedule.target_profile_id || profile?.id || ""}
                 onValueChange={(val) => setNewSchedule({ ...newSchedule, target_profile_id: val })}
@@ -301,7 +301,7 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
           {!isLeave && (
             <div className="space-y-4 bg-slate-50/50 p-5 rounded-2xl border border-slate-100">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2">
-                <Label className="text-[13px] font-medium text-slate-500 whitespace-nowrap">Địa điểm & Phương tiện</Label>
+                <Label className="text-label whitespace-nowrap">Địa điểm & Phương tiện</Label>
                 <Tabs
                   value={newSchedule.location === 'Chi nhánh' ? 'branch' : 'outside'}
                   onValueChange={(value) => {
@@ -311,15 +311,15 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
                   className="w-full sm:w-auto"
                 >
                   <TabsList className="grid min-w-[180px] grid-cols-2 bg-white shadow-sm ring-1 ring-slate-100 min-h-9">
-                    <TabsTrigger value="outside" className="rounded-md text-[13px] font-medium">Ngoài</TabsTrigger>
-                    <TabsTrigger value="branch" className="rounded-md text-[13px] font-medium">Chi nhánh</TabsTrigger>
+                    <TabsTrigger value="outside" className="rounded-md text-sm font-medium">Ngoài</TabsTrigger>
+                    <TabsTrigger value="branch" className="rounded-md text-sm font-medium">Chi nhánh</TabsTrigger>
                   </TabsList>
                 </Tabs>
               </div>
 
               {newSchedule.location === 'Chi nhánh' ? (
                 <div className="space-y-2 animate-in fade-in zoom-in-95 duration-300">
-                  <Label className="text-[10px] md:text-[13px] font-medium text-slate-500 whitespace-nowrap">Chọn phòng họp</Label>
+                  <Label className="text-xs md:text-label whitespace-nowrap">Chọn phòng họp</Label>
                   <Select value={newSchedule.room_id} onValueChange={(v) => setNewSchedule((prev: any) => ({ ...prev, room_id: v }))}>
                     <SelectTrigger className="h-11 bg-white border-none rounded-xl font-medium shadow-sm text-sm">
                       <SelectValue placeholder="Chọn phòng họp..." />
@@ -330,9 +330,9 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
                   </Select>
                 </div>
               ) : (
-                <div className="space-y-3 animate-in fade-in zoom-in-95 duration-300">
+                <div className="item-stack animate-in fade-in zoom-in-95 duration-300">
                   <div className="flex items-center justify-between">
-                    <Label className="text-[10px] md:text-[13px] font-medium text-slate-500 whitespace-nowrap">Lộ trình di chuyển</Label>
+                    <Label className="text-xs md:text-label whitespace-nowrap">Lộ trình di chuyển</Label>
                     <div 
                       role="button"
                       onClick={() => {
@@ -374,7 +374,7 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
                               return { ...prev, destinations: newDests };
                             });
                           }}
-                          className="shrink-0 text-slate-400 hover:text-red-500 hover:bg-transparent transition-colors p-2 text-xl leading-none"
+                          className="shrink-0 text-slate-500 hover:text-red-500 hover:bg-transparent transition-colors p-2 text-xl leading-none"
                         >
                           &times;
                         </button>
@@ -411,7 +411,7 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
             <div className="p-3 bg-red-50/50 rounded-2xl border border-red-100 mt-4 space-y-2 animate-in fade-in zoom-in-95">
               <div className="flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 text-red-600" />
-                <span className="text-[13px] font-semibold text-red-700">Cảnh báo trùng lịch</span>
+                <span className="text-sm font-semibold text-red-700">Cảnh báo trùng lịch</span>
               </div>
               <ul className="list-disc pl-5 text-xs font-medium text-red-600/80 space-y-1">
                 {conflicts.map((c, i) => (

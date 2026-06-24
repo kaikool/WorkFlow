@@ -53,7 +53,7 @@ function RecurringContent() {
   };
 
   return (
-    <div className="page-container group-stack animate-fade-in-up">
+    <div className="page-container group-stack motion-safe:animate-fade-in-up">
       <PageHeader
         title="Lịch định kỳ"
         description="Tự động tạo công việc định kỳ theo mẫu đã thiết lập."

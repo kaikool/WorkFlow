@@ -17,7 +17,7 @@ export default function DashboardLoading() {
       </header>
       {/* KPI Card Loading Skeleton */}
       <div className="premium-card p-4 sm:p-5">
-        <div className="grid grid-cols-3 divide-x divide-slate-100 dark:divide-slate-800">
+        <div className="grid grid-cols-3 divide-x divide-slate-100">
           {Array.from({ length: 3 }).map((_, i) => (
             <div key={i} className="flex flex-col items-center justify-center text-center px-2 py-1 space-y-2.5">
               <Skeleton className="h-8 w-8 rounded-lg" />

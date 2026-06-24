@@ -112,7 +112,7 @@ export default function UserManagementPage() {
  if (loading) return <div className="page-container py-10"><ListSkeleton variant="table" rows={6} /></div>;
 
  return (
- <div className="page-container space-y-10 animate-fade-in-up">
+ <div className="page-container space-y-10 motion-safe:animate-fade-in-up">
  <PageHeader
    title="Quản lý nhân sự"
    description="Cấu hình quyền hạn & phòng ban"
@@ -124,9 +124,9 @@ export default function UserManagementPage() {
  <Table>
  <TableHeader className="bg-slate-50/50">
  <TableRow className="hover:bg-transparent border-slate-50">
- <TableHead className="w-[300px] text-sm font-medium text-slate-500 py-5 pl-8 truncate whitespace-nowrap">Cán bộ</TableHead>
- <TableHead className="text-sm font-medium text-slate-500 truncate whitespace-nowrap">Phòng ban</TableHead>
- <TableHead className="text-sm font-medium text-slate-500 truncate whitespace-nowrap">Quyền hệ thống</TableHead>
+ <TableHead className="w-[300px] text-label py-5 pl-8 truncate whitespace-nowrap">Cán bộ</TableHead>
+ <TableHead className="text-label truncate whitespace-nowrap">Phòng ban</TableHead>
+ <TableHead className="text-label truncate whitespace-nowrap">Quyền hệ thống</TableHead>
  <TableHead className="text-right pr-8"></TableHead>
  </TableRow>
  </TableHeader>
@@ -143,7 +143,7 @@ export default function UserManagementPage() {
  </Avatar>
  <div className="flex flex-col">
  <span className="text-sm font-bold text-slate-900 group-hover:text-primary transition-colors">{user.full_name || "Chưa cập nhật tên"}</span>
- <span className="text-sm font-medium text-slate-500 truncate whitespace-nowrap">{getProfileDisplayTitle(user)}</span>
+ <span className="text-meta truncate whitespace-nowrap">{getProfileDisplayTitle(user)}</span>
  </div>
  </div>
  </TableCell>
@@ -188,12 +188,12 @@ export default function UserManagementPage() {
  size="sm"
  onClick={() => handleUpdateUser(user.id, { is_active: true })}
  disabled={updatingId === user.id}
- className="min-h-9 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold"
+ className="min-h-9 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold"
  >
  Kích hoạt
  </Button>
  ) : (
- <Badge className="bg-emerald-50 text-emerald-700 border-emerald-100 px-2.5 py-1 text-[11px] font-bold">
+ <Badge className="status-success-bg px-2.5 py-1 text-xs font-semibold">
  Đã kích hoạt
  </Badge>
  )}

@@ -85,9 +85,9 @@ export function TaskTimeline({ task }: Props) {
   if (events.length === 0) return null;
 
   return (
-    <section className="space-y-3">
-      <h3 className="text-[13px] font-bold text-slate-900">Lịch sử</h3>
-      <ol className="space-y-3 pl-1">
+    <section className="item-stack">
+      <h3 className="heading-card font-bold">Lịch sử</h3>
+      <ol className="item-stack pl-1">
         {events.map((ev, i) => (
           <li key={i} className="flex gap-3">
             <div className={
@@ -100,8 +100,8 @@ export function TaskTimeline({ task }: Props) {
               {ev.icon}
             </div>
             <div className="flex-1 min-w-0 pt-0.5">
-              <p className="text-[12px] text-slate-700 leading-relaxed">{ev.text}</p>
-              <p className="text-[10px] text-slate-400 mt-0.5">
+              <p className="text-sm text-slate-700 leading-relaxed">{ev.text}</p>
+              <p className="text-meta mt-0.5">
                 {format(new Date(ev.time), 'HH:mm dd/MM/yyyy', { locale: vi })}
               </p>
             </div>

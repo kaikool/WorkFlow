@@ -62,7 +62,7 @@ export function TaskDueProgress({ createdAt, dueDate, status, className }: Props
 
   return (
     <div className={cn('space-y-1', className)}>
-      <div className={cn('flex items-center gap-1 text-[11px] font-semibold', labelClass)}>
+      <div className={cn('flex items-center gap-1 text-xs font-semibold', labelClass)}>
         {isOverdue ? <AlertTriangle className="icon-sm" /> : <Clock className="icon-sm" />}
         <span>{label}</span>
       </div>

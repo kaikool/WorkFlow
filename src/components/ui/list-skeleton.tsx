@@ -57,7 +57,7 @@ export function ListSkeleton({ rows = 5, className, variant = 'list' }: ListSkel
   }
 
   return (
-    <div className={cn('space-y-3', className)}>
+    <div className={cn('item-stack', className)}>
       {Array.from({ length: rows }).map((_, i) => (
         <div key={i} className="flex items-center gap-3 p-4 bg-white rounded-2xl border border-slate-100">
           <Skeleton className="h-11 w-11 rounded-full shrink-0" />
@@ -77,7 +77,7 @@ export function StatsSkeleton({ count = 4, className }: { count?: number; classN
   return (
     <div className={cn('grid grid-cols-2 md:grid-cols-4 gap-4', className)}>
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="premium-card border-none p-6 space-y-3">
+        <div key={i} className="premium-card border-none p-6 item-stack">
           <Skeleton className="h-10 w-10 rounded-xl" />
           <Skeleton className="h-3 w-2/3 rounded" />
           <Skeleton className="h-8 w-1/2 rounded" />

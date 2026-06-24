@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useMemo, useState } from "react";
-import { Users, Cake, Plane, Sparkles, UserMinus, UserPlus } from "lucide-react";
+import { Users, Plane, Sparkles, UserMinus, UserPlus } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ListSkeleton } from "@/components/ui/list-skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -15,13 +15,11 @@ import ProfileDetailDialog from "./ProfileDetailDialog";
 import OrgChartView from "./OrgChartView";
 
 // Container chính cho /dashboard/team — 1 view duy nhất (org-chart style).
-// Filter trạng thái = Tabs. Search dùng chung top nav (?q=...). Deep link ?id= mở dialog.
 const FILTER_TABS: Array<{ key: ProfileStatus | 'all'; label: string; icon: React.ReactNode }> = [
-  { key: 'all', label: 'Tất cả', icon: <Users className="h-4 w-4" /> },
-  { key: 'on_leave', label: STATUS_BADGES.on_leave.label, icon: <UserMinus className="h-4 w-4" /> },
-  { key: 'on_trip', label: STATUS_BADGES.on_trip.label, icon: <Plane className="h-4 w-4" /> },
-  { key: 'birthday_today', label: 'Sinh nhật', icon: <Cake className="h-4 w-4" /> },
-  { key: 'new_joiner', label: 'Mới vào', icon: <Sparkles className="h-4 w-4" /> },
+  { key: 'all', label: 'Tất cả', icon: <Users className="icon-md" /> },
+  { key: 'on_leave', label: STATUS_BADGES.on_leave.label, icon: <UserMinus className="icon-md" /> },
+  { key: 'on_trip', label: STATUS_BADGES.on_trip.label, icon: <Plane className="icon-md" /> },
+  { key: 'new_joiner', label: 'Mới vào', icon: <Sparkles className="icon-md" /> },
 ];
 
 export default function TeamPage() {
@@ -52,12 +50,11 @@ export default function TeamPage() {
 
   // Stats hero — đếm theo trạng thái.
   const stats = useMemo(() => {
-    const counts = { total: members.length, on_leave: 0, on_trip: 0, birthday_today: 0, new_joiner: 0 };
+    const counts = { total: members.length, on_leave: 0, on_trip: 0, new_joiner: 0 };
     for (const m of members) {
       const s = getStatus(m);
       if (s === 'on_leave') counts.on_leave++;
       else if (s === 'on_trip') counts.on_trip++;
-      else if (s === 'birthday_today') counts.birthday_today++;
       else if (s === 'new_joiner') counts.new_joiner++;
     }
     return counts;
@@ -87,7 +84,7 @@ export default function TeamPage() {
 
   if (loading) {
     return (
-      <div className="page-container space-y-6 md:space-y-8 animate-fade-in-up">
+      <div className="page-container space-y-6 md:section-stack motion-safe:animate-fade-in-up">
         <PageHeader title="Nhân sự" description="Danh bạ và sơ đồ tổ chức chi nhánh" />
         <ListSkeleton variant="card" rows={6} />
       </div>
@@ -95,14 +92,14 @@ export default function TeamPage() {
   }
 
   return (
-    <div className="page-container space-y-6 md:space-y-8 animate-fade-in-up">
+    <div className="page-container space-y-6 md:section-stack motion-safe:animate-fade-in-up">
       <PageHeader
         title="Nhân sự"
         description="Danh bạ và sơ đồ tổ chức chi nhánh"
       />
 
       {/* Stats hero — luôn hiển thị */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-3 gap-3">
         <StatCard
           icon={<Users className="icon-sm" />}
           tone="bg-primary/10 text-primary"
@@ -114,12 +111,6 @@ export default function TeamPage() {
           tone="bg-amber-50 text-amber-700"
           label="Đang vắng mặt"
           value={stats.on_leave}
-        />
-        <StatCard
-          icon={<Cake className="icon-sm" />}
-          tone="bg-pink-50 text-pink-600"
-          label="Sinh nhật hôm nay"
-          value={stats.birthday_today}
         />
         <StatCard
           icon={<Sparkles className="icon-sm" />}
@@ -136,7 +127,7 @@ export default function TeamPage() {
             <TabsTrigger
               key={opt.key}
               value={opt.key}
-              className="rounded-lg py-1.5 font-semibold text-[13px] flex items-center justify-center gap-1.5 px-1 md:px-3"
+              className="rounded-lg py-1.5 font-semibold text-sm flex items-center justify-center gap-1.5 px-1 md:px-3"
             >
               {opt.icon}
               <span className="truncate hidden md:inline-block">{opt.label}</span>

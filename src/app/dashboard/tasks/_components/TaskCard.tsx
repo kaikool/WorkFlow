@@ -52,10 +52,10 @@ export const TaskCard = React.memo(function TaskCard({ task, onOpen, currentProf
         isPending && 'opacity-70',
       )}
     >
-      <div className="p-4 space-y-3">
+      <div className="p-4 item-stack">
         <div className="flex items-start gap-2">
           <div className="relative shrink-0">
-            <FileText className="icon-sm text-slate-400 mt-0.5" />
+            <FileText className="icon-sm text-slate-500 mt-0.5" />
             {isPendingApprove && (
               <span
                 className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-red-500 ring-2 ring-white"
@@ -63,18 +63,18 @@ export const TaskCard = React.memo(function TaskCard({ task, onOpen, currentProf
               />
             )}
           </div>
-          <p className="text-[14px] font-semibold text-slate-900 leading-snug flex-1 line-clamp-2">
+          <p className="text-sm font-semibold text-slate-900 leading-snug flex-1 line-clamp-2">
             {task.title}
           </p>
           {isPending && (
-            <span className="text-[11px] font-medium text-slate-400 animate-pulse shrink-0">
+            <span className="text-xs font-medium text-slate-500 animate-pulse shrink-0">
               Đang đồng bộ…
             </span>
           )}
         </div>
 
         {isPendingApprove && (
-          <p className="text-[12px] font-semibold text-red-600">
+          <p className="text-xs font-semibold text-red-600">
             Chờ bạn duyệt
           </p>
         )}
@@ -82,7 +82,7 @@ export const TaskCard = React.memo(function TaskCard({ task, onOpen, currentProf
         <div className="flex flex-wrap items-center gap-1.5">
           <Badge
             variant="outline"
-            className={cn('px-2 py-0.5 text-[12px] font-medium rounded-full', STATUS_BADGE_CLASS[task.status])}
+            className={cn('px-2 py-0.5 text-xs font-medium rounded-full', STATUS_BADGE_CLASS[task.status])}
           >
             {STATUS_LABEL[task.status]}
           </Badge>
@@ -90,7 +90,7 @@ export const TaskCard = React.memo(function TaskCard({ task, onOpen, currentProf
           {task.priority !== 'medium' && (
             <Badge
               variant="outline"
-              className={cn('px-2 py-0.5 text-[12px] font-medium rounded-full', PRIORITY_BADGE_CLASS[task.priority])}
+              className={cn('px-2 py-0.5 text-xs font-medium rounded-full', PRIORITY_BADGE_CLASS[task.priority])}
             >
               <Flag className="icon-sm mr-0.5" />
               {PRIORITY_LABEL[task.priority]}
@@ -101,7 +101,7 @@ export const TaskCard = React.memo(function TaskCard({ task, onOpen, currentProf
             <Badge
               variant="outline"
               className={cn(
-                'px-2 py-0.5 text-[12px] font-medium rounded-full',
+                'px-2 py-0.5 text-xs font-medium rounded-full',
                 task.is_overdue ? 'bg-red-50 border-red-200 text-red-700' : 'bg-white border-slate-200 text-slate-600',
               )}
             >
@@ -114,7 +114,7 @@ export const TaskCard = React.memo(function TaskCard({ task, onOpen, currentProf
           {task.assignees && task.assignees.length > 0 && (
             <Badge
               variant="outline"
-              className="px-2 py-0.5 text-[12px] font-medium rounded-full bg-white border-slate-200 text-slate-600"
+              className="px-2 py-0.5 text-xs font-medium rounded-full bg-white border-slate-200 text-slate-600"
             >
               <Users className="icon-sm mr-0.5" />
               {task.assignees.length}
@@ -128,7 +128,7 @@ export const TaskCard = React.memo(function TaskCard({ task, onOpen, currentProf
           status={task.status}
         />
 
-        <div className="flex items-center justify-between text-[12px] text-slate-500 font-medium">
+        <div className="flex items-center justify-between text-label">
           <span className="truncate">{task.department?.name ?? '—'}</span>
           <span className="truncate">{task.creator?.full_name ?? ''}</span>
         </div>

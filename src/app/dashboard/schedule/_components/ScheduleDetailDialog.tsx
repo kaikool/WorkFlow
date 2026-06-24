@@ -42,14 +42,14 @@ function DetailHeader({ schedule, badgeColor, headerBg, isAllowedToView }: {
   return (
     <div className={cn("px-[var(--app-page-x)] py-5 sm:p-6 relative overflow-hidden backdrop-blur-xl border-b border-slate-100", headerBg)}>
       <div className="relative z-10 space-y-2.5 max-w-full">
-        <Badge className={cn("bg-white/60 backdrop-blur-md shadow-sm font-bold text-[10px] px-3 py-1 whitespace-nowrap w-fit", badgeColor)}>
+        <Badge className={cn("bg-white/60 backdrop-blur-md shadow-sm font-bold text-xs px-3 py-1 whitespace-nowrap w-fit", badgeColor)}>
           {typeLabels[schedule.type]?.label}
         </Badge>
         <DialogTitle className="text-lg sm:text-xl font-bold leading-tight tabular-nums text-slate-900 break-words">
           {isAllowedToView ? schedule.title : `Nghỉ phép (${schedule.creator?.full_name || 'Cán bộ'})`}
         </DialogTitle>
-        <div className="flex items-center gap-1.5 text-slate-600 text-[13px] font-semibold">
-          <Clock className="w-4 h-4 text-slate-400 shrink-0" />
+        <div className="flex items-center gap-1.5 text-slate-600 text-sm font-semibold">
+          <Clock className="w-4 h-4 text-slate-500 shrink-0" />
           <span className="break-words leading-snug">{timeText}</span>
         </div>
       </div>
@@ -259,27 +259,27 @@ export default function ScheduleDetailDialog({
     <div className="flex items-center gap-1.5">
       {showEditAction && (
         <Button variant="ghost" size="icon" title="Sửa lịch trình" onClick={() => detail.openEditMode('edit')} className="h-10 w-10 rounded-xl text-slate-500 bg-slate-50 hover:bg-slate-100 hover:text-slate-900 border border-slate-100">
-          <Pencil className="h-4 w-4" />
+          <Pencil className="icon-md" />
         </Button>
       )}
       {showEndAction && (
         <Button variant="ghost" size="icon" title="Kết thúc" onClick={detail.handleEndNow} className="h-10 w-10 rounded-xl text-emerald-600 bg-emerald-50 hover:bg-emerald-100 border border-emerald-100">
-          <CheckCircle2 className="h-4 w-4" />
+          <CheckCircle2 className="icon-md" />
         </Button>
       )}
       {showCancelVehicle && (
         <Button variant="ghost" size="icon" title="Hủy gán xe" onClick={() => onAssignVehicle(schedule.id, null, null)} className="h-10 w-10 rounded-xl text-red-600 bg-red-50 hover:bg-red-100 border border-red-100">
-          <Car className="h-4 w-4" />
+          <Car className="icon-md" />
         </Button>
       )}
       {showReassignVehicle && (
         <Button variant="ghost" size="icon" title="Gán lại xe" onClick={() => detail.openEditMode('edit')} className="h-10 w-10 rounded-xl text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-100">
-          <Car className="h-4 w-4" />
+          <Car className="icon-md" />
         </Button>
       )}
       {showDeleteAction && (
         <Button variant="ghost" size="icon" title="Xóa lịch trình" onClick={handleDelete} className="h-10 w-10 rounded-xl text-red-600 bg-red-50 hover:bg-red-100 border border-red-100">
-          <Trash2 className="h-4 w-4" />
+          <Trash2 className="icon-md" />
         </Button>
       )}
       {schedule.type === 'trip' && schedule.use_vehicle && (
@@ -290,7 +290,7 @@ export default function ScheduleDetailDialog({
           onClick={() => setVehicleEmailOpen(true)}
           className="h-10 w-10 rounded-xl text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-100"
         >
-          <Mail className="h-4 w-4" />
+          <Mail className="icon-md" />
         </Button>
       )}
     </div>
@@ -311,7 +311,7 @@ export default function ScheduleDetailDialog({
 
         {/* Body */}
         <ScrollArea className="app-dialog-sheet-body">
-          <div className="space-y-6 px-[var(--app-page-x)] py-5">
+          <div className="group-stack px-[var(--app-page-x)] py-5">
 
             {/* Banner đỏ khi lịch đã bị từ chối */}
             {isRejected && (
@@ -385,7 +385,7 @@ export default function ScheduleDetailDialog({
                   <Badge key={`p-${i}`} variant="outline" className="bg-white border-slate-200 rounded-full px-3 py-1.5 flex items-center gap-2 font-semibold text-slate-700 shadow-sm whitespace-nowrap">
                     <Avatar className="h-5 w-5">
                       <AvatarImage src={schedule.participants.find((x: any) => x.profile?.full_name === name)?.profile?.avatar_url} />
-                      <AvatarFallback className="text-[9px] bg-slate-100">{name[0]}</AvatarFallback>
+                      <AvatarFallback className="text-xs bg-slate-100">{name[0]}</AvatarFallback>
                     </Avatar>
                     {name}
                   </Badge>
@@ -409,7 +409,7 @@ export default function ScheduleDetailDialog({
                   <div className="p-4 bg-red-50/50 rounded-xl border border-red-100 space-y-2">
                     <div className="flex items-center gap-2">
                       <AlertTriangle className="w-4 h-4 text-red-600" />
-                      <span className="text-[13px] font-semibold text-red-700">Cảnh báo trùng lịch</span>
+                      <span className="text-sm font-semibold text-red-700">Cảnh báo trùng lịch</span>
                     </div>
                     <ul className="list-disc pl-5 text-xs font-medium text-red-600/80 space-y-1">
                       {scheduleConflicts.filter(c => !c.toLowerCase().includes('phó giám đốc') && !c.toLowerCase().includes('tối đa')).map((c, i) => (
@@ -422,7 +422,7 @@ export default function ScheduleDetailDialog({
                   <div className="p-4 bg-amber-50/50 rounded-xl border border-amber-100 space-y-2">
                     <div className="flex items-center gap-2">
                       <AlertTriangle className="w-4 h-4 text-amber-600" />
-                      <span className="text-[13px] font-semibold text-amber-700">Giới hạn Phó giám đốc</span>
+                      <span className="text-sm font-semibold text-amber-700">Giới hạn Phó giám đốc</span>
                     </div>
                     <ul className="list-disc pl-5 text-xs font-medium text-amber-700/80 space-y-1">
                       {scheduleConflicts.filter(c => c.toLowerCase().includes('phó giám đốc') || c.toLowerCase().includes('tối đa')).map((c, i) => (
@@ -460,7 +460,7 @@ export default function ScheduleDetailDialog({
               <div className="flex items-start gap-3 p-4 bg-red-50 rounded-xl border border-red-100">
                 <XCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-[13px] font-semibold text-red-700">Lái xe đã từ chối</p>
+                  <p className="text-sm font-semibold text-red-700">Lái xe đã từ chối</p>
                   <p className="text-xs font-medium text-red-600 mt-0.5">{schedule.metadata?.driver_rejected_reason || "Không có lý do"}</p>
                 </div>
               </div>
@@ -475,7 +475,7 @@ export default function ScheduleDetailDialog({
                   </div>
                   <div>
                     <p className="text-xs font-semibold text-slate-700">Điều phối phương tiện</p>
-                    <p className="text-[11px] font-medium text-slate-500">Chọn xe và lái xe phù hợp</p>
+                    <p className="text-xs font-medium text-slate-500">Chọn xe và lái xe phù hợp</p>
                   </div>
                 </div>
 
@@ -483,8 +483,8 @@ export default function ScheduleDetailDialog({
                   <div className="flex items-start gap-2.5 p-3 bg-amber-50 rounded-xl border border-amber-200">
                     <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-[12px] font-semibold text-amber-800">Xe đã có lịch trùng giờ: "{vehicleConflict.title}"</p>
-                      <p className="text-[11px] text-amber-700 mt-0.5">
+                      <p className="text-xs font-semibold text-amber-800">Xe đã có lịch trùng giờ: "{vehicleConflict.title}"</p>
+                      <p className="text-xs text-amber-700 mt-0.5">
                         {new Date(vehicleConflict.start_time).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })} – {new Date(vehicleConflict.end_time).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
                       </p>
                     </div>
@@ -503,7 +503,7 @@ export default function ScheduleDetailDialog({
                         <SelectItem key={v.id} value={v.id} className="text-xs py-2 pr-3">
                           <span className="grid grid-cols-[1fr_auto] items-center gap-2 w-full">
                             <span className="truncate font-semibold text-slate-800">{v.name} - {v.plate_number}</span>
-                            <span className={"shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full text-center " + (busy ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-700")}>
+                            <span className={"shrink-0 text-xs font-bold px-1.5 py-0.5 rounded-full text-center " + (busy ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-700")}>
                               {busy ? 'BẬN' : 'RẢNH'}
                             </span>
                           </span>
@@ -526,7 +526,7 @@ export default function ScheduleDetailDialog({
                             <span className="truncate font-semibold text-slate-800">
                               {p.full_name}{p.phone ? ` - ${p.phone}` : ''}
                             </span>
-                            <span className={"shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full text-center " + (busy ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-700")}>
+                            <span className={"shrink-0 text-xs font-bold px-1.5 py-0.5 rounded-full text-center " + (busy ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-700")}>
                               {busy ? 'BẬN' : 'RẢNH'}
                             </span>
                           </span>
@@ -561,7 +561,7 @@ export default function ScheduleDetailDialog({
             )}
 
             {/* Người tạo */}
-            <p className="text-xs text-slate-400 italic leading-relaxed">
+            <p className="text-xs text-slate-500 italic leading-relaxed">
               Tạo bởi: {schedule.creator?.full_name || "Không xác định"}
               {schedule.type === 'leave' && schedule.created_by === schedule.creator?.id && ' (bạn)'}
             </p>
@@ -572,7 +572,7 @@ export default function ScheduleDetailDialog({
           {/* Footer */}
           <DialogFooter className="app-dialog-sheet-footer flex flex-row justify-between items-center gap-3">
             {menuActions || <div />}
-            <Button variant="ghost" className="min-h-11 px-4 rounded-xl font-medium text-slate-600 text-[13px] bg-slate-100 hover:bg-slate-200 active:scale-95 transition-all whitespace-nowrap" onClick={() => setIsOpen(false)}>Đóng cửa sổ</Button>
+            <Button variant="ghost" className="min-h-11 px-4 rounded-xl font-medium text-slate-600 text-sm bg-slate-100 hover:bg-slate-200 active:scale-95 transition-all whitespace-nowrap" onClick={() => setIsOpen(false)}>Đóng cửa sổ</Button>
           </DialogFooter>
       </DialogContent>
 

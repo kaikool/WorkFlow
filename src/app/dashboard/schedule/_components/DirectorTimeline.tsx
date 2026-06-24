@@ -35,7 +35,7 @@ export default function DirectorTimeline({
   }, []);
 
   return (
-    <div className="space-y-6 overflow-hidden animate-in fade-in duration-150">
+    <div className="group-stack overflow-hidden animate-in fade-in duration-150">
       {/* Timeline */}
       <div
         ref={timelineContainerRef}
@@ -43,11 +43,11 @@ export default function DirectorTimeline({
       >
         <div className="min-w-[850px] space-y-4">
           {/* Tiêu đề giờ */}
-          <div className="relative h-5 text-[10px] font-semibold text-slate-400 select-none w-full border-b border-slate-100 pb-1 mb-3">
+          <div className="relative h-5 text-xs font-semibold text-slate-500 select-none w-full border-b border-slate-100 pb-1 mb-3">
             {Array.from({ length: HOUR_RANGE + 1 }).map((_, i) => {
               const h = (HOUR_START + i).toString().padStart(2, '0');
               return (
-              <span key={h} className="absolute -translate-x-1/2 text-[10px] font-semibold text-slate-400" style={{ left: `${(i / HOUR_RANGE) * 100}%` }}>{`${h}:00`}</span>
+              <span key={h} className="absolute -translate-x-1/2 text-xs font-semibold text-slate-500" style={{ left: `${(i / HOUR_RANGE) * 100}%` }}>{`${h}:00`}</span>
               );
             })}
           </div>
@@ -90,8 +90,8 @@ export default function DirectorTimeline({
                         onClick={() => onSelectSchedule(leaveSched)}
                         className="absolute inset-x-0 h-7 mx-1 bg-slate-100 hover:bg-slate-200/80 border border-slate-200/50 rounded-lg z-10 flex items-center justify-center cursor-pointer transition-all select-none shadow-sm"
                       >
-                        <span className="text-[10px] font-bold text-slate-500 flex items-center gap-1.5">
-                          <CalendarDays className="w-3.5 h-3.5 text-slate-400" /> {dir.full_name}
+                        <span className="text-xs font-bold text-slate-500 flex items-center gap-1.5">
+                          <CalendarDays className="w-3.5 h-3.5 text-slate-500" /> {dir.full_name}
                         </span>
                       </div>
                     );
@@ -141,7 +141,7 @@ export default function DirectorTimeline({
                             )}
                             title={`${displayTitle}${isCompleted ? ' ✅ Đã xong' : ''} (${showEndTime ? `${format(sTime, 'HH:mm')} - ${format(eTime, 'HH:mm')}` : `Từ ${format(sTime, 'HH:mm')}`})${isCutLeft ? ' ◀' : ''}${isCutRight ? ' ▶' : ''}`}
                           >
-                            <span className="text-[10px] font-bold text-white truncate leading-none">
+                            <span className="text-xs font-bold text-white truncate leading-none">
                               {dir.full_name}
                             </span>
                           </div>

@@ -21,7 +21,7 @@ export default function ReportIssueDialog({ isOpen, setIsOpen, issueText, setIss
       <DialogContent className="rounded-2xl max-w-sm border-none p-6 shadow-2xl">
         <DialogHeader>
           <DialogDescription className="sr-only">Mô tả sự cố phương tiện phát sinh để gửi thông báo bảo trì.</DialogDescription>
-          <DialogTitle className="text-base font-bold flex items-center gap-2 text-slate-900">
+          <DialogTitle className="text-lg font-bold flex items-center gap-2 text-slate-900">
             <div className="w-8 h-8 rounded-xl bg-red-50 flex items-center justify-center">
               <AlertTriangle className="w-4 h-4 text-red-500" />
             </div>
@@ -30,12 +30,12 @@ export default function ReportIssueDialog({ isOpen, setIsOpen, issueText, setIss
         </DialogHeader>
         <div className="space-y-4 py-2">
           <div className="space-y-1.5">
-            <label className="text-sm font-semibold text-slate-600">Mô tả chi tiết sự cố</label>
+            <p className="text-label font-semibold text-slate-600">Mô tả chi tiết sự cố</p>
             <Textarea
               placeholder="Ví dụ: Thủng lốp, hỏng điều hòa, động cơ báo lỗi..."
               value={issueText}
               onChange={(e) => setIssueText(e.target.value)}
-              className="bg-slate-50 border-none rounded-xl font-medium text-sm focus-visible:ring-1 focus-visible:ring-red-500/30 p-4 min-h-[100px] placeholder:text-slate-400"
+              className="bg-slate-50 border-none rounded-xl font-medium text-sm focus-visible:ring-1 focus-visible:ring-red-500/30 p-4 min-h-[100px] placeholder:text-slate-500"
             />
           </div>
         </div>

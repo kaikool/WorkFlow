@@ -23,7 +23,7 @@ export function ResourceView({ data, loading }: Props) {
           <Users className="icon-md text-primary" />
           <h2 className="text-sm font-bold text-slate-900">Ai đang ôm bao nhiêu</h2>
         </div>
-        <div className="space-y-3">
+        <div className="item-stack">
           {[1,2,3,4].map(i => (
             <div key={i} className="flex items-center gap-3 animate-pulse">
               <div className="w-8 h-8 rounded-full bg-slate-200" />
@@ -49,7 +49,7 @@ export function ResourceView({ data, loading }: Props) {
         <h2 className="text-sm font-bold text-slate-900">Ai đang ôm bao nhiêu</h2>
       </div>
 
-      <div className="space-y-3">
+      <div className="item-stack">
         {data.map(item => (
           <Link
             key={item.user_id}
@@ -58,13 +58,13 @@ export function ResourceView({ data, loading }: Props) {
           >
             <Avatar className="avatar-sm shrink-0">
               <AvatarImage src={item.avatar_url ?? undefined} alt={item.full_name ?? ''} />
-              <AvatarFallback className="text-[11px]">
+              <AvatarFallback className="text-xs">
                 {item.full_name?.charAt(0) ?? '?'}
               </AvatarFallback>
             </Avatar>
 
             <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between text-[12px] font-medium">
+              <div className="flex items-center justify-between text-xs font-medium">
                 <span className="truncate text-slate-700 group-hover:text-primary transition-colors">
                   {item.full_name ?? '—'}
                 </span>
@@ -86,7 +86,7 @@ export function ResourceView({ data, loading }: Props) {
             {item.overdue_count > 0 && (
               <div className="flex items-center gap-1 text-red-600 shrink-0">
                 <AlertTriangle className="icon-sm" />
-                <span className="text-[11px] font-bold">{item.overdue_count}</span>
+                <span className="text-xs font-semibold">{item.overdue_count}</span>
               </div>
             )}
           </Link>

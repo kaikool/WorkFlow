@@ -21,7 +21,7 @@ function Calendar({
  className={cn("p-4", className)}
  classNames={{
  months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
- month: "space-y-6",
+ month: "group-stack",
  month_caption: "flex justify-center relative items-center min-h-11 mb-4 z-20",
  caption_label: "text-sm font-semibold text-slate-800",
  dropdowns: "flex items-center justify-center gap-2 relative z-30",
@@ -54,8 +54,8 @@ function Calendar({
  }}
  components={{
  Chevron: ({ orientation }) => {
- if (orientation === "left") return <ChevronLeft className="h-4 w-4" />;
- return <ChevronRight className="h-4 w-4" />;
+ if (orientation === "left") return <ChevronLeft className="icon-md" />;
+ return <ChevronRight className="icon-md" />;
  }
  }}
  formatters={{

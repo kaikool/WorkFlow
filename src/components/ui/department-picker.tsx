@@ -46,7 +46,7 @@ export function DepartmentPicker({
               selected.length > 0 && 'border-primary/20',
             )}
           >
-            <Building2 className="icon-md text-slate-400 shrink-0" />
+            <Building2 className="icon-md text-slate-500 shrink-0" />
             <div className="flex-1 min-w-0">
               <p className="heading-card truncate">
                 {selected.length === 0 ? triggerLabel : `Đã chọn ${selected.length} phòng`}
@@ -55,7 +55,7 @@ export function DepartmentPicker({
             <span className="text-meta font-bold bg-slate-100 rounded-full px-2 py-0.5 shrink-0">
               {selected.length > 0 ? `${selected.length}/${items.length}` : items.length}
             </span>
-            <ChevronDown className={cn('icon-md text-slate-400 transition-transform', open && 'rotate-180')} />
+            <ChevronDown className={cn('icon-md text-slate-500 transition-transform', open && 'rotate-180')} />
           </button>
         </CollapsibleTrigger>
 
@@ -90,7 +90,7 @@ export function DepartmentPicker({
                         : 'bg-white border-slate-200 hover:bg-slate-50',
                     )}
                   >
-                    <Building2 className="icon-md text-slate-400 shrink-0" />
+                    <Building2 className="icon-md text-slate-500 shrink-0" />
                     <span className="flex-1 font-medium truncate">{d.name}</span>
                     {isSelected && <Check className="icon-lg text-primary shrink-0" />}
                   </button>

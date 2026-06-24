@@ -75,7 +75,7 @@ export default function AdminPage() {
 
   if (loading) {
     return (
-      <div className="page-container space-y-10 animate-fade-in-up">
+      <div className="page-container space-y-10 motion-safe:animate-fade-in-up">
         <PageHeader
           title="Quản trị Hệ thống"
           description="Toàn quyền cấu hình hệ thống bankportal"
@@ -99,7 +99,7 @@ export default function AdminPage() {
  });
 
  return (
- <div className="page-container space-y-10 animate-fade-in-up">
+ <div className="page-container space-y-10 motion-safe:animate-fade-in-up">
  <PageHeader
    title="Quản trị Hệ thống"
    description="Toàn quyền cấu hình hệ thống bankportal"
@@ -114,7 +114,7 @@ export default function AdminPage() {
  <Users className="w-6 h-6" />
  </div>
  <div>
- <p className="text-sm font-medium text-slate-500 leading-none mb-1 truncate whitespace-nowrap">Cán bộ</p>
+ <p className="text-label leading-none mb-1 truncate whitespace-nowrap">Cán bộ</p>
  <p className="text-2xl font-bold text-slate-800 tabular-nums">{stats.members}</p>
  </div>
  </CardContent>
@@ -125,7 +125,7 @@ export default function AdminPage() {
   <DoorOpen className="w-6 h-6" />
   </div>
   <div>
-  <p className="text-sm font-medium text-slate-500 leading-none mb-1 truncate whitespace-nowrap">Phòng họp</p>
+  <p className="text-label leading-none mb-1 truncate whitespace-nowrap">Phòng họp</p>
   <p className="text-2xl font-bold text-slate-800 tabular-nums">{rooms.length}</p>
   </div>
   </CardContent>
@@ -136,7 +136,7 @@ export default function AdminPage() {
  <Car className="w-6 h-6" />
  </div>
  <div>
- <p className="text-sm font-medium text-slate-500 leading-none mb-1 truncate whitespace-nowrap">Đội xe</p>
+ <p className="text-label leading-none mb-1 truncate whitespace-nowrap">Đội xe</p>
  <p className="text-2xl font-bold text-slate-800 tabular-nums">{vehicles.length}</p>
  </div>
  </CardContent>
@@ -144,7 +144,7 @@ export default function AdminPage() {
  </div>
  )}
 
- <Tabs defaultValue={isAdmin ? "users" : "rooms"} className="space-y-8">
+ <Tabs defaultValue={isAdmin ? "users" : "rooms"} className="section-stack">
   <TabsList className="h-11 border border-slate-100">
   {isAdmin && (
     <TabsTrigger value="users" className="flex-1 rounded-lg px-2 sm:px-6 py-1.5 font-medium text-sm data-[state=active]:bg-white data-[state=active]:shadow-sm flex items-center justify-center">
@@ -199,9 +199,9 @@ export default function AdminPage() {
     <span className="font-bold text-slate-700">{u.full_name || "Chưa cập nhật tên"}</span>
     </div>
     </TableCell>
-    <TableCell className="text-sm font-medium text-slate-500 truncate whitespace-nowrap">{u.departments?.name || "Chi nhánh"}</TableCell>
+    <TableCell className="text-sm font-medium text-slate-600 truncate whitespace-nowrap">{u.departments?.name || "Chi nhánh"}</TableCell>
     <TableCell className="text-center">
-    <Badge className={cn("text-[11px] font-medium px-2.5 py-1 rounded-full", getProfileTitleBadgeClass(u))}>{getProfileDisplayTitle(u)}</Badge>
+    <Badge className={cn("text-xs font-medium px-2.5 py-1 rounded-full", getProfileTitleBadgeClass(u))}>{getProfileDisplayTitle(u)}</Badge>
     </TableCell>
     <TableCell className="pr-8 text-right">
     <Select defaultValue={u.role} onValueChange={(v) => handleUpdateRole(u.id, v)}>
@@ -226,7 +226,7 @@ export default function AdminPage() {
   )}
 
  {/* Rooms Tab */}
- <TabsContent value="rooms" className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
+ <TabsContent value="rooms" className="group-stack animate-in fade-in slide-in-from-bottom-2 duration-500">
  <div className="flex justify-end">
  <Dialog open={isRoomOpen} onOpenChange={setIsRoomOpen}>
  <DialogTrigger asChild>
@@ -239,18 +239,18 @@ export default function AdminPage() {
    <DialogTitle className="text-xl font-bold tabular-nums">Thiết lập phòng họp mới</DialogTitle>
    <DialogDescription className="sr-only">Form thêm phòng họp mới</DialogDescription>
  </DialogHeader>
- <div className="space-y-6 py-4">
+ <div className="group-stack py-4">
  <div className="space-y-2">
- <Label className="text-sm font-medium text-slate-500 pl-1 truncate whitespace-nowrap">Tên phòng họp</Label>
+ <Label className="text-label pl-1 truncate whitespace-nowrap">Tên phòng họp</Label>
  <Input placeholder="VD: Phòng Hội thảo Tầng 2..." className="min-h-11 bg-slate-50 border-none rounded-xl font-medium text-sm" value={newRoom.name} onChange={e => setNewRoom({...newRoom, name: e.target.value})} />
  </div>
  <div className="grid grid-cols-2 gap-4">
  <div className="space-y-2">
- <Label className="text-sm font-medium text-slate-500 pl-1 truncate whitespace-nowrap">Sức chứa (Người)</Label>
+ <Label className="text-label pl-1 truncate whitespace-nowrap">Sức chứa (Người)</Label>
  <Input type="number" className="min-h-11 bg-slate-50 border-none rounded-xl font-medium text-sm" value={newRoom.capacity} onChange={e => setNewRoom({...newRoom, capacity: parseInt(e.target.value)})} />
  </div>
  <div className="space-y-2">
- <Label className="text-sm font-medium text-slate-500 pl-1 truncate whitespace-nowrap">Vị trí</Label>
+ <Label className="text-label pl-1 truncate whitespace-nowrap">Vị trí</Label>
  <Input placeholder="Vd: tầng 2 - Khu B" className="min-h-11 bg-slate-50 border-none rounded-xl font-medium text-sm" value={newRoom.location} onChange={e => setNewRoom({...newRoom, location: e.target.value})} />
  </div>
  </div>
@@ -300,18 +300,18 @@ export default function AdminPage() {
       <DialogDescription className="sr-only">Form sửa thông tin phòng họp</DialogDescription>
     </DialogHeader>
     {editingRoom && (
-     <div className="space-y-6 py-4">
+     <div className="group-stack py-4">
       <div className="space-y-2">
-       <Label className="text-sm font-medium text-slate-500 pl-1 truncate whitespace-nowrap">Tên phòng họp</Label>
+       <Label className="text-label pl-1 truncate whitespace-nowrap">Tên phòng họp</Label>
        <Input placeholder="VD: Phòng Hội thảo Tầng 2..." className="min-h-11 bg-slate-50 border-none rounded-xl font-medium text-sm" value={editingRoom.name} onChange={e => setEditingRoom({...editingRoom, name: e.target.value})} />
       </div>
       <div className="grid grid-cols-2 gap-4">
        <div className="space-y-2">
-        <Label className="text-sm font-medium text-slate-500 pl-1 truncate whitespace-nowrap">Sức chứa (Người)</Label>
+        <Label className="text-label pl-1 truncate whitespace-nowrap">Sức chứa (Người)</Label>
         <Input type="number" className="min-h-11 bg-slate-50 border-none rounded-xl font-medium text-sm" value={editingRoom.capacity} onChange={e => setEditingRoom({...editingRoom, capacity: parseInt(e.target.value)})} />
        </div>
        <div className="space-y-2">
-        <Label className="text-sm font-medium text-slate-500 pl-1 truncate whitespace-nowrap">Vị trí</Label>
+        <Label className="text-label pl-1 truncate whitespace-nowrap">Vị trí</Label>
         <Input placeholder="Vd: tầng 2 - Khu B" className="min-h-11 bg-slate-50 border-none rounded-xl font-medium text-sm" value={editingRoom.location} onChange={e => setEditingRoom({...editingRoom, location: e.target.value})} />
        </div>
       </div>
@@ -323,7 +323,7 @@ export default function AdminPage() {
  </TabsContent>
 
   {/* Vehicles Tab */}
- <TabsContent value="vehicles" className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
+ <TabsContent value="vehicles" className="group-stack animate-in fade-in slide-in-from-bottom-2 duration-500">
  <div className="flex justify-end">
  <Dialog open={isVehicleOpen} onOpenChange={setIsVehicleOpen}>
  <DialogTrigger asChild>
@@ -336,18 +336,18 @@ export default function AdminPage() {
    <DialogTitle className="text-xl font-bold tabular-nums">Bổ sung Xe & Lái xe</DialogTitle>
    <DialogDescription className="sr-only">Form thêm xe mới</DialogDescription>
  </DialogHeader>
- <div className="space-y-6 py-4">
+ <div className="group-stack py-4">
  <div className="space-y-2">
- <Label className="text-sm font-medium text-slate-500 pl-1 truncate whitespace-nowrap">Tên xe / Hãng xe</Label>
+ <Label className="text-label pl-1 truncate whitespace-nowrap">Tên xe / Hãng xe</Label>
  <Input placeholder="VD: Toyota Fortuner..." className="min-h-11 bg-slate-50 border-none rounded-xl font-medium text-sm" value={newVehicle.name} onChange={e => setNewVehicle({...newVehicle, name: e.target.value})} />
  </div>
  <div className="grid grid-cols-2 gap-4">
  <div className="space-y-2">
- <Label className="text-sm font-medium text-slate-500 pl-1 truncate whitespace-nowrap">Biển số</Label>
+ <Label className="text-label pl-1 truncate whitespace-nowrap">Biển số</Label>
  <Input placeholder="VD: 30A-123.45" className="min-h-11 bg-slate-50 border-none rounded-xl font-medium text-sm truncate whitespace-nowrap" value={newVehicle.plate_number} onChange={e => setNewVehicle({...newVehicle, plate_number: e.target.value})} />
  </div>
  <div className="space-y-2">
- <Label className="text-sm font-medium text-slate-500 pl-1 truncate whitespace-nowrap">Loại xe</Label>
+ <Label className="text-label pl-1 truncate whitespace-nowrap">Loại xe</Label>
  <Select value={newVehicle.type} onValueChange={v => setNewVehicle({...newVehicle, type: v})}>
  <SelectTrigger className="min-h-11 bg-slate-50 border-none rounded-xl font-medium text-sm"><SelectValue /></SelectTrigger>
  <SelectContent className="rounded-2xl">
@@ -360,7 +360,7 @@ export default function AdminPage() {
  </div>
  <div className="grid grid-cols-1 gap-4">
  <div className="space-y-2">
- <Label className="text-sm font-medium text-slate-500 pl-1 truncate whitespace-nowrap">Lái xe phụ trách (Tùy chọn)</Label>
+ <Label className="text-label pl-1 truncate whitespace-nowrap">Lái xe phụ trách (Tùy chọn)</Label>
  <Select value={newVehicle.driver_id || "none"} onValueChange={v => setNewVehicle({...newVehicle, driver_id: v})}>
  <SelectTrigger className="min-h-11 bg-slate-50 border-none rounded-xl font-medium text-sm"><SelectValue /></SelectTrigger>
  <SelectContent className="rounded-2xl">
@@ -378,7 +378,7 @@ export default function AdminPage() {
  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
  {vehicles.map(v => (
  <Card key={v.id} className="border-none shadow-sm rounded-2xl overflow-hidden group hover:shadow-xl transition-all duration-500">
- <CardContent className="p-8 space-y-6">
+ <CardContent className="p-8 group-stack">
  <div className="flex justify-between items-start">
  <div className="p-4 bg-emerald-50 rounded-2xl text-emerald-600">
         <Car className="w-6 h-6" />
@@ -395,13 +395,13 @@ export default function AdminPage() {
  <div className="space-y-4">
  <div>
  <h3 className="text-lg font-bold text-slate-800 leading-tight">{v.name}</h3>
- <Badge variant="outline" className="mt-2 font-bold border-slate-100 text-slate-500 text-[9px] px-2.5 py-1 rounded-lg">
+ <Badge variant="outline" className="mt-2 font-bold border-slate-100 text-slate-500 text-xs px-2.5 py-1 rounded-lg">
  <Hash className="w-2.5 h-2.5 mr-1.5" /> {v.plate_number} • {v.type}
  </Badge>
  </div>
  <div className="p-4 bg-slate-50 rounded-2xl space-y-2">
  <div className="flex items-center justify-between">
- <p className="text-sm font-medium text-slate-500 truncate whitespace-nowrap">Lái xe phụ trách</p>
+ <p className="text-label truncate whitespace-nowrap">Lái xe phụ trách</p>
  <Phone className="w-3 h-3 text-emerald-600" />
  </div>
  <p className="text-sm font-medium text-slate-700">{v.driver?.full_name || v.driver_name || "Chưa gán"}</p>
@@ -419,18 +419,18 @@ export default function AdminPage() {
       <DialogDescription className="sr-only">Form sửa thông tin xe</DialogDescription>
     </DialogHeader>
     {editingVehicle && (
-     <div className="space-y-6 py-4">
+     <div className="group-stack py-4">
       <div className="space-y-2">
-       <Label className="text-sm font-medium text-slate-500 pl-1 truncate whitespace-nowrap">Tên xe / Hãng xe</Label>
+       <Label className="text-label pl-1 truncate whitespace-nowrap">Tên xe / Hãng xe</Label>
        <Input placeholder="VD: Toyota Fortuner..." className="min-h-11 bg-slate-50 border-none rounded-xl font-medium text-sm" value={editingVehicle.name} onChange={e => setEditingVehicle({...editingVehicle, name: e.target.value})} />
       </div>
       <div className="grid grid-cols-2 gap-4">
        <div className="space-y-2">
-        <Label className="text-sm font-medium text-slate-500 pl-1 truncate whitespace-nowrap">Biển số</Label>
+        <Label className="text-label pl-1 truncate whitespace-nowrap">Biển số</Label>
         <Input placeholder="VD: 30A-123.45" className="min-h-11 bg-slate-50 border-none rounded-xl font-medium text-sm truncate whitespace-nowrap" value={editingVehicle.plate_number} onChange={e => setEditingVehicle({...editingVehicle, plate_number: e.target.value})} />
        </div>
        <div className="space-y-2">
-        <Label className="text-sm font-medium text-slate-500 pl-1 truncate whitespace-nowrap">Loại xe</Label>
+        <Label className="text-label pl-1 truncate whitespace-nowrap">Loại xe</Label>
         <Select value={editingVehicle.type} onValueChange={val => setEditingVehicle({...editingVehicle, type: val})}>
          <SelectTrigger className="min-h-11 bg-slate-50 border-none rounded-xl font-medium text-sm"><SelectValue /></SelectTrigger>
          <SelectContent className="rounded-2xl">
@@ -443,7 +443,7 @@ export default function AdminPage() {
       </div>
       <div className="grid grid-cols-1 gap-4">
        <div className="space-y-2">
-        <Label className="text-sm font-medium text-slate-500 pl-1 truncate whitespace-nowrap">Lái xe phụ trách (Tùy chọn)</Label>
+        <Label className="text-label pl-1 truncate whitespace-nowrap">Lái xe phụ trách (Tùy chọn)</Label>
         <Select value={editingVehicle.driver_id || "none"} onValueChange={val => setEditingVehicle({...editingVehicle, driver_id: val})}>
          <SelectTrigger className="min-h-11 bg-slate-50 border-none rounded-xl font-medium text-sm"><SelectValue /></SelectTrigger>
          <SelectContent className="rounded-2xl">

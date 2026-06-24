@@ -15,15 +15,15 @@ interface DriverViewProps {
 
 export default function DriverDashboardView({ profile, schedules, fetchData, toast }: DriverViewProps) {
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-6 md:space-y-8 animate-fade-in-up pb-20">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 group-stack md:section-stack motion-safe:animate-fade-in-up pb-20">
       <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pt-4 sm:pt-0">
         <div className="space-y-1">
-          <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Lịch trình của tôi</h1>
-          <p className="text-[13px] text-slate-500 font-medium">Theo dõi chuyến được gán, cập nhật hành trình.</p>
+          <h1 className="heading-page">Lịch trình của tôi</h1>
+          <p className="text-subtitle">Theo dõi chuyến được gán, cập nhật hành trình.</p>
         </div>
         <Button asChild variant="outline" className="h-11 rounded-xl font-bold">
           <Link href="/dashboard/schedule">
-            <CalendarDays className="mr-2 h-4 w-4" /> Xem lịch đầy đủ
+            <CalendarDays className="mr-2 icon-md" /> Xem lịch đầy đủ
           </Link>
         </Button>
       </header>

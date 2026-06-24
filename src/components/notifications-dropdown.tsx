@@ -239,7 +239,7 @@ export function NotificationsDropdown() {
                   </p>
 
                   <div className="flex items-center gap-1.5 pt-0.5">
-                    <span className="text-[11px] text-slate-400 font-bold">
+                    <span className="text-[11px] text-slate-500 font-bold">
                       {new Date(n.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
                     </span>
                     <span className="text-[11px] text-slate-300">•</span>
@@ -249,7 +249,7 @@ export function NotificationsDropdown() {
               </DropdownMenuItem>
             ))
           ) : (
-            <div className="py-10 text-center space-y-3">
+            <div className="py-10 text-center item-stack">
               <div className="h-12 w-12 bg-slate-50 rounded-full flex items-center justify-center mx-auto">
                 <Inbox className="h-6 w-6 text-slate-500" />
               </div>

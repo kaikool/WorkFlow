@@ -19,8 +19,8 @@ export default function DriverStatsGrid({ totalTrips, activeTrip, driverStatus }
           </div>
         </div>
         <div className="space-y-0.5 sm:space-y-1">
-          <p className="text-[10px] sm:text-[12px] font-semibold text-slate-400 truncate">Tổng chuyến</p>
-          <p className="text-lg sm:text-2xl font-bold text-slate-900 tabular-nums truncate">
+          <p className="text-xs sm:text-xs font-semibold text-slate-500 truncate">Tổng chuyến</p>
+          <p className="text-lg sm:heading-page tabular-nums truncate">
             {totalTrips}
           </p>
         </div>
@@ -38,8 +38,8 @@ export default function DriverStatsGrid({ totalTrips, activeTrip, driverStatus }
           </div>
         </div>
         <div className="space-y-0.5 sm:space-y-1">
-          <p className="text-[10px] sm:text-[12px] font-semibold text-slate-400 truncate">Trạng thái</p>
-          <p className={`text-[13px] sm:text-lg font-bold truncate ${activeTrip ? "text-emerald-600" : "text-slate-900"}`}>
+          <p className="text-xs sm:text-xs font-semibold text-slate-500 truncate">Trạng thái</p>
+          <p className={`text-sm sm:text-lg font-bold truncate ${activeTrip ? "text-emerald-600" : "text-slate-900"}`}>
             {driverStatus}
           </p>
         </div>

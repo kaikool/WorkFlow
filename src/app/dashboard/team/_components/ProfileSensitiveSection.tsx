@@ -46,7 +46,7 @@ export default function ProfileSensitiveSection({ target }: ProfileSensitiveSect
               <Icon className="icon-sm" />
               <span>{label}</span>
             </div>
-            <span className="text-[13px] font-bold text-slate-900 break-all">{value}</span>
+            <span className="text-sm font-bold text-slate-900 break-all">{value}</span>
           </div>
         ))}
       </div>

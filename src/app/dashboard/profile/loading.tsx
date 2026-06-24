@@ -6,12 +6,12 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 export default function Loading() {
   return (
-    <div className="page-container space-y-6 md:space-y-8 animate-fade-in-up">
+    <div className="page-container space-y-6 md:section-stack motion-safe:animate-fade-in-up">
       <PageHeader title="Trang cá nhân" description="Thông tin tài khoản và lịch sử hoạt động" />
-      <div className="premium-card p-6 space-y-6">
-        <div className="flex flex-col sm:flex-row items-center gap-6 pb-6 border-b border-slate-100 dark:border-slate-800">
+      <div className="premium-card p-6 group-stack">
+        <div className="flex flex-col sm:flex-row items-center gap-6 pb-6 border-b border-slate-100">
           <Skeleton className="h-24 w-24 rounded-full" />
-          <div className="space-y-3 flex-1 text-center sm:text-left">
+          <div className="item-stack flex-1 text-center sm:text-left">
             <Skeleton className="h-6 w-48 mx-auto sm:mx-0 rounded" />
             <Skeleton className="h-4 w-32 mx-auto sm:mx-0 rounded" />
           </div>

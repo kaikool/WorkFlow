@@ -85,7 +85,7 @@ export default function PendingDocsWidget({ docs, currentUserId }: Props) {
           <FolderOpen className="icon-md text-primary" /> Hồ sơ cần xử lý
         </h3>
         {visibleDocs.length > 0 && (
-          <span className="inline-flex items-center justify-center min-w-[22px] h-[22px] px-2 rounded-full bg-primary/10 text-primary text-[11px] font-bold">
+          <span className="inline-flex items-center justify-center min-w-[22px] h-[22px] px-2 rounded-full bg-primary/10 text-primary text-xs font-semibold">
             {visibleDocs.length}
           </span>
         )}
@@ -112,10 +112,10 @@ export default function PendingDocsWidget({ docs, currentUserId }: Props) {
                   <div className="flex items-center gap-3 p-3 rounded-xl border border-transparent hover:bg-slate-50 hover:border-slate-100 transition-all min-h-11">
                     <span className={cn('w-2.5 h-2.5 rounded-full shrink-0', SLA_DOT_CLASS[level])} />
                     <div className="flex-1 min-w-0">
-                      <p className="font-mono text-[11px] font-semibold text-slate-500 tabular-nums">
+                      <p className="font-mono text-xs font-semibold text-slate-500 tabular-nums">
                         {doc.short_code}
                       </p>
-                      <p className="text-[13px] font-semibold text-slate-900 truncate group-hover:text-primary transition-colors">
+                      <p className="text-sm font-semibold text-slate-900 truncate group-hover:text-primary transition-colors">
                         {doc.title}
                       </p>
                       <p className="text-meta">
@@ -129,7 +129,7 @@ export default function PendingDocsWidget({ docs, currentUserId }: Props) {
               );
             })}
             <div className="pt-2">
-              <Button asChild variant="ghost" className="w-full min-h-11 rounded-xl text-[13px] font-medium text-primary hover:bg-primary/5">
+              <Button asChild variant="ghost" className="w-full min-h-11 rounded-xl text-sm font-medium text-primary hover:bg-primary/5">
                 <Link href="/dashboard/handover">Xem tất cả hồ sơ <ChevronRight className="ml-1 icon-sm" /></Link>
               </Button>
             </div>

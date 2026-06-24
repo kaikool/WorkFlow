@@ -44,7 +44,7 @@ export default function HandoverPage() {
   if (!loading && !canCreateDocument(profile)) {
     return (
       <div className="page-container py-10">
-        <p className="text-sm text-slate-500 font-medium">
+        <p className="text-subtitle">
           Bạn không có quyền truy cập module Luân chuyển hồ sơ.
         </p>
       </div>
@@ -63,7 +63,7 @@ export default function HandoverPage() {
   const canManage = canManageDocumentCategories(profile);
 
   return (
-    <div className="page-container space-y-8 animate-fade-in-up">
+    <div className="page-container space-y-8 motion-safe:animate-fade-in-up">
       <PageHeader
         title="Hồ sơ vật lý"
         description="Sổ giao nhận điện tử — theo dõi luồng luân chuyển hồ sơ bản cứng"
@@ -72,7 +72,7 @@ export default function HandoverPage() {
             {canManage && (
               <Button
                 variant="outline"
-                className="min-h-11 px-4 rounded-xl font-medium text-[13px] active:scale-[0.98] transition-all"
+                className="min-h-11 px-4 rounded-xl font-medium text-sm active:scale-[0.98] transition-all"
                 onClick={() => setIsCategoryOpen(true)}
               >
                 <Settings className="w-4 h-4 mr-2" />
@@ -91,24 +91,24 @@ export default function HandoverPage() {
 
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as DeskTab)}>
         <TabsList className="grid w-full grid-cols-2 sm:w-auto sm:inline-grid sm:grid-cols-3 bg-gray shadow-sm ring-1 ring-slate-100">
-          <TabsTrigger value="inbox" className="rounded-lg text-[13px] font-medium">
+          <TabsTrigger value="inbox" className="rounded-lg text-sm font-medium">
             Đang giữ
             {inboxDocs.length > 0 && (
-              <span className="ml-2 px-1.5 py-0.5 rounded-full bg-primary/10 text-primary text-[11px] font-bold">
+              <span className="ml-2 px-1.5 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-semibold">
                 {inboxDocs.length}
               </span>
             )}
           </TabsTrigger>
-          <TabsTrigger value="outbox" className="rounded-lg text-[13px] font-medium">
+          <TabsTrigger value="outbox" className="rounded-lg text-sm font-medium">
             Đã chuyển
             {outboxDocs.length > 0 && (
-              <span className="ml-2 px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[11px] font-bold">
+              <span className="ml-2 px-1.5 py-0.5 rounded-full status-neutral-bg text-xs font-semibold">
                 {outboxDocs.length}
               </span>
             )}
           </TabsTrigger>
           {showAllTab && (
-            <TabsTrigger value="all" className="rounded-lg text-[13px] font-medium col-span-2 sm:col-span-1">
+            <TabsTrigger value="all" className="rounded-lg text-sm font-medium col-span-2 sm:col-span-1">
               Toàn chi nhánh
             </TabsTrigger>
           )}
@@ -146,7 +146,7 @@ export default function HandoverPage() {
           <button
             onClick={loadMore}
             disabled={loadingMore}
-            className="px-6 py-2.5 rounded-xl border border-slate-200 bg-white text-[13px] font-medium text-slate-600 hover:bg-slate-50 hover:border-slate-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-[0.98]"
+            className="px-6 py-2.5 rounded-xl border border-slate-200 bg-white text-sm font-medium text-slate-600 hover:bg-slate-50 hover:border-slate-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-[0.98]"
           >
             {loadingMore ? "Đang tải thêm..." : "Xem thêm"}
           </button>

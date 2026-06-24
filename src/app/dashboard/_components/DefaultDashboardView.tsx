@@ -3,8 +3,6 @@
 // DefaultDashboardView — view chính cho admin/director/manager/staff.
 // Gọi 1 RPC dashboard_summary() qua useDashboardSummary().
 // 3 KPI card + grid 12 col (8 today list / 4 pending docs).
-// Cuối trang: widget "Nhịp đập nhân sự" — sắp sinh nhật/anniversary/đang nghỉ.
-
 import React, { useMemo } from 'react';
 import Link from 'next/link';
 import { ArrowRight, Sparkles, ListChecks, AlertTriangle, CheckCircle2 } from 'lucide-react';
@@ -17,7 +15,6 @@ import { useAppData } from '@/hooks/use-app-data';
 import { useDashboardSummary } from '../_hooks/useDashboardSummary';
 import TodayTaskList from './TodayTaskList';
 import PendingDocsWidget from './PendingDocsWidget';
-import PeopleAnalyticsWidget from '../team/_components/PeopleAnalyticsWidget';
 
 const INSPIRATIONAL_QUOTES = [
   'Hôm nay là cơ hội để bạn bứt phá chỉ tiêu kinh doanh.',
@@ -57,7 +54,7 @@ export default function DefaultDashboardView({ profile }: { profile: any }) {
         
         {/* KPI Card Loading Skeleton */}
         <div className="premium-card p-4 sm:p-5">
-          <div className="grid grid-cols-3 divide-x divide-slate-100 dark:divide-slate-800">
+          <div className="grid grid-cols-3 divide-x divide-slate-100">
             {Array.from({ length: 3 }).map((_, i) => (
               <div key={i} className="flex flex-col items-center justify-center text-center px-2 py-1 space-y-2.5">
                 <Skeleton className="h-8 w-8 rounded-lg" />
@@ -77,7 +74,7 @@ export default function DefaultDashboardView({ profile }: { profile: any }) {
   const hasOverdue = counts.overdue > 0;
 
   return (
-    <div className="page-container section-stack animate-fade-in-up">
+    <div className="page-container section-stack motion-safe:animate-fade-in-up">
       <header className="flex flex-col gap-4 pt-4 sm:pt-0 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-1">
           <h1 className="heading-page">Xin chào, {firstName}!</h1>
@@ -99,18 +96,18 @@ export default function DefaultDashboardView({ profile }: { profile: any }) {
           {/* Cột 1: Đang xử lý */}
           <Link
             href="/dashboard/tasks?status=todo"
-            className="flex flex-col items-center justify-center text-center px-1 sm:px-2 py-1 group hover:bg-slate-50/60 dark:hover:bg-slate-800/40 rounded-xl transition-all select-none"
+            className="flex flex-col items-center justify-center text-center px-1 sm:px-2 py-1 group hover:bg-slate-50/60 rounded-xl transition-all select-none"
           >
             <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary mb-2.5 transition-transform group-hover:scale-110">
               <ListChecks className="w-4.5 h-4.5" />
             </div>
-            <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Đang xử lý</span>
+            <span className="text-meta">Đang xử lý</span>
             <div className="flex items-center justify-center gap-1.5 mt-1">
-              <span className="text-xl sm:text-2xl font-bold tabular-nums text-slate-800 dark:text-slate-200 leading-tight">
+              <span className="text-lg sm:text-xl font-bold tabular-nums text-slate-900 leading-tight">
                 {counts.active}
               </span>
               {counts.urgent > 0 && (
-                <Badge className="bg-rose-50 hover:bg-rose-50 text-rose-600 border-none rounded-full px-1.5 py-0 text-[9px] font-bold shadow-sm shrink-0">
+                <Badge className="bg-rose-50 hover:status-danger-bg rounded-full px-1.5 py-0 text-xs font-bold shadow-sm shrink-0">
                   {counts.urgent} khẩn
                 </Badge>
               )}
@@ -120,23 +117,20 @@ export default function DefaultDashboardView({ profile }: { profile: any }) {
           {/* Cột 2: Quá hạn */}
           <Link
             href="/dashboard/tasks?status=overdue"
-            className="flex flex-col items-center justify-center text-center px-1 sm:px-2 py-1 group hover:bg-slate-50/60 dark:hover:bg-slate-800/40 rounded-xl transition-all select-none"
+            className="flex flex-col items-center justify-center text-center px-1 sm:px-2 py-1 group hover:bg-slate-50/60 rounded-xl transition-all select-none"
           >
             <div className={cn(
               "w-8 h-8 rounded-lg flex items-center justify-center mb-2.5 transition-transform group-hover:scale-110",
-              hasOverdue ? "bg-rose-100 dark:bg-rose-950 text-rose-600 dark:text-rose-400" : "bg-slate-100 dark:bg-slate-800 text-slate-500"
+              hasOverdue ? "bg-rose-100 text-rose-600" : "bg-slate-100 text-slate-500"
             )}>
               <AlertTriangle className="w-4.5 h-4.5" />
             </div>
-            <span className={cn(
-              "text-[11px] font-medium",
-              hasOverdue ? "text-rose-600 dark:text-rose-400" : "text-slate-500 dark:text-slate-400"
-            )}>
+            <span className={cn("text-meta", hasOverdue && "text-rose-600")}>
               Quá hạn
             </span>
             <span className={cn(
-              "text-xl sm:text-2xl font-bold tabular-nums mt-1 leading-tight",
-              hasOverdue ? "text-rose-600 dark:text-rose-400" : "text-slate-800 dark:text-slate-200"
+              "text-lg sm:text-xl font-bold tabular-nums leading-tight",
+              hasOverdue ? "text-rose-600" : "text-slate-900"
             )}>
               {counts.overdue}
             </span>
@@ -144,11 +138,11 @@ export default function DefaultDashboardView({ profile }: { profile: any }) {
 
           {/* Cột 3: Xong hôm nay */}
           <div className="flex flex-col items-center justify-center text-center px-1 sm:px-2 py-1 select-none">
-            <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 flex items-center justify-center text-emerald-600 dark:text-emerald-400 mb-2.5">
+            <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600 mb-2.5">
               <CheckCircle2 className="w-4.5 h-4.5" />
             </div>
-            <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Xong hôm nay</span>
-            <span className="text-xl sm:text-2xl font-bold tabular-nums text-slate-800 dark:text-slate-200 mt-1 leading-tight">
+            <span className="text-meta">Xong hôm nay</span>
+            <span className="text-lg sm:text-xl font-bold tabular-nums text-slate-900 leading-tight">
               {counts.done_today}
             </span>
           </div>
@@ -165,8 +159,7 @@ export default function DefaultDashboardView({ profile }: { profile: any }) {
         </div>
       </div>
 
-      {/* Nhịp đập nhân sự — sinh nhật/anniversary/đang nghỉ. Tự ẩn khi không có dữ liệu. */}
-      <PeopleAnalyticsWidget members={profiles} todaySchedules={today_leaves} />
+      
     </div>
   );
 }

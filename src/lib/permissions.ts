@@ -60,11 +60,6 @@ export function canRecognize(profile: any): boolean {
   return !!profile && profile.role !== 'driver';
 }
 
-// Widget analytics nhân sự (sắp sinh nhật, sắp nghỉ, anniversary) — bộ phận điều phối + HR.
-export function canViewPeopleAnalyticsWidget(profile: any): boolean {
-  return canCoordinateSharedResources(profile) || profile?.role === 'hr_officer';
-}
-
 export function canApproveLeave(profile: any, leave?: any): boolean {
   if (!profile) return false;
 

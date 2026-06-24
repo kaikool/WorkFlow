@@ -40,7 +40,7 @@ function ScheduleContent() {
 
   if (!mounted) {
     return (
-      <div className="page-container space-y-10 animate-fade-in-up">
+      <div className="page-container space-y-10 motion-safe:animate-fade-in-up">
         <PageHeader
           title="Lịch trình"
           description="Điều phối lịch họp & công tác"
@@ -53,7 +53,7 @@ function ScheduleContent() {
   // Driver có giao diện chuyên biệt — hiện DriverDashboard thay danh sách lịch chung
   if (canUseDriverWorkspace(profile)) {
     return (
-      <div className="page-container space-y-8 animate-fade-in-up">
+      <div className="page-container space-y-8 motion-safe:animate-fade-in-up">
         <PageHeader
           title="Lịch trình"
           description="Lịch chạy xe & hành trình của bạn"
@@ -71,7 +71,7 @@ function ScheduleContent() {
   }
 
   return (
-    <div className="page-container space-y-10 animate-fade-in-up">
+    <div className="page-container space-y-10 motion-safe:animate-fade-in-up">
       <PageHeader
         title="Lịch trình"
         description="Điều phối lịch họp & công tác"

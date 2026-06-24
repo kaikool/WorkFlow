@@ -285,10 +285,10 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
                           : 'bg-white border-slate-200 hover:bg-slate-50',
                       )}
                     >
-                      <div className="flex items-center gap-2">
+                      <label className="flex items-center gap-2">
                         <Building2 className="icon-md text-amber-500" />
                         <span className="heading-card">Phòng khác</span>
-                      </div>
+                      </label>
                     </button>
                     <button
                       type="button"
@@ -300,18 +300,18 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
                           : 'bg-white border-slate-200 hover:bg-slate-50',
                       )}
                     >
-                      <div className="flex items-center gap-2">
+                      <label className="flex items-center gap-2">
                         <UserIcon className="icon-md text-primary" />
                         <span className="heading-card">Trong phòng</span>
-                      </div>
+                      </label>
                     </button>
                   </div>
                 )}
 
                 {fetching ? (
-                  <div className="flex items-center justify-center py-6">
-                    <Loader2 className="icon-md animate-spin text-slate-400" />
-                  </div>
+                  <label className="flex items-center justify-center py-6">
+                    <Loader2 className="icon-md animate-spin text-slate-500" />
+                  </label>
                 ) : assignmentTarget === 'department' ? (
                   <DepartmentPicker
                     items={receiverDepartments}
@@ -388,14 +388,14 @@ export function CreateTaskDialog({ isOpen, setIsOpen, onCreated }: Props) {
                     onValueChange={(v) => form.setValue('priority', v as TaskPriority, { shouldValidate: true })}
                   >
                     <SelectTrigger className="min-h-11 rounded-xl bg-slate-50 border-none font-medium px-4">
-                      <div className="flex items-center gap-2">
+                      <label className="flex items-center gap-2">
                         <Flag className={cn(
                           'icon-sm',
                           priority === 'high' ? 'text-red-500' :
-                            priority === 'low' ? 'text-slate-400' : 'text-slate-500',
+                            priority === 'low' ? 'text-slate-500' : 'text-slate-500',
                         )} />
                         <SelectValue />
-                      </div>
+                      </label>
                     </SelectTrigger>
                     <SelectContent className="rounded-xl border border-slate-200 shadow-lg">
                       <SelectItem value="low">Ưu tiên thấp</SelectItem>

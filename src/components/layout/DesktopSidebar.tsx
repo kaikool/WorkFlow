@@ -82,7 +82,7 @@ export default function DesktopSidebar({ navItems, pathname, canManageSystem, pr
               <Building2 className="w-4 h-4 text-slate-500" />
             </div>
             <div className="flex flex-col min-w-0">
-              <span className="text-[11px] text-slate-400 truncate">Cơ quan</span>
+              <span className="text-[11px] text-slate-500 truncate">Cơ quan</span>
               <span className="text-[13px] font-medium text-slate-900 truncate leading-tight">
                 {(profile?.role === 'director' || profile?.role === 'admin') ? "Quản trị & Điều hành" : (profile?.departments?.name || "Chi nhánh chính")}
               </span>

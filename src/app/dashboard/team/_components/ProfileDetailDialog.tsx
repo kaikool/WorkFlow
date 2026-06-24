@@ -80,7 +80,6 @@ export default function ProfileDetailDialog({
   const heroBg = (() => {
     if (status === 'on_leave') return 'bg-amber-50/50';
     if (status === 'on_trip') return 'bg-sky-50/50';
-    if (status === 'birthday_today') return 'bg-pink-50/50';
     if (status === 'new_joiner') return 'bg-emerald-50/50';
     return 'bg-slate-50/60';
   })();
@@ -271,7 +270,7 @@ function ContactRow({
       "flex items-center gap-3 min-h-11 py-2.5",
       !last && "border-b border-slate-100",
     )}>
-      <Icon className={cn("icon-sm shrink-0", accent ? "text-primary" : "text-slate-400")} />
+      <Icon className={cn("icon-sm shrink-0", accent ? "text-primary" : "text-slate-500")} />
       <div className="flex-1 min-w-0 item-stack !gap-0.5">
         <span className="text-meta">{label}</span>
         <span className={cn("text-label !text-slate-900 font-semibold", valueClassName)}>{value}</span>

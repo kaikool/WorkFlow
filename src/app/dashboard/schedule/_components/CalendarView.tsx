@@ -54,7 +54,7 @@ function ScheduleSection({ icon, label, count, color, defaultOpen = true, childr
     amber: { badge: "bg-amber-100 text-amber-700", header: "text-amber-600", bg: "bg-amber-50/30", leftBar: "bg-amber-400" },
     green: { badge: "bg-emerald-100 text-emerald-700", header: "text-emerald-600", bg: "bg-emerald-50/30", leftBar: "bg-emerald-400" },
     blue: { badge: "bg-blue-100 text-blue-700", header: "text-blue-600", bg: "bg-blue-50/30", leftBar: "bg-blue-400" },
-    slate: { badge: "bg-slate-100 text-slate-500", header: "text-slate-400", bg: "bg-slate-50/30", leftBar: "bg-slate-300" },
+    slate: { badge: "bg-slate-100 text-slate-500", header: "text-slate-500", bg: "bg-slate-50/30", leftBar: "bg-slate-300" },
   };
   const c = colorMap[color];
 
@@ -71,11 +71,11 @@ function ScheduleSection({ icon, label, count, color, defaultOpen = true, childr
       >
         <div className={cn("w-1 h-4 rounded-full shrink-0", c.leftBar)} />
         <span className={cn("shrink-0", c.header)}>{icon}</span>
-        <span className={cn("text-xs font-bold tracking-tight", c.header)}>{label}</span>
-        <Badge className={cn("h-4.5 min-w-4.5 rounded-full border-0 px-1.5 text-[9px] font-extrabold leading-none flex items-center justify-center", c.badge)}>
+        <span className={cn("text-xs font-semibold tracking-tight", c.header)}>{label}</span>
+        <Badge className={cn("h-4.5 min-w-4.5 rounded-full border-0 px-1.5 text-xs font-bold leading-none flex items-center justify-center", c.badge)}>
           {count}
         </Badge>
-        <ChevronDown className="ml-auto w-3 h-3 text-slate-400 transition-transform duration-200 group-data-[state=open]:rotate-180 shrink-0" />
+        <ChevronDown className="ml-auto w-3 h-3 text-slate-500 transition-transform duration-200 group-data-[state=open]:rotate-180 shrink-0" />
       </CollapsibleTrigger>
       <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1.5">
@@ -217,27 +217,27 @@ export default function CalendarView(props: CalendarViewProps) {
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
+    <div className="section-stack animate-in fade-in duration-500">
       {/* Tablist phạm vi */}
       <Tabs value={filterType} onValueChange={(value) => setFilterType(value as 'all' | 'bgd' | 'dept')} className="w-full">
         <TabsList className={`grid min-h-9 ${isCoordinator ? 'grid-cols-3' : 'grid-cols-2'}`}>
           {isCoordinator && (
-            <TabsTrigger value="all" className="rounded-lg px-2 text-[12px] font-medium md:text-[14px] relative">
+            <TabsTrigger value="all" className="rounded-lg px-2 text-xs font-medium md:text-sm relative">
               <span className="truncate">Chi nhánh</span>
               {pendingVehicleCount > 0 && (
-                <Badge className="ml-1.5 h-5 min-w-5 shrink-0 justify-center rounded-full border-none bg-amber-600 px-1.5 text-[10px] font-bold leading-none text-white tabular-nums">
+                <Badge className="ml-1.5 h-5 min-w-5 shrink-0 justify-center rounded-full border-none bg-amber-600 px-1.5 text-xs font-bold leading-none text-white tabular-nums">
                   {pendingVehicleCount > 9 ? "9+" : pendingVehicleCount}
                 </Badge>
               )}
             </TabsTrigger>
           )}
-          <TabsTrigger value="bgd" className="rounded-lg px-2 text-[12px] font-medium md:text-[14px]">
+          <TabsTrigger value="bgd" className="rounded-lg px-2 text-xs font-medium md:text-sm">
             <span className="truncate">Ban giám đốc</span>
           </TabsTrigger>
-          <TabsTrigger value="dept" className="rounded-lg px-2 text-[12px] font-medium md:text-[14px] relative">
+          <TabsTrigger value="dept" className="rounded-lg px-2 text-xs font-medium md:text-sm relative">
             <span className="truncate">Phòng của tôi</span>
             {canApproveLeavePermission && pendingLeavesCount > 0 && (
-              <Badge className="ml-1.5 h-5 min-w-5 shrink-0 justify-center rounded-full border-none bg-slate-900 px-1.5 text-[10px] font-bold leading-none text-white tabular-nums">
+              <Badge className="ml-1.5 h-5 min-w-5 shrink-0 justify-center rounded-full border-none bg-slate-900 px-1.5 text-xs font-bold leading-none text-white tabular-nums">
                 {pendingLeavesCount > 9 ? "9+" : pendingLeavesCount}
               </Badge>
             )}
@@ -247,16 +247,16 @@ export default function CalendarView(props: CalendarViewProps) {
 
       {/* Điều phối tài nguyên */}
       {filterType === 'all' && isCoordinator && (
-        <Collapsible defaultOpen={false} className="space-y-3">
-          <CollapsibleTrigger className="group w-full flex items-center gap-2 px-2 py-2 rounded-xl text-[13px] font-medium text-slate-500 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20">
+        <Collapsible defaultOpen={false} className="item-stack">
+          <CollapsibleTrigger className="group w-full flex items-center gap-2 px-2 py-2 rounded-xl text-label transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20">
             <ShieldCheck className="w-3.5 h-3.5 text-amber-600 shrink-0" />
             <span>Điều phối tài nguyên</span>
             {pendingVehicleCount > 0 && (
-              <Badge className="h-5 rounded-full border border-amber-100 bg-amber-50 px-2.5 text-[10px] font-bold text-amber-700">
+              <Badge className="h-5 rounded-full border border-amber-100 bg-amber-50 px-2.5 text-xs font-bold text-amber-700">
                 {pendingVehicleCount} lịch cần xe
               </Badge>
             )}
-            <ChevronDown className="ml-auto w-4 h-4 text-slate-400 transition-transform duration-200 group-data-[state=open]:rotate-180 shrink-0" />
+            <ChevronDown className="ml-auto w-4 h-4 text-slate-500 transition-transform duration-200 group-data-[state=open]:rotate-180 shrink-0" />
           </CollapsibleTrigger>
           <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
             <React.Suspense fallback={<Loader2 className="h-6 w-6 animate-spin text-primary mx-auto my-8" />}>
@@ -268,12 +268,12 @@ export default function CalendarView(props: CalendarViewProps) {
 
       {/* Đơn nghỉ phép chờ duyệt */}
       {filterType === 'dept' && canApproveLeavePermission && pendingLeavesCount > 0 && (
-        <Collapsible defaultOpen={true} className="space-y-3">
-          <CollapsibleTrigger className="group w-full flex items-center gap-2 px-2 py-2 rounded-xl text-[13px] font-medium text-slate-500 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20">
+        <Collapsible defaultOpen={true} className="item-stack">
+          <CollapsibleTrigger className="group w-full flex items-center gap-2 px-2 py-2 rounded-xl text-label transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20">
             <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
             <span>Đơn nghỉ phép chờ duyệt</span>
-            <Badge className="h-5 rounded-full border border-amber-100 bg-amber-50 px-2.5 text-[10px] font-bold text-amber-700">{pendingLeavesCount} đơn</Badge>
-            <ChevronDown className="ml-auto w-4 h-4 text-slate-400 transition-transform duration-200 group-data-[state=open]:rotate-180 shrink-0" />
+            <Badge className="h-5 rounded-full border border-amber-100 bg-amber-50 px-2.5 text-xs font-bold text-amber-700">{pendingLeavesCount} đơn</Badge>
+            <ChevronDown className="ml-auto w-4 h-4 text-slate-500 transition-transform duration-200 group-data-[state=open]:rotate-180 shrink-0" />
           </CollapsibleTrigger>
           <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
             <React.Suspense fallback={<Loader2 className="h-6 w-6 animate-spin text-primary mx-auto my-8" />}>
@@ -295,7 +295,7 @@ export default function CalendarView(props: CalendarViewProps) {
           onSelectSchedule={onSelectSchedule} currentProfile={profile}
         />
       ) : (
-        <div className="space-y-6">
+        <div className="group-stack">
           {/* 🔴 Cần xử lý */}
           <ScheduleSection
             icon={<XCircle className="w-3.5 h-3.5" />}
@@ -327,7 +327,7 @@ export default function CalendarView(props: CalendarViewProps) {
               <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-emerald-50/30">
                 <div className="w-1 h-4 rounded-full shrink-0 bg-emerald-400" />
                 <Clock className="w-3 h-3 text-emerald-600 shrink-0" />
-                <span className="text-xs font-bold tracking-tight text-emerald-600">Lịch trình ngày {format(selectedDate, 'dd/MM/yyyy')}</span>
+                <span className="text-xs font-semibold tracking-tight text-emerald-600">Lịch trình ngày {format(selectedDate, 'dd/MM/yyyy')}</span>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {todaySchedules.map(item => (
@@ -367,7 +367,7 @@ export default function CalendarView(props: CalendarViewProps) {
           {leaveList.length > 0 && (
             <div className="space-y-4 pt-6 border-t border-slate-100 mt-8">
               <div className="flex items-center justify-between px-2">
-                <h3 className="flex items-center gap-2 text-[12px] font-bold text-slate-400">
+                <h3 className="flex items-center gap-2 text-xs font-semibold text-slate-500">
                   <Plane className="w-4 h-4 text-blue-500 shrink-0" />
                   Nhân sự nghỉ phép ({leaveList.length})
                 </h3>
@@ -387,19 +387,19 @@ export default function CalendarView(props: CalendarViewProps) {
                           <div className="flex-1 p-3.5 flex items-center gap-3.5 min-w-0">
                             <Avatar className="h-9 w-9 shrink-0 border border-slate-100 shadow-sm">
                               <AvatarImage src={leave.creator?.avatar_url} />
-                              <AvatarFallback className="text-xs bg-slate-100 font-extrabold text-slate-600">{leave.creator?.full_name?.[0]}</AvatarFallback>
+                              <AvatarFallback className="text-xs bg-slate-100 font-bold text-slate-600">{leave.creator?.full_name?.[0]}</AvatarFallback>
                             </Avatar>
                             <div className="flex-1 min-w-0 space-y-1">
                               <div className="flex items-center justify-between gap-2">
-                                <p className="text-[13px] font-extrabold text-slate-800 truncate group-hover:text-primary transition-colors">{leave.creator?.full_name}</p>
-                                <span className={cn("text-[9px] font-extrabold px-2 py-0.5 rounded-md tracking-normal shrink-0", leave.isCurrent ? "bg-amber-50 text-amber-600 border border-amber-200/50" : "bg-blue-50/50 text-blue-600 border border-blue-200/40")}>
+                                <p className="text-sm font-bold text-slate-800 truncate group-hover:text-primary transition-colors">{leave.creator?.full_name}</p>
+                                <span className={cn("text-xs font-bold px-2 py-0.5 rounded-md tracking-normal shrink-0", leave.isCurrent ? "bg-amber-50 text-amber-600 border border-amber-200/50" : "bg-blue-50/50 text-blue-600 border border-blue-200/40")}>
                                   {leave.isCurrent ? "Đang nghỉ" : "Sắp nghỉ"}
                                 </span>
                               </div>
-                              <p className="text-[10px] text-slate-400 font-bold truncate">{deptName || "Chưa phân phòng"}</p>
+                              <p className="text-xs text-slate-500 font-bold truncate">{deptName || "Chưa phân phòng"}</p>
                               <div className="flex items-center justify-between gap-1.5 pt-1.5 border-t border-slate-100">
-                                <span className="text-[9.5px] font-medium text-slate-400">Thời gian nghỉ:</span>
-                                <span className="text-[10.5px] font-bold text-slate-700">{formattedRange}</span>
+                                <span className="text-xs font-medium text-slate-500">Thời gian nghỉ:</span>
+                                <span className="text-xs font-semibold text-slate-700">{formattedRange}</span>
                               </div>
                             </div>
                           </div>

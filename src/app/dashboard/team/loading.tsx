@@ -6,7 +6,7 @@ import { ListSkeleton } from '@/components/ui/list-skeleton';
 
 export default function Loading() {
   return (
-    <div className="page-container space-y-6 md:space-y-8 animate-fade-in-up">
+    <div className="page-container space-y-6 md:section-stack motion-safe:animate-fade-in-up">
       <PageHeader 
         title="Nhân sự" 
         description="Danh bạ và sơ đồ tổ chức chi nhánh" 

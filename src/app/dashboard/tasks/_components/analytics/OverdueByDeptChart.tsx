@@ -20,7 +20,7 @@ export function OverdueByDeptChart({ data }: Props) {
       {data.map(d => (
         <div key={d.dept_id} className="item-stack">
           <div className="flex items-center gap-2 text-subtitle font-medium">
-            <Building2 className="icon-sm text-slate-400" />
+            <Building2 className="icon-sm text-slate-500" />
             <span className="flex-1 truncate text-slate-700">{d.dept_name}</span>
             <span className="text-meta tabular-nums">{d.active}</span>
           </div>

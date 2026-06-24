@@ -44,7 +44,7 @@ export default function OrgChartView({ members, onSelect, getStatus }: OrgChartV
                 <span className="heading-card truncate">{g.label}</span>
                 <span className="text-meta shrink-0">({g.members.length})</span>
               </div>
-              <ChevronDown className={cn("icon-sm text-slate-400 transition-transform", open && "rotate-180")} />
+              <ChevronDown className={cn("icon-sm text-slate-500 transition-transform", open && "rotate-180")} />
             </button>
 
             {open && (
@@ -99,13 +99,13 @@ function OrgPerson({
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5 flex-wrap">
-          <span className={cn("font-bold text-slate-900 truncate", isHead ? "text-[14px]" : "text-[13px]")}>{member.full_name}</span>
+          <span className={cn("font-bold text-slate-900 truncate", isHead ? "text-sm" : "text-sm")}>{member.full_name}</span>
           {isHead && <Crown className="h-3.5 w-3.5 text-amber-600" />}
         </div>
         <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
           {member.title && <span className="text-meta truncate">{member.title}</span>}
           {showStatusChip && (
-            <Badge className={cn("text-[10px] font-bold px-2 py-0 rounded-md border", statusBadge.chipClass)}>
+            <Badge className={cn("text-xs font-bold px-2 py-0 rounded-md border", statusBadge.chipClass)}>
               {statusBadge.label}
             </Badge>
           )}

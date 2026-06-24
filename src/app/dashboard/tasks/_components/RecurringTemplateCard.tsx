@@ -63,7 +63,7 @@ export function RecurringTemplateCard({ template, onEdit, onChanged }: Props) {
       !template.is_active && 'opacity-60',
     )}>
       <div className="flex items-start gap-3">
-        <Calendar className={cn('icon-md mt-1', template.is_active ? 'text-amber-500' : 'text-slate-400')} />
+        <Calendar className={cn('icon-md mt-1', template.is_active ? 'text-amber-500' : 'text-slate-500')} />
         <div className="min-w-0 flex-1 tight-stack">
           <p className="heading-card truncate">{template.title}</p>
           <p className="text-subtitle text-slate-600">{formatScheduleHuman(template)}</p>

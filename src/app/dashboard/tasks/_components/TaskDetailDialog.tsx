@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2 } from 'lucide-react';
+import { EmptyState } from '@/components/ui/empty-state';
 import { useTaskDetail } from '../_hooks/useTaskDetail';
 import { TaskDetailPanel } from './TaskDetailPanel';
 
@@ -37,7 +38,7 @@ export function TaskDetailDialog({
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent hideCloseButton className="app-dialog-sheet app-dialog-sheet--2xl shadow-2xl flex flex-col p-0">
         <DialogHeader className="app-dialog-sheet-header">
-          <DialogTitle className="text-[18px] font-bold text-slate-900 leading-tight pr-8">
+          <DialogTitle className="text-lg font-bold text-slate-900 leading-tight pr-8">
             {loading && !task ? 'Đang tải…' : (task?.title ?? 'Không tìm thấy')}
           </DialogTitle>
           <DialogDescription className="sr-only">
@@ -47,7 +48,7 @@ export function TaskDetailDialog({
 
         {loading && !task && (
           <div className="flex-1 flex items-center justify-center py-10">
-            <Loader2 className="icon-lg animate-spin text-slate-400" />
+            <Loader2 className="icon-lg animate-spin text-slate-500" />
           </div>
         )}
         {task && (
@@ -62,9 +63,14 @@ export function TaskDetailDialog({
           />
         )}
         {!loading && !task && (
-          <p className="text-[14px] text-slate-500 text-center py-10">
-            Công việc đã bị xoá hoặc bạn không có quyền xem.
-          </p>
+          <div className="flex-1 flex items-center justify-center py-10">
+            <EmptyState
+              icon={<Loader2 className="icon-lg" />}
+              title="Không tìm thấy công việc"
+              description="Công việc đã bị xoá hoặc bạn không có quyền xem."
+              variant="subtle"
+            />
+          </div>
         )}
       </DialogContent>
     </Dialog>

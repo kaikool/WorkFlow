@@ -60,7 +60,7 @@ export default function ImageLightbox({ images, startIndex, onClose }: Props) {
       </button>
 
       {total > 1 && (
-        <span className="absolute top-4 left-4 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur text-white text-[12px] font-semibold tabular-nums">
+        <span className="absolute top-4 left-4 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur text-white text-xs font-semibold tabular-nums">
           {index + 1} / {total}
         </span>
       )}

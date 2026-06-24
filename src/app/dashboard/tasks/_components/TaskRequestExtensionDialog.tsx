@@ -59,14 +59,14 @@ export function TaskRequestExtensionDialog({ task, onClose, onChanged }: Props) 
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="app-dialog-sheet app-dialog-sheet--lg shadow-2xl">
         <DialogHeader className="app-dialog-sheet-header">
-          <DialogTitle className="text-[17px] font-semibold text-slate-900">Xin gia hạn</DialogTitle>
-          <DialogDescription className="text-[13px] text-slate-500 font-medium line-clamp-1">{task.title}</DialogDescription>
+          <DialogTitle className="text-lg font-semibold text-slate-900">Xin gia hạn</DialogTitle>
+          <DialogDescription className="text-subtitle line-clamp-1">{task.title}</DialogDescription>
         </DialogHeader>
 
         <div className="app-dialog-sheet-body">
           <div className="space-y-4 px-[var(--app-page-x)] py-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-500">Hạn mới</label>
+              <p className="text-label">Hạn mới</p>
               <Popover open={isDateOpen} onOpenChange={setIsDateOpen}>
                 <PopoverTrigger asChild>
                   <Button variant="outline" className={cn(
@@ -92,14 +92,14 @@ export function TaskRequestExtensionDialog({ task, onClose, onChanged }: Props) 
                 </PopoverContent>
               </Popover>
               {task.due_date && (
-                <p className="text-[11px] text-slate-400">
+                <p className="text-meta">
                   Hạn cũ: {format(new Date(task.due_date), 'dd/MM/yyyy', { locale: vi })}
                 </p>
               )}
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-500">Lý do (khuyến nghị)</label>
+              <p className="text-label">Lý do (khuyến nghị)</p>
               <Textarea
                 rows={3}
                 value={reason}

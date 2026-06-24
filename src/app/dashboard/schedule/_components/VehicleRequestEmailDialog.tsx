@@ -147,7 +147,7 @@ export default function VehicleRequestEmailDialog({
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) handleClose(); }}>
       <DialogContent className="app-dialog-sheet app-dialog-sheet--md shadow-2xl">
         <DialogHeader className="app-dialog-sheet-header">
-          <DialogTitle className="text-[17px] font-semibold text-slate-900 flex items-center gap-2">
+          <DialogTitle className="text-lg font-semibold text-slate-900 flex items-center gap-2">
             <Mail className="w-5 h-5 text-primary" />
             Gửi email đề nghị xe
           </DialogTitle>
@@ -159,7 +159,7 @@ export default function VehicleRequestEmailDialog({
             {/* Schedule info */}
             <div className="text-sm space-y-0.5">
               <p className="font-semibold text-slate-800">{schedule?.title || ''}</p>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-500">
                 {schedule?.start_time
                   ? new Date(schedule.start_time).toLocaleString('vi-VN', {
                       day: '2-digit', month: '2-digit', year: 'numeric',
@@ -173,7 +173,7 @@ export default function VehicleRequestEmailDialog({
             {/* Compact participant list with circles */}
             {participants.length > 0 && (
               <div>
-                <p className="text-xs font-medium text-slate-400 mb-1.5 flex items-center gap-1.5">
+                <p className="text-xs font-medium text-slate-500 mb-1.5 flex items-center gap-1.5">
                   Chọn người nhận
                 </p>
                 <div className="bg-slate-50/70 rounded-xl">
@@ -190,13 +190,13 @@ export default function VehicleRequestEmailDialog({
                           onClick={() => toggleProfile(p.id)}
                         >
                           <SelectCircle checked={selectedProfiles.has(p.id)} />
-                          <User className="w-3.5 h-3.5 shrink-0 text-slate-400" />
+                          <User className="w-3.5 h-3.5 shrink-0 text-slate-500" />
                           <span className="truncate">{p.full_name}</span>
                           {p.title && (
-                            <span className="text-[11px] text-slate-400 truncate ml-auto">{p.title}</span>
+                            <span className="text-meta truncate ml-auto">{p.title}</span>
                           )}
                           {idx === 0 && (
-                            <span className="text-[10px] text-primary/70 bg-primary/5 px-1.5 py-0.5 rounded-full shrink-0 whitespace-nowrap">
+                            <span className="text-xs text-primary/70 bg-primary/5 px-1.5 py-0.5 rounded-full shrink-0 whitespace-nowrap">
                               ĐK
                             </span>
                           )}
@@ -210,11 +210,11 @@ export default function VehicleRequestEmailDialog({
 
             {/* Manual email input */}
             <div className="space-y-1.5">
-              <p className="text-xs font-medium text-slate-400 flex items-center gap-1.5">
+              <p className="text-xs font-medium text-slate-500 flex items-center gap-1.5">
                 Hoặc nhập email trực tiếp
               </p>
               <div className="relative">
-                <Mail className="absolute left-3 top-2.5 w-3.5 h-3.5 text-slate-400" />
+                <Mail className="absolute left-3 top-2.5 w-3.5 h-3.5 text-slate-500" />
                 <Input
                   placeholder="email1@vietinbank.vn, email2@vietinbank.vn"
                   className="h-9 bg-slate-50 border-none rounded-lg text-xs pl-8 pr-3"

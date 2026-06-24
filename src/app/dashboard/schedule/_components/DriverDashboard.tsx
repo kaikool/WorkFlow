@@ -338,7 +338,7 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
   const driverStatus = activeTrip ? "Di chuyển" : "Sẵn sàng";
 
   return (
-    <div className="space-y-8 animate-fade-in-up">
+    <div className="section-stack motion-safe:animate-fade-in-up">
 
       <DriverStatsGrid
         totalTrips={driverStats.totalTrips}
@@ -364,7 +364,7 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
           description="Phòng Tổ chức Tổng hợp sẽ gán xe và thông báo cho bạn khi có lịch mới."
         />
       ) : (
-        <div className="space-y-6">
+        <div className="group-stack">
           {/* Chuyến đang hoạt động */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {activeTrips.map((trip) => (
@@ -389,12 +389,12 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20"
               )}>
                 <div className="w-1 h-4 rounded-full shrink-0 bg-slate-300" />
-                <CheckCircle2 className="w-3 h-3 text-slate-400 shrink-0" />
-                <span className="text-xs font-bold tracking-tight text-slate-400">Đã hoàn thành</span>
-                <Badge className="h-4.5 min-w-4.5 rounded-full border-0 px-1.5 text-[9px] font-extrabold bg-slate-100 text-slate-500 leading-none flex items-center justify-center">
+                <CheckCircle2 className="w-3 h-3 text-slate-500 shrink-0" />
+                <span className="text-xs font-semibold tracking-tight text-slate-500">Đã hoàn thành</span>
+                <Badge className="h-4.5 min-w-4.5 rounded-full border-0 px-1.5 text-xs font-bold bg-slate-100 text-slate-500 leading-none flex items-center justify-center">
                   {completedTrips.length}
                 </Badge>
-                <ChevronDown className="ml-auto w-3 h-3 text-slate-400 transition-transform duration-200 group-data-[state=open]:rotate-180 shrink-0" />
+                <ChevronDown className="ml-auto w-3 h-3 text-slate-500 transition-transform duration-200 group-data-[state=open]:rotate-180 shrink-0" />
               </CollapsibleTrigger>
               <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-1.5">
@@ -446,7 +446,7 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
                     isRunning ? "bg-emerald-50 border-emerald-100" : "bg-amber-50 border-amber-100"
                   )}>
                     <Badge className={cn(
-                      "rounded-full px-2.5 py-0.5 text-[10px] font-semibold",
+                      "rounded-full px-2.5 py-0.5 text-xs font-semibold",
                       isRunning ? "bg-emerald-600 text-white" : "bg-amber-600 text-white"
                     )}>
                       {isRunning ? "Đang chạy" : "Chờ khởi hành"}
@@ -457,19 +457,19 @@ export default function DriverDashboard({ schedules, profile, fetchData, toast }
                   <div className="flex items-start gap-3 px-4 py-3">
                     <Avatar className="w-9 h-9 shrink-0 border-2 border-white shadow-sm">
                       <AvatarImage src={trip.driver?.avatar_url} />
-                      <AvatarFallback className="bg-slate-100 text-xs font-bold text-slate-700">
+                      <AvatarFallback className="bg-slate-100 text-xs font-semibold text-slate-700">
                         {driverName.charAt(0)}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0 space-y-1">
                       <div className="flex items-center gap-1.5">
                         <p className="text-sm font-bold text-slate-800">{driverName}</p>
-                        <Badge variant="outline" className="shrink-0 rounded px-1 py-0 text-[10px] font-medium text-slate-400">
+                        <Badge variant="outline" className="shrink-0 rounded px-1 py-0 text-xs font-medium text-slate-500">
                           {(trip.vehicle as any)?.plate_number}
                         </Badge>
                       </div>
                       <p className="text-xs text-slate-500 leading-snug">{trip.title}</p>
-                      <p className="text-[10px] font-semibold text-slate-400 tabular-nums flex items-center gap-1">
+                      <p className="text-xs font-semibold text-slate-500 tabular-nums flex items-center gap-1">
                         <Clock className="w-2.5 h-2.5 shrink-0" />
                         {fmtShort(startDt)} – {fmtShort(endDt)}
                       </p>

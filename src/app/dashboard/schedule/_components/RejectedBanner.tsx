@@ -29,17 +29,17 @@ export default function RejectedBanner({ schedule, isCreator, onResubmit }: Reje
         <XCircle className="icon-md shrink-0 mt-0.5" />
         <div className="flex-1 item-stack">
           <div className="flex items-baseline justify-between gap-2 flex-wrap">
-            <h4 className="text-[15px] font-semibold">Đã bị từ chối</h4>
+            <h4 className="text-sm font-semibold text-slate-900">Đã bị từ chối</h4>
             {relativeTime && (
-              <span className="text-xs font-medium opacity-75">{relativeTime}</span>
+              <span className="text-meta">{relativeTime}</span>
             )}
           </div>
 
-          <p className="text-sm font-medium leading-relaxed">
+          <p className="text-sm leading-relaxed">
             <span className="opacity-75">Lý do:</span> {reason}
           </p>
 
-          <p className="text-xs font-medium opacity-75">
+          <p className="text-meta">
             Bởi {rejecterName}{rejecter?.title ? ` · ${rejecter.title}` : ''}
           </p>
 

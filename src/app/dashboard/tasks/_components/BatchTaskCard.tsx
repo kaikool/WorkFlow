@@ -37,9 +37,9 @@ export const BatchTaskCard = React.memo(function BatchTaskCard({ representative,
       onClick={() => representative.batch_id && onOpen(representative.batch_id)}
       className="w-full text-left bg-white border border-slate-100 rounded-2xl shadow-sm hover:border-slate-300 hover:shadow-md active:scale-[0.99] transition-all"
     >
-      <div className="p-4 space-y-3">
+      <div className="p-4 item-stack">
         <div className="flex items-start gap-2">
-          <TypeIcon className="icon-sm text-slate-400 shrink-0 mt-0.5" />
+          <TypeIcon className="icon-sm text-slate-500 shrink-0 mt-0.5" />
           <p className="heading-card leading-snug flex-1 line-clamp-2">
             {representative.title}
           </p>

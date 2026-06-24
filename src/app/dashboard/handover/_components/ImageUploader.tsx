@@ -117,7 +117,7 @@ export default function ImageUploader({ documentId, imageUrls, onChange, onClick
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
             className={cn(
-              "aspect-square rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-1 text-slate-400 transition-all",
+              "aspect-square rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-1 text-slate-500 transition-all",
               "hover:border-primary/30 hover:bg-primary/5 hover:text-primary active:scale-[0.97]"
             )}
           >
@@ -125,7 +125,7 @@ export default function ImageUploader({ documentId, imageUrls, onChange, onClick
               <>
                 <Loader2 className="w-5 h-5 animate-spin" />
                 {progress && (
-                  <span className="text-[10px] font-semibold">
+                  <span className="text-xs font-semibold">
                     {progress.done}/{progress.total}
                   </span>
                 )}
@@ -133,7 +133,7 @@ export default function ImageUploader({ documentId, imageUrls, onChange, onClick
             ) : (
               <>
                 <Camera className="w-5 h-5" />
-                <span className="text-[11px] font-semibold">Thêm ảnh</span>
+                <span className="text-xs font-semibold">Thêm ảnh</span>
               </>
             )}
           </button>
@@ -141,7 +141,7 @@ export default function ImageUploader({ documentId, imageUrls, onChange, onClick
       </div>
 
       {imageUrls.length === 0 && !canAdd && (
-        <p className="text-[12px] text-slate-400 font-medium italic">Chưa có ảnh đính kèm</p>
+        <p className="text-meta italic">Chưa có ảnh đính kèm</p>
       )}
 
       <input

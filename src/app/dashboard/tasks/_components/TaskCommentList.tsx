@@ -90,7 +90,7 @@ export function TaskCommentList({ taskId, comments, onAdded, canCompose = true }
               className={cn(
                 'absolute right-2 bottom-2 w-9 h-9 inline-flex items-center justify-center rounded-full transition-all',
                 disabled
-                  ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                  ? 'bg-slate-200 text-slate-500 cursor-not-allowed'
                   : 'bg-primary text-white hover:bg-primary/90 active:scale-90',
               )}
             >

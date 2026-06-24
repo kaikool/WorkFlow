@@ -168,7 +168,7 @@ CREATE TABLE profiles (
     birthday                DATE,
     gender                  TEXT,
     ad_account              TEXT UNIQUE,         -- Tài khoản AD Windows
-    branch_join_date        DATE,                -- Ngày vào ngành — dùng cho AnniversaryDialog
+    branch_join_date        DATE,                -- Ngày vào ngành
     title                   TEXT,                -- "RM", "Trưởng phòng", "Kiểm soát viên"...
     is_department_head      BOOLEAN DEFAULT false,  -- Trưởng phòng chính thức (≠ Phó phòng)
     is_active               BOOLEAN DEFAULT true,   -- false → middleware signOut
@@ -177,7 +177,6 @@ CREATE TABLE profiles (
     extension               TEXT,                -- Số nội bộ (3-6 chữ số)
     seat_location           TEXT,                -- Vị trí chỗ ngồi vật lý (vd "Tầng 2 - Quầy 5")
     employee_code           TEXT,                -- Mã nhân viên — nhạy cảm (chỉ self + admin/hr_officer/director xem)
-    birthday_notify_optout  BOOLEAN NOT NULL DEFAULT false, -- Tắt thông báo sinh nhật cho đồng nghiệp
     updated_at              TIMESTAMPTZ DEFAULT NOW()
 );
 ```
@@ -981,7 +980,7 @@ Bảo mật bucket `documents`: dựa vào path có UUID khó đoán + intranet 
 
 | Job | Lịch | Nơi chạy | Tác dụng |
 |-----|------|----------|----------|
-| `/api/cron/notifications` | `0 1 * * *` daily 08:00 ICT (`vercel.json`, Vercel cron chạy UTC) | Vercel cron, dùng `SUPABASE_SERVICE_ROLE_KEY` | (1) `auto_archive_and_cleanup()` + quét task quá hạn → notification. (2) Chúc mừng sinh nhật **toàn chi nhánh** (trừ driver / `birthday_notify_optout=true` / chính chủ). (3) Anniversary 5/10/15/20 năm gắn bó. (4) `cleanup_expired_ooo()`. Bảo vệ bằng `CRON_SECRET` header |
+| `/api/cron/notifications` | `0 1 * * *` daily 08:00 ICT (`vercel.json`, Vercel cron chạy UTC) | Vercel cron, dùng `SUPABASE_SERVICE_ROLE_KEY` | (1) `auto_archive_and_cleanup()` + quét task quá hạn → notification. (2) Quét task sắp đến hạn 24h → notification. (3) `cleanup_expired_ooo()`. Bảo vệ bằng `CRON_SECRET` header |
 | Edge `cleanup-document-images` | `0 19 * * *` UTC = 02:00 ICT | Supabase Edge (Deno) | Quét `documents` `status=COMPLETED AND completed_at < NOW() - 30 days` → xoá file storage + clear URLs. Giới hạn 200 hồ sơ/lượt |
 | Edge `push-notification` | Trigger qua DB webhook (không phải cron) | Supabase Edge | INSERT `notifications` → đọc `push_subscriptions` → fire Web Push qua VAPID |
 

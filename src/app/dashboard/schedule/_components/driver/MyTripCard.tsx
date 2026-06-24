@@ -33,7 +33,7 @@ export default function MyTripCard({ trip, onConfirm, onStart, onEnd, onReportIs
   const endDt = new Date(trip.end_time);
 
   let borderStyle = "border-l-4 border-l-amber-500 border-slate-100";
-  let statusBadgeBg = "bg-amber-50 text-amber-700 border-amber-100";
+  let statusBadgeBg = "status-warning-bg";
   let statusText = "Chờ khởi hành";
   let statusIcon: React.ReactNode = <Clock className="w-3.5 h-3.5 shrink-0" />;
 
@@ -49,7 +49,7 @@ export default function MyTripCard({ trip, onConfirm, onStart, onEnd, onReportIs
     statusIcon = <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />;
   } else if (hasStarted) {
     borderStyle = "border-l-4 border-l-emerald-500 border-slate-100 ring-1 ring-emerald-500/10";
-    statusBadgeBg = "bg-emerald-50 text-emerald-700 border-emerald-100";
+    statusBadgeBg = "status-success-bg";
     statusText = "Đang di chuyển";
     statusIcon = <Navigation className="w-3.5 h-3.5 shrink-0" />;
   }
@@ -58,28 +58,28 @@ export default function MyTripCard({ trip, onConfirm, onStart, onEnd, onReportIs
     <div className={`bg-white rounded-2xl border ${borderStyle} shadow-sm overflow-hidden flex flex-col transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 group`}>
       <div className="flex items-center justify-between px-5 py-4 border-b border-slate-50 bg-slate-50/20">
         <div className="flex items-center gap-2">
-          <Badge className={`gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium ${statusBadgeBg}`}>
+          <Badge className={`gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${statusBadgeBg}`}>
             {statusIcon}
             {statusText}
           </Badge>
           {hasIssue && (
-            <Badge className="gap-1 rounded-full border border-red-100 bg-red-50 px-2.5 py-1 text-[11px] font-medium text-red-600">
+            <Badge className="gap-1 rounded-full border border-red-100 bg-red-50 px-2.5 py-1 text-xs font-medium text-red-600">
               <AlertTriangle className="w-3 h-3 shrink-0 animate-pulse" /> Sự cố
             </Badge>
           )}
         </div>
-        <span className="text-[11px] font-semibold text-slate-400 tabular-nums">
+        <span className="text-xs font-semibold text-slate-500 tabular-nums">
           {fmtDt(startDt).split(' ')[1]}
         </span>
       </div>
 
       <div className="flex flex-col gap-5 px-5 py-5 flex-1">
         <div className="space-y-1">
-          <h4 className="text-[15px] font-bold text-slate-900 leading-snug group-hover:text-primary transition-colors">
+          <h4 className="text-sm font-bold text-slate-900 leading-snug group-hover:text-primary transition-colors">
             {trip.title}
           </h4>
           {trip.description && (
-            <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">{trip.description}</p>
+            <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">{trip.description}</p>
           )}
         </div>
 
@@ -91,7 +91,7 @@ export default function MyTripCard({ trip, onConfirm, onStart, onEnd, onReportIs
             <span className="text-sm font-semibold text-slate-800">
               {(trip.vehicle as any)?.name
                 ? `${(trip.vehicle as any).name} · ${(trip.vehicle as any).plate_number}`
-                : <span className="text-slate-400 font-normal italic">Chờ phân công xe</span>}
+                : <span className="text-slate-500 font-normal italic">Chờ phân công xe</span>}
             </span>
           </div>
 
@@ -108,10 +108,10 @@ export default function MyTripCard({ trip, onConfirm, onStart, onEnd, onReportIs
             <div className="w-7 h-7 rounded-lg bg-slate-50 flex items-center justify-center shrink-0 mt-0.5 border border-slate-100/80">
               <Clock className="w-3.5 h-3.5 text-slate-500" />
             </div>
-            <div className="text-[13px] text-slate-500 space-y-0.5 font-medium">
-              <div><span className="text-slate-400 text-xs font-semibold">Đi:</span> {fmtDt(startDt)}</div>
+            <div className="text-sm text-slate-500 space-y-0.5 font-medium">
+              <div><span className="text-slate-500 text-xs font-semibold">Đi:</span> {fmtDt(startDt)}</div>
               {hasEnded ? (
-                <div><span className="text-slate-400 text-xs font-semibold">Đến:</span> {fmtDt(new Date(trip.metadata?.trip_ended_at || endDt))}</div>
+                <div><span className="text-slate-500 text-xs font-semibold">Đến:</span> {fmtDt(new Date(trip.metadata?.trip_ended_at || endDt))}</div>
               ) : hasStarted ? (
                 <div><span className="text-amber-600 text-xs font-semibold">Đang đến:</span> <span className="text-amber-600">{fmtDt(new Date())}</span></div>
               ) : null}
@@ -135,15 +135,15 @@ export default function MyTripCard({ trip, onConfirm, onStart, onEnd, onReportIs
         {trip.participants && trip.participants.length > 0 && (
           <div className="pt-3 mt-2 border-t border-slate-50">
             <div className="flex items-center gap-2 mb-2">
-              <Users className="w-3.5 h-3.5 text-slate-400" />
-              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Người đi cùng ({trip.participants.filter((p: any) => p.profile?.role !== 'driver').length})</span>
+              <Users className="w-3.5 h-3.5 text-slate-500" />
+              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Người đi cùng ({trip.participants.filter((p: any) => p.profile?.role !== 'driver').length})</span>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               {trip.participants.filter((p: any) => p.profile?.role !== 'driver').map((p: any) => (
                 <div key={p.profile?.id} className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-lg border border-slate-100">
                   <Avatar className="w-5 h-5 shrink-0">
                     <AvatarImage src={p.profile?.avatar_url} />
-                    <AvatarFallback className="bg-primary/10 text-primary text-[10px] font-bold">
+                    <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
                       {p.profile?.full_name?.charAt(0) || '?'}
                     </AvatarFallback>
                   </Avatar>
@@ -194,7 +194,7 @@ export default function MyTripCard({ trip, onConfirm, onStart, onEnd, onReportIs
             onClick={() => onReportIssue(trip)}
             variant="ghost"
             title="Báo sự cố"
-            className="h-11 w-11 p-0 shrink-0 rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50 active:scale-95 transition-all duration-150"
+            className="h-11 w-11 p-0 shrink-0 rounded-xl text-slate-500 hover:text-red-600 hover:bg-red-50 active:scale-95 transition-all duration-150"
           >
             <AlertTriangle className="w-4 h-4" />
           </Button>
@@ -207,9 +207,9 @@ export default function MyTripCard({ trip, onConfirm, onStart, onEnd, onReportIs
           <DialogHeader>
             <div className="flex items-center gap-2">
               <XCircle className="icon-md text-red-600" />
-              <DialogTitle className="text-[17px] font-semibold text-slate-900">Từ chối lịch chạy xe</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-900">Từ chối lịch chạy xe</DialogTitle>
             </div>
-            <DialogDescription className="text-sm font-medium text-slate-500 leading-relaxed">
+            <DialogDescription className="text-label leading-relaxed">
               Nhập lý do từ chối chuyến <span className="font-semibold text-slate-700">&ldquo;{trip.title}&rdquo;</span> để bộ phận điều phối biết và sắp xếp lại.
             </DialogDescription>
           </DialogHeader>
@@ -225,7 +225,7 @@ export default function MyTripCard({ trip, onConfirm, onStart, onEnd, onReportIs
             />
             <p className={cn(
               "text-xs font-medium",
-              rejectReason.trim().length >= 10 ? "text-slate-400" : "text-amber-600"
+              rejectReason.trim().length >= 10 ? "text-slate-500" : "text-amber-600"
             )}>
               {rejectReason.trim().length >= 10
                 ? `${rejectReason.trim().length} ký tự`

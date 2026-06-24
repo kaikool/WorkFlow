@@ -65,7 +65,7 @@ export function TimePicker({
           'min-h-11 w-full rounded-xl bg-slate-50 border-none px-4 text-[14px] font-medium tabular-nums',
           'hover:bg-slate-100 shadow-none',
           'focus:ring-2 focus:ring-emerald-500/30 focus:ring-offset-0',
-          value ? '!text-slate-900' : '!text-slate-400',
+          value ? '!text-slate-900' : '!text-slate-500',
           '[&>span]:text-inherit',
           triggerClassName,
         )}

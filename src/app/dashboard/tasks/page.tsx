@@ -107,7 +107,7 @@ function TasksContent() {
   const showRecurringLink = canCreateRecurringTemplate(profile);
 
   return (
-    <div className="page-container space-y-6 md:space-y-8 animate-fade-in-up">
+    <div className="page-container space-y-6 md:section-stack motion-safe:animate-fade-in-up">
       <PageHeader
         title="Công việc"
         description="Quản trị & theo dõi tiến độ"
@@ -162,10 +162,10 @@ function TasksContent() {
       {renderTabs && (
       <Tabs value={tab} onValueChange={(v) => setTab(v as TabValue)} className="w-full">
         <TabsList className="min-h-11 grid grid-cols-2">
-          <TabsTrigger value="mine" className="rounded-lg py-1.5 font-semibold text-[13px] flex items-center justify-center gap-1.5">
+          <TabsTrigger value="mine" className="rounded-lg py-1.5 font-semibold text-sm flex items-center justify-center gap-1.5">
             <span>Của tôi</span>
           </TabsTrigger>
-          <TabsTrigger value={isBranchScopeViewer ? 'branch' : 'dept'} className="rounded-lg py-1.5 font-semibold text-[13px] flex items-center justify-center gap-1.5">
+          <TabsTrigger value={isBranchScopeViewer ? 'branch' : 'dept'} className="rounded-lg py-1.5 font-semibold text-sm flex items-center justify-center gap-1.5">
             {isBranchScopeViewer ? <Globe className="icon-sm" /> : <Building2 className="icon-sm" />}
             <span>{isBranchScopeViewer ? 'Chi nhánh' : 'Phòng tôi'}</span>
           </TabsTrigger>
@@ -249,7 +249,7 @@ function TasksContent() {
 export default function TasksPage() {
   return (
     <Suspense fallback={
-      <div className="page-container space-y-6 md:space-y-8 animate-fade-in-up">
+      <div className="page-container space-y-6 md:section-stack motion-safe:animate-fade-in-up">
         <PageHeader
           title="Công việc"
           description="Quản trị & theo dõi tiến độ"

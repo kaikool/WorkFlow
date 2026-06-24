@@ -8,9 +8,9 @@ import {
 
 export const typeLabels: any = {
   meeting: { label: "Họp nội bộ", color: "bg-slate-50 text-slate-700 border-slate-200", icon: DoorOpen },
-  trip: { label: "Đi công tác", color: "bg-amber-50 text-amber-700 border-amber-100", icon: Car },
+  trip: { label: "Đi công tác", color: "status-warning-bg", icon: Car },
   event: { label: "Sự kiện chi nhánh", color: "bg-slate-50 text-slate-700 border-slate-200", icon: CalendarIcon },
-  leave: { label: "Nghỉ phép", color: "bg-slate-100 text-slate-600 border-slate-200", icon: Palmtree },
+  leave: { label: "Nghỉ phép", color: "status-neutral-bg border-slate-200", icon: Palmtree },
 };
 
 export const statusLabels: any = {

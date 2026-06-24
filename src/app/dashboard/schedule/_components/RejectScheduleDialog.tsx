@@ -48,9 +48,9 @@ export default function RejectScheduleDialog({ isOpen, setIsOpen, scheduleTitle,
         <DialogHeader>
           <div className="flex items-center gap-2">
             <XCircle className="icon-md text-red-600" />
-            <DialogTitle className="text-[17px] font-semibold text-slate-900">Từ chối lịch trình</DialogTitle>
+            <DialogTitle className="text-lg font-semibold text-slate-900">Từ chối lịch trình</DialogTitle>
           </div>
-          <DialogDescription className="text-sm font-medium text-slate-500 leading-relaxed">
+          <DialogDescription className="text-label leading-relaxed">
             {description || (scheduleTitle
               ? <>Nhập lý do từ chối lịch <span className="font-semibold text-slate-700">&ldquo;{scheduleTitle}&rdquo;</span> để người tạo có thể chỉnh sửa và gửi lại.</>
               : 'Nhập lý do từ chối để người tạo có thể chỉnh sửa và gửi lại.')}
@@ -68,7 +68,7 @@ export default function RejectScheduleDialog({ isOpen, setIsOpen, scheduleTitle,
           />
           <p className={cn(
             "text-xs font-medium",
-            isValid ? "text-slate-400" : "text-amber-600"
+            isValid ? "text-slate-500" : "text-amber-600"
           )}>
             {isValid
               ? `${trimmedLen} ký tự`

@@ -52,7 +52,7 @@ export default function AllDocumentsTab({ documents, onSelectDoc }: Props) {
         <Tabs value={statusFilter} onValueChange={(v) => setStatusFilter(v as "all" | DocumentStatus)}>
           <TabsList className="grid grid-cols-5 bg-white shadow-sm ring-1 ring-slate-100 min-h-10">
             {STATUS_FILTERS.map((f) => (
-              <TabsTrigger key={f.value} value={f.value} className="rounded-md text-[12px] font-medium px-3">
+              <TabsTrigger key={f.value} value={f.value} className="rounded-md text-xs font-medium px-3">
                 {f.label}
               </TabsTrigger>
             ))}

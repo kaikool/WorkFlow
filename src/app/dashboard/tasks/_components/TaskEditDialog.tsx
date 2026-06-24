@@ -167,7 +167,7 @@ export function TaskEditDialog({ task, onClose, onChanged }: Props) {
                         variant="outline"
                         className={cn(
                           'w-full min-h-11 rounded-xl bg-slate-50 border-none font-medium justify-start px-4 shadow-none hover:bg-slate-100 text-slate-900',
-                          !dueDate && 'text-slate-400',
+                          !dueDate && 'text-slate-500',
                         )}
                       >
                         <Calendar className="icon-sm mr-2 text-slate-500" />
@@ -221,7 +221,7 @@ export function TaskEditDialog({ task, onClose, onChanged }: Props) {
                       <Flag className={cn(
                         'icon-sm',
                         priority === 'high' ? 'text-red-500' :
-                          priority === 'low' ? 'text-slate-400' : 'text-slate-500',
+                          priority === 'low' ? 'text-slate-500' : 'text-slate-500',
                       )} />
                       <SelectValue />
                     </div>

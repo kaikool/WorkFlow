@@ -210,7 +210,7 @@ export function BatchTaskDetailDialog({ isOpen, setIsOpen, batchId, children, on
                       >
                         <Building2 className={cn(
                           'icon-md shrink-0',
-                          child.is_overdue ? 'text-red-500' : 'text-slate-400',
+                          child.is_overdue ? 'text-red-500' : 'text-slate-500',
                         )} />
 
                         <div className="min-w-0 flex-1">
@@ -254,21 +254,21 @@ export function BatchTaskDetailDialog({ isOpen, setIsOpen, batchId, children, on
           <div className="flex items-center gap-1.5">
             {canEdit && (
               <Button variant="ghost" size="icon" title="Sửa thông tin lô" onClick={() => setOpenEdit(true)} disabled={deleting} className="h-10 w-10 rounded-xl text-slate-500 bg-slate-50 hover:bg-slate-100 hover:text-slate-900 border border-slate-100">
-                <Pencil className="h-4 w-4" />
+                <Pencil className="icon-md" />
               </Button>
             )}
             {canForceComplete && hasPending && (
               <Button variant="ghost" size="icon" title="Đã nhận lô" onClick={runForceCompleteBatch} disabled={deleting} className="h-10 w-10 rounded-xl text-emerald-600 bg-emerald-50 hover:bg-emerald-100 border border-emerald-100">
-                <CheckCircle2 className="h-4 w-4" />
+                <CheckCircle2 className="icon-md" />
               </Button>
             )}
             {canDelete && (
               <Button variant="ghost" size="icon" title="Xoá toàn bộ lô" onClick={runDelete} disabled={deleting} className="h-10 w-10 rounded-xl text-red-600 bg-red-50 hover:bg-red-100 border border-red-100">
-                <Trash2 className="h-4 w-4" />
+                <Trash2 className="icon-md" />
               </Button>
             )}
           </div>
-          <Button variant="ghost" className="min-h-11 px-4 rounded-xl font-medium text-slate-600 text-[13px] bg-slate-100 hover:bg-slate-200 active:scale-95 transition-all whitespace-nowrap" onClick={() => setIsOpen(false)}>Đóng cửa sổ</Button>
+          <Button variant="ghost" className="min-h-11 px-4 rounded-xl font-medium text-slate-600 text-sm bg-slate-100 hover:bg-slate-200 active:scale-95 transition-all whitespace-nowrap" onClick={() => setIsOpen(false)}>Đóng cửa sổ</Button>
         </div>
         {openEdit && representative && (
           <TaskEditDialog

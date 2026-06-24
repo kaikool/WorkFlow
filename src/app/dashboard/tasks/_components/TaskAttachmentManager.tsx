@@ -103,7 +103,7 @@ export function TaskAttachmentManager({ taskId, canUpload = true, autoFetch = tr
             </>
           ) : (
             <>
-              <Upload className="icon-md text-slate-400" />
+              <Upload className="icon-md text-slate-500" />
               <span className="text-subtitle font-medium text-slate-600">
                 Đính kèm file (PDF, Word, Excel, ảnh — tối đa 20MB)
               </span>
@@ -121,7 +121,7 @@ export function TaskAttachmentManager({ taskId, canUpload = true, autoFetch = tr
                 key={att.id}
                 className="flex items-center gap-3 h-12 px-3 bg-white border border-slate-100 rounded-xl"
               >
-                <Icon className="icon-md text-slate-400 shrink-0" />
+                <Icon className="icon-md text-slate-500 shrink-0" />
                 <button
                   type="button"
                   onClick={() => handleDownload(att.storage_path, att.filename)}

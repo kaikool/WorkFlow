@@ -96,7 +96,7 @@ export default React.memo(function ScheduleCard({ item, profile, onSelect, onSta
           {/* Left color bar — theo status, luôn cố định width */}
           <div className={cn("w-2 shrink-0", barColor)} />
 
-          <div className="flex-1 min-w-0 p-4 space-y-3">
+          <div className="flex-1 min-w-0 p-4 item-stack">
             {/* Hàng 1: Badge loại + Badge đặc biệt */}
             <div className="flex items-start justify-between">
               <div className="space-y-1.5 flex-1 min-w-0 pr-2">
@@ -123,35 +123,35 @@ export default React.memo(function ScheduleCard({ item, profile, onSelect, onSta
                     {status.label}
                   </Badge>
                 </div>
-                <h3 className="text-[14px] font-semibold text-slate-900 leading-snug pt-1.5 pb-0.5">{displayTitle}</h3>
+                <h3 className="text-sm font-semibold text-slate-900 leading-snug pt-1.5 pb-0.5">{displayTitle}</h3>
               </div>
             </div>
 
             {/* Hàng 2: Thành phần — BGĐ + số lượng người khác */}
             {participantLabel && (
-              <div className="flex items-center gap-1.5 text-[12px] font-medium text-slate-600 truncate">
-                <Users className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+              <div className="flex items-center gap-1.5 text-xs font-medium text-slate-600 truncate">
+                <Users className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                 <span className="truncate">{participantLabel}</span>
               </div>
             )}
 
             {/* Hàng 3: Địa điểm / Phòng họp */}
             {(item.location || item.room) && (
-              <div className="flex items-center gap-1.5 text-[12px] font-medium text-slate-600 truncate">
-                <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+              <div className="flex items-center gap-1.5 text-xs font-medium text-slate-600 truncate">
+                <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                 <span className="truncate">{item.room?.name || item.location}</span>
               </div>
             )}
 
             {/* Hàng 4: Thời gian — luôn hiển thị đủ ngày và giờ */}
-            <div className="flex items-center gap-1.5 text-[12px] font-medium text-slate-700 tabular-nums">
+            <div className="flex items-center gap-1.5 text-xs font-medium text-slate-700 tabular-nums">
               <Clock className="w-3.5 h-3.5 text-slate-500 shrink-0" />
               <span className="truncate">{timeLabel}</span>
             </div>
 
             {/* Hàng 5: Lái xe — chỉ hiển thị khi có lái xe */}
             {driverName && (
-              <div className="flex items-center gap-1.5 text-[12px] font-medium text-slate-600 truncate">
+              <div className="flex items-center gap-1.5 text-xs font-medium text-slate-600 truncate">
                 <UserCheck className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                 <span className="truncate">
                   {driverPhone
@@ -169,22 +169,22 @@ export default React.memo(function ScheduleCard({ item, profile, onSelect, onSta
                     <>
                       <Button size="sm" variant="outline"
                         onClick={(e) => { e.stopPropagation(); onSelect(item); }}
-                        className="flex-1 h-6 rounded-lg font-semibold text-[10px] border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 hover:text-amber-800 px-2"
+                        className="flex-1 h-6 rounded-lg font-semibold text-xs border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 hover:text-amber-800 px-2"
                       >Mở để gán xe</Button>
                       <Button size="sm" variant="outline"
                         onClick={(e) => { e.stopPropagation(); setRejectVehicleOpen(true); }}
-                        className="flex-1 h-6 rounded-lg font-semibold text-[10px] border-red-200 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 px-2"
+                        className="flex-1 h-6 rounded-lg font-semibold text-xs border-red-200 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 px-2"
                       >Từ chối</Button>
                     </>
                   ) : (
                     <>
                       <Button size="sm"
                         onClick={(e) => { e.stopPropagation(); onStatusUpdate(item.id, 'approved'); }}
-                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 h-6 rounded-lg font-semibold text-[10px] shadow-sm px-2"
+                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 h-6 rounded-lg font-semibold text-xs shadow-sm px-2"
                       >Xác nhận</Button>
                       <Button size="sm" variant="outline"
                         onClick={(e) => { e.stopPropagation(); setRejectOpen(true); }}
-                        className="flex-1 h-6 rounded-lg font-semibold text-[10px] border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 px-2"
+                        className="flex-1 h-6 rounded-lg font-semibold text-xs border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 px-2"
                       >Từ chối</Button>
                     </>
                   )}

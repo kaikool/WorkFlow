@@ -136,7 +136,7 @@ export default function AvatarCropDialog({ open, onOpenChange, file, onCropped }
                 <span className="text-meta tabular-nums">{zoom.toFixed(1)}×</span>
               </div>
               <div className="flex items-center gap-3">
-                <ZoomOut className="icon-sm text-slate-400 shrink-0" />
+                <ZoomOut className="icon-sm text-slate-500 shrink-0" />
                 <Slider
                   value={[zoom]}
                   min={1}
@@ -145,7 +145,7 @@ export default function AvatarCropDialog({ open, onOpenChange, file, onCropped }
                   onValueChange={(v) => setZoom(v[0])}
                   className="flex-1"
                 />
-                <ZoomIn className="icon-sm text-slate-400 shrink-0" />
+                <ZoomIn className="icon-sm text-slate-500 shrink-0" />
               </div>
             </div>
 

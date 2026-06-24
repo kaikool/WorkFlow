@@ -48,12 +48,12 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="page-container space-y-6 md:space-y-8 animate-fade-in-up">
+    <div className="page-container space-y-6 md:section-stack motion-safe:animate-fade-in-up">
       <PageHeader title="Cài đặt" description="Thông báo và bảo mật tài khoản" />
 
       <section className="premium-card item-stack">
         <h4 className="heading-card flex items-center gap-2">
-          <Bell className="icon-sm text-slate-400" /> Thông báo
+          <Bell className="icon-sm text-slate-500" /> Thông báo
         </h4>
         <div className="flex items-center justify-between min-h-11">
           <div className="min-w-0 item-stack !gap-1">
@@ -66,7 +66,7 @@ export default function SettingsPage() {
 
       <section className="premium-card item-stack">
         <h4 className="heading-card flex items-center gap-2">
-          <Lock className="icon-sm text-slate-400" /> Bảo mật
+          <Lock className="icon-sm text-slate-500" /> Bảo mật
         </h4>
         <button
           type="button"
@@ -77,7 +77,7 @@ export default function SettingsPage() {
             <p className="text-label !text-slate-900 font-semibold flex items-center gap-2">
               Đổi mật khẩu
               {mustChange && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 text-[11px] font-bold border border-amber-200">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 text-xs font-semibold border border-amber-200">
                   <ShieldAlert className="h-3 w-3" /> Cần đổi
                 </span>
               )}

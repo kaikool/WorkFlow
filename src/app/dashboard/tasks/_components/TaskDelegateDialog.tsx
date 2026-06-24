@@ -82,10 +82,10 @@ export function TaskDelegateDialog({ task, currentAssigneeIds, onClose, onChange
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="app-dialog-sheet app-dialog-sheet--lg shadow-2xl">
         <DialogHeader className="app-dialog-sheet-header">
-          <DialogTitle className="text-[17px] font-semibold text-slate-900">
+          <DialogTitle className="text-lg font-semibold text-slate-900">
             Phân công công việc
           </DialogTitle>
-          <DialogDescription className="text-[13px] text-slate-500 font-medium line-clamp-1">
+          <DialogDescription className="text-subtitle line-clamp-1">
             {task.title}
           </DialogDescription>
         </DialogHeader>
@@ -94,7 +94,7 @@ export function TaskDelegateDialog({ task, currentAssigneeIds, onClose, onChange
           <div className="px-[var(--app-page-x)] py-4 group-stack">
             {fetching ? (
               <div className="flex items-center justify-center py-6">
-                <Loader2 className="icon-md animate-spin text-slate-400" />
+                <Loader2 className="icon-md animate-spin text-slate-500" />
               </div>
             ) : (
               <PeoplePicker
@@ -107,7 +107,7 @@ export function TaskDelegateDialog({ task, currentAssigneeIds, onClose, onChange
               />
             )}
 
-            <p className="text-[12px] text-slate-400 italic">
+            <p className="text-meta italic">
               Phân công lại sẽ thay thế toàn bộ danh sách hiện tại.
             </p>
           </div>
@@ -118,7 +118,7 @@ export function TaskDelegateDialog({ task, currentAssigneeIds, onClose, onChange
             variant="ghost"
             onClick={onClose}
             disabled={loading}
-            className="min-h-11 px-4 rounded-xl font-medium text-slate-500 text-[13px]"
+            className="min-h-11 px-4 rounded-xl font-medium text-slate-500 text-sm"
           >
             Huỷ
           </Button>

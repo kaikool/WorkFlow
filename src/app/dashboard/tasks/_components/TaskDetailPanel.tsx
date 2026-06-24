@@ -300,7 +300,7 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, onClose, show
               </span>
             </p>
             {pendingExtension.reason && (
-              <p className="text-[13px] text-slate-600 mt-1 italic">
+              <p className="text-sm text-slate-600 mt-1 italic">
                 Lý do: "{pendingExtension.reason}"
               </p>
             )}
@@ -309,7 +309,7 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, onClose, show
                 <Button
                   size="sm"
                   onClick={() => setOpenApproveExtension(pendingExtension)}
-                  className="min-h-9 rounded-xl text-[13px] font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-none px-4"
+                  className="min-h-9 rounded-xl text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-none px-4"
                 >
                   Xử lý yêu cầu
                 </Button>
@@ -339,7 +339,7 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, onClose, show
         )}
 
         <MetaRow
-          icon={<Calendar className={cn('icon-md', dueOverdue ? 'text-red-500' : 'text-slate-400')} />}
+          icon={<Calendar className={cn('icon-md', dueOverdue ? 'text-red-500' : 'text-slate-500')} />}
           label="Hạn hoàn thành"
           value={
             <span className={cn('heading-card', dueOverdue && 'text-red-700')}>
@@ -613,16 +613,16 @@ export function TaskDetailPanel({ task, currentProfile, onChanged, onClose, show
       <div className="flex items-center gap-1.5">
         {canEdit && (
           <Button variant="ghost" size="icon" title="Sửa công việc" onClick={() => setOpenEdit(true)} disabled={busy !== null} className="h-10 w-10 rounded-xl text-slate-500 bg-slate-50 hover:bg-slate-100 hover:text-slate-900 border border-slate-100">
-            <Pencil className="h-4 w-4" />
+            <Pencil className="icon-md" />
           </Button>
         )}
         {canDelete && (
           <Button variant="ghost" size="icon" title="Xóa công việc" onClick={runDelete} disabled={busy !== null} className="h-10 w-10 rounded-xl text-red-600 bg-red-50 hover:bg-red-100 border border-red-100">
-            {busy === 'delete' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+            {busy === 'delete' ? <Loader2 className="icon-md animate-spin" /> : <Trash2 className="icon-md" />}
           </Button>
         )}
       </div>
-      <Button variant="ghost" className="min-h-11 px-4 rounded-xl font-medium text-slate-600 text-[13px] bg-slate-100 hover:bg-slate-200 active:scale-95 transition-all whitespace-nowrap" onClick={onClose}>Đóng cửa sổ</Button>
+      <Button variant="ghost" className="min-h-11 px-4 rounded-xl font-medium text-slate-600 text-sm bg-slate-100 hover:bg-slate-200 active:scale-95 transition-all whitespace-nowrap" onClick={onClose}>Đóng cửa sổ</Button>
     </div>
     </>
   );
@@ -672,7 +672,7 @@ function PrimaryAction({ label, icon, onClick, disabled, tone = 'primary', class
       )}
     >
       {icon}
-      <span className="text-[14px]">{label}</span>
+      <span className="text-sm">{label}</span>
     </button>
   );
 }
@@ -691,7 +691,7 @@ function SecondaryAction({ label, icon, onClick, disabled, className }: ActionPr
       )}
     >
       {icon}
-      <span className="text-[14px]">{label}</span>
+      <span className="text-sm">{label}</span>
     </button>
   );
 }
@@ -710,7 +710,7 @@ function DangerAction({ label, icon, onClick, disabled, className }: ActionProps
       )}
     >
       {icon}
-      <span className="text-[14px]">{label}</span>
+      <span className="text-sm">{label}</span>
     </button>
   );
 }

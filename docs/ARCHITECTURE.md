@@ -757,7 +757,6 @@ const showAllTab = profile?.role === "admin" || profile?.role === "director";
 - `canViewSensitiveProfileFields(viewer, target)` — birthday/ad_account/employee_code/gender (self + admin + hr_officer + director)
 - `canEditProfile(viewer, target)` — sửa hồ sơ (self field hạn chế; admin + hr_officer full)
 - `canRecognize(profile)` — gửi ghi nhận đồng nghiệp (mọi role active trừ `driver`)
-- `canViewPeopleAnalyticsWidget(profile)` — widget "Nhịp đập nhân sự" trên dashboard (Coordinator + hr_officer)
 - `canApproveLeave(profile, leave?)` — duyệt đơn nghỉ
 
 **Documents (luân chuyển hồ sơ vật lý):**

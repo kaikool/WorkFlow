@@ -44,7 +44,6 @@ import { NotificationsDropdown } from "@/components/notifications-dropdown";
 import { canManageResourceCatalog } from "@/lib/permissions";
 import { ConfirmDialogProvider } from "@/components/ui/confirm-dialog";
 import { BatchScopeDialogProvider } from "@/components/ui/batch-scope-dialog";
-import AnniversaryDialog from "./AnniversaryDialog";
 import DesktopSidebar from "./DesktopSidebar";
 import MobileBottomNav from "./MobileBottomNav";
 import MobileCreateFab from "./MobileCreateFab";
@@ -101,7 +100,7 @@ function TopNavActionsContent() {
       {/* Desktop View */}
       <div className="hidden lg:flex items-center gap-3 w-full">
         <div className="relative flex-1 group transition-all duration-300">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors" />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 icon-md text-slate-500 group-focus-within:text-primary transition-colors" />
           <Input
             placeholder={config.placeholder}
             className="pl-10"
@@ -185,7 +184,7 @@ function TopNavActionsContent() {
       {isMobileSearchOpen && (
         <div className="fixed inset-x-0 top-0 h-[64px] bg-white/90 backdrop-blur-2xl z-[60] flex items-center px-3 gap-2 border-b border-slate-100 animate-in fade-in slide-in-from-top-2">
           <div className="relative flex-1">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 icon-md text-slate-500" />
             <Input 
               autoFocus 
               placeholder={config.placeholder}
@@ -246,9 +245,8 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
   // Fallback về prop server-fetched nếu context chưa hydrate.
   const avatarUrl = currentProfile?.avatar_url ?? profile?.avatar_url;
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
- const [mounted, setMounted] = useState(false);
- const [isAnniversaryDialogOpen, setIsAnniversaryDialogOpen] = useState(false);
- const supabase = createClient();
+  const [mounted, setMounted] = useState(false);
+  const supabase = createClient();
   const [isScrolledDown, setIsScrolledDown] = useState(false);
   const [lastScrollY, setLastScrollY] = useState(0);
 
@@ -266,36 +264,12 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, [lastScrollY]);
- const branchJoinDate = profile?.branch_join_date ? new Date(`${profile.branch_join_date}T00:00:00`) : null;
- const anniversaryYears = branchJoinDate ? Math.max(0, new Date().getFullYear() - branchJoinDate.getFullYear()) : 0;
- const anniversaryMessages = [
-   "Cảm ơn bạn đã bền bỉ đồng hành, góp sức bằng sự tận tâm và trách nhiệm trong từng ngày làm việc.",
-   "Chi nhánh trân trọng những nỗ lực thầm lặng, tinh thần sẻ chia và dấu ấn chuyên môn mà bạn đã mang lại.",
-   "Mỗi chặng đường đều có giá trị riêng. Cảm ơn bạn đã cùng tập thể xây dựng một môi trường làm việc tử tế và hiệu quả.",
-   "Chúc bạn luôn giữ được nhiệt huyết, niềm vui trong công việc và tiếp tục có thêm nhiều dấu mốc đáng nhớ tại Chi nhánh."
- ];
- const anniversaryMessage = anniversaryMessages[anniversaryYears % anniversaryMessages.length];
 
- React.useEffect(() => {
- setMounted(true);
- }, []);
+React.useEffect(() => {
+  setMounted(true);
+}, []);
 
- React.useEffect(() => {
-   if (!profile?.id || !profile?.branch_join_date) return;
-
-   const today = new Date();
-   const joined = new Date(`${profile.branch_join_date}T00:00:00`);
-   const isSameDay = today.getDate() === joined.getDate() && today.getMonth() === joined.getMonth();
-   if (!isSameDay) return;
-
-   const storageKey = `branch-anniversary-${profile.id}-${today.getFullYear()}`;
-   if (window.localStorage.getItem(storageKey)) return;
-
-   setIsAnniversaryDialogOpen(true);
-   window.localStorage.setItem(storageKey, "shown");
- }, [profile?.id, profile?.branch_join_date]);
-
- const handleLogout = async () => {
+const handleLogout = async () => {
     setIsLogoutDialogOpen(false);
     flushCache();
     await supabase.auth.signOut();
@@ -317,13 +291,6 @@ export function DashboardLayout({ children, profile }: DashboardLayoutProps) {
   <div className="flex min-h-screen bg-background">
  <ConfirmDialogProvider />
  <BatchScopeDialogProvider />
- <AnniversaryDialog
-   isOpen={isAnniversaryDialogOpen}
-   setIsOpen={setIsAnniversaryDialogOpen}
-   fullName={profile?.full_name}
-   anniversaryYears={anniversaryYears}
-   anniversaryMessage={anniversaryMessage}
- />
 
  {/* Logout Confirmation Dialog (Shared) */}
  <AlertDialog open={isLogoutDialogOpen} onOpenChange={setIsLogoutDialogOpen}>

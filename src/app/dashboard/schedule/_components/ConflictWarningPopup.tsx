@@ -30,7 +30,7 @@ export default function ConflictWarningPopup({
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
       <DialogContent className="app-dialog-sheet app-dialog-sheet--md shadow-2xl">
         <DialogHeader className="app-dialog-sheet-header">
-          <DialogTitle className="text-[17px] font-semibold flex items-center gap-2 text-slate-900">
+          <DialogTitle className="text-lg font-semibold flex items-center gap-2 text-slate-900">
             {hasDeputyWarning ? (
               <AlertTriangle className="w-5 h-5 text-amber-600" />
             ) : (
@@ -41,7 +41,7 @@ export default function ConflictWarningPopup({
         </DialogHeader>
 
         <div className="app-dialog-sheet-body">
-          <div className="px-[var(--app-page-x)] py-3 space-y-3">
+          <div className="px-[var(--app-page-x)] py-3 item-stack">
             <p className="text-sm text-slate-600">
               {hasDeputyWarning
                 ? 'Lịch trình có thể vi phạm quy định về số lượng Phó giám đốc đi công tác:'
@@ -54,7 +54,7 @@ export default function ConflictWarningPopup({
                 return (
                   <div
                     key={i}
-                    className={`flex items-start gap-2 text-[13px] ${
+                    className={`flex items-start gap-2 text-sm ${
                       isDeputyWarning ? 'text-amber-700' : 'text-red-700'
                     }`}
                   >
@@ -67,7 +67,7 @@ export default function ConflictWarningPopup({
               })}
             </div>
 
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-slate-500">
               Bạn có muốn tiếp tục đăng ký lịch này không?
             </p>
           </div>

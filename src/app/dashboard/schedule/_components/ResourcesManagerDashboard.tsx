@@ -48,16 +48,16 @@ export default function ResourcesManagerDashboard({ schedules, vehicles, rooms, 
   const fmtDateTime = (d: Date) => format(d, 'dd/MM HH:mm');
 
   return (
-    <div className="space-y-8 animate-fade-in-up">
+    <div className="section-stack motion-safe:animate-fade-in-up">
       {/* Giám sát tài nguyên */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Đội xe */}
         <div className="space-y-4">
-          <h3 className="text-[12px] font-semibold text-slate-500 flex items-center gap-2">
+          <h3 className="text-xs font-semibold text-slate-500 flex items-center gap-2">
             <Car className="w-3.5 h-3.5 text-slate-900 shrink-0" />
             <span>Giám sát Đội xe</span>
           </h3>
-          <div className="space-y-3">
+          <div className="item-stack">
             {vehicles.map(v => {
               const upcomingTrips = getUpcomingTrips(v.id);
               const currentTrip = upcomingTrips.find(s => new Date(s.start_time) <= now);
@@ -95,7 +95,7 @@ export default function ResourcesManagerDashboard({ schedules, vehicles, rooms, 
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <Badge className={cn(
-                        "rounded-full font-semibold text-[10px] px-2 py-1 whitespace-nowrap",
+                        "rounded-full font-semibold text-xs px-2 py-1 whitespace-nowrap",
                         isInProgress ? "bg-slate-900 text-white" :
                         isBusy ? "bg-red-600 text-white" :
                         nextTrip ? "bg-amber-50 text-amber-700 border border-amber-100" :
@@ -105,7 +105,7 @@ export default function ResourcesManagerDashboard({ schedules, vehicles, rooms, 
                       </Badge>
                       {clickTarget && (
                         <ChevronRight className={cn(
-                          "w-4 h-4 text-slate-400 transition-transform duration-200",
+                          "w-4 h-4 text-slate-500 transition-transform duration-200",
                           isExpanded && "rotate-90"
                         )} />
                       )}
@@ -122,7 +122,7 @@ export default function ResourcesManagerDashboard({ schedules, vehicles, rooms, 
                         <div className="flex items-center gap-2 min-w-0">
                           <Avatar className="h-5 w-5 shrink-0">
                             <AvatarImage src={currentTrip.creator?.avatar_url} />
-                            <AvatarFallback className="text-xs font-bold">{currentTrip.creator?.full_name?.[0]}</AvatarFallback>
+                            <AvatarFallback className="text-xs font-semibold">{currentTrip.creator?.full_name?.[0]}</AvatarFallback>
                           </Avatar>
                           <span className="text-xs font-semibold text-slate-900 truncate">{currentTrip.title}</span>
                         </div>
@@ -139,7 +139,7 @@ export default function ResourcesManagerDashboard({ schedules, vehicles, rooms, 
                   {/* Next trip teaser (when idle) */}
                   {!isBusy && !isInProgress && nextTrip && !isExpanded && (
                     <div className="px-5 sm:px-6 pb-3 sm:pb-4 -mt-1">
-                      <div className="flex items-center gap-2 text-xs text-slate-400">
+                      <div className="flex items-center gap-2 text-xs text-slate-500">
                         <ArrowRight className="w-3 h-3 shrink-0" />
                         <span className="truncate">Kế tiếp: <span className="font-semibold text-slate-600">{nextTrip.title}</span> lúc <span className="font-semibold text-slate-700 tabular-nums">{fmtDateTime(new Date(nextTrip.start_time))}</span></span>
                       </div>
@@ -148,10 +148,10 @@ export default function ResourcesManagerDashboard({ schedules, vehicles, rooms, 
 
                   {/* Expanded: all upcoming trips */}
                   {isExpanded && clickTarget && (
-                    <div className="border-t border-slate-100 px-5 sm:px-6 py-4 sm:py-5 space-y-3 bg-slate-50/50">
+                    <div className="border-t border-slate-100 px-5 sm:px-6 py-4 sm:py-5 item-stack bg-slate-50/50">
                       <p className="text-xs font-semibold text-slate-600">Lịch trình sắp tới</p>
                       {upcomingTrips.length === 0 ? (
-                        <p className="text-xs text-slate-400">Không có lịch trình nào.</p>
+                        <p className="text-xs text-slate-500">Không có lịch trình nào.</p>
                       ) : (
                         upcomingTrips.slice(0, 5).map((trip, idx) => {
                           const isNow = new Date(trip.start_time) <= now;
@@ -197,11 +197,11 @@ export default function ResourcesManagerDashboard({ schedules, vehicles, rooms, 
 
         {/* Phòng họp */}
         <div className="space-y-4">
-          <h3 className="text-[12px] font-semibold text-slate-500 flex items-center gap-2">
+          <h3 className="text-xs font-semibold text-slate-500 flex items-center gap-2">
             <DoorOpen className="w-3.5 h-3.5 text-slate-900 shrink-0" />
             <span>Tình trạng Phòng họp</span>
           </h3>
-          <div className="space-y-3">
+          <div className="item-stack">
             {rooms.map(r => {
               const upcomingMeetings = getUpcomingMeetings(r.id);
               const currentMeeting = upcomingMeetings.find(s => new Date(s.start_time) <= now);
@@ -238,7 +238,7 @@ export default function ResourcesManagerDashboard({ schedules, vehicles, rooms, 
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <Badge className={cn(
-                        "rounded-full font-semibold text-[10px] px-2 py-1 whitespace-nowrap",
+                        "rounded-full font-semibold text-xs px-2 py-1 whitespace-nowrap",
                         isBusy ? "bg-slate-900 text-white" :
                         nextMeeting ? "bg-amber-50 text-amber-700 border border-amber-100" :
                         "bg-slate-100 text-slate-700"
@@ -247,7 +247,7 @@ export default function ResourcesManagerDashboard({ schedules, vehicles, rooms, 
                       </Badge>
                       {clickTarget && (
                         <ChevronRight className={cn(
-                          "w-4 h-4 text-slate-400 transition-transform duration-200",
+                          "w-4 h-4 text-slate-500 transition-transform duration-200",
                           isExpanded && "rotate-90"
                         )} />
                       )}
@@ -261,7 +261,7 @@ export default function ResourcesManagerDashboard({ schedules, vehicles, rooms, 
                         <div className="flex items-center gap-2 min-w-0">
                           <Avatar className="h-5 w-5 shrink-0">
                             <AvatarImage src={currentMeeting.creator?.avatar_url} />
-                            <AvatarFallback className="text-xs font-bold">{currentMeeting.creator?.full_name?.[0]}</AvatarFallback>
+                            <AvatarFallback className="text-xs font-semibold">{currentMeeting.creator?.full_name?.[0]}</AvatarFallback>
                           </Avatar>
                           <span className="text-xs font-semibold text-slate-900 truncate">{currentMeeting.title}</span>
                         </div>
@@ -275,7 +275,7 @@ export default function ResourcesManagerDashboard({ schedules, vehicles, rooms, 
                   {/* Next meeting teaser (when idle) */}
                   {!isBusy && nextMeeting && !isExpanded && (
                     <div className="px-5 sm:px-6 pb-3 sm:pb-4 -mt-1">
-                      <div className="flex items-center gap-2 text-xs text-slate-400">
+                      <div className="flex items-center gap-2 text-xs text-slate-500">
                         <ArrowRight className="w-3 h-3 shrink-0" />
                         <span className="truncate">Kế tiếp: <span className="font-semibold text-slate-600">{nextMeeting.title}</span> lúc <span className="font-semibold text-slate-700 tabular-nums">{fmtDateTime(new Date(nextMeeting.start_time))}</span></span>
                       </div>
@@ -284,10 +284,10 @@ export default function ResourcesManagerDashboard({ schedules, vehicles, rooms, 
 
                   {/* Expanded: upcoming meetings list */}
                   {isExpanded && clickTarget && (
-                    <div className="border-t border-slate-100 px-5 sm:px-6 py-4 sm:py-5 space-y-3 bg-slate-50/50">
+                    <div className="border-t border-slate-100 px-5 sm:px-6 py-4 sm:py-5 item-stack bg-slate-50/50">
                       <p className="text-xs font-semibold text-slate-600">Lịch họp sắp tới</p>
                       {upcomingMeetings.length === 0 ? (
-                        <p className="text-xs text-slate-400">Không có lịch họp nào.</p>
+                        <p className="text-xs text-slate-500">Không có lịch họp nào.</p>
                       ) : (
                         upcomingMeetings.slice(0, 5).map((meeting) => {
                           const isNow = new Date(meeting.start_time) <= now;

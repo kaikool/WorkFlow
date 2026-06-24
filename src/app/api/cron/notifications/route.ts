@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-// Vercel cron job to check deadlines and birthdays
+// Vercel cron job — kiểm tra công việc quá hạn, sắp đến hạn, auto-complete lịch.
 // Must be configured in vercel.json: { "crons": [{ "path": "/api/cron/notifications", "schedule": "0 8 * * *" }] }
 
 export async function GET(request: Request) {

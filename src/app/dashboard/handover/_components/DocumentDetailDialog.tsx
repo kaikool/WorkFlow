@@ -149,18 +149,18 @@ export default function DocumentDetailDialog({
         <DialogContent hideCloseButton className="app-dialog-sheet app-dialog-sheet--xl shadow-2xl flex flex-col p-0">
           <DialogHeader className="app-dialog-sheet-header">
             <div className="flex items-center gap-2 flex-wrap">
-              <p className="font-mono text-[12px] font-semibold text-slate-500 tabular-nums">
+              <p className="font-mono text-xs font-semibold text-slate-500 tabular-nums">
                 {doc?.short_code || "—"}
               </p>
               {meta && StatusIcon && (
-                <Badge className={cn("font-semibold text-[11px]", meta.badgeClass)}>
+                <Badge className={cn("font-semibold text-xs", meta.badgeClass)}>
                   <StatusIcon className="w-3 h-3 mr-1" />
                   {meta.label}
                 </Badge>
               )}
               {doc && <SLABadge document={doc} />}
             </div>
-            <DialogTitle className="text-[18px] font-bold text-slate-900 leading-tight">
+            <DialogTitle className="text-lg font-bold text-slate-900 leading-tight">
               {doc?.title || "Đang tải..."}
             </DialogTitle>
             <DialogDescription className="sr-only">
@@ -169,9 +169,9 @@ export default function DocumentDetailDialog({
           </DialogHeader>
 
           <ScrollArea className="app-dialog-sheet-body">
-            <div className="space-y-6 px-[var(--app-page-x)] py-4">
+            <div className="group-stack px-[var(--app-page-x)] py-4">
               {loading && !doc && (
-                <p className="text-[13px] text-slate-400 font-medium">Đang tải dữ liệu...</p>
+                <p className="text-sm text-slate-500 font-medium">Đang tải dữ liệu...</p>
               )}
 
               {doc && (
@@ -184,8 +184,8 @@ export default function DocumentDetailDialog({
                           <User className="w-4 h-4 text-slate-500" />
                         </div>
                         <div className="min-w-0">
-                          <p className="text-[11px] text-slate-400 font-medium">Khách hàng</p>
-                          <p className="text-[14px] font-semibold text-slate-700 truncate">
+                          <p className="text-meta">Khách hàng</p>
+                          <p className="text-sm font-semibold text-slate-700 truncate">
                             {doc.customer_name}
                           </p>
                         </div>
@@ -197,8 +197,8 @@ export default function DocumentDetailDialog({
                           <FileText className="w-4 h-4 text-slate-500" />
                         </div>
                         <div className="min-w-0">
-                          <p className="text-[11px] text-slate-400 font-medium">Nhóm hồ sơ</p>
-                          <p className="text-[14px] font-semibold text-slate-700 truncate">
+                          <p className="text-meta">Nhóm hồ sơ</p>
+                          <p className="text-sm font-semibold text-slate-700 truncate">
                             {doc.category.name} · SLA {doc.category.sla_hours}h
                           </p>
                         </div>
@@ -223,10 +223,10 @@ export default function DocumentDetailDialog({
                             <Building2 className="w-4 h-4 text-slate-500" />
                           </div>
                           <div className="min-w-0">
-                            <p className="text-[11px] text-slate-400 font-medium">{positionLabel}</p>
-                            <p className="text-[14px] font-semibold text-slate-700 truncate">
+                            <p className="text-meta">{positionLabel}</p>
+                            <p className="text-sm font-semibold text-slate-700 truncate">
                               {displayAssignee.full_name}
-                              <span className="text-slate-400 font-medium">
+                              <span className="text-slate-500 font-medium">
                                 {" "}· {displayAssignee.departments?.name || "—"}
                               </span>
                             </p>
@@ -239,7 +239,7 @@ export default function DocumentDetailDialog({
                   {/* Ảnh đính kèm */}
                   {(doc.attached_image_urls.length > 0 || isHolder || isCreator) && (
                     <div className="space-y-2">
-                      <p className="text-[12px] font-medium text-slate-400">
+                      <p className="text-xs font-medium text-slate-500">
                         Ảnh bìa / tờ trình ({doc.attached_image_urls.length})
                       </p>
                       <ImageUploader
@@ -255,7 +255,7 @@ export default function DocumentDetailDialog({
 
                   {/* Timeline */}
                   <div className="space-y-2 pt-3 border-t border-slate-100">
-                    <p className="text-[12px] font-medium text-slate-400">Truy vết luân chuyển</p>
+                    <p className="text-xs font-medium text-slate-500">Truy vết luân chuyển</p>
                     <HandoverTimeline document={doc} />
                   </div>
                 </>
@@ -272,7 +272,7 @@ export default function DocumentDetailDialog({
                     variant="ghost"
                     onClick={() => setIsReturnOpen(true)}
                     title="Trả về"
-                    className="h-10 px-3 rounded-xl font-medium text-[13px] text-red-600 bg-red-50 hover:bg-red-100"
+                    className="h-10 px-3 rounded-xl font-medium text-sm text-red-600 bg-red-50 hover:bg-red-100"
                   >
                     <Undo2 className="w-4 h-4 mr-1.5" /> Trả về
                   </Button>
@@ -280,7 +280,7 @@ export default function DocumentDetailDialog({
                     variant="ghost"
                     onClick={handleAcknowledge}
                     title="Đã nhận"
-                    className="h-10 px-3 rounded-xl font-medium text-[13px] bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
+                    className="h-10 px-3 rounded-xl font-medium text-sm bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
                   >
                     <Check className="w-4 h-4 mr-1.5" /> Đã nhận
                   </Button>
@@ -294,7 +294,7 @@ export default function DocumentDetailDialog({
                     variant="ghost"
                     onClick={handleComplete}
                     title="Hoàn thành"
-                    className="h-10 px-3 rounded-xl font-medium text-[13px] text-emerald-600 bg-emerald-50 hover:bg-emerald-100"
+                    className="h-10 px-3 rounded-xl font-medium text-sm text-emerald-600 bg-emerald-50 hover:bg-emerald-100"
                   >
                     <CheckCircle2 className="w-4 h-4 mr-1.5" /> Hoàn thành
                   </Button>
@@ -302,7 +302,7 @@ export default function DocumentDetailDialog({
                     variant="ghost"
                     onClick={() => setIsTransferOpen(true)}
                     title="Chuyển tiếp"
-                    className="h-10 px-3 rounded-xl font-medium text-[13px] bg-primary/10 text-primary hover:bg-primary/20"
+                    className="h-10 px-3 rounded-xl font-medium text-sm bg-primary/10 text-primary hover:bg-primary/20"
                   >
                     <ArrowRight className="w-4 h-4 mr-1.5" /> Chuyển tiếp
                   <ArrowRight className="w-4 h-4 mr-1.5" /> Chuyển tiếp
@@ -331,7 +331,7 @@ export default function DocumentDetailDialog({
                   onChanged();
                   }}
                   title="Đóng hồ sơ"
-                  className="h-10 px-3 rounded-xl font-medium text-[13px] text-orange-600 bg-orange-50 hover:bg-orange-100"
+                  className="h-10 px-3 rounded-xl font-medium text-sm text-orange-600 bg-orange-50 hover:bg-orange-100"
                   >
                   <CheckCircle2 className="w-4 h-4 mr-1.5" /> Đóng hồ sơ (Hỗ trợ)
                   </Button>
@@ -341,7 +341,7 @@ export default function DocumentDetailDialog({
                   <Button
                   variant="ghost"
                   onClick={() => setIsOpen(false)}
-              className="min-h-11 px-4 rounded-xl font-medium text-slate-600 text-[13px] bg-slate-100 hover:bg-slate-200 active:scale-95 transition-all whitespace-nowrap"
+              className="min-h-11 px-4 rounded-xl font-medium text-slate-600 text-sm bg-slate-100 hover:bg-slate-200 active:scale-95 transition-all whitespace-nowrap"
             >
               Đóng cửa sổ
             </Button>

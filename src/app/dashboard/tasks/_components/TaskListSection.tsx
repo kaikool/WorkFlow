@@ -45,10 +45,10 @@ export function TaskListSection({ items, onOpen, onOpenBatch, currentProfile }: 
   }, [entries]);
 
   return (
-    <div className="space-y-6">
+    <div className="group-stack">
       {grouped.map(([group, groupItems]) => (
-        <section key={group} className="space-y-3">
-          <h3 className="text-[13px] font-bold text-slate-900 px-0.5">{DATE_GROUP_LABEL[group]}</h3>
+        <section key={group} className="item-stack">
+          <h3 className="heading-card font-bold px-0.5">{DATE_GROUP_LABEL[group]}</h3>
           <div className="space-y-2">
             {groupItems.map(entry =>
               entry.kind === 'single' ? (

@@ -30,8 +30,8 @@ export default function ProfileStatsSection({ monthlyTasks }: ProfileStatsSectio
           <span className={`inline-flex h-8 w-8 items-center justify-center rounded-xl ${bg} ${color}`}>
             <Icon className="icon-sm" />
           </span>
-          <span className="text-[20px] font-extrabold text-slate-900 leading-none">{value}</span>
-          <span className="text-[10px] font-semibold text-slate-500 leading-tight">{label}</span>
+          <span className="text-lg font-bold text-slate-900 leading-none">{value}</span>
+          <span className="text-xs font-semibold text-slate-500 leading-tight">{label}</span>
         </div>
       ))}
     </section>

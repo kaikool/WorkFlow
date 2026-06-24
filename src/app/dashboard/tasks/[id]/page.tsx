@@ -19,7 +19,7 @@ export default function TaskDetailRedirectPage() {
 
   return (
     <div className="page-container py-20 flex items-center justify-center">
-      <Loader2 className="icon-lg animate-spin text-slate-400" />
+      <Loader2 className="icon-lg animate-spin text-slate-500" />
     </div>
   );
 }

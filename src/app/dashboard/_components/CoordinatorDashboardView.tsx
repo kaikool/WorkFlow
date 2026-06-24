@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import DirectorTimeline from "../schedule/_components/DirectorTimeline";
 import ResourcesManagerDashboard from "../schedule/_components/ResourcesManagerDashboard";
 import ScheduleDetailDialog from "../schedule/_components/ScheduleDetailDialog";
-import PeopleAnalyticsWidget from "../team/_components/PeopleAnalyticsWidget";
 
 interface CoordinatorViewProps {
   profile: any;
@@ -53,15 +52,15 @@ export default function CoordinatorDashboardView(props: CoordinatorViewProps) {
   ).length;
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-8 animate-fade-in-up pb-20">
+    <div className="page-container space-y-8 motion-safe:animate-fade-in-up pb-20">
       <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pt-4 sm:pt-0">
         <div className="space-y-1">
-          <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Bảng điều phối</h1>
-          <p className="text-[13px] text-slate-500 font-medium">Duyệt lịch, điều phối xe/phòng và theo dõi lịch Ban Giám đốc.</p>
+          <h1 className="heading-page">Bảng điều phối</h1>
+          <p className="text-subtitle">Duyệt lịch, điều phối xe/phòng và theo dõi lịch Ban Giám đốc.</p>
         </div>
-        <Button asChild className="h-11 rounded-xl font-bold">
+        <Button asChild className="min-h-11 rounded-xl font-bold">
           <Link href="/dashboard/schedule">
-            <CalendarDays className="mr-2 h-4 w-4" /> Mở lịch trình
+            <CalendarDays className="mr-2 icon-sm" /> Mở lịch trình
           </Link>
         </Button>
       </header>
@@ -69,14 +68,14 @@ export default function CoordinatorDashboardView(props: CoordinatorViewProps) {
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="premium-card border border-slate-200 lg:col-span-2">
           <div className="flex items-center justify-between gap-3 mb-4">
-            <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <ShieldCheck className="h-4 w-4 text-amber-600" /> Cần xử lý
+            <h2 className="heading-card flex items-center gap-2">
+              <ShieldCheck className="icon-sm text-amber-600" /> Cần xử lý
             </h2>
-            <Badge className="border border-amber-100 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-700">{pendingSchedules.length}</Badge>
+            <Badge className="border border-amber-100 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700">{pendingSchedules.length}</Badge>
           </div>
-          <div className="space-y-3">
+          <div className="item-stack">
             {pendingSchedules.length === 0 ? (
-              <p className="rounded-xl bg-slate-50 px-4 py-6 text-center text-sm font-medium text-slate-500">Không có lịch chờ điều phối.</p>
+              <p className="rounded-xl bg-slate-50 px-4 py-6 text-center text-sm text-slate-500 font-medium">Không có lịch chờ điều phối.</p>
             ) : pendingSchedules.map((schedule) => (
               <Button
                 type="button"
@@ -88,7 +87,7 @@ export default function CoordinatorDashboardView(props: CoordinatorViewProps) {
                 <div className="w-full">
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-sm font-bold text-slate-900 line-clamp-1">{schedule.title}</p>
-                    <Badge className="shrink-0 border-none bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-600">
+                    <Badge className="shrink-0 border-none bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600">
                       {schedule.use_vehicle && !schedule.vehicle_id ? "Cần xe" : "Chờ duyệt"}
                     </Badge>
                   </div>
@@ -102,29 +101,29 @@ export default function CoordinatorDashboardView(props: CoordinatorViewProps) {
         </div>
 
         <div className="premium-card border border-slate-200">
-          <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2 mb-4">
-            <CalendarDays className="h-4 w-4 text-slate-500" /> Tài nguyên hôm nay
+          <h2 className="heading-card flex items-center gap-2">
+            <CalendarDays className="icon-sm text-slate-500" /> Tài nguyên hôm nay
           </h2>
-          <div className="space-y-3">
+          <div className="item-stack">
             <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-              <p className="text-xs font-bold text-slate-500">Xe đang có lịch</p>
-              <p className="mt-1 text-2xl font-extrabold text-slate-900 tabular-nums">{busyVehicles}</p>
+              <p className="text-label">Xe đang có lịch</p>
+              <p className="mt-1 text-2xl font-bold text-slate-900 tabular-nums">{busyVehicles}</p>
             </div>
             <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-              <p className="text-xs font-bold text-slate-500">Phòng đang có lịch</p>
-              <p className="mt-1 text-2xl font-extrabold text-slate-900 tabular-nums">{busyRooms}</p>
+              <p className="text-label">Phòng đang có lịch</p>
+              <p className="mt-1 text-2xl font-bold text-slate-900 tabular-nums">{busyRooms}</p>
             </div>
             <div className="rounded-xl border border-amber-100 bg-amber-50 px-4 py-3">
-              <p className="text-xs font-bold text-amber-700">Tổng lịch cần theo dõi</p>
-              <p className="mt-1 text-2xl font-extrabold text-amber-700 tabular-nums">{schedules.length}</p>
+              <p className="text-label !text-amber-700">Tổng lịch cần theo dõi</p>
+              <p className="mt-1 text-2xl font-bold text-amber-700 tabular-nums">{schedules.length}</p>
             </div>
           </div>
         </div>
       </section>
 
       <section className="space-y-4">
-        <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-          <CalendarDays className="h-4 w-4 text-slate-700" /> Timeline Ban Giám đốc
+        <h2 className="heading-card flex items-center gap-2">
+          <CalendarDays className="icon-sm text-slate-700" /> Timeline Ban Giám đốc
         </h2>
         <DirectorTimeline
           allProfiles={allProfiles}
@@ -147,8 +146,6 @@ export default function CoordinatorDashboardView(props: CoordinatorViewProps) {
         selectedDate={selectedDate}
         onSelectSchedule={handleSelectSchedule}
       />
-
-      <PeopleAnalyticsWidget members={allProfiles} todaySchedules={schedules} />
 
       <ScheduleDetailDialog
         isOpen={isDetailOpen}

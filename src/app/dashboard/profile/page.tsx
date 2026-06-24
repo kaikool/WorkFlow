@@ -18,6 +18,7 @@ import { format } from "date-fns";
 import { viLocale as vi } from "@/lib/locale";
 import PageHeader from "@/components/layout/PageHeader";
 import AvatarCropDialog from "@/components/ui/avatar-crop-dialog";
+import { EmptyState } from "@/components/ui/empty-state";
 import { useAppData } from "@/hooks/use-app-data";
 import { ROLE_LABELS, STATUS_BADGES } from "../team/_lib/constants";
 import { getProfileBadgeStatus, getYearsOfService } from "../team/_lib/utils";
@@ -25,8 +26,6 @@ import EditProfileDialog from "../team/_components/EditProfileDialog";
 import { Skeleton } from "@/components/ui/skeleton";
 
 // Trang hồ sơ cá nhân — đồng bộ pattern với ProfileDetailDialog (team module).
-// Self-mode: dùng EditProfileDialog để cập nhật phone/extension/seat_location/avatar
-// + birthday_notify_optout (các field hiển thị trong danh bạ Nhân sự).
 export default function ProfilePage() {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
@@ -122,7 +121,7 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="page-container space-y-6 md:space-y-8 animate-fade-in-up">
+      <div className="page-container space-y-6 md:section-stack motion-safe:animate-fade-in-up">
         <PageHeader title="Hồ sơ cá nhân" description="Thông tin tài khoản và thông tin hiển thị trong danh bạ Nhân sự" />
         
         {/* Hero card skeleton */}
@@ -176,13 +175,13 @@ export default function ProfilePage() {
   const heroBg = (() => {
     if (status === 'on_leave') return 'bg-amber-50/50';
     if (status === 'on_trip') return 'bg-sky-50/50';
-    if (status === 'birthday_today') return 'bg-pink-50/50';
+
     if (status === 'new_joiner') return 'bg-emerald-50/50';
     return 'bg-slate-50/60';
   })();
 
   return (
-    <div className="page-container space-y-6 md:space-y-8 animate-fade-in-up">
+    <div className="page-container space-y-6 md:section-stack motion-safe:animate-fade-in-up">
       <PageHeader
         title="Hồ sơ cá nhân"
         description="Thông tin tài khoản và thông tin hiển thị trong danh bạ Nhân sự"
@@ -234,7 +233,7 @@ export default function ProfilePage() {
             </div>
 
             <div className="flex-1 min-w-0 item-stack !gap-1">
-              <h2 className="heading-section break-words">{profile.full_name}</h2>
+              <h1 className="heading-section break-words">{profile.full_name}</h1>
               {profile.title && <p className="text-label truncate">{profile.title}</p>}
               <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
                 <Badge className={cn("font-bold rounded-md border-none", role.color)}>{role.label}</Badge>
@@ -271,7 +270,7 @@ export default function ProfilePage() {
       <div className="group-stack">
         {/* CONTACT — thông tin hiển thị trong danh bạ Nhân sự */}
         <section className="premium-card p-4 sm:p-5 item-stack">
-          <h4 className="heading-card">Thông tin liên hệ</h4>
+          <h2 className="heading-card">Thông tin liên hệ</h2>
             <div className="flex flex-col">
               <ContactRow
                 icon={Briefcase}
@@ -306,7 +305,7 @@ export default function ProfilePage() {
 
           {/* SENSITIVE — thông tin nhân sự (chỉ self thấy ở đây) */}
           <section className="premium-card p-4 sm:p-5 item-stack">
-            <h4 className="heading-card">Thông tin nhân sự</h4>
+          <h2 className="heading-card">Thông tin nhân sự</h2>
             <div className="flex flex-col">
               <ContactRow
                 icon={Cake}
@@ -336,9 +335,9 @@ export default function ProfilePage() {
 
           {/* ACTIVITY */}
           <section className="premium-card p-4 sm:p-5 item-stack">
-            <h4 className="heading-card flex items-center gap-2">
-              <History className="icon-sm text-slate-400" /> Hoạt động gần đây
-            </h4>
+            <h2 className="heading-card flex items-center gap-2">
+              <History className="icon-sm text-slate-500" /> Hoạt động gần đây
+            </h2>
             {activities.length > 0 ? (
               <div className="flex flex-col">
                 {activities.map((act, idx) => (
@@ -362,7 +361,12 @@ export default function ProfilePage() {
                 ))}
               </div>
             ) : (
-              <p className="text-meta py-6 text-center">Chưa có hoạt động nào được ghi nhận.</p>
+              <EmptyState
+                icon={<History className="icon-lg" />}
+                title="Chưa có hoạt động nào"
+                description="Bạn chưa có hoạt động nào được ghi nhận."
+                variant="subtle"
+              />
             )}
           </section>
       </div>
@@ -397,7 +401,7 @@ function ContactRow({
       "flex items-center gap-3 min-h-11 py-2.5",
       !last && "border-b border-slate-100",
     )}>
-      <Icon className={cn("icon-sm shrink-0", accent ? "text-primary" : "text-slate-400")} />
+      <Icon className={cn("icon-sm shrink-0", accent ? "text-primary" : "text-slate-500")} />
       <div className="flex-1 min-w-0 item-stack !gap-0.5">
         <span className="text-meta">{label}</span>
         <span className={cn("text-label !text-slate-900 font-semibold", valueClassName)}>{value}</span>

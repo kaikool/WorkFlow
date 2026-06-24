@@ -67,7 +67,7 @@ export default function AnalyticsPage() {
   };
 
   return (
-    <div className="page-container group-stack animate-fade-in-up">
+    <div className="page-container group-stack motion-safe:animate-fade-in-up">
       <PageHeader
         title="Thống kê công việc"
         description={`Từ ${format(from, 'dd/MM', { locale: vi })} đến ${format(to, 'dd/MM/yyyy', { locale: vi })}`}
@@ -104,7 +104,7 @@ export default function AnalyticsPage() {
 
       {loading || !data ? (
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="icon-lg animate-spin text-slate-400" />
+          <Loader2 className="icon-lg animate-spin text-slate-500" />
         </div>
       ) : (
         <div className="group-stack">

@@ -17,9 +17,9 @@ export default function LeaveApprovalDashboard({ schedules, profile, onStatusUpd
   );
 
   return (
-    <div className="space-y-6">
+    <div className="group-stack">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium text-slate-500 flex items-center gap-2">
+        <h3 className="text-label flex items-center gap-2">
           <Calendar className="w-4 h-4 text-primary shrink-0" />
           <span>Đơn nghỉ phép chờ duyệt ({pendingLeaves.length})</span>
         </h3>
@@ -27,7 +27,7 @@ export default function LeaveApprovalDashboard({ schedules, profile, onStatusUpd
 
       {pendingLeaves.length === 0 ? (
         <div className="premium-card text-center bg-white border border-slate-200">
-          <div className="h-12 w-12 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4 text-slate-400">
+          <div className="h-12 w-12 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4 text-slate-500">
             <User className="w-6 h-6" />
           </div>
           <p className="text-sm font-bold text-slate-700">Không có đơn cần duyệt</p>
@@ -52,7 +52,7 @@ export default function LeaveApprovalDashboard({ schedules, profile, onStatusUpd
                     </Avatar>
                     <div className="min-w-0">
                       <p className="text-sm font-bold text-slate-900 truncate">{leaveUser?.full_name || "Cán bộ"}</p>
-                      <p className="text-sm font-medium text-slate-500 truncate">Cán bộ xin nghỉ</p>
+                      <p className="text-label truncate">Cán bộ xin nghỉ</p>
                     </div>
                   </div>
 
@@ -65,8 +65,8 @@ export default function LeaveApprovalDashboard({ schedules, profile, onStatusUpd
                     )}
                   </div>
 
-                  <div className="flex items-center gap-2 text-sm font-medium text-slate-500 pl-1">
-                    <Clock className="w-4 h-4 text-slate-400 shrink-0" />
+                  <div className="flex items-center gap-2 text-label pl-1">
+                    <Clock className="w-4 h-4 text-slate-500 shrink-0" />
                     <span>
                       {startDate.toLocaleDateString("vi-VN")} - {endDate.toLocaleDateString("vi-VN")}
                     </span>

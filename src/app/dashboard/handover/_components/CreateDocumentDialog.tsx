@@ -92,8 +92,8 @@ export default function CreateDocumentDialog({ isOpen, setIsOpen, categories, pr
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="app-dialog-sheet app-dialog-sheet--lg shadow-2xl">
         <DialogHeader className="app-dialog-sheet-header">
-          <DialogTitle className="text-[17px] font-semibold text-slate-900">Tạo hồ sơ mới</DialogTitle>
-          <DialogDescription className="text-[13px] text-slate-500 font-medium">
+          <DialogTitle className="text-lg font-semibold text-slate-900">Tạo hồ sơ mới</DialogTitle>
+          <DialogDescription className="text-subtitle">
             Hệ thống sẽ sinh mã ngắn để bạn ghi tay lên bìa hồ sơ bản cứng.
           </DialogDescription>
         </DialogHeader>
@@ -102,7 +102,7 @@ export default function CreateDocumentDialog({ isOpen, setIsOpen, categories, pr
           <div className="space-y-5 px-[var(--app-page-x)] py-4">
             {/* Tiêu đề */}
             <div className="space-y-2">
-              <Label className="text-[13px] font-medium text-slate-500">Tiêu đề hồ sơ</Label>
+              <Label className="text-label">Tiêu đề hồ sơ</Label>
               <Input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
@@ -113,7 +113,7 @@ export default function CreateDocumentDialog({ isOpen, setIsOpen, categories, pr
 
             {/* Khách hàng */}
             <div className="space-y-2">
-              <Label className="text-[13px] font-medium text-slate-500">Khách hàng / Đối tác (tuỳ chọn)</Label>
+              <Label className="text-label">Khách hàng / Đối tác (tuỳ chọn)</Label>
               <Input
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
@@ -124,7 +124,7 @@ export default function CreateDocumentDialog({ isOpen, setIsOpen, categories, pr
 
             {/* Nhóm hồ sơ */}
             <div className="space-y-2">
-              <Label className="text-[13px] font-medium text-slate-500">Nhóm hồ sơ</Label>
+              <Label className="text-label">Nhóm hồ sơ</Label>
               <Select value={categoryId} onValueChange={setCategoryId}>
                 <SelectTrigger className="h-11 bg-slate-50 border-none rounded-xl font-medium">
                   <SelectValue placeholder="Chọn nhóm hồ sơ..." />
@@ -132,13 +132,13 @@ export default function CreateDocumentDialog({ isOpen, setIsOpen, categories, pr
                 <SelectContent className="rounded-xl border-none shadow-lg">
                   {categories.map((c) => (
                     <SelectItem key={c.id} value={c.id}>
-                      {c.name} <span className="text-slate-400">· SLA {c.sla_hours}h</span>
+                      {c.name} <span className="text-slate-500">· SLA {c.sla_hours}h</span>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               {selectedCategory && (
-                <p className="text-[12px] text-slate-500 font-medium pl-1">
+                <p className="text-label pl-1">
                   Thời gian giữ hồ sơ tối đa mỗi bàn: <span className="font-bold text-slate-700">{selectedCategory.sla_hours} giờ</span>
                 </p>
               )}
@@ -146,7 +146,7 @@ export default function CreateDocumentDialog({ isOpen, setIsOpen, categories, pr
 
             {/* Ảnh đính kèm */}
             <div className="space-y-2">
-              <Label className="text-[13px] font-medium text-slate-500">Ảnh bìa / tờ trình (tuỳ chọn)</Label>
+              <Label className="text-label">Ảnh bìa / tờ trình (tuỳ chọn)</Label>
               <ImageUploader
                 documentId={tempDocId}
                 imageUrls={imageUrls}
@@ -159,7 +159,7 @@ export default function CreateDocumentDialog({ isOpen, setIsOpen, categories, pr
         <DialogFooter className="app-dialog-sheet-footer flex flex-row justify-end gap-2">
           <Button
             variant="ghost"
-            className="min-h-11 px-4 rounded-xl font-medium text-slate-500 text-[13px]"
+            className="min-h-11 px-4 rounded-xl font-medium text-slate-500 text-sm"
             onClick={() => setIsOpen(false)}
           >
             Huỷ

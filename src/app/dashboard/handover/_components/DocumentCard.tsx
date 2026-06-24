@@ -50,21 +50,21 @@ export default function DocumentCard({ document, onClick, variant = "inbox", cur
             <FileText className="w-5 h-5 text-slate-500" />
           </div>
           <div className="min-w-0">
-            <p className="font-mono text-[12px] font-semibold text-slate-500 tabular-nums">
+            <p className="font-mono text-xs font-semibold text-slate-500 tabular-nums">
               {document.short_code}
             </p>
-            <p className="text-[15px] font-semibold text-slate-900 truncate">
+            <p className="text-sm font-semibold text-slate-900 truncate">
               {document.title}
             </p>
           </div>
         </div>
-        <Badge className={cn("shrink-0 font-semibold text-[11px] whitespace-nowrap", statusMeta.badgeClass)}>
+        <Badge className={cn("shrink-0 font-semibold text-xs whitespace-nowrap", statusMeta.badgeClass)}>
           <StatusIcon className="w-3 h-3 mr-1" />
           {statusMeta.label}
         </Badge>
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center gap-2 text-[12px] text-slate-500 font-medium">
+      <div className="mt-3 flex flex-wrap items-center gap-2 text-label">
         {document.customer_name && (
           <span className="inline-flex items-center gap-1 truncate">
             <User className="w-3 h-3" />
@@ -93,14 +93,14 @@ export default function DocumentCard({ document, onClick, variant = "inbox", cur
         const allLabel    = isPendingTransit ? "Chờ nhận:"     : "Bàn:";
 
         return (
-          <div className="mt-3 flex items-center gap-2 text-[12px] text-slate-600 border-t border-slate-100 pt-3">
+          <div className="mt-3 flex items-center gap-2 text-xs text-slate-600 border-t border-slate-100 pt-3">
             {variant === "outbox" && displayPerson && (
               <>
-                <span className="text-slate-400">{outboxLabel}</span>
+                <span className="text-slate-500">{outboxLabel}</span>
                 <span className="inline-flex items-center gap-1.5">
                   <Avatar className="h-5 w-5">
                     <AvatarImage src={displayPerson.avatar_url || undefined} />
-                    <AvatarFallback className="text-[9px] bg-slate-100">
+                    <AvatarFallback className="text-xs bg-slate-100">
                       {displayPerson.full_name?.[0]}
                     </AvatarFallback>
                   </Avatar>
@@ -112,11 +112,11 @@ export default function DocumentCard({ document, onClick, variant = "inbox", cur
             )}
             {variant === "inbox" && lastHandover?.sender && (
               <>
-                <span className="text-slate-400">Từ:</span>
+                <span className="text-slate-500">Từ:</span>
                 <span className="inline-flex items-center gap-1.5">
                   <Avatar className="h-5 w-5">
                     <AvatarImage src={lastHandover.sender.avatar_url || undefined} />
-                    <AvatarFallback className="text-[9px] bg-slate-100">
+                    <AvatarFallback className="text-xs bg-slate-100">
                       {lastHandover.sender.full_name?.[0]}
                     </AvatarFallback>
                   </Avatar>
@@ -125,16 +125,16 @@ export default function DocumentCard({ document, onClick, variant = "inbox", cur
                   </span>
                 </span>
                 <ArrowRight className="w-3 h-3 text-slate-300 shrink-0" />
-                <span className="text-slate-400">Tôi</span>
+                <span className="text-slate-500">Tôi</span>
               </>
             )}
             {variant === "all" && displayPerson && (
               <>
-                <span className="text-slate-400">{allLabel}</span>
+                <span className="text-slate-500">{allLabel}</span>
                 <span className="inline-flex items-center gap-1.5">
                   <Avatar className="h-5 w-5">
                     <AvatarImage src={displayPerson.avatar_url || undefined} />
-                    <AvatarFallback className="text-[9px] bg-slate-100">
+                    <AvatarFallback className="text-xs bg-slate-100">
                       {displayPerson.full_name?.[0]}
                     </AvatarFallback>
                   </Avatar>
@@ -144,7 +144,7 @@ export default function DocumentCard({ document, onClick, variant = "inbox", cur
                 </span>
               </>
             )}
-            <span className="ml-auto text-[11px] text-slate-400 tabular-nums shrink-0">
+            <span className="ml-auto text-meta tabular-nums shrink-0">
               {format(new Date(document.updated_at), "HH:mm dd/MM", { locale: vi })}
             </span>
           </div>

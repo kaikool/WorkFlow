@@ -16,7 +16,7 @@ import { notifyError, notifySuccess, notifyValidation } from "@/lib/notify";
 import { useAppData } from "@/hooks/use-app-data";
 
 // Form sửa hồ sơ — 2 mode:
-//  - Self: chỉnh phone, ad_account (email free-text), avatar_url, birthday, gender, birthday_notify_optout.
+//  - Self: chỉnh phone, ad_account (email free-text), avatar_url, birthday, gender.
 //  - Admin/HR: thêm full_name, title, department_id, role, is_department_head,
 //              branch_join_date, employee_code.
 // Validation: phone VN, ad_account check email format (cho phép full email do user tự nhập).
@@ -60,7 +60,6 @@ export default function EditProfileDialog({ open, onOpenChange, target, viewer, 
       gender: target.gender ?? '',
       ad_account: target.ad_account ?? '',
       employee_code: target.employee_code ?? '',
-      birthday_notify_optout: !!target.birthday_notify_optout,
     });
   }, [open, target]);
 
@@ -128,7 +127,6 @@ export default function EditProfileDialog({ open, onOpenChange, target, viewer, 
         avatar_url: form.avatar_url || null,
         birthday: form.birthday || null,
         gender: form.gender || null,
-        birthday_notify_optout: !!form.birthday_notify_optout,
       };
 
       if (isAdminMode) {
@@ -298,17 +296,6 @@ export default function EditProfileDialog({ open, onOpenChange, target, viewer, 
                   </div>
                 </>
               )}
-
-              <div className="flex items-center justify-between rounded-2xl bg-slate-50 p-3 border border-slate-100">
-                <div className="min-w-0 item-stack !gap-1">
-                  <p className="text-label !text-slate-900 font-semibold">Nhận lời chúc sinh nhật</p>
-                  <p className="text-meta">Đồng nghiệp được thông báo khi sinh nhật bạn đến</p>
-                </div>
-                <Switch
-                  checked={!form.birthday_notify_optout}
-                  onCheckedChange={(v) => setField('birthday_notify_optout', !v)}
-                />
-              </div>
             </div>
           </ScrollArea>
 

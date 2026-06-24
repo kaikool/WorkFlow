@@ -20,7 +20,7 @@ export default function EndTripDialog({ isOpen, setIsOpen, selectedSchedule, upd
       <DialogContent className="rounded-2xl max-w-sm border-none p-6 shadow-2xl">
         <DialogHeader>
           <DialogDescription className="sr-only">Nhập chỉ số kilomet kết thúc để hoàn thành chuyến đi.</DialogDescription>
-          <DialogTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
+          <DialogTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
             <div className="w-8 h-8 rounded-xl bg-emerald-50 flex items-center justify-center">
               <CheckCircle2 className="w-4 h-4 text-emerald-600" />
             </div>
@@ -28,7 +28,7 @@ export default function EndTripDialog({ isOpen, setIsOpen, selectedSchedule, upd
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-2 px-1">
-          <p className="text-sm font-medium text-slate-600 leading-relaxed">
+          <p className="text-sm text-slate-500">
             Bạn có chắc chắn chuyến đi đã hoàn thành? Hệ thống sẽ ghi nhận thời gian thực tế và kết thúc lịch trình này.
           </p>
         </div>

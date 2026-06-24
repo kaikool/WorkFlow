@@ -63,10 +63,10 @@ export default function ScheduleEditForm({
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div className="min-w-0">
-            <p className="text-[15px] font-bold text-slate-900 truncate">
+            <p className="text-sm font-bold text-slate-900 truncate">
               {isResubmit ? 'Đẩy lại duyệt lịch trình' : 'Sửa lịch trình'}
             </p>
-            <p className="text-[12px] text-slate-500 font-medium truncate">{schedule.title}</p>
+            <p className="text-label truncate">{schedule.title}</p>
           </div>
         </div>
 
@@ -76,7 +76,7 @@ export default function ScheduleEditForm({
             {/* Lý do thay đổi — bắt buộc khi đẩy lại duyệt */}
             {isResubmit && (
               <div className="status-danger-bg border rounded-2xl p-4 item-stack">
-                <Label className="text-[12px] font-semibold pl-0.5">Lý do thay đổi (bắt buộc)</Label>
+                <Label className="text-xs font-semibold pl-0.5">Lý do thay đổi (bắt buộc)</Label>
                 <Textarea
                   value={detail.changeReason || ''}
                   onChange={(e) => detail.setChangeReason(e.target.value)}
@@ -97,8 +97,8 @@ export default function ScheduleEditForm({
             )}
 
             {/* Tiêu đề */}
-            <div className="space-y-3">
-              <Label className="text-[12px] font-medium text-slate-500 pl-0.5">Tiêu đề lịch trình</Label>
+            <div className="item-stack">
+              <Label className="text-xs font-medium text-slate-500 pl-0.5">Tiêu đề lịch trình</Label>
               <Input
                 value={detail.editData.title || ""}
                 onChange={(e) => detail.setEditData({ ...detail.editData, title: e.target.value })}
@@ -106,14 +106,14 @@ export default function ScheduleEditForm({
                 placeholder="VD: Họp giao ban tuần, đi công tác Hải Phòng..."
                 maxLength={200}
               />
-              <p className="text-[11px] font-medium text-slate-400 text-right tabular-nums">
+              <p className="text-xs font-medium text-slate-500 text-right tabular-nums">
                 {(detail.editData.title || '').length}/200
               </p>
             </div>
 
             {/* Nội dung chi tiết */}
-            <div className="space-y-3">
-              <Label className="text-[12px] font-medium text-slate-500 pl-0.5">Nội dung chi tiết</Label>
+            <div className="item-stack">
+              <Label className="text-xs font-medium text-slate-500 pl-0.5">Nội dung chi tiết</Label>
               <Textarea
                 value={detail.editData.description || ""}
                 onChange={(e) => detail.setEditData({ ...detail.editData, description: e.target.value })}
@@ -124,8 +124,8 @@ export default function ScheduleEditForm({
 
             {/* Lưới 2 cột: Loại + Địa điểm */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-3">
-                <Label className="text-[12px] font-medium text-slate-500 pl-0.5">Loại lịch trình</Label>
+              <div className="item-stack">
+                <Label className="text-xs font-medium text-slate-500 pl-0.5">Loại lịch trình</Label>
                 <Select value={detail.editData.type} onValueChange={(v) => detail.setEditData((prev: any) => ({ ...prev, type: v, use_vehicle: v === 'trip' ? true : prev.use_vehicle }))}>
                   <SelectTrigger className="min-h-11 bg-slate-50 border-none rounded-xl font-medium text-sm"><SelectValue /></SelectTrigger>
                   <SelectContent className="rounded-xl border-none shadow-2xl">
@@ -136,8 +136,8 @@ export default function ScheduleEditForm({
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-3">
-                <Label className="text-[12px] font-medium text-slate-500 pl-0.5">Hình thức địa điểm</Label>
+              <div className="item-stack">
+                <Label className="text-xs font-medium text-slate-500 pl-0.5">Hình thức địa điểm</Label>
                 <Select value={detail.editData.location === 'Chi nhánh' ? 'branch' : 'outside'} onValueChange={(v) => detail.setEditData((prev: any) => ({ ...prev, location: v === 'branch' ? 'Chi nhánh' : '', room_id: v === 'branch' ? (rooms[0]?.id || 'none') : 'none' }))}>
                   <SelectTrigger className="min-h-11 bg-slate-50 border-none rounded-xl font-medium text-sm"><SelectValue /></SelectTrigger>
                   <SelectContent className="rounded-xl border-none shadow-2xl">
@@ -150,12 +150,12 @@ export default function ScheduleEditForm({
 
             {/* Lưới 4 cột: Ngày/Giờ đi - Ngày/Giờ về */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <div className="space-y-3">
-                <Label className="text-[12px] font-medium text-slate-500 pl-0.5">Từ ngày</Label>
+              <div className="item-stack">
+                <Label className="text-xs font-medium text-slate-500 pl-0.5">Từ ngày</Label>
                 <Popover open={detail.isStartOpen} onOpenChange={detail.setIsStartOpen}>
                   <PopoverTrigger asChild>
                     <Button type="button" variant="outline" className="w-full min-h-11 bg-slate-50 border-none rounded-xl font-medium justify-start text-left text-base md:text-sm active:scale-95 transition-all">
-                      <CalendarIcon className="mr-2 h-4 w-4 text-primary shrink-0" />
+                      <CalendarIcon className="mr-2 icon-md text-primary shrink-0" />
                       <span className="truncate">{detail.editStartDate ? format(detail.editStartDate, "dd/MM/yyyy") : "Chọn ngày"}</span>
                     </Button>
                   </PopoverTrigger>
@@ -174,11 +174,11 @@ export default function ScheduleEditForm({
                   </PopoverContent>
                 </Popover>
               </div>
-              <div className="space-y-3">
-                <Label className="text-[12px] font-medium text-slate-500 pl-0.5">Giờ đi</Label>
+              <div className="item-stack">
+                <Label className="text-xs font-medium text-slate-500 pl-0.5">Giờ đi</Label>
                 <Select value={detail.editStartTime} onValueChange={detail.handleStartTimeChange}>
                   <SelectTrigger className="min-h-11 bg-slate-50 border-none rounded-xl font-medium text-sm">
-                    <Clock className="mr-2 h-4 w-4 text-primary shrink-0" />
+                    <Clock className="mr-2 icon-md text-primary shrink-0" />
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="rounded-xl border-none shadow-2xl">
@@ -189,12 +189,12 @@ export default function ScheduleEditForm({
                 </Select>
               </div>
 
-              <div className="space-y-3">
-                <Label className="text-[12px] font-medium text-slate-500 pl-0.5">Đến ngày</Label>
+              <div className="item-stack">
+                <Label className="text-xs font-medium text-slate-500 pl-0.5">Đến ngày</Label>
                 <Popover open={detail.isEndOpen} onOpenChange={detail.setIsEndOpen}>
                   <PopoverTrigger asChild>
-                    <Button type="button" variant="outline" className={cn("w-full min-h-11 bg-slate-50 border-none rounded-xl font-medium justify-start text-left text-base md:text-sm active:scale-95 transition-all", !detail.editEndDate && "text-slate-400")}>
-                      <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
+                    <Button type="button" variant="outline" className={cn("w-full min-h-11 bg-slate-50 border-none rounded-xl font-medium justify-start text-left text-base md:text-sm active:scale-95 transition-all", !detail.editEndDate && "text-slate-500")}>
+                      <CalendarIcon className="mr-2 icon-md shrink-0" />
                       <span className="truncate">{detail.editEndDate ? format(detail.editEndDate, "dd/MM/yyyy") : "Tự động"}</span>
                     </Button>
                   </PopoverTrigger>
@@ -212,11 +212,11 @@ export default function ScheduleEditForm({
                   </PopoverContent>
                 </Popover>
               </div>
-              <div className="space-y-3">
-                <Label className="text-[12px] font-medium text-slate-500 pl-0.5">Giờ về</Label>
+              <div className="item-stack">
+                <Label className="text-xs font-medium text-slate-500 pl-0.5">Giờ về</Label>
                 <Select value={detail.editEndTime || "none"} onValueChange={(v) => detail.setEditEndTime(v === "none" ? "" : v)}>
                   <SelectTrigger className="min-h-11 bg-slate-50 border-none rounded-xl font-medium text-sm">
-                    <Clock className="mr-2 h-4 w-4 shrink-0 text-slate-500" />
+                    <Clock className="mr-2 icon-md shrink-0 text-slate-500" />
                     <SelectValue placeholder="Tự động" />
                   </SelectTrigger>
                   <SelectContent className="rounded-xl border-none shadow-2xl">
@@ -233,8 +233,8 @@ export default function ScheduleEditForm({
 
             {/* Địa điểm chi tiết */}
             {detail.editData.type !== 'leave' && detail.editData.location === 'Chi nhánh' ? (
-              <div className="space-y-3">
-                <Label className="text-[12px] font-medium text-slate-500 pl-0.5">Phòng họp</Label>
+              <div className="item-stack">
+                <Label className="text-xs font-medium text-slate-500 pl-0.5">Phòng họp</Label>
                 <Select value={detail.editData.room_id || 'none'} onValueChange={(v) => detail.setEditData((prev: any) => ({ ...prev, room_id: v }))}>
                   <SelectTrigger className="min-h-11 bg-slate-50 border-none rounded-xl font-medium text-sm"><SelectValue placeholder="Chọn phòng họp" /></SelectTrigger>
                   <SelectContent className="rounded-xl border-none shadow-2xl">
@@ -243,9 +243,9 @@ export default function ScheduleEditForm({
                 </Select>
               </div>
             ) : detail.editData.type !== 'leave' ? (
-              <div className="space-y-3 animate-in fade-in zoom-in-95 duration-300">
+              <div className="item-stack animate-in fade-in zoom-in-95 duration-300">
                 <div className="flex items-center justify-between">
-                  <Label className="text-[12px] font-medium text-slate-500 pl-0.5">Lộ trình di chuyển</Label>
+                  <Label className="text-xs font-medium text-slate-500 pl-0.5">Lộ trình di chuyển</Label>
                   <div 
                     role="button"
                     onClick={() => {
@@ -281,7 +281,7 @@ export default function ScheduleEditForm({
                           newDests.splice(idx, 1);
                           detail.setEditData({ ...detail.editData, destinations: newDests });
                         }}
-                        className="shrink-0 text-slate-400 hover:text-red-500 hover:bg-transparent transition-colors p-2 text-xl leading-none"
+                        className="shrink-0 text-slate-500 hover:text-red-500 hover:bg-transparent transition-colors p-2 text-xl leading-none"
                       >
                         &times;
                       </button>
@@ -339,7 +339,7 @@ export default function ScheduleEditForm({
               <div className="p-4 bg-red-50/50 rounded-2xl border border-red-100 space-y-2 animate-in fade-in zoom-in-95">
                 <div className="flex items-center gap-2">
                   <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
-                  <span className="text-[13px] font-bold text-red-700 whitespace-nowrap">Cảnh báo trùng lịch</span>
+                  <span className="text-sm font-bold text-red-700 whitespace-nowrap">Cảnh báo trùng lịch</span>
                 </div>
                 <ul className="list-disc pl-5 text-xs font-medium text-red-600/80 space-y-1">
                   {detail.conflicts.map((c: string, i: number) => (
@@ -355,7 +355,7 @@ export default function ScheduleEditForm({
           <div className="app-dialog-sheet-footer flex items-center justify-between gap-3">
             <Button
               variant="ghost"
-              className="min-h-11 px-4 rounded-xl font-medium text-slate-500 text-[13px] hover:bg-slate-200 active:scale-95 transition-all whitespace-nowrap"
+              className="min-h-11 px-4 rounded-xl font-medium text-slate-500 text-sm hover:bg-slate-200 active:scale-95 transition-all whitespace-nowrap"
               onClick={() => detail.setIsEditingSchedule(false)}
             >
               Hủy bỏ

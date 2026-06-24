@@ -53,15 +53,15 @@ export default function ReturnReasonDialog({ isOpen, setIsOpen, handoverId, docu
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="app-dialog-sheet app-dialog-sheet--lg shadow-2xl">
         <DialogHeader className="app-dialog-sheet-header">
-          <DialogTitle className="text-[17px] font-semibold text-slate-900">Trả về hồ sơ</DialogTitle>
-          <DialogDescription className="text-[13px] text-slate-500 font-medium truncate">
+          <DialogTitle className="text-lg font-semibold text-slate-900">Trả về hồ sơ</DialogTitle>
+          <DialogDescription className="text-subtitle truncate">
             {documentShortCode} — Hồ sơ sẽ quay lại bàn người gửi với lý do bạn nhập bên dưới.
           </DialogDescription>
         </DialogHeader>
 
         <div className="app-dialog-sheet-body">
-          <div className="space-y-3 px-[var(--app-page-x)] py-4">
-            <Label className="text-[13px] font-medium text-slate-500">Lý do trả về</Label>
+          <div className="item-stack px-[var(--app-page-x)] py-4">
+            <Label className="text-label">Lý do trả về</Label>
             <Textarea
               value={reason}
               onChange={(e) => setReason(e.target.value)}
@@ -77,7 +77,7 @@ export default function ReturnReasonDialog({ isOpen, setIsOpen, handoverId, docu
           <Button
             variant="ghost"
             onClick={() => setIsOpen(false)}
-            className="min-h-11 px-4 rounded-xl font-medium text-slate-500 text-[13px]"
+            className="min-h-11 px-4 rounded-xl font-medium text-slate-500 text-sm"
           >
             Huỷ
           </Button>

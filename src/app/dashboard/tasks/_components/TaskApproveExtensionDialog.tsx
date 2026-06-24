@@ -49,8 +49,8 @@ export function TaskApproveExtensionDialog({ extension, onClose, onChanged }: Pr
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="app-dialog-sheet app-dialog-sheet--lg shadow-2xl">
         <DialogHeader className="app-dialog-sheet-header">
-          <DialogTitle className="text-[17px] font-semibold text-slate-900">Xử lý yêu cầu gia hạn</DialogTitle>
-          <DialogDescription className="text-[13px] text-slate-500 font-medium line-clamp-1">
+          <DialogTitle className="text-lg font-semibold text-slate-900">Xử lý yêu cầu gia hạn</DialogTitle>
+          <DialogDescription className="text-subtitle line-clamp-1">
             {extension.task?.title ?? '—'}
           </DialogDescription>
         </DialogHeader>
@@ -58,11 +58,11 @@ export function TaskApproveExtensionDialog({ extension, onClose, onChanged }: Pr
         <div className="app-dialog-sheet-body">
           <div className="space-y-4 px-[var(--app-page-x)] py-4">
             <div className="premium-card p-4 border-none space-y-2 bg-slate-50">
-              <p className="text-[12px] font-medium text-slate-500">Người xin</p>
+              <p className="text-xs font-medium text-slate-500">Người xin</p>
               <p className="text-sm font-bold text-slate-900">
                 {extension.requester?.full_name ?? '—'}
               </p>
-              <div className="flex items-center gap-2 text-[12px] font-medium text-slate-700 pt-2">
+              <div className="flex items-center gap-2 text-xs font-medium text-slate-700 pt-2">
                 <span>
                   {extension.old_due_date
                     ? format(new Date(extension.old_due_date), 'dd/MM/yyyy', { locale: vi })
@@ -75,14 +75,14 @@ export function TaskApproveExtensionDialog({ extension, onClose, onChanged }: Pr
               </div>
               {extension.reason && (
                 <div className="pt-2 border-t border-slate-200">
-                  <p className="text-[11px] font-medium text-slate-500 mb-1">Lý do</p>
-                  <p className="text-[12px] italic text-slate-700">"{extension.reason}"</p>
+                  <p className="text-xs font-medium text-slate-500 mb-1">Lý do</p>
+                  <p className="text-xs italic text-slate-700">"{extension.reason}"</p>
                 </div>
               )}
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-500">Ghi chú phản hồi (tuỳ chọn)</label>
+              <p className="text-label">Ghi chú phản hồi (tuỳ chọn)</p>
               <Textarea
                 rows={2}
                 value={comment}
