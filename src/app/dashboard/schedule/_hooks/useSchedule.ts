@@ -205,24 +205,28 @@ export function useSchedule() {
   // Auto-scroll timeline khi chọn tab BGĐ
   useEffect(() => {
     if (filterType === 'bgd' && timelineContainerRef.current) {
-      const now = new Date();
-      const currentHour = now.getHours();
-      const currentMinutes = now.getMinutes();
-      if (currentHour >= 7 && currentHour <= 19) {
-        const totalMinutes = 12 * 60;
-        const minutesElapsed = (currentHour - 7) * 60 + currentMinutes;
-        const percentElapsed = minutesElapsed / totalMinutes;
-        setTimeout(() => {
-          if (timelineContainerRef.current) {
-            const containerWidth = timelineContainerRef.current.scrollWidth;
-            const clientWidth = timelineContainerRef.current.clientWidth;
+      setTimeout(() => {
+        if (!timelineContainerRef.current) return;
+        const containerWidth = timelineContainerRef.current.scrollWidth;
+        const clientWidth = timelineContainerRef.current.clientWidth;
+
+        if (isTodaySelected) {
+          // Hôm nay: cuộn đến khung giờ hiện tại
+          const currentMinutes = now.getHours() * 60 + now.getMinutes();
+          if (currentMinutes >= startLimit && currentMinutes <= endLimit) {
+            const totalMinutes = duration;
+            const minutesElapsed = currentMinutes - startLimit;
+            const percentElapsed = minutesElapsed / totalMinutes;
             const scrollTarget = containerWidth * percentElapsed - clientWidth / 2;
             timelineContainerRef.current.scrollTo({ left: Math.max(0, scrollTarget), behavior: 'smooth' });
           }
-        }, 300);
-      }
+        } else {
+          // Ngày khác: cuộn về đầu ngày (05:00)
+          timelineContainerRef.current.scrollTo({ left: 0, behavior: 'smooth' });
+        }
+      }, 300);
     }
-  }, [filterType, loading]);
+  }, [filterType, loading, isTodaySelected]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);

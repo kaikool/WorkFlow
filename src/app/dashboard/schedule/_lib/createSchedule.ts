@@ -72,7 +72,6 @@ export async function createSchedule(p: CreateScheduleParams) {
 
   try {
     const { use_vehicle, participants, vehicle_id, target_profile_id, destinations, location: originLocation, ...insertData } = newSchedule;
-    console.log('[DEBUG createSchedule] use_vehicle =', use_vehicle, 'type:', insertData.type);
     const targetId = (isLeave && newSchedule.target_profile_id) ? newSchedule.target_profile_id : profile?.id;
     const targetProfile = isLeave ? allProfiles.find((x: any) => x.id === targetId) : profile;
 
