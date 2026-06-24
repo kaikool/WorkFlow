@@ -480,24 +480,24 @@ export default function ScheduleDetailDialog({
 
             {/* Điều phối xe */}
             {isCoordinator && schedule.use_vehicle && !schedule.vehicle_id && (
-              <div className="p-4 bg-slate-50 rounded-xl space-y-3">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-white rounded-lg shadow-sm shrink-0">
-                    <Car className="w-4 h-4 text-slate-500" />
+              <div className="p-3 bg-slate-50 rounded-xl space-y-2.5">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-1.5 bg-white rounded-lg shadow-sm shrink-0">
+                    <Car className="w-3.5 h-3.5 text-slate-500" />
                   </div>
                   <div>
-                    <p className="text-[13px] font-semibold text-slate-700">Điều phối phương tiện</p>
-                    <p className="text-[11px] font-medium text-slate-500">Chọn xe và lái xe phù hợp</p>
+                    <p className="text-[12px] font-semibold text-slate-700">Điều phối phương tiện</p>
+                    <p className="text-[10px] font-medium text-slate-500">Chọn xe và lái xe phù hợp</p>
                   </div>
                 </div>
 
                 {/* Cảnh báo xe đang đi chuyến khác */}
                 {vehicleConflict && (
-                  <div className="flex items-start gap-2.5 p-3 bg-amber-50 rounded-xl border border-amber-200">
-                    <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                  <div className="flex items-start gap-2 p-2.5 bg-amber-50 rounded-xl border border-amber-200">
+                    <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-[12px] font-semibold text-amber-800">Xe đã có lịch trùng giờ: "{vehicleConflict.title}"</p>
-                      <p className="text-[11px] text-amber-700 mt-0.5">
+                      <p className="text-[11px] font-semibold text-amber-800">Xe đã có lịch trùng giờ: "{vehicleConflict.title}"</p>
+                      <p className="text-[10px] text-amber-700 mt-0.5">
                         {new Date(vehicleConflict.start_time).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })} – {new Date(vehicleConflict.end_time).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
                       </p>
                     </div>
@@ -506,17 +506,17 @@ export default function ScheduleDetailDialog({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <Select value={detail.tempVehicleId || ''} onValueChange={detail.handleVehicleSelect}>
-                    <SelectTrigger className="min-h-11 bg-white border-none rounded-xl font-medium text-sm shadow-sm">
+                    <SelectTrigger className="min-h-9 bg-white border-none rounded-xl font-medium text-xs shadow-sm">
                       <SelectValue placeholder="Chọn xe..." />
                     </SelectTrigger>
-                    <SelectContent className="rounded-xl border-none shadow-2xl p-1 min-w-[var(--radix-select-trigger-width)]">
+                    <SelectContent className="rounded-xl border-none shadow-lg p-1 min-w-[var(--radix-select-trigger-width)]">
                       {vehicles.map(v => {
                         const busy = vehicleBusyMap.has(v.id);
                         return (
-                        <SelectItem key={v.id} value={v.id} className="text-xs py-2 pr-3">
+                        <SelectItem key={v.id} value={v.id} className="text-[11px] py-1.5 pr-3">
                           <span className="grid grid-cols-[1fr_auto] items-center gap-2 w-full">
                             <span className="truncate font-semibold text-slate-800">{v.name} - {v.plate_number}</span>
-                            <span className={"shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full text-center " + (busy ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-700")}>
+                            <span className={"shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded-full text-center " + (busy ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-700")}>
                               {busy ? 'BẬN' : 'RẢNH'}
                             </span>
                           </span>
@@ -527,19 +527,19 @@ export default function ScheduleDetailDialog({
                   </Select>
 
                   <Select value={detail.tempDriverId || ''} onValueChange={detail.handleDriverSelect}>
-                    <SelectTrigger className="min-h-11 bg-white border-none rounded-xl font-medium text-sm shadow-sm">
+                    <SelectTrigger className="min-h-9 bg-white border-none rounded-xl font-medium text-xs shadow-sm">
                       <SelectValue placeholder="Chọn lái xe..." />
                     </SelectTrigger>
-                    <SelectContent className="rounded-xl border-none shadow-2xl p-1 min-w-[var(--radix-select-trigger-width)]">
+                    <SelectContent className="rounded-xl border-none shadow-lg p-1 min-w-[var(--radix-select-trigger-width)]">
                       {allProfiles.filter(p => p.role === 'driver').map(p => {
                         const busy = driverBusyMap.has(p.id);
                         return (
-                        <SelectItem key={p.id} value={p.id} className="text-xs py-2 pr-3">
+                        <SelectItem key={p.id} value={p.id} className="text-[11px] py-1.5 pr-3">
                           <span className="grid grid-cols-[1fr_auto] items-center gap-2 w-full">
                             <span className="truncate font-semibold text-slate-800">
                               {p.full_name}{p.phone ? ` - ${p.phone}` : ''}
                             </span>
-                            <span className={"shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full text-center " + (busy ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-700")}>
+                            <span className={"shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded-full text-center " + (busy ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-700")}>
                               {busy ? 'BẬN' : 'RẢNH'}
                             </span>
                           </span>
@@ -553,17 +553,17 @@ export default function ScheduleDetailDialog({
                 <div className="grid grid-cols-3 gap-2">
                   <Button variant="outline"
                     onClick={() => setRejectVehicleOpen(true)}
-                    className="h-11 rounded-xl font-semibold border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 w-full"
+                    className="min-h-9 rounded-xl text-xs font-semibold border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 w-full"
                   >Từ chối</Button>
                   <Button variant="outline"
                     onClick={() => { onSelfArranged(schedule.id); setIsOpen(false); }}
-                    className="h-11 rounded-xl font-semibold border-amber-300 text-amber-700 hover:bg-amber-50 hover:text-amber-800 w-full"
+                    className="min-h-9 rounded-xl text-xs font-semibold border-amber-300 text-amber-700 hover:bg-amber-50 hover:text-amber-800 w-full"
                   >Tự túc PT</Button>
                   <Button
                     disabled={!detail.tempVehicleId}
                     onClick={() => onAssignVehicle(schedule.id, detail.tempVehicleId, detail.tempDriverId)}
                     className={cn(
-                      "h-11 rounded-xl font-semibold active:scale-[0.98] transition-all duration-300 ease-in-out w-full",
+                      "min-h-9 rounded-xl text-xs font-semibold active:scale-[0.98] transition-all duration-300 ease-in-out w-full",
                       vehicleConflict
                         ? "bg-amber-500 hover:bg-amber-600 text-white"
                         : "bg-primary hover:bg-primary/90 text-white"
