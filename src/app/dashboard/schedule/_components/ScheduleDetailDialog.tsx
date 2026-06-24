@@ -32,38 +32,42 @@ function RenderParticipants({ schedule, allProfiles }: { schedule: any; allProfi
   if (!schedule?.participants) return null;
 
   const bgdProfiles = filterBGD(allProfiles);
-  const staffProfiles = filterStaff(allProfiles);
   const participantIds = schedule.participants.map((p: any) => p.profile?.id);
-
   const hasAllBgd = bgdProfiles.length > 0 && bgdProfiles.every(p => participantIds.includes(p.id));
 
-  // Lọc participants: directors, managers/staff khác
-  const directors: string[] = [];
-  const managers: string[] = [];
-  const others: string[] = [];
+  const list: { label: string; color: string }[] = [];
 
+  if (hasAllBgd) {
+    list.push({ label: 'Toàn bộ BGĐ', color: 'bg-red-50 text-red-700 border-red-200' });
+  }
+
+  const others: string[] = [];
   schedule.participants.forEach((p: any) => {
     if (!p.profile?.full_name) return;
     if (hasAllBgd && bgdProfiles.some(bp => bp.id === p.profile?.id)) return;
-    if (p.profile?.role === 'director' || p.profile?.title?.toLowerCase().includes('giám đốc')) {
-      directors.push(p.profile.full_name);
-    } else if (p.profile?.role === 'manager' || p.profile?.is_department_head) {
-      managers.push(p.profile.full_name);
+    const role = p.profile?.role;
+    const title = (p.profile?.title || '').toLowerCase();
+    if (role === 'director' || title.includes('giám đốc')) {
+      list.push({ label: p.profile.full_name, color: 'bg-red-50/60 text-red-800 border-red-200/60' });
+    } else if (role === 'manager' || p.profile?.is_department_head) {
+      list.push({ label: p.profile.full_name, color: 'bg-blue-50/60 text-blue-800 border-blue-200/60' });
     } else {
       others.push(p.profile.full_name);
     }
   });
 
-  const parts: string[] = [];
-  if (hasAllBgd) parts.push('Toàn bộ BGĐ');
-  if (directors.length > 0) parts.push(directors.join(', '));
-  if (managers.length > 0) parts.push(managers.join(', '));
-  if (others.length > 0) parts.push(`... và ${others.length} người khác`);
+  if (others.length > 0) {
+    list.push({ label: `+ ${others.length} người khác`, color: 'bg-slate-50 text-slate-500 border-slate-200' });
+  }
 
   return (
-    <p className="text-sm font-medium text-slate-700 leading-relaxed">
-      {parts.join(' • ') || 'Chưa có'}
-    </p>
+    <div className="flex flex-wrap gap-1.5">
+      {list.map((item, i) => (
+        <span key={i} className={"inline-block text-[11px] font-semibold px-2.5 py-1 rounded-full border " + item.color}>
+          {item.label}
+        </span>
+      ))}
+    </div>
   );
 }
 
@@ -504,15 +508,15 @@ export default function ScheduleDetailDialog({
                     <SelectTrigger className="min-h-11 bg-white border-none rounded-xl font-medium text-sm shadow-sm">
                       <SelectValue placeholder="Chọn xe..." />
                     </SelectTrigger>
-                    <SelectContent className="rounded-xl border-none shadow-2xl">
+                    <SelectContent className="rounded-xl border-none shadow-2xl p-1 min-w-[var(--radix-select-trigger-width)]">
                       {vehicles
                         .map(v => {
                           const busy = vehicleBusyMap.has(v.id);
                           return (
-                          <SelectItem key={v.id} value={v.id} className="text-xs py-2.5">
-                            <span className="flex items-center justify-between w-full gap-2">
-                              <span className="font-semibold text-slate-800 truncate">{v.name} - {v.plate_number}</span>
-                              <span className={"shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full " + (busy ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-700")}>
+                          <SelectItem key={v.id} value={v.id} className="text-xs py-2 pr-3">
+                            <span className="grid grid-cols-[1fr_auto] items-center gap-2 w-full">
+                              <span className="truncate font-semibold text-slate-800">{v.name} - {v.plate_number}</span>
+                              <span className={"shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full text-center " + (busy ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-700")}>
                                 {busy ? 'BẬN' : 'RẢNH'}
                               </span>
                             </span>
@@ -526,16 +530,16 @@ export default function ScheduleDetailDialog({
                     <SelectTrigger className="min-h-11 bg-white border-none rounded-xl font-medium text-sm shadow-sm">
                       <SelectValue placeholder="Chọn lái xe..." />
                     </SelectTrigger>
-                    <SelectContent className="rounded-xl border-none shadow-2xl">
+                    <SelectContent className="rounded-xl border-none shadow-2xl p-1 min-w-[var(--radix-select-trigger-width)]">
                       {allProfiles.filter(p => p.role === 'driver').map(p => {
                         const busy = driverBusyMap.has(p.id);
                         return (
-                        <SelectItem key={p.id} value={p.id} className="text-xs py-2.5">
-                          <span className="flex items-center justify-between w-full gap-2">
-                            <span className="font-semibold text-slate-800 truncate">
+                        <SelectItem key={p.id} value={p.id} className="text-xs py-2 pr-3">
+                          <span className="grid grid-cols-[1fr_auto] items-center gap-2 w-full">
+                            <span className="truncate font-semibold text-slate-800">
                               {p.full_name}{p.phone ? ` - ${p.phone}` : ''}
                             </span>
-                            <span className={"shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full " + (busy ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-700")}>
+                            <span className={"shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full text-center " + (busy ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-700")}>
                               {busy ? 'BẬN' : 'RẢNH'}
                             </span>
                           </span>
