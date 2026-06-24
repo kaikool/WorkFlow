@@ -460,13 +460,17 @@ export async function fetchAllDocuments(): Promise<DocumentRow[]> {
 }
 ```
 
-**5 nguyên tắc fetch:**
+**6 nguyên tắc fetch:**
 
 1. **1 query lấy đầy đủ join** thay vì N+1 — dùng `.select('*, foo:foreign_table(...)')` với foreign key hint khi có nhiều FK trỏ cùng bảng (như `creator:profiles!documents_creator_id_fkey`).
 2. **`Promise.all([…])`** khi 2+ query độc lập (xem `useSchedule.ts:58-65`).
 3. **Return mảng rỗng khi lỗi**, log `console.error`. Không throw từ fetch helper — để UI tự render empty state, không vỡ trang.
 4. **Type assertion `as unknown as DocumentRow[]`** vì Supabase JS không tự suy luận nested join (chưa gen `database.types.ts`).
 5. **Khai báo `FULL_SELECT` ở top file**, không inline trong function — tái sử dụng giữa list + detail.
+6. **(Mới) Cursor pagination — fetch có giới hạn (PAGE_SIZE=50)** thay vì load toàn bộ. Dùng
+   `.limit(N+1)` để phát hiện `hasMore`, cursor là `updated_at` của item cuối.
+   Realtime chỉ refetch page 1, "Xem thêm" append các page sau (xem `fetchHandover.ts`).
+   **Không dùng offset-based pagination** vì không ổn định khi có insert/delete ở page đầu.
 
 ### 5.3 Pattern hook tập trung `useXxx`
 
@@ -604,7 +608,7 @@ const handleSubmit = async () => {
    - **Cơ chế hoạt động**:
      - *Bước 1*: Đọc đồng bộ dữ liệu từ `localStorage` khi mount (tránh hydration mismatch) để render ngay lập tức (0ms delay).
      - *Bước 2*: Thực hiện background fetch profiles/depts/ooo/vehicles/rooms để cập nhật state.
-     - *Bước 3*: Subscribe realtime channel `app_data_sync` cho profiles/depts/ooo, và channel `app_resource_sync` riêng biệt cho vehicles/rooms.
+     - *Bước 3*: Subscribe realtime channel `app_data_sync` duy nhất cho profiles/depts/ooo/vehicles/rooms (gộp 2 channel thành 1 để giảm subscription).
      - *Bước 4*: Phân quyền ghi/sửa tài nguyên không nằm ở cache provider mà nằm ở helper UI + RLS policy backend.
    - **Tối ưu payload**: Đối với user không phải admin, fetching profiles được filter ngay tại DB với `role != 'admin'` thay vì tải toàn bộ rồi lọc client-side, giúp giảm đáng kể dung lượng tải về (admin/director thường chiếm <5% tổng user). Admin vẫn fetch toàn bộ profiles không filter.
    - **Quy tắc sử dụng**: Tuyệt đối không tự fetch lại danh sách phòng ban (`departments`), xe (`vehicles`), hay phòng (`rooms`) trong các dialog/component con mà bắt buộc phải đọc trực tiếp từ `useAppData()` để tối ưu hóa hiệu năng.

@@ -1,9 +1,15 @@
 // Query Supabase trả về list hồ sơ + categories + handovers
+//
+// Tối ưu performance (Gói D):
+//   - Pagination cursor: chỉ fetch PAGE_SIZE bản ghi mỗi lần, "Xem thêm" lấy tiếp.
+//   - Realtime chỉ refetch page 1 (luôn hiển thị docs mới nhất), load more tích luỹ.
 
 import { createClient } from "@/utils/supabase/client";
 import type { DocumentCategory, DocumentRow } from "./types";
 
 const supabase = createClient();
+
+export const PAGE_SIZE = 50;
 
 // FK disambiguator dùng TÊN CỘT (an toàn hơn tên constraint Postgres tự sinh,
 // vì constraint có thể có suffix _1, _2 nếu bảng từng drop-recreate).
@@ -48,16 +54,38 @@ function logSupabaseError(label: string, error: any) {
   });
 }
 
-export async function fetchAllDocuments(): Promise<DocumentRow[]> {
-  const { data, error } = await supabase
+export interface FetchResult {
+  data: DocumentRow[];
+  hasMore: boolean;
+}
+
+/**
+ * Fetch documents với cursor pagination.
+ * @param options.limit  Số bản ghi tối đa (mặc định PAGE_SIZE)
+ * @param options.before Cursor: chỉ lấy documents có updated_at < giá trị này
+ */
+export async function fetchAllDocuments(options?: {
+  limit?: number;
+  before?: string;
+}): Promise<FetchResult> {
+  const fetchLimit = (options?.limit ?? PAGE_SIZE) + 1; // fetch dư 1 để phát hiện hasMore
+  let query = supabase
     .from("documents")
     .select(LIST_SELECT)
-    .order("updated_at", { ascending: false });
+    .order("updated_at", { ascending: false })
+    .limit(fetchLimit);
+  if (options?.before) {
+    query = query.lt("updated_at", options.before);
+  }
+  const { data, error } = await query;
   if (error) {
     logSupabaseError("fetchAllDocuments error:", error);
-    return [];
+    return { data: [], hasMore: false };
   }
-  return (data || []) as unknown as DocumentRow[];
+  const docs = (data || []) as unknown as DocumentRow[];
+  const hasMore = docs.length >= fetchLimit;
+  if (hasMore) docs.pop(); // bỏ bản ghi dư đã dùng để detect
+  return { data: docs, hasMore };
 }
 
 export async function fetchDocumentById(documentId: string): Promise<DocumentRow | null> {

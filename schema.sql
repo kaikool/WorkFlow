@@ -1118,8 +1118,8 @@ END $$;
 CREATE INDEX IF NOT EXISTS idx_schedules_driver_status ON schedules(driver_id, type, status);
 CREATE INDEX IF NOT EXISTS idx_schedules_department_start ON schedules(department_id, start_time);
 CREATE INDEX IF NOT EXISTS idx_schedules_end_time ON schedules(end_time);
-CREATE INDEX IF NOT EXISTS idx_schedules_room ON schedules(room_id, start_time);
-CREATE INDEX IF NOT EXISTS idx_schedules_vehicle ON schedules(vehicle_id, start_time);
+CREATE INDEX IF NOT EXISTS idx_schedules_room_time ON schedules(room_id, start_time, end_time) WHERE room_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_schedules_vehicle_time ON schedules(vehicle_id, start_time, end_time) WHERE vehicle_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_tasks_department_status ON tasks(department_id, status);
 CREATE INDEX IF NOT EXISTS idx_tasks_assignee ON tasks(assignee_id);
 CREATE INDEX IF NOT EXISTS idx_tasks_created_by ON tasks(created_by);
@@ -5279,6 +5279,9 @@ NOTIFY pgrst, 'reload schema';
 CREATE INDEX IF NOT EXISTS idx_documents_current_assignee ON documents(current_assignee_id);
 CREATE INDEX IF NOT EXISTS idx_documents_creator ON documents(creator_id);
 CREATE INDEX IF NOT EXISTS idx_documents_status ON documents(status);
+
+-- Index cho cursor pagination: ORDER BY updated_at DESC LIMIT N
+CREATE INDEX IF NOT EXISTS idx_documents_updated_desc ON documents(updated_at DESC);
 CREATE INDEX IF NOT EXISTS idx_handovers_doc_sent ON document_handovers(document_id, sent_at DESC);
 CREATE INDEX IF NOT EXISTS idx_handovers_receiver_pending ON document_handovers(receiver_id) WHERE status = 'PENDING';
 CREATE INDEX IF NOT EXISTS idx_handovers_sender ON document_handovers(sender_id);

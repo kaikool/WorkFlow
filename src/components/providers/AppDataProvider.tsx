@@ -155,7 +155,8 @@ export function AppDataProvider({ currentUserId, children }: Props) {
     await Promise.all(promises);
   }, [fetchProfiles, fetchDepartments, fetchOutOfOffice, fetchVehicles, fetchRooms]);
 
-  // 1. Initial fetch + realtime subscribe cho các bảng chung (profiles, departments, ooo)
+  // 1. Initial fetch + realtime subscribe cho toàn bộ data chung (profiles, departments, ooo, vehicles, rooms)
+  //    Gộp hết vào 1 channel thay vì 2 để giảm số lượng subscription WebSocket.
   useEffect(() => {
     let mounted = true;
 
@@ -195,20 +196,6 @@ export function AppDataProvider({ currentUserId, children }: Props) {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'out_of_office' }, () => {
         void fetchOutOfOffice();
       })
-      .subscribe();
-
-    return () => {
-      mounted = false;
-      void supabase.removeChannel(channel);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scope, supabase, currentUserId, fetchProfiles, fetchDepartments, fetchOutOfOffice, fetchVehicles, fetchRooms]);
-
-  // 2. Kênh đồng bộ Real-time cho Vehicles và Rooms.
-  // Mọi user cần đọc danh mục để đăng ký lịch; quyền ghi vẫn do RLS/policy điều phối chặn.
-  useEffect(() => {
-    const channel = supabase
-      .channel('app_resource_sync')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'vehicles' }, () => {
         void fetchVehicles();
       })
@@ -218,9 +205,11 @@ export function AppDataProvider({ currentUserId, children }: Props) {
       .subscribe();
 
     return () => {
+      mounted = false;
       void supabase.removeChannel(channel);
     };
-  }, [supabase, fetchVehicles, fetchRooms]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scope, supabase, currentUserId, fetchProfiles, fetchDepartments, fetchOutOfOffice, fetchVehicles, fetchRooms]);
 
   const value = useMemo<AppDataValue>(
     () => ({

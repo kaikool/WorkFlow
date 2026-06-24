@@ -574,8 +574,9 @@ INSERT public (form `/register`), SELECT + UPDATE chỉ `admin`.
 | `idx_schedules_driver_status` | schedules (`driver_id, type, status`) | Workspace lái xe |
 | `idx_schedules_department_start` | schedules (`department_id, start_time`) | Lịch theo phòng theo ngày |
 | `idx_schedules_end_time` | schedules (`end_time`) | Conflict detection |
-| `idx_schedules_room` | schedules (`room_id, start_time`) | Conflict phòng họp |
-| `idx_schedules_vehicle` | schedules (`vehicle_id, start_time`) | Conflict xe |
+| `idx_schedules_room_time` | schedules (`room_id, start_time, end_time`) WHERE `room_id IS NOT NULL` | Conflict phòng họp — composite index phủ time-range |
+| `idx_schedules_vehicle_time` | schedules (`vehicle_id, start_time, end_time`) WHERE `vehicle_id IS NOT NULL` | Conflict xe — composite index phủ time-range |
+| `idx_documents_updated_desc` | documents (`updated_at DESC`) | Cursor pagination cho list hồ sơ (ORDER BY updated_at DESC LIMIT N) |
 | `idx_tasks_department_status` | tasks (`department_id, status`) | Tasks theo phòng |
 | `idx_tasks_assignee` | tasks (`assignee_id`) | Tasks được giao cho tôi |
 | `idx_tasks_created_by` | tasks (`created_by`) | Tasks tôi tạo |

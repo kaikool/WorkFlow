@@ -20,6 +20,8 @@ export default function HandoverPage() {
   const state = useHandover();
   const {
     loading,
+    loadingMore,
+    hasMore,
     profile,
     allProfiles,
     categories,
@@ -33,6 +35,7 @@ export default function HandoverPage() {
     isCreateOpen,
     setIsCreateOpen,
     refetch,
+    loadMore,
   } = state;
 
   const [isCategoryOpen, setIsCategoryOpen] = React.useState(false);
@@ -136,6 +139,19 @@ export default function HandoverPage() {
           </TabsContent>
         )}
       </Tabs>
+
+      {/* Nút "Xem thêm" — cursor pagination, chỉ hiện khi còn trang sau */}
+      {hasMore && (
+        <div className="flex justify-center pt-4">
+          <button
+            onClick={loadMore}
+            disabled={loadingMore}
+            className="px-6 py-2.5 rounded-xl border border-slate-200 bg-white text-[13px] font-medium text-slate-600 hover:bg-slate-50 hover:border-slate-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-[0.98]"
+          >
+            {loadingMore ? "Đang tải thêm..." : "Xem thêm"}
+          </button>
+        </div>
+      )}
 
       {/* Dialog tạo mới */}
       <CreateDocumentDialog

@@ -9,12 +9,15 @@ import { canViewAllDocuments } from "@/lib/permissions";
 import {
   fetchAllDocuments,
   fetchCategories,
+  PAGE_SIZE,
 } from "../_lib/fetchHandover";
 import type { DocumentCategory, DocumentRow } from "../_lib/types";
 import type { DeskTab } from "../_lib/constants";
 
 interface UseHandoverState {
   loading: boolean;
+  loadingMore: boolean;
+  hasMore: boolean;
   profile: any;
   allProfiles: any[];
   documents: DocumentRow[];
@@ -30,6 +33,7 @@ interface UseHandoverState {
   isCreateOpen: boolean;
   setIsCreateOpen: (v: boolean) => void;
   refetch: () => Promise<void>;
+  loadMore: () => Promise<void>;
 }
 
 export function useHandover(): UseHandoverState {
@@ -48,8 +52,13 @@ export function useHandover(): UseHandoverState {
   );
 
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [documents, setDocuments] = useState<DocumentRow[]>([]);
   const [categories, setCategories] = useState<DocumentCategory[]>([]);
+  const [hasMore, setHasMore] = useState(false);
+
+  // Con trỏ cho cursor pagination: updated_at của item cuối cùng đã fetch
+  const cursorRef = useRef<string | undefined>(undefined);
 
   const [activeTab, setActiveTab] = useState<DeskTab>("inbox");
   const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
@@ -71,15 +80,13 @@ export function useHandover(): UseHandoverState {
     }
   }, [searchParams, pathname, router]);
 
-  // Refetch (debounced) — gọi sau mỗi realtime event
+  // Refetch page 1 (reset cursor) — dùng cho initial load + realtime
   const refetchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const refetch = useCallback(async () => {
-    const [docs, cats] = await Promise.all([
-      fetchAllDocuments(),
-      fetchCategories(),
-    ]);
-    setDocuments(docs);
-    setCategories(cats);
+    const { data, hasMore: hm } = await fetchAllDocuments({ limit: PAGE_SIZE });
+    cursorRef.current = data.length > 0 ? data[data.length - 1].updated_at : undefined;
+    setDocuments(data);
+    setHasMore(hm);
   }, []);
 
   const scheduleRefetch = useCallback(() => {
@@ -89,6 +96,23 @@ export function useHandover(): UseHandoverState {
     }, 250);
   }, [refetch]);
 
+  // Load more (cursor-based, append)
+  const loadMore = useCallback(async () => {
+    if (!cursorRef.current || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const { data, hasMore: hm } = await fetchAllDocuments({
+        limit: PAGE_SIZE,
+        before: cursorRef.current,
+      });
+      cursorRef.current = data.length > 0 ? data[data.length - 1].updated_at : undefined;
+      setDocuments((prev) => [...prev, ...data]);
+      setHasMore(hm);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [loadingMore]);
+
   // Initial load — chỉ fetch documents + categories, profile/profiles từ AppDataProvider
   useEffect(() => {
     let active = true;
@@ -97,13 +121,18 @@ export function useHandover(): UseHandoverState {
       try {
         if (!currentProfile) return; // chờ provider hydrate
 
-        const [docs, cats] = await Promise.all([
-          fetchAllDocuments(),
+        const [docsResult, cats] = await Promise.all([
+          fetchAllDocuments({ limit: PAGE_SIZE }),
           fetchCategories(),
         ]);
 
         if (!active) return;
-        setDocuments(docs);
+        cursorRef.current =
+          docsResult.data.length > 0
+            ? docsResult.data[docsResult.data.length - 1].updated_at
+            : undefined;
+        setDocuments(docsResult.data);
+        setHasMore(docsResult.hasMore);
         setCategories(cats);
       } finally {
         if (active) setLoading(false);
@@ -116,7 +145,6 @@ export function useHandover(): UseHandoverState {
   useEffect(() => {
     if (!profile) return;
     // Tách INSERT/UPDATE/DELETE để tránh subscribe TRUNCATE/replication không cần thiết.
-    // documents thay đổi thường xuyên → chỉ cần INSERT/UPDATE/DELETE thay vì '*'.
     const channel = supabase
       .channel("handover_realtime_sync")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "documents" }, scheduleRefetch)
@@ -137,7 +165,6 @@ export function useHandover(): UseHandoverState {
       )
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "document_handovers" }, scheduleRefetch)
       .on("postgres_changes", { event: "DELETE", schema: "public", table: "document_handovers" }, scheduleRefetch)
-      // document_categories ít khi đổi (admin thêm/sửa) — vẫn giữ '*' để đơn giản.
       .on("postgres_changes", { event: "*", schema: "public", table: "document_categories" }, scheduleRefetch)
       .subscribe();
 
@@ -197,6 +224,8 @@ export function useHandover(): UseHandoverState {
 
   return {
     loading,
+    loadingMore,
+    hasMore,
     profile,
     allProfiles,
     documents,
@@ -211,5 +240,6 @@ export function useHandover(): UseHandoverState {
     isCreateOpen,
     setIsCreateOpen,
     refetch,
+    loadMore,
   };
 }
