@@ -8,7 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import {
-  Building2, Calendar, Users, Pencil, Trash2,
+  Building2, Users, Pencil, Trash2,
   CheckCircle2, Loader2, Play, Send, Undo2, Clock, RotateCcw,
   ChevronRight, Flag, X, FileText,
 } from 'lucide-react';
@@ -184,16 +184,10 @@ export function TaskDetailDialog(props: Props) {
 
   const hTitle = ov ? rep?.title : task?.title ?? 'Đang tải…';
   const hMeta = ov
-    ? [{ icon: <Users className="w-4 h-4 text-slate-500" />, text: deptLabel },
-       rep?.creator ? { icon: <Avatar className="w-5 h-5"><AvatarImage src={rep.creator?.avatar_url ?? undefined} /><AvatarFallback className="text-[8px] font-bold bg-slate-200 text-slate-600">{rep.creator?.full_name?.[0]}</AvatarFallback></Avatar>, text: rep.creator.full_name } : null,
-       rep?.due_date ? { icon: <Calendar className="w-4 h-4 text-slate-500" />, text: format(new Date(rep.due_date), 'dd/MM/yyyy', { locale: vi }) } : null,
-      ].filter(Boolean)
+    ? [deptLabel, rep?.creator?.full_name, rep?.due_date ? format(new Date(rep.due_date), 'dd/MM/yyyy', { locale: vi }) : null].filter(Boolean).join(' · ')
     : task
-      ? [{ icon: <Avatar className="w-5 h-5"><AvatarImage src={task.creator?.avatar_url ?? undefined} /><AvatarFallback className="text-[8px] font-bold bg-slate-200 text-slate-600">{task.creator?.full_name?.[0]}</AvatarFallback></Avatar>, text: task.creator?.full_name },
-         task.due_date ? { icon: <Calendar className="w-4 h-4 text-slate-500" />, text: format(new Date(task.due_date), 'dd/MM/yyyy HH:mm', { locale: vi }) } : null,
-         dueOver ? { icon: null, text: 'Quá hạn', cls: 'text-red-600 font-semibold' } : null,
-        ].filter(Boolean)
-      : [];
+      ? [task.creator?.full_name, task.due_date ? `Hạn ${format(new Date(task.due_date), 'dd/MM/yyyy HH:mm', { locale: vi })}` : null, dueOver ? 'Quá hạn' : null].filter(Boolean).join(' · ')
+      : '';
 
   const canEditAny = ov ? bCanEd : canEd;
   const canDeleteAny = ov ? bCanDe : canDe;
@@ -223,14 +217,7 @@ export function TaskDetailDialog(props: Props) {
               {hTitle}
             </DialogTitle>
             {hMeta.length > 0 && (
-              <div className="flex flex-wrap items-center gap-3">
-                {hMeta.map((m: any, i: number) => (
-                  <span key={i} className={cn("flex items-center gap-1.5 text-sm font-semibold", m.cls ?? 'text-slate-600')}>
-                    {m.icon && <span className="shrink-0">{m.icon}</span>}
-                    {m.text}
-                  </span>
-                ))}
-              </div>
+              <p className="text-sm font-semibold text-slate-500 truncate">{hMeta}</p>
             )}
           </div>
           {/* Blur decoration */}
@@ -427,24 +414,21 @@ export function TaskDetailDialog(props: Props) {
 
         {/* ═══ FOOTER ═══ */}
         <DialogFooter className="app-dialog-sheet-footer flex flex-row items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             {canEditAny && (
               <button onClick={() => setOpenEdit(true)}
-                className="h-10 px-3 rounded-xl text-sm font-semibold text-slate-600 bg-slate-50 border border-slate-200 hover:bg-slate-100 transition-all active:scale-95 inline-flex items-center gap-1.5">
-                <Pencil className="w-4 h-4" /> Sửa
+                className="h-9 w-9 rounded-xl bg-slate-50 border border-slate-200 hover:bg-slate-100 flex items-center justify-center transition-all active:scale-95">
+                <Pencil className="w-4 h-4 text-slate-500" />
               </button>
             )}
             {canDeleteAny && (
               <button onClick={ov ? delb : del} disabled={ov ? deleting : busy !== null}
-                className="h-10 px-3 rounded-xl text-sm font-semibold text-red-600 bg-red-50 border border-red-100 hover:bg-red-100 transition-all active:scale-95 inline-flex items-center gap-1.5 disabled:opacity-50">
-                <Trash2 className="w-4 h-4" /> Xoá
+                className="h-9 w-9 rounded-xl bg-red-50 border border-red-100 hover:bg-red-100 flex items-center justify-center transition-all active:scale-95 disabled:opacity-50">
+                <Trash2 className="w-4 h-4 text-red-500" />
               </button>
             )}
           </div>
           <div className="flex items-center gap-2">
-            {ov && (
-              <span className="text-xs font-semibold text-slate-500 tabular-nums">{bp.done + bp.submitted}/{bp.total} hoàn thành</span>
-            )}
             <button onClick={() => setIsOpen(false)}
               className="min-h-11 px-5 rounded-xl font-semibold text-sm text-slate-600 bg-slate-100 hover:bg-slate-200 transition-all active:scale-95 whitespace-nowrap">Đóng cửa sổ</button>
           </div>
