@@ -122,7 +122,7 @@ export default function TeamPage() {
 
       {/* Filter status = Tabs (đồng bộ pattern với module Tasks) */}
       <Tabs value={filter} onValueChange={(v) => setFilter(v as ProfileStatus | 'all')} className="w-full">
-        <TabsList className="min-h-11 grid grid-cols-5">
+        <TabsList className="min-h-11 grid grid-cols-4">
           {FILTER_TABS.map((opt) => (
             <TabsTrigger
               key={opt.key}

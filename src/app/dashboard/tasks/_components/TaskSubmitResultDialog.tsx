@@ -10,7 +10,6 @@ import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 import { notifyError, notifySuccess } from '@/lib/notify';
 import { updateTaskStatus, addComment } from '../_lib/taskActions';
-import { TaskAttachmentManager } from './TaskAttachmentManager';
 
 interface Props {
   task: { id: string; title: string };
@@ -63,10 +62,6 @@ export function TaskSubmitResultDialog({ task, onClose, onChanged }: Props) {
               />
             </div>
 
-            <div className="tight-stack">
-              <Label className="text-label">File đính kèm (tuỳ chọn)</Label>
-              <TaskAttachmentManager taskId={task.id} canUpload={true} />
-            </div>
           </div>
         </div>
 

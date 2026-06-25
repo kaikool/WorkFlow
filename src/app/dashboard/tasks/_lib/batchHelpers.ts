@@ -16,10 +16,6 @@ export function groupByBatch(items: TaskListItem[]): TaskListEntry[] {
 
   const entries: TaskListEntry[] = [];
   for (const [batchId, children] of batches) {
-    if (children.length === 1) {
-      entries.push({ kind: 'single', task: children[0] });
-      continue;
-    }
     const representative = children.reduce((acc, x) => {
       if (acc.is_overdue && !x.is_overdue) return acc;
       if (!acc.is_overdue && x.is_overdue) return x;
@@ -29,11 +25,13 @@ export function groupByBatch(items: TaskListItem[]): TaskListEntry[] {
     });
     entries.push({ kind: 'batch', batchId, children, representative });
   }
-  for (const s of singles) entries.push({ kind: 'single', task: s });
+  for (const s of singles) {
+    entries.push({ kind: 'batch', batchId: null, children: [s], representative: s });
+  }
 
   return entries.sort((a, b) => {
-    const ra = a.kind === 'batch' ? a.representative : a.task;
-    const rb = b.kind === 'batch' ? b.representative : b.task;
+    const ra = a.representative;
+    const rb = b.representative;
     if (ra.is_overdue && !rb.is_overdue) return -1;
     if (!ra.is_overdue && rb.is_overdue) return 1;
     const da = new Date(ra.due_date ?? ra.created_at).getTime();

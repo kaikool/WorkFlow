@@ -19,7 +19,6 @@ import { useTasksDashboard } from './_hooks/useTasksDashboard';
 import { TaskListSection } from './_components/TaskListSection';
 import { ResourceView } from './_components/ResourceView';
 import { TaskDetailDialog } from './_components/TaskDetailDialog';
-import { BatchTaskDetailDialog } from './_components/BatchTaskDetailDialog';
 import { CreateTaskDialog } from './_components/CreateTaskDialog';
 import {
   canAccessTasksModule,
@@ -217,13 +216,18 @@ function TasksContent() {
         </div>
       )}
 
-      {/* Detail dialog */}
+      {/* Detail dialog — unified cho cả single và batch */}
       <TaskDetailDialog
+        isOpen={!!openId || !!openBatchId}
+        setIsOpen={(open) => {
+          if (!open) { handleCloseDetail(); setOpenBatchId(null); }
+        }}
         taskId={openId}
-        isOpen={!!openId}
-        setIsOpen={(open) => { if (!open) handleCloseDetail(); }}
+        batchId={openBatchId}
+        children={openBatchId ? dash.items.filter(t => t.batch_id === openBatchId) : []}
         currentProfile={profile}
         onChanged={dash.refetch}
+        onOpenTask={handleOpenTask}
       />
 
       {/* Create dialog */}
@@ -231,16 +235,6 @@ function TasksContent() {
         isOpen={createOpen}
         setIsOpen={(open) => { if (!open) handleCloseCreate(); else handleOpenCreate(); }}
         onCreated={dash.refetch}
-      />
-
-      <BatchTaskDetailDialog
-        isOpen={!!openBatchId}
-        setIsOpen={(o) => { if (!o) setOpenBatchId(null); }}
-        batchId={openBatchId}
-        children={openBatchId ? dash.items.filter(t => t.batch_id === openBatchId) : []}
-        onOpenTask={handleOpenTask}
-        currentProfile={profile}
-        onChanged={() => dash.refetch()}
       />
     </div>
   );

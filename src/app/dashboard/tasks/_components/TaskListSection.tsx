@@ -2,7 +2,6 @@
 
 import React, { useMemo } from 'react';
 import { TaskCard } from './TaskCard';
-import { BatchTaskCard } from './BatchTaskCard';
 import { groupByBatch } from '../_lib/batchHelpers';
 import type { TaskListItem } from '../_lib/types';
 import { DATE_GROUP_LABEL, type DateGroup } from '../_lib/constants';
@@ -36,9 +35,7 @@ export function TaskListSection({ items, onOpen, onOpenBatch, currentProfile }: 
     const map = new Map<DateGroup, typeof entries>();
     for (const g of GROUP_ORDER) map.set(g, []);
     for (const entry of entries) {
-      const dateGroup = entry.kind === 'single'
-        ? classifyTask(entry.task)
-        : classifyTask(entry.representative);
+      const dateGroup = classifyTask(entry.representative);
       map.get(dateGroup)?.push(entry);
     }
     return Array.from(map.entries()).filter(([, v]) => v.length > 0);
@@ -51,21 +48,19 @@ export function TaskListSection({ items, onOpen, onOpenBatch, currentProfile }: 
           <h3 className="heading-card font-bold px-0.5">{DATE_GROUP_LABEL[group]}</h3>
           <div className="space-y-2">
             {groupItems.map(entry =>
-              entry.kind === 'single' ? (
-                <TaskCard
-                  key={entry.task.id}
-                  task={entry.task}
-                  onOpen={onOpen}
-                  currentProfile={currentProfile}
-                />
-              ) : (
-                <BatchTaskCard
-                  key={entry.batchId}
-                  representative={entry.representative}
-                  children={entry.children}
-                  onOpen={onOpenBatch!}
-                />
-              )
+              <TaskCard
+                key={entry.batchId ?? entry.representative.id}
+                representative={entry.representative}
+                children={entry.children}
+                onOpen={() => {
+                  if (entry.batchId) {
+                    onOpenBatch?.(entry.batchId);
+                  } else {
+                    onOpen?.(entry.representative.id);
+                  }
+                }}
+                currentProfile={currentProfile}
+              />
             )}
           </div>
         </section>

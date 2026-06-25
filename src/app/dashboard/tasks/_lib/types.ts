@@ -80,7 +80,10 @@ export type ActionResult<T = void> =
   | { ok: true; data?: T }
   | { ok: false; error: string };
 
-// Hiển thị list: hoặc 1 task đơn lẻ, hoặc 1 group batch
-export type TaskListEntry =
-  | { kind: 'single'; task: TaskListItem }
-  | { kind: 'batch'; batchId: string; children: TaskListItem[]; representative: TaskListItem };
+// Hiển thị list: tất cả đều là batch entry (batchId=null với task lẻ)
+export type TaskListEntry = {
+  kind: 'batch';
+  batchId: string | null;
+  children: TaskListItem[];
+  representative: TaskListItem;
+};

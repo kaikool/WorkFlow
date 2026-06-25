@@ -1,7 +1,7 @@
 'use client';
 
-// ResourceView — bar chart inline "Ai đang ôm bao nhiêu việc" cho manager+.
-// Hiển thị danh sách user + thanh ngang số task active + badge số trễ.
+// ResourceView — bar chart inline phân bổ công việc cho manager+.
+// Hiển thị top 5 cán bộ có nhiều việc nhất + thanh ngang + badge số trễ.
 
 import React from 'react';
 import Link from 'next/link';
@@ -21,10 +21,10 @@ export function ResourceView({ data, loading }: Props) {
       <section className="premium-card p-5 border-none space-y-4">
         <div className="flex items-center gap-2">
           <Users className="icon-md text-primary" />
-          <h2 className="text-sm font-bold text-slate-900">Ai đang ôm bao nhiêu</h2>
+          <h2 className="text-sm font-bold text-slate-900">Phân bổ công việc</h2>
         </div>
         <div className="item-stack">
-          {[1,2,3,4].map(i => (
+          {[1,2,3,4,5].map(i => (
             <div key={i} className="flex items-center gap-3 animate-pulse">
               <div className="w-8 h-8 rounded-full bg-slate-200" />
               <div className="flex-1 space-y-2">
@@ -46,11 +46,11 @@ export function ResourceView({ data, loading }: Props) {
     <section className="premium-card p-5 border-none space-y-4">
       <div className="flex items-center gap-2">
         <Users className="icon-md text-primary" />
-        <h2 className="text-sm font-bold text-slate-900">Ai đang ôm bao nhiêu</h2>
+        <h2 className="text-sm font-bold text-slate-900">Phân bổ công việc</h2>
       </div>
 
       <div className="item-stack">
-        {data.map(item => (
+        {data.slice(0, 5).map(item => (
           <Link
             key={item.user_id}
             href={`/dashboard/team/${item.user_id}`}
