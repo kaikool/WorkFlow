@@ -36,12 +36,18 @@ export const TaskCard = React.memo(function TaskCard({ representative, children,
   const totalPeople = multi ? children.length : (representative.assignees?.length ?? 0);
   const sameDept = representative.department?.id === currentProfile?.department_id;
   const rawNames = multi
-    ? children.map(c => c.department?.name).filter(Boolean).join(', ')
+    ? [...new Set(children.map(c => c.department?.name).filter(Boolean))].join(', ')
     : representative.assignees?.map(a => a.full_name).filter(Boolean).join(', ') || '';
+  // Batch: lấy tên người từ tất cả children để hiển thị
+  const allNames = multi
+    ? children.flatMap(c => c.assignees?.map((a: any) => a.full_name).filter(Boolean) ?? []).join(', ')
+    : rawNames;
   const peopleLabel = totalPeople > 3
     ? `${totalPeople} người`
     : multi
-      ? rawNames
+      ? sameDept
+        ? allNames || rawNames
+        : rawNames
       : sameDept
         ? rawNames || representative.department?.name || '—'
         : (rawNames ? `${rawNames} · ${representative.department?.name ?? ''}` : representative.department?.name || '—');
