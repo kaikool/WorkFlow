@@ -183,10 +183,16 @@ export function TaskDetailDialog(props: Props) {
 
   const hTitle = ov ? rep?.title : task?.title ?? 'Đang tải…';
   const hMeta = ov
-    ? [rep?.creator?.full_name, rep?.due_date ? format(new Date(rep.due_date), 'dd/MM/yyyy', { locale: vi }) : null].filter(Boolean).join(' · ')
+    ? [{ icon: null, text: deptLabel },
+       rep?.creator ? { icon: null, text: rep.creator.full_name } : null,
+       rep?.due_date ? { icon: null, text: format(new Date(rep.due_date), 'dd/MM/yyyy', { locale: vi }) } : null,
+      ].filter(Boolean)
     : task
-      ? [task.creator?.full_name, task.due_date ? `Hạn ${format(new Date(task.due_date), 'dd/MM/yyyy HH:mm', { locale: vi })}` : null, dueOver ? 'Quá hạn' : null].filter(Boolean).join(' · ')
-      : '';
+      ? [{ icon: null, text: task.creator?.full_name },
+         task.due_date ? { icon: null, text: `Hạn ${format(new Date(task.due_date), 'dd/MM/yyyy HH:mm', { locale: vi })}` } : null,
+         dueOver ? { icon: null, text: 'Quá hạn', cls: 'text-red-600 font-semibold' } : null,
+        ].filter(Boolean)
+      : [];
 
   const canEditAny = ov ? bCanEd : canEd;
   const canDeleteAny = ov ? bCanDe : canDe;
@@ -212,11 +218,17 @@ export function TaskDetailDialog(props: Props) {
                 </button>
               </div>
             </div>
-            <DialogTitle className="text-lg sm:text-xl font-bold leading-tight text-slate-900 text-pretty tabular-nums">
+            <DialogTitle className="text-lg sm:text-xl font-bold leading-tight text-slate-900 tabular-nums">
               {hTitle}
             </DialogTitle>
             {hMeta.length > 0 && (
-              <p className="text-sm font-semibold text-slate-500 text-pretty">{hMeta}</p>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                {hMeta.map((m: any, i: number) => (
+                  <span key={i} className={cn("text-sm font-semibold", m.cls ?? 'text-slate-500')}>
+                    {m.text}
+                  </span>
+                ))}
+              </div>
             )}
           </div>
           {/* Blur decoration */}
