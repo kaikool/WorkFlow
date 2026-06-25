@@ -40,7 +40,7 @@ import { TaskReopenDialog } from './TaskReopenDialog';
 import { TaskApproveDialog } from './TaskApproveDialog';
 import { TaskCommentList } from './TaskCommentList';
 import { TaskTimeline } from './TaskTimeline';
-import type { TaskListItem } from '../_lib/types';
+import type { TaskListItem, TaskStatus } from '../_lib/types';
 
 interface Props {
   isOpen: boolean; setIsOpen: (v: boolean) => void;
@@ -132,7 +132,7 @@ export function TaskDetailDialog(props: Props) {
   const pendC = children.filter(c => c.status !== 'done' && c.status !== 'canceled');
 
   // Handlers
-  const st = async (n: string, k: string, e: string) => {
+  const st = async (n: TaskStatus, k: string, e: string) => {
     if (!task) return; setBusy(k); const r = await updateTaskStatus(task.id, n); setBusy(null);
     if (!r.ok) { notifyError(r.error, e); return; } notifySuccess('Đã cập nhật'); onChanged?.();
   };
