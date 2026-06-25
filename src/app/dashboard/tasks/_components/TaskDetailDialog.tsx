@@ -217,7 +217,7 @@ export function TaskDetailDialog(props: Props) {
               {hTitle}
             </DialogTitle>
             {hMeta.length > 0 && (
-              <p className="text-sm font-semibold text-slate-500 break-words">{hMeta}</p>
+              <p className="text-sm font-semibold text-slate-500">{hMeta}</p>
             )}
           </div>
           {/* Blur decoration */}
