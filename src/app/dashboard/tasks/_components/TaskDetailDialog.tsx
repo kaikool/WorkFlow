@@ -4,7 +4,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   Dialog, DialogContent, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -184,7 +183,7 @@ export function TaskDetailDialog(props: Props) {
 
   const hTitle = ov ? rep?.title : task?.title ?? 'Đang tải…';
   const hMeta = ov
-    ? [deptLabel, rep?.creator?.full_name, rep?.due_date ? format(new Date(rep.due_date), 'dd/MM/yyyy', { locale: vi }) : null].filter(Boolean).join(' · ')
+    ? [rep?.creator?.full_name, rep?.due_date ? format(new Date(rep.due_date), 'dd/MM/yyyy', { locale: vi }) : null].filter(Boolean).join(' · ')
     : task
       ? [task.creator?.full_name, task.due_date ? `Hạn ${format(new Date(task.due_date), 'dd/MM/yyyy HH:mm', { locale: vi })}` : null, dueOver ? 'Quá hạn' : null].filter(Boolean).join(' · ')
       : '';
@@ -225,7 +224,7 @@ export function TaskDetailDialog(props: Props) {
         </div>
 
         {/* ═══ BODY ═══ */}
-        <ScrollArea className="app-dialog-sheet-body">
+        <div className="app-dialog-sheet-body">
           <div className="px-[var(--app-page-x)] py-4 space-y-5">
 
             {/* ─── 1. Tiến độ ─── */}
@@ -410,7 +409,7 @@ export function TaskDetailDialog(props: Props) {
             )}
 
           </div>
-        </ScrollArea>
+        </div>
 
         {/* ═══ FOOTER ═══ */}
         <DialogFooter className="app-dialog-sheet-footer flex flex-row items-center justify-between gap-3">
