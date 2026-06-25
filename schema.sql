@@ -6909,82 +6909,7 @@ END $$;
 
 GRANT EXECUTE ON FUNCTION recurring_template_upsert(TEXT, TEXT, task_priority, UUID[], UUID[], TEXT, INT, TEXT, INT, TEXT, TEXT, INT, BOOLEAN, UUID, UUID) TO authenticated;
 
--- Worker sinh mỗi task theo từng phòng hoặc từng cán bộ được giao.
-CREATE OR REPLACE FUNCTION recurring_fire_due()
-RETURNS INT LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
-DECLARE
-  v_count INT := 0;
-  v_t RECORD;
-  v_uid UUID;
-  v_task_id UUID;
-  v_a UUID;
-  v_dept_id UUID;
-  v_target_id UUID;
-  v_batch_id UUID;
-BEGIN
-  FOR v_t IN
-    SELECT * FROM task_recurring_templates
-    WHERE is_active = TRUE AND next_run_at <= NOW()
-    ORDER BY next_run_at ASC
-    LIMIT 20
-  LOOP
-    v_uid := COALESCE(v_t.created_by, (SELECT id FROM profiles WHERE role = 'admin' LIMIT 1));
-    IF v_uid IS NULL THEN CONTINUE; END IF;
 
-    UPDATE task_recurring_templates
-    SET last_fired_at = NOW(),
-        next_run_at = _recurring_next_run(v_t.schedule_kind, v_t.weekly_dow, v_t.weekly_time, v_t.monthly_dom, v_t.monthly_time, v_t.timezone, NOW())
-    WHERE id = v_t.id;
-
-    v_batch_id := gen_random_uuid();
-
-    IF COALESCE(array_length(v_t.target_department_ids, 1), 0) > 0 THEN
-      FOREACH v_dept_id IN ARRAY v_t.target_department_ids LOOP
-        SELECT CASE
-          WHEN EXISTS (
-            SELECT 1 FROM profiles p
-            WHERE p.id = v_t.default_assignee_id
-              AND p.department_id = v_dept_id
-              AND p.is_active = TRUE
-              AND p.role NOT IN ('admin','director','driver','secretary','hr_officer')
-          ) THEN v_t.default_assignee_id
-          ELSE _resolve_default_assignee(v_dept_id)
-        END INTO v_target_id;
-        IF v_target_id IS NULL THEN CONTINUE; END IF;
-        INSERT INTO tasks (title, description, priority, due_date, department_id, assignee_id, created_by, status, metadata, is_archived, requires_approval, batch_id)
-        VALUES (v_t.title, v_t.description, v_t.priority, (NOW()::DATE + v_t.due_days_after_fire + v_t.due_time)::TIMESTAMPTZ,
-                v_dept_id, v_target_id, v_uid, 'todo'::task_status, jsonb_build_object('from_recurring', true, 'recurring_template_id', v_t.id), FALSE, TRUE, v_batch_id)
-        RETURNING id INTO v_task_id;
-        INSERT INTO task_assignees (task_id, user_id) VALUES (v_task_id, v_target_id) ON CONFLICT DO NOTHING;
-        INSERT INTO notifications (user_id, title, content, type, link)
-        VALUES (v_target_id, 'Công việc định kỳ', 'Hệ thống đã sinh: ' || v_t.title, 'task', '/dashboard/tasks?id=' || v_task_id::text);
-        v_count := v_count + 1;
-      END LOOP;
-    END IF;
-
-    IF COALESCE(array_length(v_t.target_user_ids, 1), 0) > 0 THEN
-      FOREACH v_a IN ARRAY v_t.target_user_ids LOOP
-        INSERT INTO tasks (title, description, priority, due_date, department_id, assignee_id, created_by, status, metadata, is_archived, requires_approval, batch_id)
-        SELECT v_t.title, v_t.description, v_t.priority, (NOW()::DATE + v_t.due_days_after_fire + v_t.due_time)::TIMESTAMPTZ,
-               p.department_id, p.id, v_uid, 'todo'::task_status, jsonb_build_object('from_recurring', true, 'recurring_template_id', v_t.id), FALSE, TRUE, v_batch_id
-        FROM profiles p
-        WHERE p.id = v_a AND p.is_active = TRUE AND p.role NOT IN ('admin','director','driver','secretary','hr_officer')
-        RETURNING id INTO v_task_id;
-        IF v_task_id IS NOT NULL THEN
-          INSERT INTO task_assignees (task_id, user_id) VALUES (v_task_id, v_a) ON CONFLICT DO NOTHING;
-          INSERT INTO notifications (user_id, title, content, type, link)
-          VALUES (v_a, 'Công việc định kỳ', 'Hệ thống đã sinh: ' || v_t.title, 'task', '/dashboard/tasks?id=' || v_task_id::text);
-          v_count := v_count + 1;
-        END IF;
-      END LOOP;
-    END IF;
-  END LOOP;
-  RETURN v_count;
-END $$;
-
-GRANT EXECUTE ON FUNCTION recurring_fire_due() TO authenticated, service_role;
-
-NOTIFY pgrst, 'reload schema';
 
 -- =====================================================
 -- TASKS: bỏ người nhận mặc định trong mẫu định kỳ, chặn BGĐ làm phòng nhận
@@ -7168,6 +7093,8 @@ DECLARE
   v_a UUID;
   v_dept_id UUID;
   v_target_id UUID;
+  v_batch_id UUID;
+  v_due_date TIMESTAMPTZ;
 BEGIN
   FOR v_t IN
     SELECT * FROM task_recurring_templates
@@ -7183,14 +7110,24 @@ BEGIN
         next_run_at = _recurring_next_run(v_t.schedule_kind, v_t.weekly_dow, v_t.weekly_time, v_t.monthly_dom, v_t.monthly_time, v_t.timezone, NOW())
     WHERE id = v_t.id;
 
+    v_batch_id := gen_random_uuid();
+
+    -- Tính due_date, kết hợp due_time, skip cuối tuần
+    v_due_date := (NOW()::DATE + v_t.due_days_after_fire + v_t.due_time)::TIMESTAMPTZ;
+    IF EXTRACT(DOW FROM v_due_date) = 6 THEN      -- Thứ 7 → nhảy sang Thứ 2
+      v_due_date := v_due_date + INTERVAL '2 days';
+    ELSIF EXTRACT(DOW FROM v_due_date) = 0 THEN   -- Chủ nhật → nhảy sang Thứ 2
+      v_due_date := v_due_date + INTERVAL '1 day';
+    END IF;
+
     IF COALESCE(array_length(v_t.target_department_ids, 1), 0) > 0 THEN
       FOREACH v_dept_id IN ARRAY v_t.target_department_ids LOOP
         IF _is_director_department(v_dept_id) THEN CONTINUE; END IF;
         v_target_id := _resolve_default_assignee(v_dept_id);
         IF v_target_id IS NULL THEN CONTINUE; END IF;
-        INSERT INTO tasks (title, description, priority, due_date, department_id, assignee_id, created_by, status, metadata, is_archived, requires_approval)
-        VALUES (v_t.title, v_t.description, v_t.priority, NOW() + (v_t.due_days_after_fire || ' days')::INTERVAL,
-                v_dept_id, v_target_id, v_uid, 'todo'::task_status, jsonb_build_object('from_recurring', true, 'recurring_template_id', v_t.id), FALSE, TRUE)
+        INSERT INTO tasks (title, description, priority, due_date, department_id, assignee_id, created_by, status, metadata, is_archived, requires_approval, batch_id)
+        VALUES (v_t.title, v_t.description, v_t.priority, v_due_date,
+                v_dept_id, v_target_id, v_uid, 'todo'::task_status, jsonb_build_object('from_recurring', true, 'recurring_template_id', v_t.id), FALSE, TRUE, v_batch_id)
         RETURNING id INTO v_task_id;
         INSERT INTO task_assignees (task_id, user_id) VALUES (v_task_id, v_target_id) ON CONFLICT DO NOTHING;
         INSERT INTO notifications (user_id, title, content, type, link)
@@ -7201,9 +7138,9 @@ BEGIN
 
     IF COALESCE(array_length(v_t.target_user_ids, 1), 0) > 0 THEN
       FOREACH v_a IN ARRAY v_t.target_user_ids LOOP
-        INSERT INTO tasks (title, description, priority, due_date, department_id, assignee_id, created_by, status, metadata, is_archived, requires_approval)
-        SELECT v_t.title, v_t.description, v_t.priority, NOW() + (v_t.due_days_after_fire || ' days')::INTERVAL,
-               p.department_id, p.id, v_uid, 'todo'::task_status, jsonb_build_object('from_recurring', true, 'recurring_template_id', v_t.id), FALSE, TRUE
+        INSERT INTO tasks (title, description, priority, due_date, department_id, assignee_id, created_by, status, metadata, is_archived, requires_approval, batch_id)
+        SELECT v_t.title, v_t.description, v_t.priority, v_due_date,
+               p.department_id, p.id, v_uid, 'todo'::task_status, jsonb_build_object('from_recurring', true, 'recurring_template_id', v_t.id), FALSE, TRUE, v_batch_id
         FROM profiles p
         WHERE p.id = v_a AND p.is_active = TRUE AND p.role NOT IN ('admin','director','driver','secretary','hr_officer')
         RETURNING id INTO v_task_id;
