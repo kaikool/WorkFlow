@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  Dialog, DialogContent,
+  Dialog, DialogContent, DialogTitle,
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
@@ -140,8 +140,8 @@ export function TaskDetailDialog(props: Props) {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent hideCloseButton className="app-dialog-sheet app-dialog-sheet--2xl shadow-2xl flex flex-col p-0 gap-0 bg-white">
-        <VisuallyHidden>
-          <h2>{ov ? rep?.title ?? 'Chi tiết' : task?.title ?? 'Chi tiết'}</h2>
+        <VisuallyHidden asChild>
+          <DialogTitle>{ov ? rep?.title ?? 'Chi tiết' : task?.title ?? 'Chi tiết'}</DialogTitle>
         </VisuallyHidden>
 
         {/* ─── Navbar ─── */}
