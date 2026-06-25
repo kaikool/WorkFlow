@@ -310,9 +310,13 @@ export function TaskDetailDialog(props: Props) {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-slate-900 truncate">
-                        {task.assignees.map((a: any) => a.full_name).filter(Boolean).join(', ')}
+                        {task.assignees.length > 3
+                          ? `${task.assignees.length} người`
+                          : task.department?.id === currentProfile?.department_id
+                            ? task.assignees.map((a: any) => a.full_name).filter(Boolean).join(', ')
+                            : `${task.assignees.map((a: any) => a.full_name).filter(Boolean).join(', ')} · ${task.department?.name ?? ''}`
+                        }
                       </p>
-                      {task.department && <p className="text-xs font-medium text-slate-500">{task.department.name}</p>}
                     </div>
                     {task.requires_approval && (
                       <Badge className="bg-amber-50 text-amber-700 border border-amber-200 text-xs font-semibold px-2 py-0.5">Cần duyệt</Badge>

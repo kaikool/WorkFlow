@@ -25,17 +25,26 @@ interface Props {
 
 const BADGE_BASE = 'px-2.5 py-1 rounded-full text-[12px] font-semibold';
 
-export const TaskCard = React.memo(function TaskCard({ representative, children, onOpen }: Props) {
+export const TaskCard = React.memo(function TaskCard({ representative, children, onOpen, currentProfile }: Props) {
   const p = batchProgress(children);
   const multi = children.length > 1;
   const dueLabel = representative.due_date
     ? format(new Date(representative.due_date), 'dd/MM', { locale: vi })
     : null;
 
-  // People string: giống nhau cho cả single và batch
-  const peopleLabel = multi
+  // People string: same dept → names, different dept → names · dept, quá nhiều → count
+  const totalPeople = multi ? children.length : (representative.assignees?.length ?? 0);
+  const sameDept = representative.department?.id === currentProfile?.department_id;
+  const rawNames = multi
     ? children.map(c => c.department?.name).filter(Boolean).join(', ')
-    : representative.assignees?.map(a => a.full_name).filter(Boolean).join(', ') || representative.department?.name || '—';
+    : representative.assignees?.map(a => a.full_name).filter(Boolean).join(', ') || '';
+  const peopleLabel = totalPeople > 3
+    ? `${totalPeople} người`
+    : multi
+      ? rawNames
+      : sameDept
+        ? rawNames || representative.department?.name || '—'
+        : (rawNames ? `${rawNames} · ${representative.department?.name ?? ''}` : representative.department?.name || '—');
 
   return (
     <button
