@@ -305,7 +305,6 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
                   </SelectContent>
                 </Select>
               </div>
-            </div>
           </div>
         </div>
 
