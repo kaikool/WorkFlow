@@ -2,15 +2,14 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
+  Dialog, DialogContent,
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Building2, Calendar, Users, Pencil, Trash2,
   CheckCircle2, Loader2, Play, Send, Undo2, Clock, RotateCcw,
-  ChevronRight, Flag, FileText,
+  ChevronRight, Flag, X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -20,11 +19,11 @@ import {
   PRIORITY_LABEL, PRIORITY_BADGE_CLASS,
 } from '../_lib/constants';
 import { batchProgress } from '../_lib/batchHelpers';
-import { deleteTask, updateTaskStatus, archiveTask } from '../_lib/taskActions';
+import { deleteTask, updateTaskStatus } from '../_lib/taskActions';
 import {
   canEditTask, canDeleteTask, canForceCompleteTask,
   canApproveTaskResult, canDelegateTask, canRejectSubmission, canReopenDone,
-  canApproveExtension, canArchiveTask, canComposeTaskComment,
+  canArchiveTask, canComposeTaskComment,
 } from '@/lib/permissions';
 import { confirmDialog } from '@/components/ui/confirm-dialog';
 import { notifyError, notifySuccess } from '@/lib/notify';
@@ -39,8 +38,7 @@ import { TaskReopenDialog } from './TaskReopenDialog';
 import { TaskApproveDialog } from './TaskApproveDialog';
 import { TaskCommentList } from './TaskCommentList';
 import { TaskTimeline } from './TaskTimeline';
-import { TaskDueProgress } from './TaskDueProgress';
-import type { TaskListItem, TaskStatus } from '../_lib/types';
+import type { TaskListItem } from '../_lib/types';
 
 interface Props {
   isOpen: boolean; setIsOpen: (v: boolean) => void;
@@ -49,54 +47,55 @@ interface Props {
   onChanged?: () => void; onOpenTask?: (taskId: string) => void;
 }
 
+const STATUS_ORDER: Record<string, number> = { todo: 0, doing: 1, submitted: 2, done: 3, canceled: 4 };
+
 export function TaskDetailDialog(props: Props) {
-  const { isOpen, setIsOpen, taskId, batchId, children = [], currentProfile, onChanged, onOpenTask } = props;
+  const { isOpen, setIsOpen, taskId, batchId, children = [], currentProfile, onChanged } = props;
   const isBatch = batchId != null && children.length > 0;
   const [childId, setChildId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false); const [busy, setBusy] = useState<string | null>(null);
   const [openEdit, setOpenEdit] = useState(false);
-  const [openDelegate, setOpenDelegate] = useState(false); const [openExtension, setOpenExtension] = useState(false);
-  const [openSubmit, setOpenSubmit] = useState(false); const [openReturn, setOpenReturn] = useState(false);
-  const [openReopen, setOpenReopen] = useState(false); const [openApprove, setOpenApprove] = useState(false);
-  const [openApproveExtension, setOpenApproveExtension] = useState<any>(null);
+  const [openDelegate, setOpenDelegate] = useState(false); const [openExt, setOpenExt] = useState(false);
+  const [openSub, setOpenSub] = useState(false); const [openRet, setOpenRet] = useState(false);
+  const [openReo, setOpenReo] = useState(false); const [openApp, setOpenApp] = useState(false);
+  const [openAppExt, setOpenAppExt] = useState<any>(null);
 
   const activeId = childId ?? taskId ?? null;
   const { loading, task, refetch } = useTaskDetail(isOpen ? activeId : null);
   useEffect(() => { if (task && onChanged) onChanged(); }, [task?.status, task?.updated_at]);
   useEffect(() => { if (isOpen && !isBatch) setChildId(null); }, [isOpen, isBatch]);
 
-  const [cacheCh, setCacheCh] = useState<TaskListItem[]>([]);
-  useEffect(() => { if (isOpen && isBatch && children.length > 0) setCacheCh(children); }, [isOpen, isBatch, children]);
-  const dc = isOpen ? children : cacheCh; const rep = dc[0]; const p = batchProgress(dc);
+  const [cache, setCache] = useState<TaskListItem[]>([]);
+  useEffect(() => { if (isOpen && isBatch && children.length > 0) setCache(children); }, [isOpen, isBatch, children]);
+  const dc = isOpen ? children : cache; const rep = dc[0]; const bp = batchProgress(dc);
   const sorted = useMemo(() => [...dc].sort((a, b) => {
     if (a.is_overdue !== b.is_overdue) return a.is_overdue ? -1 : 1;
-    const sa = ({ todo: 0, doing: 1, submitted: 2, done: 3, canceled: 4 } as any)[a.status] ?? 99;
-    const sb = ({ todo: 0, doing: 1, submitted: 2, done: 3, canceled: 4 } as any)[b.status] ?? 99;
+    const sa = STATUS_ORDER[a.status] ?? 99, sb = STATUS_ORDER[b.status] ?? 99;
     return sa - sb || (a.department?.name ?? '').localeCompare(b.department?.name ?? '');
   }), [dc]);
 
-  // ─── Permissions ───
+  // Permissions
   const isAss = task && (task.assignees ?? []).some((a: any) => a.id === currentProfile?.id);
   const isSelfApprove = task?.requires_approval && task.assignees?.some((a: any) => a.id === task.created_by);
   const dueOver = !!(task?.due_date && new Date(task.due_date) < new Date() && !['done', 'canceled'].includes(task?.status ?? ''));
-  const readOnly = task && (task.is_archived || task.status === 'canceled' || task.status === 'done');
+  const ro = task && (task.is_archived || task.status === 'canceled' || task.status === 'done');
   const canS = isAss && task?.status === 'todo';
   const canD = isAss && task?.status === 'doing' && (!task.requires_approval || isSelfApprove);
   const canSub = isAss && task?.status === 'doing' && task.requires_approval && !isSelfApprove;
-  const canApp = task && canApproveTaskResult(currentProfile, task) && task?.status === 'submitted';
-  const canRej = task && canRejectSubmission(currentProfile, task);
-  const canReop = task && canReopenDone(currentProfile, task);
-  const canReq = isAss && task?.status !== 'done' && task?.status !== 'canceled';
-  const canDel = task && canDelegateTask(currentProfile, task) && task?.status !== 'done' && task?.status !== 'canceled';
+  const canAp = task && canApproveTaskResult(currentProfile, task) && task?.status === 'submitted';
+  const canRj = task && canRejectSubmission(currentProfile, task);
+  const canRp = task && canReopenDone(currentProfile, task);
+  const canRq = isAss && task?.status !== 'done' && task?.status !== 'canceled';
+  const canDl = task && canDelegateTask(currentProfile, task) && task?.status !== 'done' && task?.status !== 'canceled';
   const canFC = task && canForceCompleteTask(currentProfile, task);
   const canEd = task && canEditTask(currentProfile, task);
   const canDe = task && canDeleteTask(currentProfile, task);
   const bCanEd = rep && canEditTask(currentProfile, rep as any);
   const bCanDe = rep && canDeleteTask(currentProfile, rep as any);
   const bCanFC = rep && canForceCompleteTask(currentProfile, rep as any);
-  const pendingC = children.filter(c => c.status !== 'done' && c.status !== 'canceled');
+  const pendC = children.filter(c => c.status !== 'done' && c.status !== 'canceled');
 
-  // ─── Handlers ───
+  // Handlers
   const st = async (n: string, k: string, e: string) => {
     if (!task) return; setBusy(k); const r = await updateTaskStatus(task.id, n); setBusy(null);
     if (!r.ok) { notifyError(r.error, e); return; } notifySuccess('Đã cập nhật'); onChanged?.();
@@ -114,12 +113,12 @@ export function TaskDetailDialog(props: Props) {
     if (!r.ok) { notifyError(r.error, 'Lỗi'); return; } notifySuccess('Đã xoá'); onChanged?.(); setTimeout(() => setIsOpen(false), 100);
   };
   const fcb = async () => {
-    if (!await confirmDialog({ title: 'Ghi nhận hoàn thành lô?', confirmText: 'Xác nhận', description: `Đóng ${pendingC.length} việc chưa nộp.` })) return;
+    if (!await confirmDialog({ title: 'Ghi nhận lô?', confirmText: 'Xác nhận', description: `Đóng ${pendC.length} việc chưa nộp.` })) return;
     setDeleting(true); let ok = 0, fe: string | undefined;
-    for (const c of pendingC) { const r = await updateTaskStatus(c.id, 'done', '[sys] Đã hoàn thành.'); if (r.ok) ok++; else if (!fe) fe = r.error; }
+    for (const c of pendC) { const r = await updateTaskStatus(c.id, 'done', '[sys] Đã hoàn thành.'); if (r.ok) ok++; else if (!fe) fe = r.error; }
     setDeleting(false);
     if (ok === 0) { notifyError(fe ?? 'Lỗi', 'Lỗi'); return; }
-    notifySuccess(`Đã ghi nhận ${ok}/${pendingC.length}`); setIsOpen(false); onChanged?.();
+    notifySuccess(`Đã ghi nhận ${ok}/${pendC.length}`); setIsOpen(false); onChanged?.();
     setTimeout(() => document.body.style.pointerEvents = '', 500);
   };
   const delb = async () => {
@@ -134,179 +133,223 @@ export function TaskDetailDialog(props: Props) {
 
   if (!isOpen) return null;
 
-  // ─── MODE ───
-  const overview = isBatch && !childId;
-  const detail = !overview;
-
-  // ─── Header data (giống hệt cho overview và detail) ───
-  const hTitle = overview ? (rep?.title ?? '') : (task?.title ?? 'Đang tải…');
-  const hBadge = overview
-    ? <span className="inline-flex items-center gap-1 h-7 px-2.5 rounded-lg bg-slate-100 text-[13px] font-semibold text-slate-600"><Users className="w-3.5 h-3.5" />{children.length} phòng</span>
-    : task?.status
-      ? <span className={cn('inline-flex items-center gap-1 h-7 px-2.5 rounded-lg text-[13px] font-semibold', STATUS_BADGE_CLASS[task.status])}>{STATUS_LABEL[task.status]}</span>
-      : null;
-  const hMeta = overview
-    ? `${rep?.creator?.full_name ?? '—'} giao${rep?.due_date ? ` · Hạn ${format(new Date(rep.due_date), 'dd/MM/yyyy', { locale: vi })}` : ''}`
-    : task
-      ? `${task.creator?.full_name ?? '—'} giao${task.due_date ? ` · Hạn ${format(new Date(task.due_date), 'dd/MM/yyyy HH:mm', { locale: vi })}` : ''}${dueOver ? ' · Quá hạn' : ''}`
-      : '';
+  const ov = isBatch && !childId;
+  const detail = !ov;
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent hideCloseButton className="app-dialog-sheet app-dialog-sheet--2xl shadow-2xl flex flex-col p-0 gap-0">
+      <DialogContent hideCloseButton className="app-dialog-sheet app-dialog-sheet--2xl shadow-2xl flex flex-col p-0 gap-0 bg-white">
 
-        {/* ═══ HEADER ═══ */}
-        <DialogHeader className="app-dialog-sheet-header border-b border-slate-100 px-5 py-4 space-y-1.5">
-          <div className="flex items-center gap-2">{hBadge}</div>
-          <div className="flex items-start justify-between gap-4">
-            <DialogTitle className="text-[17px] font-bold text-slate-900 leading-tight line-clamp-2">{hTitle}</DialogTitle>
-            {((overview && bCanEd) || (detail && canEd)) && (
-              <button onClick={() => setOpenEdit(true)}
-                className="shrink-0 w-9 h-9 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center hover:bg-slate-100 transition-all active:scale-95">
-                <Pencil className="w-4 h-4 text-slate-500" />
+        {/* ─── Navbar ─── */}
+        <div className="flex items-center justify-between px-5 h-12 border-b border-slate-100 shrink-0">
+          <div className="flex items-center gap-1">
+            {childId && (
+              <button onClick={() => setChildId(null)}
+                className="h-9 px-3 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 transition-all -ml-2 inline-flex items-center gap-1">
+                ← Quay lại
               </button>
             )}
           </div>
-          {hMeta && <DialogDescription className="text-[13px] text-slate-500">{hMeta}</DialogDescription>}
-        </DialogHeader>
+          <div className="flex items-center gap-1">
+            {(ov ? bCanEd : canEd) && (
+              <button onClick={() => setOpenEdit(true)}
+                className="h-9 w-9 rounded-lg hover:bg-slate-100 flex items-center justify-center transition-all">
+                <Pencil className="w-[18px] h-[18px] text-slate-500" />
+              </button>
+            )}
+            {(ov ? bCanDe : canDe) && (
+              <button onClick={ov ? delb : del} disabled={ov ? deleting : busy !== null}
+                className="h-9 w-9 rounded-lg hover:bg-red-50 flex items-center justify-center transition-all">
+                <Trash2 className="w-[18px] h-[18px] text-red-500" />
+              </button>
+            )}
+            <button onClick={() => setIsOpen(false)}
+              className="h-9 w-9 rounded-lg hover:bg-slate-100 flex items-center justify-center transition-all">
+              <X className="w-[18px] h-[18px] text-slate-400" />
+            </button>
+          </div>
+        </div>
 
-        {/* ═══ BODY ═══ */}
+        {/* ─── Body ─── */}
         <ScrollArea className="app-dialog-sheet-body">
-          <div className="px-5 py-4 space-y-5">
+          <div className="px-5 py-5 space-y-6">
 
-            {/* ─── 1. TIẾN ĐỘ (luôn hiển thị, cùng component) ─── */}
-            {overview ? (
-              <div className="space-y-3">
-                <SectionTitle icon={<Users className="w-4 h-4" />} label="Tiến độ chung" />
-                <SegBar done={p.done} sub={p.submitted} doing={p.doing} total={p.total} />
-                <div className="grid grid-cols-4 gap-2">
-                  <Tile label="Hoàn thành" value={p.done} c="text-emerald-700 bg-emerald-50" />
-                  <Tile label="Đã nộp" value={p.submitted} c="text-blue-700 bg-blue-50" />
-                  <Tile label="Đang làm" value={p.doing} c="text-amber-700 bg-amber-50" />
-                  <Tile label="Chưa làm" value={p.todo} c="text-slate-700 bg-slate-50" />
-                </div>
+            {/* ─── Header: Title + Meta ─── */}
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2">
+                <span className={cn(
+                  'inline-flex items-center h-6 px-2.5 rounded-full text-[12px] font-semibold',
+                  ov ? 'bg-slate-100 text-slate-600' : STATUS_BADGE_CLASS[task?.status ?? ''],
+                )}>
+                  {ov ? `${children.length} phòng` : STATUS_LABEL[task?.status ?? '']}
+                </span>
+                {detail && task?.priority !== 'medium' && (
+                  <span className={cn('inline-flex items-center h-6 px-2.5 rounded-full text-[12px] font-semibold', PRIORITY_BADGE_CLASS[task.priority])}>
+                    <Flag className="w-3 h-3 mr-1" />{PRIORITY_LABEL[task.priority]}
+                  </span>
+                )}
+                {detail && dueOver && (
+                  <span className="inline-flex items-center h-6 px-2.5 rounded-full text-[12px] font-semibold bg-red-50 text-red-600">
+                    Quá hạn
+                  </span>
+                )}
               </div>
-            ) : task ? (
-              <div className="space-y-3">
-                <SectionTitle icon={<Flag className="w-4 h-4" />} label="Tiến độ" />
-                <TaskDueProgress createdAt={task.created_at} dueDate={task.due_date} status={task.status} />
-                <div className="grid grid-cols-4 gap-2">
-                  <Tile label="Hoàn thành" value={task.status === 'done' ? 1 : 0} c={task.status === 'done' ? 'text-emerald-700 bg-emerald-50' : 'text-slate-400 bg-slate-50'} />
-                  <Tile label="Đã nộp" value={task.status === 'submitted' ? 1 : 0} c={task.status === 'submitted' ? 'text-blue-700 bg-blue-50' : 'text-slate-400 bg-slate-50'} />
-                  <Tile label="Đang làm" value={task.status === 'doing' ? 1 : 0} c={task.status === 'doing' ? 'text-amber-700 bg-amber-50' : 'text-slate-400 bg-slate-50'} />
-                  <Tile label="Chưa làm" value={task.status === 'todo' || task.status === 'pending' ? 1 : 0} c={(task.status === 'todo' || task.status === 'pending') ? 'text-slate-700 bg-slate-50' : 'text-slate-400 bg-slate-50'} />
-                </div>
-              </div>
-            ) : loading && <Loader2 className="w-5 h-5 animate-spin text-slate-400 mx-auto" />}
+              <h2 className="text-[17px] font-semibold text-slate-900 leading-snug">
+                {ov ? rep?.title : task?.title ?? 'Đang tải…'}
+              </h2>
+              <p className="text-[13px] text-slate-500">
+                {ov
+                  ? `${rep?.creator?.full_name ?? '—'} giao${rep?.due_date ? ` · Hạn ${format(new Date(rep.due_date), 'dd/MM/yyyy', { locale: vi })}` : ''}`
+                  : task
+                    ? `${task.creator?.full_name ?? '—'} giao${task.due_date ? ` · Hạn ${format(new Date(task.due_date), 'dd/MM/yyyy HH:mm', { locale: vi })}` : ''}`
+                    : ''}
+              </p>
+            </div>
 
-            {/* ─── 2. NGƯỜI THỰC HIỆN (luôn hiển thị, cùng component) ─── */}
-            <div className="space-y-3">
-              <SectionTitle icon={<Users className="w-4 h-4" />} label="Người thực hiện" />
-              <div className="space-y-1.5">
-                {overview ? (
-                  sorted.map(c => (
-                    <button key={c.id} type="button" onClick={() => setChildId(c.id)}
-                      className={cn(
-                        'w-full flex items-center gap-3 min-h-[44px] px-3.5 py-2 rounded-xl border transition-all active:scale-[0.99]',
-                        c.is_overdue ? 'border-red-100 bg-red-50/40 hover:bg-red-50' : 'border-slate-100 bg-white hover:bg-slate-50',
-                      )}>
-                      <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center shrink-0">
-                        <Building2 className={cn('w-4 h-4', c.is_overdue ? 'text-red-500' : 'text-slate-500')} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-slate-900 truncate">{c.department?.name ?? '—'}</p>
-                        <p className={cn('text-[13px] truncate', c.is_overdue ? 'text-red-600' : 'text-slate-500')}>
-                          {c.assignees?.map((a: any) => a.full_name).filter(Boolean).join(', ') || 'Chưa phân công'}
-                        </p>
-                      </div>
-                      <span className={cn('text-[12px] font-semibold px-2.5 py-0.5 rounded-full border', STATUS_BADGE_CLASS[c.status])}>
-                        {STATUS_LABEL[c.status]}
-                      </span>
-                      <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />
-                    </button>
-                  ))
-                ) : task?.assignees && task.assignees.length > 0 && (
-                  <div className="flex items-center gap-3 p-3.5 rounded-xl bg-slate-50 border border-slate-100">
-                    <div className="flex -space-x-1.5">
-                      {task.assignees.slice(0, 4).map((a: any) => (
-                        <Avatar key={a.id} className="w-8 h-8 border-2 border-white">
-                          <AvatarImage src={a.avatar_url ?? undefined} />
-                          <AvatarFallback className="text-[11px] font-semibold bg-slate-200">{a.full_name?.[0] ?? '?'}</AvatarFallback>
-                        </Avatar>
-                      ))}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-slate-900 truncate">
-                        {task.assignees.map((a: any) => a.full_name).filter(Boolean).join(', ')}
-                      </p>
-                      {task.department && <p className="text-[13px] text-slate-500">{task.department.name}</p>}
-                    </div>
-                    {task.requires_approval && <span className="text-[12px] font-medium text-amber-600 bg-amber-50 px-2 py-1 rounded-full">Cần duyệt</span>}
+            {/* ─── Progress ─── */}
+            {ov ? (
+              <div className="space-y-2">
+                <div className="flex h-1.5 rounded-full overflow-hidden bg-slate-100">
+                  {bp.done > 0 && <div className="bg-emerald-500" style={{ width: `${(bp.done / bp.total) * 100}%` }} />}
+                  {bp.submitted > 0 && <div className="bg-blue-400" style={{ width: `${(bp.submitted / bp.total) * 100}%` }} />}
+                  {bp.doing > 0 && <div className="bg-amber-400" style={{ width: `${(bp.doing / bp.total) * 100}%` }} />}
+                </div>
+                <p className="text-[13px] text-slate-500">
+                  {bp.done + bp.submitted}/{bp.total} hoàn thành{bp.doing > 0 ? ` · ${bp.doing} đang làm` : ''}{bp.todo > 0 ? ` · ${bp.todo} chưa làm` : ''}
+                </p>
+              </div>
+            ) : task && (
+              <div className="space-y-2">
+                <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                  <div className={cn(
+                    'h-full rounded-full transition-all',
+                    task.status === 'done' ? 'bg-emerald-500 w-full' :
+                    task.status === 'submitted' ? 'bg-blue-400 w-3/4' :
+                    task.status === 'doing' ? 'bg-amber-400 w-1/2' : 'w-0',
+                  )} />
+                </div>
+                <p className="text-[13px] text-slate-500">
+                  {STATUS_LABEL[task.status]} · Hạn {task.due_date ? format(new Date(task.due_date), 'dd/MM', { locale: vi }) : '—'}
+                </p>
+              </div>
+            )}
+
+            {/* ─── People ─── */}
+            <div className="space-y-1">
+              <p className="text-[12px] font-medium text-slate-400 uppercase tracking-wide">Người thực hiện</p>
+              {ov ? sorted.map(c => (
+                <button key={c.id} type="button" onClick={() => setChildId(c.id)}
+                  className={cn(
+                    'w-full flex items-center gap-3 py-2.5 px-3 -mx-3 rounded-xl transition-all active:scale-[0.99]',
+                    c.is_overdue ? 'hover:bg-red-50' : 'hover:bg-slate-50',
+                  )}>
+                  <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
+                    <Building2 className={cn('w-[16px] h-[16px]', c.is_overdue ? 'text-red-500' : 'text-slate-500')} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[15px] font-medium text-slate-900 truncate">{c.department?.name ?? '—'}</p>
+                    <p className="text-[13px] text-slate-500 truncate">
+                      {c.assignees?.map((a: any) => a.full_name).filter(Boolean).join(', ') || 'Chưa phân công'}
+                    </p>
+                  </div>
+                  <span className="text-[12px] font-medium text-slate-500">{STATUS_LABEL[c.status]}</span>
+                  <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />
+                </button>
+              )) : detail && task?.assignees && task.assignees.length > 0 && (
+                <div className="flex items-center gap-3 py-2">
+                  <div className="flex -space-x-1">
+                    {task.assignees.slice(0, 4).map((a: any) => (
+                      <Avatar key={a.id} className="w-8 h-8 border-2 border-white">
+                        <AvatarImage src={a.avatar_url ?? undefined} />
+                        <AvatarFallback className="text-[11px] font-semibold bg-slate-200 text-slate-600">{a.full_name?.[0] ?? '?'}</AvatarFallback>
+                      </Avatar>
+                    ))}
+                  </div>
+                  <div>
+                    <p className="text-[15px] font-medium text-slate-900">{task.assignees.map((a: any) => a.full_name).filter(Boolean).join(', ')}</p>
+                    {task.department && <p className="text-[13px] text-slate-500">{task.department.name}</p>}
+                  </div>
+                  {task.requires_approval && (
+                    <span className="ml-auto text-[12px] font-medium text-amber-600 bg-amber-50 px-2 py-1 rounded-full">Cần duyệt</span>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* ─── Description ─── */}
+            {detail && task?.description && (
+              <p className="text-[15px] text-slate-700 leading-relaxed whitespace-pre-wrap">{task.description}</p>
+            )}
+
+            {/* ─── Info Grid ─── */}
+            {detail && task && (
+              <div className="flex flex-wrap gap-x-6 gap-y-2 text-[13px]">
+                {task.department && (
+                  <div className="flex items-center gap-1.5 text-slate-500">
+                    <Building2 className="w-4 h-4 text-amber-500" />
+                    <span>{task.department.name}</span>
                   </div>
                 )}
-              </div>
-            </div>
-
-            {/* ─── 3. CHI TIẾT (chỉ hiển thị ở detail mode) ─── */}
-            {detail && task && (
-              <div className="space-y-3">
-                <SectionTitle icon={<FileText className="w-4 h-4" />} label="Chi tiết" />
-                {task.description && (
-                  <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">{task.description}</p>
-                )}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  <InfoCard icon={<Building2 className="w-4 h-4 text-amber-500" />} label="Phòng nhận" value={task.department?.name ?? '—'} />
-                  <InfoCard icon={<Calendar className={cn('w-4 h-4', dueOver ? 'text-red-500' : 'text-slate-500')} />} label="Hạn hoàn thành" value={task.due_date ? format(new Date(task.due_date), 'dd/MM/yyyy', { locale: vi }) : '—'} />
-                  <InfoCard icon={<Avatar className="w-5 h-5"><AvatarImage src={task.creator?.avatar_url ?? undefined} /><AvatarFallback className="text-[9px] font-semibold bg-slate-200">{task.creator?.full_name?.[0] ?? '?'}</AvatarFallback></Avatar>} label="Người giao" value={task.creator?.full_name ?? '—'} />
+                <div className={cn('flex items-center gap-1.5', dueOver ? 'text-red-600 font-medium' : 'text-slate-500')}>
+                  <Calendar className="w-4 h-4" />
+                  <span>Hạn {task.due_date ? format(new Date(task.due_date), 'dd/MM/yyyy', { locale: vi }) : '—'}</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-slate-500">
+                  <Avatar className="w-5 h-5">
+                    <AvatarImage src={task.creator?.avatar_url ?? undefined} />
+                    <AvatarFallback className="text-[8px] font-semibold bg-slate-200 text-slate-500">{task.creator?.full_name?.[0] ?? '?'}</AvatarFallback>
+                  </Avatar>
+                  <span>{task.creator?.full_name ?? '—'} giao</span>
                 </div>
               </div>
             )}
 
-            {/* ─── 4. THAO TÁC (luôn hiển thị, cùng style button) ─── */}
+            {/* ─── Actions ─── */}
             <div className="flex flex-wrap gap-2 pt-1">
-              {overview ? (
+              {ov ? (
                 <>
-                  {bCanFC && pendingC.length > 0 && <Btn label="Ghi nhận lô" icon={deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />} onClick={fcb} disabled={deleting} />}
-                  {bCanDe && <Btn label="Xoá lô" icon={<Trash2 className="w-4 h-4" />} onClick={delb} disabled={deleting} secondary />}
+                  {bCanFC && pendC.length > 0 && <ABtn label="Ghi nhận lô" icon={deleting ? <Loader2 className="w-[18px] h-[18px] animate-spin" /> : <CheckCircle2 className="w-[18px] h-[18px]" />} onClick={fcb} disabled={deleting} />}
                 </>
-              ) : task && !readOnly && (
+              ) : task && !ro && (
                 <>
-                  {canSub && <Btn label="Gửi kết quả" icon={<Send className="w-4 h-4" />} onClick={() => setOpenSubmit(true)} disabled={busy !== null} />}
-                  {canApp && <Btn label="Duyệt" icon={<CheckCircle2 className="w-4 h-4" />} onClick={() => setOpenApprove(true)} disabled={busy !== null} amber />}
-                  {canS && !canSub && !canApp && <Btn label="Bắt đầu" icon={busy === 'start' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />} onClick={() => st('doing', 'start', 'Lỗi')} disabled={busy !== null} />}
-                  {canD && !canSub && !canApp && <Btn label="Hoàn thành" icon={busy === 'done' ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />} onClick={() => st('done', 'done', 'Lỗi')} disabled={busy !== null} />}
-                  {canFC && <Btn label="Đã nhận" icon={busy === 'fc' ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />} onClick={fc} disabled={busy !== null} />}
-                  {canApp && <Btn label="Trả về sửa" icon={<Undo2 className="w-4 h-4" />} onClick={() => setOpenReturn(true)} disabled={busy !== null} secondary />}
-                  {!canApp && canRej && <Btn label="Trả về" icon={<Undo2 className="w-4 h-4" />} onClick={() => setOpenReturn(true)} disabled={busy !== null} secondary />}
-                  {canDel && <Btn label={(task.assignees?.length ?? 0) === 0 ? 'Phân công' : 'Phân công lại'} icon={<Users className="w-4 h-4" />} onClick={() => setOpenDelegate(true)} disabled={busy !== null} secondary />}
-                  {canReq && <Btn label="Xin gia hạn" icon={<Clock className="w-4 h-4" />} onClick={() => setOpenExtension(true)} disabled={busy !== null} secondary />}
+                  {canSub && <ABtn label="Gửi kết quả" icon={<Send className="w-[18px] h-[18px]" />} onClick={() => setOpenSub(true)} disabled={busy !== null} />}
+                  {canAp && <ABtn label="Duyệt" icon={<CheckCircle2 className="w-[18px] h-[18px]" />} onClick={() => setOpenApp(true)} disabled={busy !== null} amber />}
+                  {canS && !canSub && !canAp && <ABtn label="Bắt đầu" icon={busy === 'start' ? <Loader2 className="w-[18px] h-[18px] animate-spin" /> : <Play className="w-[18px] h-[18px]" />} onClick={() => st('doing', 'start', 'Lỗi')} disabled={busy !== null} />}
+                  {canD && !canSub && !canAp && <ABtn label="Hoàn thành" icon={busy === 'done' ? <Loader2 className="w-[18px] h-[18px] animate-spin" /> : <CheckCircle2 className="w-[18px] h-[18px]" />} onClick={() => st('done', 'done', 'Lỗi')} disabled={busy !== null} />}
+                  {canFC && <ABtn label="Đã nhận" icon={busy === 'fc' ? <Loader2 className="w-[18px] h-[18px] animate-spin" /> : <CheckCircle2 className="w-[18px] h-[18px]" />} onClick={fc} disabled={busy !== null} />}
+                  {canAp && <SBtn label="Trả về sửa" icon={<Undo2 className="w-[18px] h-[18px]" />} onClick={() => setOpenRet(true)} disabled={busy !== null} />}
+                  {!canAp && canRj && <SBtn label="Trả về" icon={<Undo2 className="w-[18px] h-[18px]" />} onClick={() => setOpenRet(true)} disabled={busy !== null} />}
+                  {canDl && <SBtn label={(task.assignees?.length ?? 0) === 0 ? 'Phân công' : 'Phân công lại'} icon={<Users className="w-[18px] h-[18px]" />} onClick={() => setOpenDelegate(true)} disabled={busy !== null} />}
+                  {canRq && <SBtn label="Gia hạn" icon={<Clock className="w-[18px] h-[18px]" />} onClick={() => setOpenExt(true)} disabled={busy !== null} />}
                 </>
               )}
-              {task && !task.is_archived && task.status === 'done' && canReop && (
-                <Btn label="Mở lại" icon={<RotateCcw className="w-4 h-4" />} onClick={() => setOpenReopen(true)} disabled={busy !== null} secondary />
+              {detail && task && !task.is_archived && task.status === 'done' && canRp && (
+                <SBtn label="Mở lại" icon={<RotateCcw className="w-[18px] h-[18px]" />} onClick={() => setOpenReo(true)} disabled={busy !== null} />
               )}
             </div>
 
-            {/* ─── 5. BÌNH LUẬN (chỉ detail mode) ─── */}
+            {/* ─── Comments ─── */}
             {detail && task && (
-              <div className="space-y-3 pt-1">
-                <SectionTitle icon={<Calendar className="w-4 h-4" />} label="Bình luận" />
-                <TaskCommentList
-                  taskId={task.id}
-                  comments={task.comments.filter(c => {
-                    const p = [/đã hoàn thành\.?$/, /trả lại\. Lý do:/, /trả về để sửa\. Lý do:/, /đã sửa:/, /^Đã hủy/, /^Đã hoàn thành\.?$/];
-                    return !c.content.startsWith('[Hệ thống]') && !c.content.startsWith('[sys]') && !p.some(r => r.test(c.content));
-                  })}
-                  canCompose={!!currentProfile && canComposeTaskComment(currentProfile, task) && !readOnly}
-                  onAdded={() => { refetch(); onChanged?.(); }}
-                />
+              <div className="space-y-3 pt-2">
+                <p className="text-[12px] font-medium text-slate-400 uppercase tracking-wide">Bình luận</p>
+                <div className="-mx-5">
+                  <TaskCommentList
+                    taskId={task.id}
+                    comments={task.comments.filter(c => {
+                      const p = [/đã hoàn thành\.?$/, /trả lại\. Lý do:/, /trả về để sửa\. Lý do:/, /đã sửa:/, /^Đã hủy/, /^Đã hoàn thành\.?$/];
+                      return !c.content.startsWith('[Hệ thống]') && !c.content.startsWith('[sys]') && !p.some(r => r.test(c.content));
+                    })}
+                    canCompose={!!currentProfile && canComposeTaskComment(currentProfile, task) && !ro}
+                    onAdded={() => { refetch(); onChanged?.(); }}
+                  />
+                </div>
               </div>
             )}
 
-            {/* ─── 6. LỊCH SỬ (chỉ detail mode) ─── */}
+            {/* ─── Timeline ─── */}
             {detail && task && (task.extension_requests?.length > 0 || task.comments.some(c => c.content.startsWith('[Hệ thống]') || c.content.startsWith('[sys]'))) && (
               <div className="space-y-3 pt-1">
-                <SectionTitle icon={<Clock className="w-4 h-4" />} label="Lịch sử thay đổi" />
+                <p className="text-[12px] font-medium text-slate-400 uppercase tracking-wide">Lịch sử</p>
                 <TaskTimeline task={task} />
               </div>
             )}
@@ -314,101 +357,39 @@ export function TaskDetailDialog(props: Props) {
           </div>
         </ScrollArea>
 
-        {/* ═══ FOOTER ═══ */}
-        <div className="border-t border-slate-100 px-5 py-3 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-1.5">
-            {overview && bCanDe && (
-              <IconBtn icon={<Trash2 className="w-4 h-4" />} title="Xoá lô" onClick={delb} disabled={deleting} danger />
-            )}
-            {detail && canDe && (
-              <IconBtn icon={<Trash2 className="w-4 h-4" />} title="Xoá" onClick={del} disabled={busy !== null} danger />
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            {overview && (
-              <span className="text-[13px] text-slate-400 font-medium tabular-nums">{p.done + p.submitted}/{p.total} hoàn thành</span>
-            )}
-            {childId && (
-              <button onClick={() => setChildId(null)}
-                className="h-9 px-3.5 rounded-xl text-[13px] font-medium text-slate-600 bg-slate-50 border border-slate-200 hover:bg-slate-100 transition-all active:scale-95 inline-flex items-center gap-1">
-                ← Về danh sách
-              </button>
-            )}
-            <button onClick={() => setIsOpen(false)}
-              className="min-h-9 px-4 rounded-xl text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition-all active:scale-95">Đóng</button>
-          </div>
-        </div>
-
-        {/* ─── Sub-dialogs ─── */}
-        {openEdit && (overview ? rep : task) && (
+        {/* Sub-dialogs */}
+        {openEdit && (ov ? rep : task) && (
           <TaskEditDialog task={{
-            id: (overview ? rep! : task!).id, title: (overview ? rep! : task!).title,
-            description: (overview ? rep! : task!).description ?? null, priority: (overview ? rep! : task!).priority,
-            due_date: (overview ? rep! : task!).due_date ?? null, batch_id: (overview ? rep! : task!).batch_id ?? null,
+            id: (ov ? rep! : task!).id, title: (ov ? rep! : task!).title,
+            description: (ov ? rep! : task!).description ?? null, priority: (ov ? rep! : task!).priority,
+            due_date: (ov ? rep! : task!).due_date ?? null, batch_id: (ov ? rep! : task!).batch_id ?? null,
           }} onClose={() => setOpenEdit(false)} onChanged={() => { setOpenEdit(false); onChanged?.(); }} />
         )}
         {openDelegate && task && <TaskDelegateDialog task={task} onClose={() => setOpenDelegate(false)} onChanged={() => { setOpenDelegate(false); onChanged?.(); }} />}
-        {openExtension && task && <TaskRequestExtensionDialog task={task} onClose={() => setOpenExtension(false)} onChanged={() => { setOpenExtension(false); onChanged?.(); }} />}
-        {openSubmit && task && <TaskSubmitResultDialog task={task} onClose={() => setOpenSubmit(false)} onChanged={() => { setOpenSubmit(false); onChanged?.(); }} />}
-        {openReturn && task && <TaskReturnDialog task={task} onClose={() => setOpenReturn(false)} onChanged={() => { setOpenReturn(false); onChanged?.(); }} />}
-        {openReopen && task && <TaskReopenDialog task={task} onClose={() => setOpenReopen(false)} onChanged={() => { setOpenReopen(false); onChanged?.(); }} />}
-        {openApprove && task && <TaskApproveDialog task={task} onClose={() => setOpenApprove(false)} onChanged={() => { setOpenApprove(false); onChanged?.(); }} />}
-        {openApproveExtension && task && <TaskApproveExtensionDialog task={task} request={openApproveExtension} onClose={() => setOpenApproveExtension(null)} onChanged={() => { setOpenApproveExtension(null); onChanged?.(); }} />}
+        {openExt && task && <TaskRequestExtensionDialog task={task} onClose={() => setOpenExt(false)} onChanged={() => { setOpenExt(false); onChanged?.(); }} />}
+        {openSub && task && <TaskSubmitResultDialog task={task} onClose={() => setOpenSub(false)} onChanged={() => { setOpenSub(false); onChanged?.(); }} />}
+        {openRet && task && <TaskReturnDialog task={task} onClose={() => setOpenRet(false)} onChanged={() => { setOpenRet(false); onChanged?.(); }} />}
+        {openReo && task && <TaskReopenDialog task={task} onClose={() => setOpenReo(false)} onChanged={() => { setOpenReo(false); onChanged?.(); }} />}
+        {openApp && task && <TaskApproveDialog task={task} onClose={() => setOpenApp(false)} onChanged={() => { setOpenApp(false); onChanged?.(); }} />}
+        {openAppExt && task && <TaskApproveExtensionDialog task={task} request={openAppExt} onClose={() => setOpenAppExt(null)} onChanged={() => { setOpenAppExt(null); onChanged?.(); }} />}
       </DialogContent>
     </Dialog>
   );
 }
 
-// ─── Sub-components (dùng chung cho cả dialog) ───
-function SectionTitle({ icon, label }: { icon: React.ReactNode; label: string }) {
-  return (
-    <h3 className="text-[13px] font-semibold text-slate-500 flex items-center gap-1.5">
-      {icon}{label}
-    </h3>
-  );
-}
-function Tile({ label, value, c }: { label: string; value: number; c: string }) {
-  return <div className={cn('rounded-xl border border-slate-100 px-3 py-2', c.replace(/text-\S+/, '').trim())}>
-    <p className={cn('text-lg font-bold tabular-nums', c.match(/text-\S+/g)?.[0])}>{value}</p>
-    <p className={cn('text-[12px] font-medium', c.match(/text-\S+/g)?.[1] ?? 'text-slate-500')}>{label}</p>
-  </div>;
-}
-function InfoCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
-  return (
-    <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100">
-      <div className="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center shrink-0">{icon}</div>
-      <div className="min-w-0">
-        <p className="text-[12px] font-medium text-slate-500">{label}</p>
-        <p className="text-sm font-semibold text-slate-900 truncate">{value}</p>
-      </div>
-    </div>
-  );
-}
-function SegBar({ done, sub, doing, total }: { done: number; sub: number; doing: number; total: number }) {
-  const s = (n: number) => total > 0 ? (n / total) * 100 : 0;
-  if (total === 0) return null;
-  return (
-    <div className="flex h-2 rounded-full overflow-hidden bg-slate-100">
-      {done > 0 && <div className="bg-emerald-500" style={{ width: `${s(done)}%` }} />}
-      {sub > 0 && <div className="bg-blue-400" style={{ width: `${s(sub)}%` }} />}
-      {doing > 0 && <div className="bg-amber-400" style={{ width: `${s(doing)}%` }} />}
-    </div>
-  );
-}
-function Btn({ label, icon, onClick, disabled, secondary, amber }: { label: string; icon: React.ReactNode; onClick: () => void; disabled?: boolean; secondary?: boolean; amber?: boolean }) {
+// ─── Sub-components ───
+function ABtn({ label, icon, onClick, disabled, amber }: { label: string; icon: React.ReactNode; onClick: () => void; disabled?: boolean; amber?: boolean }) {
   return (
     <button onClick={onClick} disabled={disabled} className={cn(
-      'inline-flex items-center gap-1.5 h-9 px-4 rounded-xl text-sm font-semibold transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed',
-      amber ? 'bg-amber-600 text-white hover:bg-amber-700 shadow-sm' : secondary ? 'bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100' : 'bg-slate-900 text-white hover:bg-slate-800 shadow-sm',
+      'inline-flex items-center gap-1.5 h-10 px-4 rounded-xl text-sm font-semibold transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm',
+      amber ? 'bg-amber-600 text-white hover:bg-amber-700' : 'bg-slate-900 text-white hover:bg-slate-800',
     )}>{icon}{label}</button>
   );
 }
-function IconBtn({ icon, title, onClick, disabled, danger }: { icon: React.ReactNode; title: string; onClick: () => void; disabled?: boolean; danger?: boolean }) {
+function SBtn({ label, icon, onClick, disabled }: { label: string; icon: React.ReactNode; onClick: () => void; disabled?: boolean }) {
   return (
-    <button onClick={onClick} disabled={disabled} title={title}
-      className={cn('w-9 h-9 rounded-xl border flex items-center justify-center transition-all active:scale-95 disabled:opacity-50',
-        danger ? 'text-red-600 bg-red-50 border-red-100 hover:bg-red-100' : 'text-slate-500 bg-slate-50 border-slate-200 hover:bg-slate-100')}>
-      {icon}
-    </button>
+    <button onClick={onClick} disabled={disabled} className={cn(
+      'inline-flex items-center gap-1.5 h-10 px-4 rounded-xl text-sm font-semibold transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed bg-white text-slate-700 border border-slate-200 hover:bg-slate-50',
+    )}>{icon}{label}</button>
   );
 }
