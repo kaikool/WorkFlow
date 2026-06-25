@@ -204,7 +204,7 @@ export default function CreateScheduleDialog(props: CreateScheduleDialogProps) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="text-label whitespace-nowrap">Loại hình</Label>
-              <div className="grid grid-cols-4 gap-1.5 rounded-2xl bg-slate-50 p-1.5">
+              <div className="grid grid-cols-3 gap-1.5 rounded-2xl bg-slate-50 p-1.5">
                 {scheduleTypes.map((type) => {
                   const isSelected = newSchedule.type === type.value;
                   return (

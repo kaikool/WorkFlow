@@ -244,7 +244,7 @@ export default function ScheduleEditForm({
             ) : detail.editData.type !== 'leave' ? (
               <div className="item-stack animate-in fade-in zoom-in-95 duration-300">
                 <div className="flex items-center justify-between">
-                  <Label className="text-xs font-medium text-slate-500 pl-0.5">Lộ trình di chuyển</Label>
+                  <Label className="text-label pl-0.5">Lộ trình di chuyển</Label>
                   <div 
                     role="button"
                     onClick={() => {
