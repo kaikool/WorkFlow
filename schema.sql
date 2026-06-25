@@ -2684,6 +2684,7 @@ CREATE TABLE IF NOT EXISTS task_recurring_templates (
 
   timezone              TEXT NOT NULL DEFAULT 'Asia/Ho_Chi_Minh',
   due_days_after_fire   INT NOT NULL DEFAULT 7 CHECK (due_days_after_fire > 0),
+  due_time              TIME NOT NULL DEFAULT '17:00',
 
   created_by            UUID REFERENCES profiles(id) ON DELETE SET NULL,
   is_active             BOOLEAN NOT NULL DEFAULT TRUE,
@@ -2808,6 +2809,7 @@ CREATE OR REPLACE FUNCTION recurring_template_upsert(
   p_monthly_time          TIME,
   p_timezone              TEXT,
   p_due_days_after_fire   INT,
+  p_due_time              TIME,
   p_is_active             BOOLEAN
 )
 RETURNS UUID LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
@@ -2845,13 +2847,13 @@ BEGIN
       title, description, task_type, priority,
       target_department_ids, target_user_ids,
       schedule_kind, weekly_dow, weekly_time, monthly_dom, monthly_time,
-      timezone, due_days_after_fire,
+      timezone, due_days_after_fire, due_time,
       created_by, is_active, next_run_at
     ) VALUES (
       p_title, p_description, p_task_type, COALESCE(p_priority, 'medium'),
       COALESCE(p_target_department_ids, '{}'), COALESCE(p_target_user_ids, '{}'),
       p_schedule_kind, p_weekly_dow, p_weekly_time, p_monthly_dom, p_monthly_time,
-      COALESCE(p_timezone, 'Asia/Ho_Chi_Minh'), COALESCE(p_due_days_after_fire, 7),
+      COALESCE(p_timezone, 'Asia/Ho_Chi_Minh'), COALESCE(p_due_days_after_fire, 7), COALESCE(p_due_time, '17:00'::TIME),
       v_uid, COALESCE(p_is_active, TRUE), v_next
     )
     RETURNING id INTO v_id;
@@ -2883,7 +2885,7 @@ END $$;
 
 GRANT EXECUTE ON FUNCTION recurring_template_upsert(
   UUID, TEXT, TEXT, TEXT, task_priority, UUID[], UUID[],
-  TEXT, SMALLINT, TIME, SMALLINT, TIME, TEXT, INT, BOOLEAN
+  TEXT, SMALLINT, TIME, SMALLINT, TIME, TEXT, INT, TIME, BOOLEAN
 ) TO authenticated;
 
 
@@ -4289,6 +4291,7 @@ CREATE OR REPLACE FUNCTION recurring_template_upsert(
   p_monthly_time          TIME,
   p_timezone              TEXT,
   p_due_days_after_fire   INT,
+  p_due_time              TIME,
   p_is_active             BOOLEAN
 )
 RETURNS UUID LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
@@ -4330,13 +4333,13 @@ BEGIN
       title, description, task_type, priority,
       target_department_ids, target_user_ids,
       schedule_kind, weekly_dow, weekly_time, monthly_dom, monthly_time,
-      timezone, due_days_after_fire,
+      timezone, due_days_after_fire, due_time,
       created_by, is_active, next_run_at
     ) VALUES (
       p_title, p_description, p_task_type, COALESCE(p_priority, 'medium'),
       COALESCE(p_target_department_ids, '{}'), COALESCE(p_target_user_ids, '{}'),
       p_schedule_kind, p_weekly_dow, p_weekly_time, p_monthly_dom, p_monthly_time,
-      COALESCE(p_timezone, 'Asia/Ho_Chi_Minh'), COALESCE(p_due_days_after_fire, 7),
+      COALESCE(p_timezone, 'Asia/Ho_Chi_Minh'), COALESCE(p_due_days_after_fire, 7), COALESCE(p_due_time, '17:00'::TIME),
       v_uid, COALESCE(p_is_active, TRUE), v_next
     )
     RETURNING id INTO v_id;
@@ -4364,7 +4367,7 @@ END $$;
 
 GRANT EXECUTE ON FUNCTION recurring_template_upsert(
   UUID, TEXT, TEXT, TEXT, task_priority, UUID[], UUID[],
-  TEXT, SMALLINT, TIME, SMALLINT, TIME, TEXT, INT, BOOLEAN
+  TEXT, SMALLINT, TIME, SMALLINT, TIME, TEXT, INT, TIME, BOOLEAN
 ) TO authenticated;
 
 NOTIFY pgrst, 'reload schema';
@@ -6877,7 +6880,7 @@ BEGIN
         END INTO v_target_id;
         IF v_target_id IS NULL THEN CONTINUE; END IF;
         INSERT INTO tasks (title, description, priority, due_date, department_id, assignee_id, created_by, status, metadata, is_archived, requires_approval, batch_id)
-        VALUES (v_t.title, v_t.description, v_t.priority, NOW() + (v_t.due_days_after_fire || ' days')::INTERVAL,
+        VALUES (v_t.title, v_t.description, v_t.priority, (NOW()::DATE + v_t.due_days_after_fire + v_t.due_time)::TIMESTAMPTZ,
                 v_dept_id, v_target_id, v_uid, 'todo'::task_status, jsonb_build_object('from_recurring', true, 'recurring_template_id', v_t.id), FALSE, TRUE, v_batch_id)
         RETURNING id INTO v_task_id;
         INSERT INTO task_assignees (task_id, user_id) VALUES (v_task_id, v_target_id) ON CONFLICT DO NOTHING;
@@ -6890,7 +6893,7 @@ BEGIN
     IF COALESCE(array_length(v_t.target_user_ids, 1), 0) > 0 THEN
       FOREACH v_a IN ARRAY v_t.target_user_ids LOOP
         INSERT INTO tasks (title, description, priority, due_date, department_id, assignee_id, created_by, status, metadata, is_archived, requires_approval, batch_id)
-        SELECT v_t.title, v_t.description, v_t.priority, NOW() + (v_t.due_days_after_fire || ' days')::INTERVAL,
+        SELECT v_t.title, v_t.description, v_t.priority, (NOW()::DATE + v_t.due_days_after_fire + v_t.due_time)::TIMESTAMPTZ,
                p.department_id, p.id, v_uid, 'todo'::task_status, jsonb_build_object('from_recurring', true, 'recurring_template_id', v_t.id), FALSE, TRUE, v_batch_id
         FROM profiles p
         WHERE p.id = v_a AND p.is_active = TRUE AND p.role NOT IN ('admin','director','driver','secretary','hr_officer')

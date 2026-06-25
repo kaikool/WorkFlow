@@ -14,6 +14,7 @@ export interface RecurringTemplate {
   monthly_time: string | null;
   timezone: string;
   due_days_after_fire: number;
+  due_time: string;
   created_by: string | null;
   is_active: boolean;
   last_fired_at: string | null;

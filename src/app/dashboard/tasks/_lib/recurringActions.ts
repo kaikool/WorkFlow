@@ -18,6 +18,7 @@ export interface UpsertTemplateInput {
   monthly_time?: string | null;
   timezone?: string;
   due_days_after_fire?: number;
+  due_time?: string;
   is_active?: boolean;
 }
 
@@ -36,6 +37,7 @@ export async function upsertRecurringTemplate(input: UpsertTemplateInput): Promi
     p_monthly_time: input.monthly_time ?? null,
     p_timezone: input.timezone ?? 'Asia/Ho_Chi_Minh',
     p_due_days_after_fire: input.due_days_after_fire ?? 7,
+    p_due_time: input.due_time ?? '17:00',
     p_is_active: input.is_active ?? true,
   } as any);
   if (error) return { ok: false, error: error.message };

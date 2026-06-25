@@ -50,6 +50,7 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
   const [monthlyDom, setMonthlyDom] = useState<number | null>(1);
   const [monthlyTime, setMonthlyTime] = useState('09:00');
   const [dueDays, setDueDays] = useState(7);
+  const [dueTime, setDueTime] = useState('17:00');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -83,6 +84,7 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
       setMonthlyDom(editing.monthly_dom);
       setMonthlyTime(editing.monthly_time?.slice(0, 5) ?? '09:00');
       setDueDays(editing.due_days_after_fire);
+      setDueTime(editing.due_time?.slice(0, 5) ?? '17:00');
     } else {
       setTitle(''); setDescription('');
       setPriority('medium');
@@ -145,6 +147,7 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
       monthly_dom: kind === 'monthly' ? monthlyDom : null,
       monthly_time: kind === 'monthly' ? monthlyTime : null,
       due_days_after_fire: dueDays,
+      due_time: dueTime,
       is_active: editing?.is_active ?? true,
     });
     setLoading(false);
@@ -263,16 +266,27 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label className="text-xs font-semibold text-slate-500">Hạn nộp = sau N ngày</Label>
-                <Input
-                  type="number"
-                  min={1}
-                  max={365}
-                  value={dueDays}
-                  onChange={(e) => setDueDays(Number(e.target.value))}
-                  className="min-h-11 rounded-xl bg-slate-50 border-none"
-                />
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold text-slate-500">Hạn nộp = sau N ngày</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={365}
+                    value={dueDays}
+                    onChange={(e) => setDueDays(Number(e.target.value))}
+                    className="min-h-11 rounded-xl bg-slate-50 border-none"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold text-slate-500">Giờ hạn nộp</Label>
+                  <Input
+                    type="time"
+                    value={dueTime}
+                    onChange={(e) => setDueTime(e.target.value)}
+                    className="min-h-11 rounded-xl bg-slate-50 border-none"
+                  />
+                </div>
               </div>
               <div className="space-y-2">
                 <Label className="text-xs font-semibold text-slate-500">Mức độ ưu tiên</Label>
