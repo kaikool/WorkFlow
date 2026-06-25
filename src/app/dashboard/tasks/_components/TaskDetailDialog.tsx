@@ -174,6 +174,7 @@ export function TaskDetailDialog(props: Props) {
   // Dept label: nếu cùng phòng → hiện tên phòng, khác → "X phòng"
   const uniqueDepts = [...new Set(dc.map(c => c.department?.name).filter(Boolean))];
   const deptLabel = uniqueDepts.length === 1 && uniqueDepts[0] ? uniqueDepts[0] : `${dc.length} phòng`;
+  const allSameDept = uniqueDepts.length === 1;
 
   const hBadge = ov
     ? <Badge className="bg-white/60 backdrop-blur-md shadow-sm font-bold text-xs px-3 py-1 w-fit text-slate-600">Công việc · {deptLabel}</Badge>
@@ -288,14 +289,28 @@ export function TaskDetailDialog(props: Props) {
                         )}>
                         <button type="button" onClick={() => setChildId(c.id)}
                           className="flex items-center gap-3 flex-1 min-w-0 text-left">
-                          <div className="p-2 bg-white rounded-xl shadow-sm shrink-0">
-                            <Building2 className={cn('w-4 h-4', c.is_overdue ? 'text-red-500' : 'text-slate-500')} />
-                          </div>
+                          {allSameDept && c.assignees?.[0] ? (
+                            <Avatar className="w-9 h-9 shrink-0 border-2 border-white shadow-sm">
+                              <AvatarImage src={c.assignees[0].avatar_url ?? undefined} />
+                              <AvatarFallback className="text-[11px] font-bold bg-slate-200 text-slate-600">{c.assignees[0].full_name?.[0] ?? '?'}</AvatarFallback>
+                            </Avatar>
+                          ) : (
+                            <div className="p-2 bg-white rounded-xl shadow-sm shrink-0">
+                              <Building2 className={cn('w-4 h-4', c.is_overdue ? 'text-red-500' : 'text-slate-500')} />
+                            </div>
+                          )}
                           <div className="min-w-0 flex-1">
-                            <p className="text-sm font-semibold text-slate-900 truncate">{c.department?.name ?? '—'}</p>
-                            <p className={cn('text-xs font-medium', c.is_overdue ? 'text-red-600' : 'text-slate-500')}>
-                              {noAs ? 'Chưa phân công' : c.assignees!.map((a: any) => a.full_name).filter(Boolean).join(', ')}
+                            <p className="text-sm font-semibold text-slate-900 truncate">
+                              {allSameDept
+                                ? (c.assignees?.map((a: any) => a.full_name).filter(Boolean).join(', ') || c.department?.name || '—')
+                                : (c.department?.name ?? '—')
+                              }
                             </p>
+                            {!allSameDept && (
+                              <p className={cn('text-xs font-medium', c.is_overdue ? 'text-red-600' : 'text-slate-500')}>
+                                {noAs ? 'Chưa phân công' : c.assignees!.map((a: any) => a.full_name).filter(Boolean).join(', ')}
+                              </p>
+                            )}
                           </div>
                           <Badge variant="outline" className="text-xs font-semibold px-2 py-0.5 rounded-full border-slate-200 bg-white shrink-0">
                             {STATUS_LABEL[c.status]}
