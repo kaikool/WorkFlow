@@ -185,11 +185,11 @@ export function TaskDetailDialog(props: Props) {
   const hTitle = ov ? rep?.title : task?.title ?? 'Đang tải…';
   const hMeta = ov
     ? [{ icon: <Users className="w-4 h-4 text-slate-500" />, text: deptLabel },
-       rep?.creator ? { icon: <Avatar className="w-5 h-5"><AvatarImage src={rep.creator?.avatar_url} /><AvatarFallback className="text-[8px] font-bold bg-slate-200 text-slate-600">{rep.creator?.full_name?.[0]}</AvatarFallback></Avatar>, text: rep.creator.full_name } : null,
+       rep?.creator ? { icon: <Avatar className="w-5 h-5"><AvatarImage src={rep.creator?.avatar_url ?? undefined} /><AvatarFallback className="text-[8px] font-bold bg-slate-200 text-slate-600">{rep.creator?.full_name?.[0]}</AvatarFallback></Avatar>, text: rep.creator.full_name } : null,
        rep?.due_date ? { icon: <Calendar className="w-4 h-4 text-slate-500" />, text: format(new Date(rep.due_date), 'dd/MM/yyyy', { locale: vi }) } : null,
       ].filter(Boolean)
     : task
-      ? [{ icon: <Avatar className="w-5 h-5"><AvatarImage src={task.creator?.avatar_url} /><AvatarFallback className="text-[8px] font-bold bg-slate-200 text-slate-600">{task.creator?.full_name?.[0]}</AvatarFallback></Avatar>, text: task.creator?.full_name },
+      ? [{ icon: <Avatar className="w-5 h-5"><AvatarImage src={task.creator?.avatar_url ?? undefined} /><AvatarFallback className="text-[8px] font-bold bg-slate-200 text-slate-600">{task.creator?.full_name?.[0]}</AvatarFallback></Avatar>, text: task.creator?.full_name },
          task.due_date ? { icon: <Calendar className="w-4 h-4 text-slate-500" />, text: format(new Date(task.due_date), 'dd/MM/yyyy HH:mm', { locale: vi }) } : null,
          dueOver ? { icon: null, text: 'Quá hạn', cls: 'text-red-600 font-semibold' } : null,
         ].filter(Boolean)
@@ -407,7 +407,7 @@ export function TaskDetailDialog(props: Props) {
                       const p = [/đã hoàn thành\.?$/, /trả lại\. Lý do:/, /trả về để sửa\. Lý do:/, /đã sửa:/, /^Đã hủy/, /^Đã hoàn thành\.?$/];
                       return !c.content.startsWith('[Hệ thống]') && !c.content.startsWith('[sys]') && !p.some(r => r.test(c.content));
                     })}
-                    canCompose={!!currentProfile && canComposeTaskComment(currentProfile, task) && !ro}
+                    canCompose={!!currentProfile && canComposeTaskComment(currentProfile) && !ro}
                     onAdded={() => { refetch(); onChanged?.(); }}
                   />
                 </div>
@@ -458,13 +458,13 @@ export function TaskDetailDialog(props: Props) {
             due_date: (ov ? rep! : task!).due_date ?? null, batch_id: (ov ? rep! : task!).batch_id ?? null,
           }} onClose={() => setOpenEdit(false)} onChanged={() => { setOpenEdit(false); onChanged?.(); }} />
         )}
-        {openDelegate && task && <TaskDelegateDialog task={task} onClose={() => setOpenDelegate(false)} onChanged={() => { setOpenDelegate(false); onChanged?.(); }} />}
+        {openDelegate && task && <TaskDelegateDialog task={task} currentAssigneeIds={task.assignees?.map((a: any) => a.id) ?? []} onClose={() => setOpenDelegate(false)} onChanged={() => { setOpenDelegate(false); onChanged?.(); }} />}
         {openExt && task && <TaskRequestExtensionDialog task={task} onClose={() => setOpenExt(false)} onChanged={() => { setOpenExt(false); onChanged?.(); }} />}
         {openSub && task && <TaskSubmitResultDialog task={task} onClose={() => setOpenSub(false)} onChanged={() => { setOpenSub(false); onChanged?.(); }} />}
         {openRet && task && <TaskReturnDialog task={task} onClose={() => setOpenRet(false)} onChanged={() => { setOpenRet(false); onChanged?.(); }} />}
         {openReo && task && <TaskReopenDialog task={task} onClose={() => setOpenReo(false)} onChanged={() => { setOpenReo(false); onChanged?.(); }} />}
         {openApp && task && <TaskApproveDialog task={task} onClose={() => setOpenApp(false)} onChanged={() => { setOpenApp(false); onChanged?.(); }} />}
-        {openAppExt && task && <TaskApproveExtensionDialog task={task} request={openAppExt} onClose={() => setOpenAppExt(null)} onChanged={() => { setOpenAppExt(null); onChanged?.(); }} />}
+        {openAppExt && task && <TaskApproveExtensionDialog extension={openAppExt} onClose={() => setOpenAppExt(null)} onChanged={() => { setOpenAppExt(null); onChanged?.(); }} />}
       </DialogContent>
     </Dialog>
   );
