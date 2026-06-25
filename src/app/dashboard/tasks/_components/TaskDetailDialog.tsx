@@ -5,6 +5,7 @@ import {
   Dialog, DialogContent,
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Building2, Calendar, Users, Pencil, Trash2,
@@ -139,6 +140,9 @@ export function TaskDetailDialog(props: Props) {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent hideCloseButton className="app-dialog-sheet app-dialog-sheet--2xl shadow-2xl flex flex-col p-0 gap-0 bg-white">
+        <VisuallyHidden>
+          <h2>{ov ? rep?.title ?? 'Chi tiết' : task?.title ?? 'Chi tiết'}</h2>
+        </VisuallyHidden>
 
         {/* ─── Navbar ─── */}
         <div className="flex items-center justify-between px-5 h-12 border-b border-slate-100 shrink-0">
