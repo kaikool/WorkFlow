@@ -112,18 +112,18 @@ function TasksContent() {
         action={
           <div className="flex items-center gap-2">
             {showRecurringLink && (
-              <Button variant="outline" asChild>
-                <Link href="/dashboard/tasks/recurring">
-                  <CalendarClock className="icon-sm" />
-                  <span>Định kỳ</span>
+              <Button variant="ghost" asChild>
+                <Link href="/dashboard/tasks/recurring" className="flex items-center gap-2">
+                  <CalendarClock className="w-4 h-4" />
+                  <span className="text-sm font-medium">Định kỳ</span>
                 </Link>
               </Button>
             )}
             {showAnalyticsLink && (
-              <Button variant="outline" asChild>
-                <Link href="/dashboard/tasks/analytics">
-                  <BarChart3 className="icon-sm" />
-                  <span>Thống kê</span>
+              <Button variant="ghost" asChild>
+                <Link href="/dashboard/tasks/analytics" className="flex items-center gap-2">
+                  <BarChart3 className="w-4 h-4" />
+                  <span className="text-sm font-medium">Thống kê</span>
                 </Link>
               </Button>
             )}
