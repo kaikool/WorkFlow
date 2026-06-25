@@ -33,11 +33,20 @@ export interface AnalyticsResult {
   daily_completed: DailyPoint[];
   by_department: DeptStat[];
   top_people: PersonStat[];
+  resource_view: ResourceViewItem[];
   recurring_active: number;
   role: string;
   scope_dept: string | null;
   from: string;
   to: string;
+}
+
+export interface ResourceViewItem {
+  user_id: string;
+  full_name: string | null;
+  avatar_url: string | null;
+  active_count: number;
+  overdue_count: number;
 }
 
 export function useTaskAnalytics(
@@ -49,6 +58,7 @@ export function useTaskAnalytics(
   const supabase = useMemo(() => createClient(), []);
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<AnalyticsResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const fromStr = fromDate.toISOString().slice(0, 10);
   const toStr = toDate.toISOString().slice(0, 10);
@@ -56,18 +66,20 @@ export function useTaskAnalytics(
   const refetch = useCallback(async () => {
     if (!enabled) return;
     setLoading(true);
-    const { data: res, error } = await supabase.rpc('tasks_analytics', {
+    setError(null);
+    const { data: res, error: rpcError } = await supabase.rpc('tasks_analytics', {
       p_from: fromStr,
       p_to: toStr,
       p_dept_id: deptId,
     } as any);
     setLoading(false);
-    if (error) {
+    if (rpcError) {
+      setError(rpcError.message);
       console.error('tasks_analytics error:', {
-        message: error.message,
-        code: error.code,
-        details: error.details,
-        hint: error.hint,
+        message: rpcError.message,
+        code: rpcError.code,
+        details: rpcError.details,
+        hint: rpcError.hint,
       });
       return;
     }
@@ -76,5 +88,5 @@ export function useTaskAnalytics(
 
   useEffect(() => { refetch(); }, [refetch]);
 
-  return { loading, data, refetch };
+  return { loading, data, error, refetch };
 }

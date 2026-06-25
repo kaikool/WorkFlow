@@ -3142,26 +3142,28 @@ DECLARE
   v_uid       UUID := auth.uid();
   v_role      TEXT;
   v_dept      UUID;
+  v_dept_code TEXT;
   v_now       TIMESTAMPTZ := NOW();
   v_scope_dept UUID;
   v_totals    JSONB;
   v_daily     JSONB;
   v_by_dept   JSONB;
   v_top       JSONB;
+  v_resource  JSONB;
   v_recur     INT;
 BEGIN
   IF v_uid IS NULL THEN RAISE EXCEPTION 'Chưa đăng nhập'; END IF;
-  SELECT role, department_id INTO v_role, v_dept FROM profiles WHERE id = v_uid;
-  IF v_role NOT IN ('admin', 'director', 'manager') THEN
+  SELECT p.role, p.department_id, d.code
+    INTO v_role, v_dept, v_dept_code
+    FROM profiles p
+    LEFT JOIN departments d ON d.id = p.department_id
+   WHERE p.id = v_uid;
+
+  IF v_role NOT IN ('admin', 'director', 'manager') AND NOT (v_role = 'staff' AND v_dept_code = '13602') THEN
     RAISE EXCEPTION 'Bạn không có quyền xem báo cáo';
   END IF;
 
-  -- Restrict scope: manager → chỉ dept mình; admin/director → có thể filter dept
-  IF v_role = 'manager' THEN
-    v_scope_dept := v_dept;
-  ELSE
-    v_scope_dept := p_dept_id;
-  END IF;
+  v_scope_dept := CASE WHEN v_role IN ('admin', 'director') OR v_dept_code = '13602' THEN p_dept_id ELSE v_dept END;
 
   -- Totals
   WITH base AS (
@@ -3245,11 +3247,29 @@ BEGIN
            WHERE p.id = ANY(target_user_ids) AND p.department_id = v_scope_dept
          ));
 
+  -- Resource view: phân bổ công việc theo cán bộ
+  SELECT COALESCE(jsonb_agg(r.* ORDER BY r.active_count DESC), '[]'::jsonb)
+  INTO v_resource
+  FROM (
+    SELECT ta.user_id, p.full_name, p.avatar_url,
+           COUNT(*) FILTER (WHERE t.status NOT IN ('done','canceled')) AS active_count,
+           COUNT(*) FILTER (WHERE t.due_date < v_now AND t.status NOT IN ('done','canceled')) AS overdue_count
+    FROM task_assignees ta
+    JOIN tasks t ON t.id = ta.task_id
+    JOIN profiles p ON p.id = ta.user_id
+    WHERE t.is_archived = FALSE
+      AND (v_scope_dept IS NULL OR t.department_id = v_scope_dept)
+    GROUP BY ta.user_id, p.full_name, p.avatar_url
+    HAVING COUNT(*) FILTER (WHERE t.status NOT IN ('done','canceled')) > 0
+    LIMIT 20
+  ) r;
+
   RETURN jsonb_build_object(
-    'totals',          COALESCE(v_totals, '{}'::jsonb),
-    'daily_completed', COALESCE(v_daily, '[]'::jsonb),
-    'by_department',   COALESCE(v_by_dept, '[]'::jsonb),
-    'top_people',      COALESCE(v_top, '[]'::jsonb),
+    'totals',           COALESCE(v_totals, '{}'::jsonb),
+    'daily_completed',  COALESCE(v_daily, '[]'::jsonb),
+    'by_department',    COALESCE(v_by_dept, '[]'::jsonb),
+    'top_people',       COALESCE(v_top, '[]'::jsonb),
+    'resource_view',    COALESCE(v_resource, '[]'::jsonb),
     'recurring_active', COALESCE(v_recur, 0),
     'role',            v_role,
     'scope_dept',      v_scope_dept,
@@ -6058,77 +6078,7 @@ END $$;
 
 GRANT EXECUTE ON FUNCTION recurring_fire_due() TO authenticated;
 
--- =====================================================================
--- 6. RPC tasks_analytics — bỏ task_type
--- =====================================================================
-DROP FUNCTION IF EXISTS tasks_analytics(TIMESTAMPTZ, TIMESTAMPTZ, UUID);
 
-CREATE OR REPLACE FUNCTION tasks_analytics(
-  p_from    TIMESTAMPTZ DEFAULT NOW() - INTERVAL '30 days',
-  p_to      TIMESTAMPTZ DEFAULT NOW(),
-  p_dept_id UUID DEFAULT NULL
-)
-RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
-DECLARE
-  v_uid       UUID := auth.uid();
-  v_role      TEXT;
-  v_dept      UUID;
-  v_dept_code TEXT;
-  v_scope_dept UUID;
-  v_can_branch BOOLEAN;
-  v_result    JSONB;
-BEGIN
-  IF v_uid IS NULL THEN RAISE EXCEPTION 'Chưa đăng nhập'; END IF;
-  SELECT p.role, p.department_id, d.code
-    INTO v_role, v_dept, v_dept_code
-    FROM profiles p
-    LEFT JOIN departments d ON d.id = p.department_id
-   WHERE p.id = v_uid;
-
-  v_can_branch := v_role IN ('admin', 'director') OR v_dept_code = '13602';
-  IF v_role NOT IN ('admin', 'director', 'manager') AND NOT (v_role = 'staff' AND v_dept_code = '13602') THEN
-    RAISE EXCEPTION 'Không có quyền xem thống kê';
-  END IF;
-  v_scope_dept := CASE WHEN v_can_branch THEN p_dept_id ELSE v_dept END;
-
-  WITH base AS (
-    SELECT t.*
-    FROM tasks t
-    WHERE t.created_at BETWEEN p_from AND p_to
-      AND (v_scope_dept IS NULL OR t.department_id = v_scope_dept)
-      AND t.is_archived = FALSE
-  )
-  SELECT jsonb_build_object(
-    'total', COUNT(*),
-    'by_status', jsonb_build_object(
-      'todo', COUNT(*) FILTER (WHERE status = 'todo'),
-      'doing', COUNT(*) FILTER (WHERE status = 'doing'),
-      'submitted', COUNT(*) FILTER (WHERE status = 'submitted'),
-      'done', COUNT(*) FILTER (WHERE status = 'done'),
-      'canceled', COUNT(*) FILTER (WHERE status = 'canceled')
-    ),
-    'overdue', COUNT(*) FILTER (WHERE due_date < NOW() AND status NOT IN ('done','canceled')),
-    'avg_completion_days', COALESCE(
-      (SELECT ROUND(AVG(EXTRACT(EPOCH FROM (updated_at - created_at)) / 86400)::numeric, 1)
-       FROM tasks WHERE status = 'done' AND created_at BETWEEN p_from AND p_to),
-      0
-    ),
-    'daily_counts', (
-      SELECT jsonb_agg(jsonb_build_object('date', d::date, 'count', COALESCE(c, 0)))
-      FROM generate_series(p_from::date, p_to::date, '1 day'::interval) d
-      LEFT JOIN (SELECT created_at::date AS dt, COUNT(*) AS c FROM base GROUP BY created_at::date) sub ON sub.dt = d::date
-    )
-  ) INTO v_result
-  FROM base;
-
-  RETURN v_result;
-END $$;
-
-GRANT EXECUTE ON FUNCTION tasks_analytics(TIMESTAMPTZ, TIMESTAMPTZ, UUID) TO authenticated;
-
--- =====================================================================
--- KẾT THÚC
--- =====================================================================
 
 -- ==============================================================================
 -- Kết thúc consolidated schema. NOTIFY pgrst để Supabase reload PostgREST cache.

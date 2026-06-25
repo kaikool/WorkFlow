@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Download, BarChart3, Loader2 } from 'lucide-react';
+import { Download, BarChart3, Users } from 'lucide-react';
 import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,7 @@ import { useTaskAnalytics } from '../_hooks/useTaskAnalytics';
 import { AnalyticsKpiCards } from '../_components/analytics/AnalyticsKpiCards';
 import { OverdueByDeptChart } from '../_components/analytics/OverdueByDeptChart';
 import { TopPeopleList } from '../_components/analytics/TopPeopleList';
+import { ResourceView } from '../_components/ResourceView';
 import { rowsToCsv, downloadCsv } from '../_lib/analyticsHelpers';
 import { DepartmentPicker } from '@/components/ui/department-picker';
 
@@ -43,7 +44,7 @@ export default function AnalyticsPage() {
   }, [range]);
 
   const deptId = deptFilter[0] ?? null;
-  const { loading, data } = useTaskAnalytics(from, to, deptId, !!profile);
+  const { loading, data, error } = useTaskAnalytics(from, to, deptId, !!profile);
 
   const canFilterDept = canViewBranchAnalytics(profile);
 
@@ -102,10 +103,12 @@ export default function AnalyticsPage() {
         )}
       </div>
 
-      {loading || !data ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="icon-lg animate-spin text-slate-500" />
-        </div>
+      {loading ? (
+        <div className="flex items-center justify-center py-12 text-slate-500">Đang tải…</div>
+      ) : error ? (
+        <div className="flex items-center justify-center py-12 text-red-500">Lỗi: {error}</div>
+      ) : !data ? (
+        <div className="flex items-center justify-center py-12 text-slate-400">Không có dữ liệu</div>
       ) : (
         <div className="group-stack">
           <AnalyticsKpiCards totals={data.totals} recurringActive={data.recurring_active} />
@@ -124,6 +127,10 @@ export default function AnalyticsPage() {
               <TopPeopleList data={data.top_people} />
             </section>
           </div>
+
+          {(data.resource_view?.length ?? 0) > 0 && (
+            <ResourceView data={data.resource_view} />
+          )}
         </div>
       )}
     </div>

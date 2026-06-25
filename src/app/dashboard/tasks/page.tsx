@@ -17,7 +17,6 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { useAppData } from '@/hooks/use-app-data';
 import { useTasksDashboard } from './_hooks/useTasksDashboard';
 import { TaskListSection } from './_components/TaskListSection';
-import { ResourceView } from './_components/ResourceView';
 import { TaskDetailDialog } from './_components/TaskDetailDialog';
 import { CreateTaskDialog } from './_components/CreateTaskDialog';
 import {
@@ -191,11 +190,6 @@ function TasksContent() {
                 currentProfile={profile}
               />
             </div>
-            {showScopeTabs && (tab === 'dept' || tab === 'branch') && (dash.resourceView.length > 0 || dash.loading) && (
-              <div className="lg:col-span-4">
-                <ResourceView data={dash.resourceView} loading={dash.loading || dash.refreshing} />
-              </div>
-            )}
           </div>
           {dash.hasMore && (
             <div className="flex justify-center pt-2">
