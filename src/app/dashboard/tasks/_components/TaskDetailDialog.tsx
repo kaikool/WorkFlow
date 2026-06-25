@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import {
   Building2, Calendar, Users, Pencil, Trash2,
   CheckCircle2, Loader2, Play, Send, Undo2, Clock, RotateCcw,
-  ChevronRight, Flag, X, FileText, MapPin,
+  ChevronRight, Flag, X, FileText,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -57,20 +57,6 @@ function SectionLabel({ icon, label }: { icon: React.ReactNode; label: string })
     <div className="flex items-center gap-1.5">
       <span className="text-slate-400">{icon}</span>
       <span className="text-xs font-semibold text-slate-500">{label}</span>
-    </div>
-  );
-}
-
-function InfoCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: React.ReactNode }) {
-  return (
-    <div className="flex items-center gap-3">
-      <div className="p-2 bg-white rounded-xl shadow-sm shrink-0">
-        {icon}
-      </div>
-      <div className="min-w-0">
-        <p className="text-xs font-semibold text-slate-500">{label}</p>
-        <p className="text-sm font-semibold text-slate-900 truncate">{value}</p>
-      </div>
     </div>
   );
 }
@@ -351,19 +337,7 @@ export function TaskDetailDialog(props: Props) {
               </div>
             )}
 
-            {/* ─── 4. Chi tiết ─── */}
-            {!ov && task && (
-              <div className="space-y-2">
-                <SectionLabel icon={<MapPin className="w-4 h-4" />} label="Chi tiết" />
-                <div className="bg-slate-50 rounded-xl p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {task.department && <InfoCard icon={<Building2 className="w-4 h-4 text-amber-500" />} label="Phòng nhận việc" value={task.department.name} />}
-                  <InfoCard icon={<Calendar className={cn('w-4 h-4', dueOver ? 'text-red-500' : 'text-slate-500')} />} label="Hạn hoàn thành" value={task.due_date ? format(new Date(task.due_date), 'dd/MM/yyyy', { locale: vi }) : '—'} />
-                  <InfoCard icon={<Avatar className="w-5 h-5"><AvatarImage src={task.creator?.avatar_url} /><AvatarFallback className="text-[8px] font-bold bg-slate-200 text-slate-600">{task.creator?.full_name?.[0]}</AvatarFallback></Avatar>} label="Người giao" value={task.creator?.full_name ?? '—'} />
-                </div>
-              </div>
-            )}
-
-            {/* ─── 5. Thao tác ─── */}
+            {/* ─── 4. Thao tác ─── */}
             {ov ? (
               <div className="flex flex-wrap gap-2">
                 {bCanFC && pendC.length > 0 && <ActionBtn label="Ghi nhận hoàn thành lô" icon={deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />} onClick={fcb} disabled={deleting} />}
