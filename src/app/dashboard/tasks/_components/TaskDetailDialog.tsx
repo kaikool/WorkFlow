@@ -172,15 +172,19 @@ export function TaskDetailDialog(props: Props) {
   const ov = isBatch && !childId;
 
   // Header decoration
+  // Dept label: nếu cùng phòng → hiện tên phòng, khác → "X phòng"
+  const uniqueDepts = [...new Set(dc.map(c => c.department?.name).filter(Boolean))];
+  const deptLabel = uniqueDepts.length === 1 && uniqueDepts[0] ? uniqueDepts[0] : `${dc.length} phòng`;
+
   const hBadge = ov
-    ? <Badge className="bg-white/60 backdrop-blur-md shadow-sm font-bold text-xs px-3 py-1 w-fit text-slate-600">Công việc · {children.length} phòng</Badge>
+    ? <Badge className="bg-white/60 backdrop-blur-md shadow-sm font-bold text-xs px-3 py-1 w-fit text-slate-600">Công việc · {deptLabel}</Badge>
     : task?.status
       ? <Badge className={cn("bg-white/60 backdrop-blur-md shadow-sm font-bold text-xs px-3 py-1 w-fit", STATUS_BADGE_CLASS[task.status])}>{STATUS_LABEL[task.status]}</Badge>
       : null;
 
   const hTitle = ov ? rep?.title : task?.title ?? 'Đang tải…';
   const hMeta = ov
-    ? [{ icon: <Users className="w-4 h-4 text-slate-500" />, text: `${children.length} phòng` },
+    ? [{ icon: <Users className="w-4 h-4 text-slate-500" />, text: deptLabel },
        rep?.creator ? { icon: <Avatar className="w-5 h-5"><AvatarImage src={rep.creator?.avatar_url} /><AvatarFallback className="text-[8px] font-bold bg-slate-200 text-slate-600">{rep.creator?.full_name?.[0]}</AvatarFallback></Avatar>, text: rep.creator.full_name } : null,
        rep?.due_date ? { icon: <Calendar className="w-4 h-4 text-slate-500" />, text: format(new Date(rep.due_date), 'dd/MM/yyyy', { locale: vi }) } : null,
       ].filter(Boolean)
