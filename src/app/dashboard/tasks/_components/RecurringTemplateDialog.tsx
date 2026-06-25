@@ -22,6 +22,7 @@ import { upsertRecurringTemplate } from '../_lib/recurringActions';
 import { fetchAssignableProfiles } from '../_lib/fetchTasks';
 import { PeoplePicker } from '@/components/ui/people-picker';
 import { DepartmentPicker } from '@/components/ui/department-picker';
+import { TimePicker } from '@/components/ui/time-picker';
 import { CronScheduleSelector } from './CronScheduleSelector';
 import type { RecurringTemplate, ScheduleKind } from '../_lib/recurringHelpers';
 import type { TaskPriority } from '../_lib/types';
@@ -279,12 +280,7 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
               </div>
               <div className="space-y-2">
                 <Label className="text-xs font-semibold text-slate-500">Giờ hạn nộp</Label>
-                <Input
-                  type="time"
-                  value={dueTime}
-                  onChange={(e) => setDueTime(e.target.value)}
-                  className="min-h-11 rounded-xl bg-slate-50 border-none"
-                />
+                <TimePicker value={dueTime} onChange={setDueTime} />
               </div>
             </div>
 
