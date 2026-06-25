@@ -276,28 +276,51 @@ export function TaskDetailDialog(props: Props) {
                 <div className="space-y-1.5">
                   {sorted.map(c => {
                     const noAs = !c.assignees || c.assignees.length === 0;
+                    const canFC = canForceCompleteTask(currentProfile, c as any);
+                    const canApprove = canApproveTaskResult(currentProfile, c as any);
+                    const isTodo = c.status === 'todo';
+                    const isDoing = c.status === 'doing';
+                    const isSubmitted = c.status === 'submitted';
+                    const showQuick = (canFC && (isTodo || isDoing)) || (canApprove && isSubmitted);
                     return (
-                      <button key={c.id} type="button" onClick={() => setChildId(c.id)}
+                      <div key={c.id}
                         className={cn(
-                          'w-full flex items-center gap-3 p-3 rounded-xl border transition-all active:scale-[0.99]',
-                          c.is_overdue ? 'border-red-100 bg-red-50/40 hover:bg-red-50' : 'border-slate-100 bg-slate-50/40 hover:bg-slate-50',
+                          'flex items-center gap-3 p-3 rounded-xl border transition-all',
+                          c.is_overdue ? 'border-red-100 bg-red-50/40' : 'border-slate-100 bg-slate-50/40',
                         )}>
-                        <div className="p-2 bg-white rounded-xl shadow-sm shrink-0">
-                          <Building2 className={cn('w-4 h-4', c.is_overdue ? 'text-red-500' : 'text-slate-500')} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-slate-900 truncate">{c.department?.name ?? '—'}</p>
-                          <p className={cn('text-xs font-medium', c.is_overdue ? 'text-red-600' : 'text-slate-500')}>
-                            {noAs ? 'Chưa phân công' : c.assignees!.map((a: any) => a.full_name).filter(Boolean).join(', ')}
-                          </p>
-                        </div>
-                        <Badge variant="outline" className="text-xs font-semibold px-2 py-0.5 rounded-full border-slate-200 bg-white">
-                          {STATUS_LABEL[c.status]}
-                        </Badge>
-                        {c.due_date && (
-                          <span className="text-xs text-slate-400 tabular-nums">{format(new Date(c.due_date), 'dd/MM', { locale: vi })}</span>
+                        <button type="button" onClick={() => setChildId(c.id)}
+                          className="flex items-center gap-3 flex-1 min-w-0 text-left">
+                          <div className="p-2 bg-white rounded-xl shadow-sm shrink-0">
+                            <Building2 className={cn('w-4 h-4', c.is_overdue ? 'text-red-500' : 'text-slate-500')} />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-semibold text-slate-900 truncate">{c.department?.name ?? '—'}</p>
+                            <p className={cn('text-xs font-medium', c.is_overdue ? 'text-red-600' : 'text-slate-500')}>
+                              {noAs ? 'Chưa phân công' : c.assignees!.map((a: any) => a.full_name).filter(Boolean).join(', ')}
+                            </p>
+                          </div>
+                          <Badge variant="outline" className="text-xs font-semibold px-2 py-0.5 rounded-full border-slate-200 bg-white shrink-0">
+                            {STATUS_LABEL[c.status]}
+                          </Badge>
+                        </button>
+                        {showQuick && (
+                          <button
+                            onClick={async () => {
+                              setBusy(c.id);
+                              const nextStatus = isSubmitted ? 'done' : 'done';
+                              const res = await updateTaskStatus(c.id, nextStatus, '[sys] Đã hoàn thành.');
+                              setBusy(null);
+                              if (res.ok) { notifySuccess(`Đã ghi nhận ${c.assignees?.[0]?.full_name ?? ''}`); onChanged?.(); }
+                              else notifyError(res.error ?? 'Lỗi', 'Lỗi');
+                            }}
+                            disabled={busy === c.id}
+                            className="shrink-0 w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 flex items-center justify-center transition-all active:scale-90 disabled:opacity-50"
+                            title={isSubmitted ? 'Duyệt' : 'Ghi nhận hoàn thành'}
+                          >
+                            {busy === c.id ? <Loader2 className="w-4 h-4 animate-spin text-emerald-600" /> : <CheckCircle2 className="w-4 h-4 text-emerald-600" />}
+                          </button>
                         )}
-                      </button>
+                      </div>
                     );
                   })}
                 </div>
