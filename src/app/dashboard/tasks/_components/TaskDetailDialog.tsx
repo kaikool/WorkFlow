@@ -183,7 +183,7 @@ export function TaskDetailDialog(props: Props) {
                 )}>
                   {ov ? `${children.length} phòng` : STATUS_LABEL[task?.status ?? '']}
                 </span>
-                {detail && task?.priority !== 'medium' && (
+                {detail && task && task.priority !== 'medium' && (
                   <span className={cn('inline-flex items-center h-6 px-2.5 rounded-full text-[12px] font-semibold', PRIORITY_BADGE_CLASS[task.priority])}>
                     <Flag className="w-3 h-3 mr-1" />{PRIORITY_LABEL[task.priority]}
                   </span>
