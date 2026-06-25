@@ -1,6 +1,6 @@
 # DATABASE SCHEMA — Kiến trúc Dữ liệu & Supabase
 
-> Truth source: [`schema.sql`](schema.sql) (snapshot) + các file `supabase/migration_*.sql` áp dụng theo thứ tự. RLS là tầng bảo mật chính, mọi mutation phức tạp đi qua **RPC `SECURITY DEFINER`** chứ không update bảng trực tiếp. Postgres 15 trên Supabase.
+> Truth source: [`schema.sql`](schema.sql) (snapshot duy nhất). RLS là tầng bảo mật chính, mọi mutation phức tạp đi qua **RPC `SECURITY DEFINER`** chứ không update bảng trực tiếp. Postgres 15 trên Supabase.
 
 ## Mục lục
 
@@ -135,11 +135,11 @@
 |------|--------|-----------|----------|
 | `user_role` | `admin`, `director`, `manager`, `staff`, `secretary`, `hr_officer`, `driver` | `schema.sql §1` (3 giá trị đầu) + `ALTER TYPE ADD VALUE` cho 4 giá trị sau | Vai trò user — quyết định mọi RLS policy |
 | `task_status` | `todo`, `doing`, `done`, `late`, `closed` | `schema.sql §1` (4 đầu) + `ADD VALUE 'closed'` | Status cho `tasks` |
-| `task_priority` | `low`, `medium`, `high` | `migration_tasks_revamp.sql` | Mức ưu tiên task — cột `tasks.priority` DEFAULT `'medium'` |
+| `task_priority` | `low`, `medium`, `high` | `schema.sql` | Mức ưu tiên task — cột `tasks.priority` DEFAULT `'medium'` |
 | `schedule_type` | `meeting`, `trip`, `event`, `leave` | `schema.sql` (3 đầu) + `ADD VALUE 'leave'` ở `fix_security_and_logic_patch.sql` | Loại lịch trình |
 | `schedule_status` | `pending`, `approved`, `rejected`, `in_progress`, `completed` | `schema.sql` | Status lịch trình |
-| `document_status` | `DRAFT`, `PENDING_RECEIPT`, `IN_REVIEW`, `RETURNED`, `COMPLETED` | `migration_handover_module.sql §1` | Status hồ sơ vật lý |
-| `handover_status` | `PENDING`, `ACCEPTED`, `REJECTED` | `migration_handover_module.sql §1` | Status mỗi lượt giao nhận |
+| `document_status` | `DRAFT`, `PENDING_RECEIPT`, `IN_REVIEW`, `RETURNED`, `COMPLETED` | `schema.sql` | Status hồ sơ vật lý |
+| `handover_status` | `PENDING`, `ACCEPTED`, `REJECTED` | `schema.sql` | Status mỗi lượt giao nhận |
 
 **Pattern thêm value an toàn** (tránh lỗi `duplicate_object`):
 
@@ -173,7 +173,7 @@ CREATE TABLE profiles (
     is_department_head      BOOLEAN DEFAULT false,  -- Trưởng phòng chính thức (≠ Phó phòng)
     is_active               BOOLEAN DEFAULT true,   -- false → middleware signOut
     must_change_password    BOOLEAN DEFAULT false,  -- true → banner ép đổi mật khẩu
-    -- Phase 2 (migration_team_phase2.sql) — module Cán bộ
+    -- Phase 2 (schema.sql) — module Cán bộ
     extension               TEXT,                -- Số nội bộ (3-6 chữ số)
     seat_location           TEXT,                -- Vị trí chỗ ngồi vật lý (vd "Tầng 2 - Quầy 5")
     employee_code           TEXT,                -- Mã nhân viên — nhạy cảm (chỉ self + admin/hr_officer/director xem)
@@ -389,14 +389,14 @@ Engine fire: `recurring_fire_due()` quét `WHERE is_active AND next_run_at <= no
 
 #### Vòng đời migration Tasks
 
-1. `migration_tasks_standardize.sql` — schema cốt lõi + 5-state status + `task_create`/`task_update_status`/`task_delegate`/`tasks_analytics`.
-2. `migration_tasks_default_assignee.sql` — helper `_resolve_default_assignee` + `_is_hub_department` + auto-fill người nhận mặc định cho cả ad-hoc lẫn recurring.
-3. `migration_tasks_edit_delete.sql` — RPC sửa/xoá nội dung task.
-4. `migration_task_scope.sql` — siết scope quyền theo phòng đầu mối.
-5. `migration_tasks_access_workflow_recurring_fix.sql` — chuẩn hoá access/workflow Tasks.
-6. `migration_drop_task_type.sql` — chuẩn hoá module Công việc quanh một entity `tasks`.
-7. `migration_tasks_head_manager_and_naming.sql` — phân biệt Trưởng phòng với manager thường, private recurring templates, chặn BGĐ/admin làm người nhận và chuẩn hoá RPC/counter theo scope mới.
-8. `migration_tasks_receiver_cleanup.sql` — bỏ người nhận mặc định của mẫu định kỳ, chặn BGĐ làm phòng nhận việc.
+1. `migration_tasks_standardize.sql` → đã gộp vào `schema.sql`
+2. `migration_tasks_default_assignee.sql` → đã gộp vào `schema.sql`
+3. `migration_tasks_edit_delete.sql` → đã gộp vào `schema.sql`
+4. `migration_task_scope.sql` → đã gộp vào `schema.sql`
+5. `migration_tasks_access_workflow_recurring_fix.sql` → đã gộp vào `schema.sql`
+6. `migration_drop_task_type.sql` → đã gộp vào `schema.sql`
+7. `migration_tasks_head_manager_and_naming.sql` → đã gộp vào `schema.sql`
+8. `migration_tasks_receiver_cleanup.sql` → đã gộp vào `schema.sql`
 
 ### 4.5 Module Lịch trình
 
@@ -553,7 +553,7 @@ CREATE TABLE account_requests (
     department_id   UUID REFERENCES departments(id),
     status          TEXT DEFAULT 'pending',      -- "pending" | "approved" | "rejected"
     created_at      TIMESTAMPTZ DEFAULT NOW()
-    -- ⚠️ Cột `password` plaintext đã bị DROP ở migration_security_and_integrity.sql
+    -- ⚠️ Cột `password` plaintext đã bị DROP ở schema.sql
 );
 ```
 
@@ -633,7 +633,7 @@ public.current_user_department()   -- RETURNS uuid
 public.current_user_is_head()      -- RETURNS boolean
 ```
 
-Định nghĩa: `migration_rls_optimize.sql §1`. Granted `EXECUTE` cho role `authenticated`.
+Định nghĩa: `schema.sql`. Granted `EXECUTE` cho role `authenticated`.
 
 ### 7.3 RLS helper (`SECURITY DEFINER` — bẻ vòng đệ quy)
 
@@ -644,7 +644,7 @@ user_is_in_document_handovers(p_doc_id, p_user_id)  -- RETURNS BOOLEAN
 user_is_document_creator(p_doc_id, p_user_id)        -- RETURNS BOOLEAN
 ```
 
-Định nghĩa: `migration_handover_module.sql §11a` + `migration_handover_rls_fix.sql`.
+Định nghĩa: `schema.sql`.
 
 Tương tự cho nội dung đơn nghỉ phép:
 
@@ -653,7 +653,7 @@ public.can_view_leave_detail(p_schedule_id)  -- RETURNS BOOLEAN
 public.get_leave_safe(p_schedule_id)         -- RPC client gọi để lấy detail có check quyền
 ```
 
-Định nghĩa: `migration_leave_privacy.sql`.
+Định nghĩa: `schema.sql`.
 
 ### 7.4 Maintenance function
 
@@ -787,7 +787,7 @@ Sinh tự động bằng trigger `BEFORE INSERT ON documents`:
 
 - Sequence reset mỗi ngày.
 - **`pg_advisory_xact_lock(hashtext('document_short_code_' || YYYYMMDD))`** — chống race khi nhiều người tạo cùng giây.
-- **`SECURITY DEFINER`** (`migration_handover_short_code_fix_2.sql`) — bypass RLS để `MAX()` thấy hồ sơ của người khác cùng ngày. Nếu thiếu cờ này → tất cả cùng sinh `-001` → duplicate key.
+- **`SECURITY DEFINER`** (`schema.sql`) — bypass RLS để `MAX()` thấy hồ sơ của người khác cùng ngày. Nếu thiếu cờ này → tất cả cùng sinh `-001` → duplicate key.
 
 ---
 
@@ -890,7 +890,7 @@ USING (
 | **UPDATE status/assignee/completed_at** | RLS không cho phép trực tiếp — buộc gọi RPC `transfer_document`/`acknowledge_document`/`reject_document`/`complete_document` (SECURITY DEFINER tự validate) |
 | **INSERT document_handovers** | `WITH CHECK (false)` — chặn hoàn toàn, chỉ qua RPC |
 
-### 11.4 Tasks RLS (sau `migration_rls_optimize.sql`)
+### 11.4 Tasks RLS (sau `schema.sql`)
 
 ```sql
 CREATE POLICY "Tasks read access" ON tasks FOR SELECT
@@ -928,7 +928,7 @@ Riêng nội dung đơn nghỉ phép (`type='leave'`): payload có `description`
 - `manager` cùng phòng (có điều kiện `is_department_head` + cấp tương đương).
 - Còn lại → trả empty fields.
 
-### 11.6 Profiles RLS (sau `migration_rls_optimize.sql`)
+### 11.6 Profiles RLS (sau `schema.sql`)
 
 ```sql
 CREATE POLICY "Users can view profiles in scope" ON profiles FOR SELECT
@@ -1024,7 +1024,7 @@ WHERE id = (SELECT id FROM auth.users WHERE email = 'admin@yourbank.vn');
 
 ### 14.2 Đổi email toàn bộ user thành @vietinbank.vn
 
-Migration file đầy đủ: [`supabase/migration_update_all_emails.sql`](supabase/migration_update_all_emails.sql).
+Migration file đầy đủ: `schema.sql`.
 
 Chạy trong Supabase Dashboard → SQL Editor (bản đầy đủ ở file migration):
 
@@ -1102,7 +1102,7 @@ LIMIT 50;
 
 ### 14.5 Reset mật khẩu hàng loạt (cẩn thận)
 
-Xem [`migration_reset_passwords.sql`](supabase/migration_reset_passwords.sql) — chạy 1 lần, đổi biến `v_default_password` trước khi run.
+Xem `schema.sql` — chạy 1 lần, đổi biến `v_default_password` trước khi run.
 
 ### 14.6 Sau mọi migration
 
@@ -1118,20 +1118,9 @@ NOTIFY pgrst, 'reload schema';
 
 ### 15.1 Thứ tự chạy migration cho setup mới
 
-1. `schema.sql` — snapshot core: profiles, departments, schedules, recognitions, notifications, rooms, vehicles, push_subscriptions, account_requests, `out_of_office`, leaves + RLS + helper RPC + chống spoofing. Các migration cũ (security/integrity/leave-privacy/handover-fixes/RLS-optimize/reset-passwords/drop-kpi/schedule-rejection/team-phase2) đã gộp hết vào snapshot này — không còn file rời.
-2. `supabase/migration_handover_module.sql` — module hồ sơ vật lý: categories, documents, handovers, 4 RPC (`transfer/acknowledge/reject/complete`), RLS + short_code generator.
-3. `supabase/migration_dashboard_summary_fix_pending_docs.sql` — fix `dashboard_summary` RPC đếm sai pending docs.
-4. `supabase/migration_dashboard_counters_batch_aware.sql` — counter dashboard gom theo `batch_id` (1 lần gửi cho N phòng = 1 batch, không phải N task rời).
-5. `supabase/migration_tasks_standardize.sql` — module Tasks: schema cốt lõi (tasks + task_assignees + task_comments + task_extension_requests + task_attachments + task_recurring_templates) + 5-state status + RPC nền cho tạo, cập nhật trạng thái, phân công, extension, recurring và analytics.
-6. `supabase/migration_tasks_default_assignee.sql` — helper `_resolve_default_assignee` + `_is_hub_department` + auto-fill người nhận mặc định cho cả ad-hoc lẫn recurring.
-7. `supabase/migration_tasks_edit_delete.sql` — RPC sửa/xoá task.
-8. `supabase/migration_task_scope.sql` — siết scope quyền theo phòng đầu mối: cập `task_create` + `recurring_template_upsert`.
-9. `supabase/migration_tasks_access_workflow_recurring_fix.sql` — chuẩn hoá access/workflow Tasks.
-10. `supabase/migration_tasks_delete_full.sql` — thay thế xoá nháp bằng hard delete cho creator (bất kể thời gian tạo).
-11. `supabase/migration_tasks_force_complete.sql` — thêm tính năng cho phép creator/manager/admin chủ động ghi nhận hoàn thành dù assignee chưa nộp.
-12. `supabase/migration_tasks_staff_private_note.sql` — fix lỗi bảo mật: gỡ `department_id` khỏi Tự ghi chú của Staff để ẩn khỏi Trưởng phòng.
-13. `supabase/migration_drop_task_type.sql` — chuẩn hoá module Công việc quanh entity `tasks`, RPC dashboard, recurring và analytics.
-14. **`supabase/migration_tasks_head_manager_and_naming.sql`** — phân biệt Trưởng phòng với manager thường, private recurring templates, chặn BGĐ/admin làm người nhận và chuẩn hoá counter theo scope mới.
+1. **`schema.sql`** — snapshot duy nhất chứa toàn bộ schema, RLS, RPC, triggers, indexes, cronjobs. Các migration trước đây (handover, tasks, schedules, team, performance, v.v.) đã được gộp hết vào snapshot này. Không còn file migration rời.
+
+> ⚠️ **Không tạo migration file rời nữa** — mọi thay đổi DB phải update trực tiếp vào `schema.sql` để giữ snapshot luôn là truth source duy nhất.
 
 Sau migration cuối: `NOTIFY pgrst, 'reload schema';`
 
@@ -1174,7 +1163,7 @@ npx supabase gen types typescript --project-id <ref> > src/types/database.types.
 | [`docs/PRODUCT_OVERVIEW.md`](PRODUCT_OVERVIEW.md) | Bối cảnh + nghiệp vụ + luồng module |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Quy chuẩn code, đặc biệt §6 (Supabase), §6.5 (Realtime), §6.8 (transit state); cũng chứa UI/UX + RLS business rules đã gộp từ `TECHNICAL_RULES.md` cũ |
 | [`schema.sql`](schema.sql) | Snapshot DB |
-| [`supabase/migration_handover_module.sql`](supabase/migration_handover_module.sql) | ⭐ Mẫu chuẩn migration (RLS + RPC + Trigger) |
+| `schema.sql` | ⭐ Mẫu chuẩn migration (RLS + RPC + Trigger) |
 
 ---
 
