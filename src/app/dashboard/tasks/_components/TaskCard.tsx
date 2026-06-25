@@ -128,7 +128,9 @@ export const TaskCard = React.memo(function TaskCard({ representative, children,
           <span className="text-slate-400 truncate flex items-center gap-1">
             <Building2 className="w-3 h-3" />
             {multi
-              ? `${children.length} phòng`
+              ? sameDept
+                ? (representative.department?.name ?? '—')
+                : `${children.length} phòng`
               : (representative.department?.name ?? '—')}
           </span>
         </div>
