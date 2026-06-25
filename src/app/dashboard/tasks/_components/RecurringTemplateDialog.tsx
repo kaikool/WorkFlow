@@ -266,30 +266,30 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <Label className="text-xs font-semibold text-slate-500">Hạn nộp = sau N ngày</Label>
-                  <Input
-                    type="number"
-                    min={1}
-                    max={365}
-                    value={dueDays}
-                    onChange={(e) => setDueDays(Number(e.target.value))}
-                    className="min-h-11 rounded-xl bg-slate-50 border-none"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs font-semibold text-slate-500">Giờ hạn nộp</Label>
-                  <Input
-                    type="time"
-                    value={dueTime}
-                    onChange={(e) => setDueTime(e.target.value)}
-                    className="min-h-11 rounded-xl bg-slate-50 border-none"
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold text-slate-500">Hạn nộp = sau N ngày</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={365}
+                  value={dueDays}
+                  onChange={(e) => setDueDays(Number(e.target.value))}
+                  className="min-h-11 rounded-xl bg-slate-50 border-none"
+                />
               </div>
               <div className="space-y-2">
-                <Label className="text-xs font-semibold text-slate-500">Mức độ ưu tiên</Label>
+                <Label className="text-xs font-semibold text-slate-500">Giờ hạn nộp</Label>
+                <Input
+                  type="time"
+                  value={dueTime}
+                  onChange={(e) => setDueTime(e.target.value)}
+                  className="min-h-11 rounded-xl bg-slate-50 border-none"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold text-slate-500">Mức độ ưu tiên</Label>
                 <Select value={priority} onValueChange={(v) => setPriority(v as TaskPriority)}>
                   <SelectTrigger className="min-h-11 rounded-xl bg-slate-50 border-none">
                     <div className="flex items-center gap-2">
