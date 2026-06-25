@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Download, BarChart3, Users } from 'lucide-react';
+import { Download, BarChart3 } from 'lucide-react';
 import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,6 @@ import { canViewTaskAnalytics, canViewBranchAnalytics } from '@/lib/permissions'
 import { useTaskAnalytics } from '../_hooks/useTaskAnalytics';
 import { AnalyticsKpiCards } from '../_components/analytics/AnalyticsKpiCards';
 import { OverdueByDeptChart } from '../_components/analytics/OverdueByDeptChart';
-import { TopPeopleList } from '../_components/analytics/TopPeopleList';
 import { ResourceView } from '../_components/ResourceView';
 import { rowsToCsv, downloadCsv } from '../_lib/analyticsHelpers';
 import { DepartmentPicker } from '@/components/ui/department-picker';
@@ -120,11 +119,6 @@ export default function AnalyticsPage() {
                 Phòng ban
               </h2>
               <OverdueByDeptChart data={data.by_department} />
-            </section>
-
-            <section className="premium-card p-5 border-none item-stack">
-              <h2 className="heading-card">Cán bộ ôm nhiều việc</h2>
-              <TopPeopleList data={data.top_people} />
             </section>
           </div>
 
