@@ -112,7 +112,7 @@ function TasksContent() {
         action={
           <div className="flex items-center gap-2">
             {showRecurringLink && (
-              <Button variant="ghost" className="text-slate-500 hover:text-slate-900 hover:bg-slate-100" asChild>
+              <Button variant="outline" asChild>
                 <Link href="/dashboard/tasks/recurring" className="flex items-center gap-2">
                   <CalendarClock className="w-4 h-4" />
                   <span className="text-sm font-medium">Định kỳ</span>
@@ -120,7 +120,7 @@ function TasksContent() {
               </Button>
             )}
             {showAnalyticsLink && (
-              <Button variant="ghost" className="text-slate-500 hover:text-slate-900 hover:bg-slate-100" asChild>
+              <Button variant="outline" asChild>
                 <Link href="/dashboard/tasks/analytics" className="flex items-center gap-2">
                   <BarChart3 className="w-4 h-4" />
                   <span className="text-sm font-medium">Thống kê</span>
@@ -141,14 +141,14 @@ function TasksContent() {
       {(showRecurringLink || showAnalyticsLink) && (
         <div className="flex gap-2 sm:hidden">
           {showRecurringLink && (
-            <Button variant="ghost" className="flex-1 text-slate-500 hover:text-slate-900 hover:bg-slate-100" asChild>
+            <Button variant="outline" asChild className="flex-1">
               <Link href="/dashboard/tasks/recurring" className="flex items-center gap-2">
                 <CalendarClock className="w-4 h-4" /> Định kỳ
               </Link>
             </Button>
           )}
           {showAnalyticsLink && (
-            <Button variant="ghost" className="flex-1 text-slate-500 hover:text-slate-900 hover:bg-slate-100" asChild>
+            <Button variant="outline" asChild className="flex-1">
               <Link href="/dashboard/tasks/analytics" className="flex items-center gap-2">
                 <BarChart3 className="w-4 h-4" /> Thống kê
               </Link>
