@@ -104,7 +104,7 @@ export default function DirectorTimeline({
                         const hasActualEnd = sched.status === 'completed' && sched.metadata?.trip_ended_at;
                         const rawEnd = hasActualEnd
                           ? new Date(sched.metadata.trip_ended_at)
-                          : isOngoing
+                          : isOngoing && new Date(sched.end_time) < now
                             ? now
                             : new Date(sched.end_time);
                         const sTime = rawStart < selectedStart ? selectedStart : rawStart;
