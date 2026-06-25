@@ -4,7 +4,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -159,18 +158,18 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="app-dialog-sheet app-dialog-sheet--2xl shadow-2xl">
         <DialogHeader className="app-dialog-sheet-header">
-          <DialogTitle className="heading-section">
+          <DialogTitle className="text-[17px] font-bold text-slate-900">
             {editing ? 'Sửa công việc định kỳ' : 'Công việc định kỳ'}
           </DialogTitle>
-          <DialogDescription className="text-subtitle">
+          <DialogDescription className="text-sm text-slate-500">
             Hệ thống tự sinh công việc theo lịch cho phòng nhận hoặc người thực hiện.
           </DialogDescription>
         </DialogHeader>
 
         <div className="app-dialog-sheet-body">
-          <div className="px-[var(--app-page-x)] py-4 group-stack">
-            <div className="tight-stack">
-              <Label className="text-label">Tiêu đề</Label>
+          <div className="px-[var(--app-page-x)] py-4 space-y-5">
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold text-slate-500">Tiêu đề</Label>
               <Input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
@@ -179,8 +178,8 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
               />
             </div>
 
-            <div className="tight-stack">
-              <Label className="text-label">Mô tả</Label>
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold text-slate-500">Mô tả</Label>
               <Textarea
                 rows={2}
                 value={description}
@@ -190,38 +189,38 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
               />
             </div>
 
-            <div className="group-stack">
-              <Label className="text-label">{target === 'profile' ? 'Người nhận' : 'Cách giao việc'}</Label>
+            <div className="space-y-3">
+              <Label className="text-xs font-semibold text-slate-500">{target === 'profile' ? 'Người nhận' : 'Cách giao việc'}</Label>
               {canCrossDept && (
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
                     onClick={() => setTarget('department')}
                     className={cn(
-                      'min-h-16 p-3 rounded-xl border text-left transition-all',
+                      'min-h-14 p-3 rounded-xl border text-left transition-all active:scale-[0.98]',
                       target === 'department'
                         ? 'bg-primary/10 border-primary'
                         : 'bg-white border-slate-200 hover:bg-slate-50',
                     )}
                   >
                     <div className="flex items-center gap-2">
-                      <Building2 className="icon-md text-amber-500" />
-                      <span className="heading-card">Phòng khác</span>
+                      <Building2 className="w-4 h-4 text-amber-500" />
+                      <span className="text-sm font-semibold text-slate-900">Phòng khác</span>
                     </div>
                   </button>
                   <button
                     type="button"
                     onClick={() => setTarget('profile')}
                     className={cn(
-                      'min-h-16 p-3 rounded-xl border text-left transition-all',
+                      'min-h-14 p-3 rounded-xl border text-left transition-all active:scale-[0.98]',
                       target === 'profile'
                         ? 'bg-primary/10 border-primary'
                         : 'bg-white border-slate-200 hover:bg-slate-50',
                     )}
                   >
                     <div className="flex items-center gap-2">
-                      <UserIcon className="icon-md text-primary" />
-                      <span className="heading-card">Trong phòng</span>
+                      <UserIcon className="w-4 h-4 text-primary" />
+                      <span className="text-sm font-semibold text-slate-900">Trong phòng</span>
                     </div>
                   </button>
                 </div>
@@ -247,8 +246,8 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
             </div>
 
 
-            <div className="group-stack">
-              <Label className="text-label">Lịch sinh</Label>
+            <div className="space-y-3">
+              <Label className="text-xs font-semibold text-slate-500">Lịch sinh</Label>
               <CronScheduleSelector
                 kind={kind}
                 onKindChange={setKind}
@@ -264,8 +263,8 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-              <div className="tight-stack">
-                <Label className="text-label">Hạn nộp = sau N ngày</Label>
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold text-slate-500">Hạn nộp = sau N ngày</Label>
                 <Input
                   type="number"
                   min={1}
@@ -275,14 +274,13 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
                   className="min-h-11 rounded-xl bg-slate-50 border-none"
                 />
               </div>
-              <div className="tight-stack">
-                <Label className="text-label">Mức độ ưu tiên</Label>
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold text-slate-500">Mức độ ưu tiên</Label>
                 <Select value={priority} onValueChange={(v) => setPriority(v as TaskPriority)}>
                   <SelectTrigger className="min-h-11 rounded-xl bg-slate-50 border-none">
                     <div className="flex items-center gap-2">
-                      <Flag className={cn('icon-sm',
-                        priority === 'high' ? 'text-red-500' :
-                          priority === 'low' ? 'text-slate-500' : 'text-slate-500')} />
+                      <Flag className={cn('w-4 h-4',
+                        priority === 'high' ? 'text-red-500' : 'text-slate-500')} />
                       <SelectValue />
                     </div>
                   </SelectTrigger>
@@ -298,12 +296,13 @@ export function RecurringTemplateDialog({ isOpen, setIsOpen, editing, onSaved }:
         </div>
 
         <DialogFooter className="app-dialog-sheet-footer flex flex-row justify-between gap-2">
-          <Button variant="ghost" onClick={() => setIsOpen(false)} disabled={loading}
-            className="min-h-11 px-4 rounded-xl text-slate-500">Huỷ</Button>
-          <Button onClick={handleSave} disabled={loading}
-            className="min-h-11 px-5 rounded-xl bg-primary hover:bg-primary/90 text-white font-semibold">
-            {loading ? <Loader2 className="icon-sm animate-spin" /> : (editing ? 'Cập nhật' : 'Tạo')}
-          </Button>
+          <button onClick={() => setIsOpen(false)} disabled={loading}
+            className="min-h-11 px-4 rounded-xl text-sm font-semibold text-slate-600 bg-slate-50 border border-slate-200 hover:bg-slate-100 transition-all active:scale-95 disabled:opacity-50">Huỷ</button>
+          <button onClick={handleSave} disabled={loading}
+            className="min-h-11 px-5 rounded-xl text-sm font-semibold bg-primary text-white hover:bg-primary/90 transition-all active:scale-95 disabled:opacity-50 shadow-sm inline-flex items-center gap-1.5">
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+            {editing ? 'Cập nhật' : 'Tạo'}
+          </button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

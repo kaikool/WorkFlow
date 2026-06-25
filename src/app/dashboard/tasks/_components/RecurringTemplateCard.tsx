@@ -1,13 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import {
-  AlertCircle, Calendar, Edit2, Loader2, Trash2,
+  Calendar, Edit2, Loader2, Trash2, AlertCircle, Clock, Users,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { notifyError, notifySuccess } from '@/lib/notify';
@@ -42,8 +39,7 @@ export function RecurringTemplateCard({ template, onEdit, onChanged }: Props) {
     const ok = await confirmDialog({
       title: 'Xoá lịch định kỳ?',
       description: `"${template.title}" sẽ bị xoá vĩnh viễn. Công việc đã sinh trước đó vẫn còn.`,
-      confirmText: 'Xoá',
-      danger: true,
+      confirmText: 'Xoá', danger: true,
     });
     if (!ok) return;
     setBusy('delete');
@@ -58,18 +54,18 @@ export function RecurringTemplateCard({ template, onEdit, onChanged }: Props) {
   const totalTargets = template.target_department_ids.length + template.target_user_ids.length;
 
   return (
-    <div className={cn(
-      'premium-card p-5 border-none item-stack',
-      !template.is_active && 'opacity-60',
-    )}>
+    <div className={`bg-white border border-slate-100 rounded-2xl shadow-sm p-4 space-y-3 ${!template.is_active ? 'opacity-60' : ''}`}>
+      {/* Hàng 1: Icon + Title + Switch */}
       <div className="flex items-start gap-3">
-        <Calendar className={cn('icon-md mt-1', template.is_active ? 'text-amber-500' : 'text-slate-500')} />
-        <div className="min-w-0 flex-1 tight-stack">
-          <p className="heading-card truncate">{template.title}</p>
-          <p className="text-subtitle text-slate-600">{formatScheduleHuman(template)}</p>
-          {template.description && (
-            <p className="text-meta line-clamp-2 italic">{template.description}</p>
-          )}
+        <div className="p-2 bg-slate-50 rounded-xl shadow-sm shrink-0">
+          <Calendar className={`w-4 h-4 ${template.is_active ? 'text-amber-500' : 'text-slate-500'}`} />
+        </div>
+        <div className="flex-1 min-w-0 space-y-1">
+          <p className="text-sm font-semibold text-slate-900 truncate">{template.title}</p>
+          <p className="text-xs font-semibold text-slate-500 flex items-center gap-1">
+            <Clock className="w-3.5 h-3.5" />
+            {formatScheduleHuman(template)}
+          </p>
         </div>
         <Switch
           checked={template.is_active}
@@ -78,48 +74,53 @@ export function RecurringTemplateCard({ template, onEdit, onChanged }: Props) {
         />
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100">
-        <Badge variant="outline" className="rounded-full px-2 py-0.5 font-medium bg-slate-50 border-slate-200 text-slate-600">
+      {/* Hàng 2: Mô tả */}
+      {template.description && (
+        <p className="text-sm text-slate-600 line-clamp-2 leading-relaxed">{template.description}</p>
+      )}
+
+      {/* Hàng 3: Badges + next run */}
+      <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-slate-100">
+        <span className="text-[12px] font-semibold px-2.5 py-1 rounded-full bg-slate-50 border border-slate-200 text-slate-600 inline-flex items-center gap-1">
           Công việc
-        </Badge>
-        <Badge variant="outline" className="rounded-full px-2 py-0.5 font-medium bg-slate-50 border-slate-200 text-slate-600">
+        </span>
+        <span className="text-[12px] font-semibold px-2.5 py-1 rounded-full bg-slate-50 border border-slate-200 text-slate-600 inline-flex items-center gap-1">
+          <Users className="w-3 h-3" />
           {totalTargets > 0
             ? template.target_department_ids.length > 0
               ? `${template.target_department_ids.length} phòng`
               : `${template.target_user_ids.length} cán bộ`
             : 'Chưa có đích'}
-        </Badge>
+        </span>
         {nextRun && template.is_active ? (
-          <span className="text-meta ml-auto">
+          <span className="text-xs font-medium text-slate-500 ml-auto">
             Lần kế: {format(nextRun, "EEEE 'lúc' HH:mm dd/MM", { locale: vi })}
           </span>
         ) : (
-          <span className="text-meta ml-auto italic flex items-center gap-1">
-            <AlertCircle className="icon-sm" /> Đang tắt
+          <span className="text-xs font-medium text-slate-400 ml-auto inline-flex items-center gap-1">
+            <AlertCircle className="w-3 h-3" /> Đang tắt
           </span>
         )}
       </div>
 
-      <div className="flex gap-2 pt-2">
-        <Button
-          variant="outline"
-          size="sm"
+      {/* Hàng 4: Actions */}
+      <div className="flex gap-1.5 pt-1">
+        <button
           onClick={() => onEdit(template)}
           disabled={busy !== null}
-          className="min-h-9 rounded-xl font-medium"
+          className="h-9 w-9 rounded-xl bg-slate-50 border border-slate-200 hover:bg-slate-100 flex items-center justify-center transition-all active:scale-95 disabled:opacity-50"
+          title="Sửa"
         >
-          <Edit2 className="icon-sm mr-1.5" /> Sửa
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
+          <Edit2 className="w-4 h-4 text-slate-500" />
+        </button>
+        <button
           onClick={handleDelete}
           disabled={busy !== null}
-          className="min-h-9 rounded-xl font-medium text-red-600 hover:bg-red-50 hover:text-red-700 ml-auto"
+          className="h-9 w-9 rounded-xl bg-red-50 border border-red-100 hover:bg-red-100 flex items-center justify-center transition-all active:scale-95 disabled:opacity-50 ml-auto"
+          title="Xoá"
         >
-          {busy === 'delete' ? <Loader2 className="icon-sm animate-spin" /> : <Trash2 className="icon-sm mr-1.5" />}
-          Xoá
-        </Button>
+          {busy === 'delete' ? <Loader2 className="w-4 h-4 animate-spin text-red-500" /> : <Trash2 className="w-4 h-4 text-red-500" />}
+        </button>
       </div>
     </div>
   );
