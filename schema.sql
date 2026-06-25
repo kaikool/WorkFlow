@@ -3046,6 +3046,81 @@ EXCEPTION WHEN OTHERS THEN NULL;
 END $$;
 
 
+-- =====================================================================
+-- Reminder engine — nhắc nhở lịch trình 30 phút, công việc sắp hết hạn
+-- =====================================================================
+
+-- Add reminded_at columns
+ALTER TABLE schedules ADD COLUMN IF NOT EXISTS reminded_at TIMESTAMPTZ;
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS reminded_at TIMESTAMPTZ;
+
+-- =====================================================================
+CREATE OR REPLACE FUNCTION check_reminders()
+RETURNS INT LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  v_count INT := 0;
+BEGIN
+  -- 1. Nhắc lịch trình 30 phút trước giờ bắt đầu
+  INSERT INTO notifications (user_id, title, content, type, link)
+  SELECT DISTINCT ON (sp.profile_id, s.id)
+    sp.profile_id,
+    'Sắp đến lịch trình',
+    'Lịch "' || s.title || '" sẽ diễn ra sau 30 phút, từ ' || to_char(s.start_time AT TIME ZONE 'Asia/Ho_Chi_Minh', 'HH24:MI') || ' đến ' || to_char(s.end_time AT TIME ZONE 'Asia/Ho_Chi_Minh', 'HH24:MI'),
+    'schedule',
+    '/dashboard/schedule?id=' || s.id
+  FROM schedules s
+  JOIN schedule_participants sp ON sp.schedule_id = s.id
+  WHERE s.start_time BETWEEN NOW() AND NOW() + INTERVAL '30 minutes'
+    AND s.reminded_at IS NULL
+    AND s.status IN ('approved', 'in_progress');
+  GET DIAGNOSTICS v_count = ROW_COUNT;
+
+  UPDATE schedules SET reminded_at = NOW()
+  WHERE start_time BETWEEN NOW() AND NOW() + INTERVAL '30 minutes'
+    AND reminded_at IS NULL
+    AND status IN ('approved', 'in_progress');
+
+  -- 2. Nhắc công việc sắp hết hạn (1 tiếng trước deadline)
+  INSERT INTO notifications (user_id, title, content, type, link)
+  SELECT DISTINCT ON (ta.user_id, t.id)
+    ta.user_id,
+    'Sắp hết hạn công việc',
+    'Công việc "' || t.title || '" hết hạn lúc ' || to_char(t.due_date AT TIME ZONE 'Asia/Ho_Chi_Minh', 'HH24:MI dd/MM'),
+    'task',
+    '/dashboard/tasks?id=' || t.id
+  FROM tasks t
+  JOIN task_assignees ta ON ta.task_id = t.id
+  WHERE t.due_date BETWEEN NOW() AND NOW() + INTERVAL '1 hour'
+    AND t.reminded_at IS NULL
+    AND t.status IN ('todo', 'doing', 'submitted');
+  v_count := v_count + ROW_COUNT;
+
+  UPDATE tasks SET reminded_at = NOW()
+  WHERE due_date BETWEEN NOW() AND NOW() + INTERVAL '1 hour'
+    AND reminded_at IS NULL
+    AND status IN ('todo', 'doing', 'submitted');
+
+  RETURN v_count;
+END $$;
+
+GRANT EXECUTE ON FUNCTION check_reminders() TO authenticated, service_role;
+
+-- pg_cron cho reminders mỗi 5 phút
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_cron') THEN
+    PERFORM cron.unschedule('check-reminders')
+    WHERE EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'check-reminders');
+    PERFORM cron.schedule(
+      'check-reminders',
+      '*/5 * * * *',
+      $cron$SELECT public.check_reminders();$cron$
+    );
+  END IF;
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
+
+
 NOTIFY pgrst, 'reload schema';
 
 
