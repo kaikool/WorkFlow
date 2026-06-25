@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { FileText, AlertTriangle, Calendar, Users } from 'lucide-react';
+import { FileText, AlertTriangle, Calendar, Users, Building2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -23,7 +23,7 @@ interface Props {
   currentProfile?: { id: string; role: string; department_id: string | null } | null;
 }
 
-const BADGE_BASE = 'px-2 py-0.5 rounded-full';
+const BADGE_BASE = 'px-2.5 py-1 rounded-full text-[12px] font-semibold';
 
 export const TaskCard = React.memo(function TaskCard({ representative, children, onOpen }: Props) {
   const p = batchProgress(children);
@@ -32,7 +32,10 @@ export const TaskCard = React.memo(function TaskCard({ representative, children,
     ? format(new Date(representative.due_date), 'dd/MM', { locale: vi })
     : null;
 
-  const completed = p.done + p.submitted;
+  // People string: giống nhau cho cả single và batch
+  const peopleLabel = multi
+    ? children.map(c => c.department?.name).filter(Boolean).join(', ')
+    : representative.assignees?.map(a => a.full_name).filter(Boolean).join(', ') || representative.department?.name || '—';
 
   return (
     <button
@@ -41,28 +44,25 @@ export const TaskCard = React.memo(function TaskCard({ representative, children,
       className="w-full text-left bg-white border border-slate-100 rounded-2xl shadow-sm hover:border-slate-300 hover:shadow-md active:scale-[0.99] transition-all"
     >
       <div className="p-4 space-y-3">
-        {/* Hàng 1: Icon + Title + Badge */}
+        {/* Hàng 1: Icon + Title + Badge — layout y hệt */}
         <div className="flex items-start gap-2">
-          <FileText className="icon-sm text-slate-500 shrink-0 mt-0.5" />
-          <p className="heading-card leading-snug flex-1 line-clamp-2">
+          <FileText className="w-4 h-4 text-slate-500 shrink-0 mt-0.5" />
+          <p className="text-sm font-semibold text-slate-900 leading-snug flex-1 line-clamp-2">
             {representative.title}
           </p>
           {multi ? (
             <Badge variant="outline" className={cn(BADGE_BASE, 'bg-slate-50 border-slate-200 text-slate-600 shrink-0')}>
-              <Users className="icon-sm mr-0.5" />
+              <Users className="w-3.5 h-3.5 mr-1 inline-block" />
               {children.length}
             </Badge>
           ) : (
-            <Badge
-              variant="outline"
-              className={cn(BADGE_BASE, 'shrink-0', STATUS_BADGE_CLASS[representative.status])}
-            >
+            <Badge variant="outline" className={cn(BADGE_BASE, 'shrink-0', STATUS_BADGE_CLASS[representative.status])}>
               {STATUS_LABEL[representative.status]}
             </Badge>
           )}
         </div>
 
-        {/* Hàng 2: Progress bar */}
+        {/* Hàng 2: Progress bar — layout y hệt */}
         {multi ? (
           <SegmentedProgressBar progress={p} />
         ) : (
@@ -73,55 +73,50 @@ export const TaskCard = React.memo(function TaskCard({ representative, children,
           />
         )}
 
-        {/* Hàng 3: Thông tin batch / single */}
-        <div className="flex items-center justify-between text-meta">
-          {multi ? (
-            <>
-              <span className="font-semibold text-slate-700">
-                {completed}/{p.total} đã nộp
-              </span>
-              <span className="text-slate-500">
-                {p.doing > 0 && `${p.doing} đang làm`}
-                {p.doing > 0 && p.todo > 0 && ' · '}
-                {p.todo > 0 && `${p.todo} chưa làm`}
-              </span>
-            </>
-          ) : (
-            <>
-              <span className="truncate text-slate-600">
-                {representative.department?.name ?? '—'}
-              </span>
-              <span className="truncate text-slate-500">
-                {representative.creator?.full_name ?? ''}
-              </span>
-            </>
+        {/* Hàng 3: People — layout y hệt (single: 1 dòng, batch: N dòng) */}
+        <div className="flex items-center gap-1.5 text-[13px] text-slate-600">
+          <Users className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+          <span className="truncate">{peopleLabel}</span>
+        </div>
+
+        {/* Hàng 4: Badges — layout y hệt */}
+        <div className="flex flex-wrap items-center gap-1.5">
+          {p.overdue > 0 && (
+            <span className={cn(BADGE_BASE, 'bg-red-50 text-red-700 border border-red-200 inline-flex items-center gap-1')}>
+              <AlertTriangle className="w-3 h-3" />
+              {p.overdue} quá hạn
+            </span>
+          )}
+          {!multi && representative.priority !== 'medium' && (
+            <span className={cn(BADGE_BASE, 'inline-flex items-center gap-1', PRIORITY_BADGE_CLASS[representative.priority])}>
+              {PRIORITY_LABEL[representative.priority]}
+            </span>
+          )}
+          {multi && representative.priority !== 'medium' && (
+            <span className={cn(BADGE_BASE, 'inline-flex items-center gap-1', PRIORITY_BADGE_CLASS[representative.priority])}>
+              {PRIORITY_LABEL[representative.priority]}
+            </span>
+          )}
+          {dueLabel && (
+            <span className={cn(BADGE_BASE, 'bg-white border-slate-200 text-slate-600 inline-flex items-center gap-1')}>
+              <Calendar className="w-3 h-3" />
+              {dueLabel}
+            </span>
           )}
         </div>
 
-        {/* Hàng 4: Badge phụ (overdue, priority) */}
-        {(p.overdue > 0 || representative.priority !== 'medium') && (
-          <div className="flex flex-wrap items-center gap-1.5">
-            {p.overdue > 0 && (
-              <Badge className={cn(BADGE_BASE, 'font-semibold bg-red-50 text-red-700 border border-red-200')}>
-                <AlertTriangle className="icon-sm mr-1" />
-                {p.overdue} quá hạn
-              </Badge>
-            )}
-            {representative.priority !== 'medium' && (
-              <Badge variant="outline" className={cn(BADGE_BASE, PRIORITY_BADGE_CLASS[representative.priority])}>
-                {PRIORITY_LABEL[representative.priority]}
-              </Badge>
-            )}
-          </div>
-        )}
-
-        {/* Hàng 5: Due date */}
-        {dueLabel && (
-          <div className="flex items-center gap-1 text-meta text-slate-500">
-            <Calendar className="icon-sm" />
-            <span>Hạn {dueLabel}</span>
-          </div>
-        )}
+        {/* Hàng 5: Creator + Department — layout y hệt */}
+        <div className="flex items-center justify-between text-[13px]">
+          <span className="text-slate-500 truncate">
+            {representative.creator?.full_name ?? '—'} giao
+          </span>
+          <span className="text-slate-400 truncate flex items-center gap-1">
+            <Building2 className="w-3 h-3" />
+            {multi
+              ? `${children.length} phòng`
+              : (representative.department?.name ?? '—')}
+          </span>
+        </div>
       </div>
     </button>
   );
@@ -129,13 +124,13 @@ export const TaskCard = React.memo(function TaskCard({ representative, children,
 
 function SegmentedProgressBar({ progress }: { progress: ReturnType<typeof batchProgress> }) {
   const { total, done, submitted, doing } = progress;
-  const seg = (n: number) => (n / total) * 100;
+  const seg = (n: number) => (total > 0 ? (n / total) * 100 : 0);
   if (total === 0) return null;
   return (
     <div className="flex h-2 rounded-full overflow-hidden bg-slate-100">
-      {done > 0 && <div className="bg-emerald-500" style={{ width: `${seg(done)}%` }} />}
-      {submitted > 0 && <div className="bg-blue-400" style={{ width: `${seg(submitted)}%` }} />}
-      {doing > 0 && <div className="bg-amber-400" style={{ width: `${seg(doing)}%` }} />}
+      {done > 0 && <div className="bg-emerald-500 transition-all" style={{ width: `${seg(done)}%` }} />}
+      {submitted > 0 && <div className="bg-blue-400 transition-all" style={{ width: `${seg(submitted)}%` }} />}
+      {doing > 0 && <div className="bg-amber-400 transition-all" style={{ width: `${seg(doing)}%` }} />}
     </div>
   );
 }
