@@ -391,7 +391,7 @@ export function TaskDetailDialog(props: Props) {
             {!ov && task && (
               <div className="space-y-2 pt-1">
                 <SectionLabel icon={<FileText className="w-4 h-4" />} label="Bình luận" />
-                <div className="-mx-[var(--app-page-x)]">
+                <div>
                   <TaskCommentList
                     taskId={task.id}
                     comments={task.comments.filter(c => {

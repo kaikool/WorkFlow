@@ -23,17 +23,11 @@ export function TaskCommentList({ taskId, comments, onAdded, canCompose = true }
   const [busy, setBusy] = useState(false);
 
   const handleSubmit = async () => {
-    if (!body.trim()) {
-      notifyValidation('Vui lòng nhập nội dung');
-      return;
-    }
+    if (!body.trim()) { notifyValidation('Vui lòng nhập nội dung'); return; }
     setBusy(true);
     const res = await addComment(taskId, body.trim());
     setBusy(false);
-    if (!res.ok) {
-      notifyError(res.error, 'Không gửi được bình luận');
-      return;
-    }
+    if (!res.ok) { notifyError(res.error, 'Không gửi được bình luận'); return; }
     setBody('');
     onAdded();
   };
@@ -41,38 +35,38 @@ export function TaskCommentList({ taskId, comments, onAdded, canCompose = true }
   const disabled = busy || !body.trim();
 
   return (
-    <section className="item-stack">
-      <h3 className="heading-card">Bình luận ({comments.length})</h3>
-
-      <div className="item-stack">
-        {comments.length === 0 ? (
-          <p className="text-meta italic py-2">Chưa có bình luận</p>
-        ) : (
-          comments.map((c) => (
-            <div key={c.id} className="flex gap-3">
-              <Avatar className="avatar-sm shrink-0">
+    <div className="space-y-3">
+      {/* Danh sách bình luận */}
+      {comments.length === 0 ? (
+        <p className="text-xs font-medium text-slate-400 italic py-1 px-1">Chưa có bình luận</p>
+      ) : (
+        <div className="space-y-2">
+          {comments.map((c) => (
+            <div key={c.id} className="flex gap-3 p-3 bg-white rounded-xl border border-slate-100">
+              <Avatar className="w-8 h-8 shrink-0">
                 <AvatarImage src={c.user?.avatar_url ?? undefined} alt={c.user?.full_name ?? ''} />
-                <AvatarFallback className="text-meta">
+                <AvatarFallback className="text-[11px] font-bold bg-slate-200 text-slate-600">
                   {c.user?.full_name?.charAt(0) ?? '?'}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
                 <div className="flex items-baseline gap-2 mb-0.5">
-                  <span className="heading-card truncate">{c.user?.full_name ?? '—'}</span>
-                  <span className="text-meta">
+                  <span className="text-sm font-semibold text-slate-900 truncate">{c.user?.full_name ?? '—'}</span>
+                  <span className="text-xs font-medium text-slate-400 shrink-0">
                     {format(new Date(c.created_at), 'HH:mm dd/MM', { locale: vi })}
                   </span>
                 </div>
-                <p className="text-subtitle text-slate-700 whitespace-pre-wrap break-words leading-relaxed">
+                <p className="text-sm text-slate-700 whitespace-pre-wrap break-words leading-relaxed">
                   {c.content}
                 </p>
               </div>
             </div>
-          ))
-        )}
-      </div>
+          ))}
+        </div>
+      )}
 
-      <div className="relative pt-3 border-t border-slate-100">
+      {/* Input */}
+      <div className="relative">
         {canCompose ? (
           <>
             <Textarea
@@ -80,7 +74,7 @@ export function TaskCommentList({ taskId, comments, onAdded, canCompose = true }
               value={body}
               onChange={(e) => setBody(e.target.value)}
               placeholder="Viết bình luận..."
-              className="rounded-2xl bg-slate-50 border-none focus-visible:ring-0 resize-none pr-12 pl-4 py-3"
+              className="rounded-xl bg-slate-50 border-none focus-visible:ring-0 resize-none pr-12 pl-4 py-3 text-sm"
             />
             <button
               type="button"
@@ -94,13 +88,15 @@ export function TaskCommentList({ taskId, comments, onAdded, canCompose = true }
                   : 'bg-primary text-white hover:bg-primary/90 active:scale-90',
               )}
             >
-              {busy ? <Loader2 className="icon-sm animate-spin" /> : <Send className="icon-sm" />}
+              {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
             </button>
           </>
         ) : (
-          <p className="text-meta italic">Bạn đang ở chế độ quản trị hệ thống — chỉ xem.</p>
+          <p className="text-xs font-medium text-slate-400 italic py-2 text-center bg-slate-50 rounded-xl">
+            Bạn đang ở chế độ quản trị hệ thống — chỉ xem.
+          </p>
         )}
       </div>
-    </section>
+    </div>
   );
 }
