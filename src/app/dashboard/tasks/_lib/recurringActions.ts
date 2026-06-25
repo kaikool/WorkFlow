@@ -27,7 +27,6 @@ export async function upsertRecurringTemplate(input: UpsertTemplateInput): Promi
     p_id: input.id ?? null,
     p_title: input.title,
     p_description: input.description ?? null,
-    p_task_type: 'report',
     p_priority: input.priority,
     p_target_department_ids: input.target_department_ids,
     p_target_user_ids: input.target_user_ids,

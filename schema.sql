@@ -2798,7 +2798,6 @@ CREATE OR REPLACE FUNCTION recurring_template_upsert(
   p_id                    UUID,
   p_title                 TEXT,
   p_description           TEXT,
-  p_task_type             TEXT,
   p_priority              task_priority,
   p_target_department_ids UUID[],
   p_target_user_ids       UUID[],
@@ -2844,13 +2843,13 @@ BEGIN
 
   IF p_id IS NULL THEN
     INSERT INTO task_recurring_templates (
-      title, description, task_type, priority,
+      title, description, priority,
       target_department_ids, target_user_ids,
       schedule_kind, weekly_dow, weekly_time, monthly_dom, monthly_time,
       timezone, due_days_after_fire, due_time,
       created_by, is_active, next_run_at
     ) VALUES (
-      p_title, p_description, p_task_type, COALESCE(p_priority, 'medium'),
+      p_title, p_description, COALESCE(p_priority, 'medium'),
       COALESCE(p_target_department_ids, '{}'), COALESCE(p_target_user_ids, '{}'),
       p_schedule_kind, p_weekly_dow, p_weekly_time, p_monthly_dom, p_monthly_time,
       COALESCE(p_timezone, 'Asia/Ho_Chi_Minh'), COALESCE(p_due_days_after_fire, 7), COALESCE(p_due_time, '17:00'::TIME),
@@ -2861,7 +2860,6 @@ BEGIN
     UPDATE task_recurring_templates
     SET title = p_title,
         description = p_description,
-        task_type = p_task_type,
         priority = COALESCE(p_priority, 'medium'),
         target_department_ids = COALESCE(p_target_department_ids, '{}'),
         target_user_ids = COALESCE(p_target_user_ids, '{}'),
@@ -2884,7 +2882,7 @@ BEGIN
 END $$;
 
 GRANT EXECUTE ON FUNCTION recurring_template_upsert(
-  UUID, TEXT, TEXT, TEXT, task_priority, UUID[], UUID[],
+  UUID, TEXT, TEXT, task_priority, UUID[], UUID[],
   TEXT, SMALLINT, TIME, SMALLINT, TIME, TEXT, INT, TIME, BOOLEAN
 ) TO authenticated;
 
@@ -4355,7 +4353,6 @@ CREATE OR REPLACE FUNCTION recurring_template_upsert(
   p_id                    UUID,
   p_title                 TEXT,
   p_description           TEXT,
-  p_task_type             TEXT,
   p_priority              task_priority,
   p_target_department_ids UUID[],
   p_target_user_ids       UUID[],
@@ -4405,13 +4402,13 @@ BEGIN
 
   IF p_id IS NULL THEN
     INSERT INTO task_recurring_templates (
-      title, description, task_type, priority,
+      title, description, priority,
       target_department_ids, target_user_ids,
       schedule_kind, weekly_dow, weekly_time, monthly_dom, monthly_time,
       timezone, due_days_after_fire, due_time,
       created_by, is_active, next_run_at
     ) VALUES (
-      p_title, p_description, p_task_type, COALESCE(p_priority, 'medium'),
+      p_title, p_description, COALESCE(p_priority, 'medium'),
       COALESCE(p_target_department_ids, '{}'), COALESCE(p_target_user_ids, '{}'),
       p_schedule_kind, p_weekly_dow, p_weekly_time, p_monthly_dom, p_monthly_time,
       COALESCE(p_timezone, 'Asia/Ho_Chi_Minh'), COALESCE(p_due_days_after_fire, 7), COALESCE(p_due_time, '17:00'::TIME),
@@ -4420,7 +4417,7 @@ BEGIN
     RETURNING id INTO v_id;
   ELSE
     UPDATE task_recurring_templates
-    SET title = p_title, description = p_description, task_type = p_task_type,
+    SET title = p_title, description = p_description,
         priority = COALESCE(p_priority, 'medium'),
         target_department_ids = COALESCE(p_target_department_ids, '{}'),
         target_user_ids = COALESCE(p_target_user_ids, '{}'),
@@ -4441,7 +4438,7 @@ BEGIN
 END $$;
 
 GRANT EXECUTE ON FUNCTION recurring_template_upsert(
-  UUID, TEXT, TEXT, TEXT, task_priority, UUID[], UUID[],
+  UUID, TEXT, TEXT, task_priority, UUID[], UUID[],
   TEXT, SMALLINT, TIME, SMALLINT, TIME, TEXT, INT, TIME, BOOLEAN
 ) TO authenticated;
 
