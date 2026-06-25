@@ -223,18 +223,6 @@ export function TaskDetailDialog(props: Props) {
                     ← Quay lại
                   </button>
                 )}
-                {canEditAny && (
-                  <button onClick={() => setOpenEdit(true)}
-                    className="h-8 w-8 rounded-lg bg-white/60 backdrop-blur-md hover:bg-white flex items-center justify-center transition-all active:scale-95">
-                    <Pencil className="w-4 h-4 text-slate-500" />
-                  </button>
-                )}
-                {canDeleteAny && (
-                  <button onClick={ov ? delb : del} disabled={ov ? deleting : busy !== null}
-                    className="h-8 w-8 rounded-lg bg-white/60 backdrop-blur-md hover:bg-red-50 flex items-center justify-center transition-all active:scale-95">
-                    <Trash2 className="w-4 h-4 text-red-500" />
-                  </button>
-                )}
                 <button onClick={() => setIsOpen(false)}
                   className="h-8 w-8 rounded-lg bg-white/60 backdrop-blur-md hover:bg-white flex items-center justify-center transition-all active:scale-95">
                   <X className="w-4 h-4 text-slate-400" />
@@ -430,7 +418,20 @@ export function TaskDetailDialog(props: Props) {
 
         {/* ═══ FOOTER ═══ */}
         <DialogFooter className="app-dialog-sheet-footer flex flex-row items-center justify-between gap-3">
-          <div />
+          <div className="flex items-center gap-2">
+            {canEditAny && (
+              <button onClick={() => setOpenEdit(true)}
+                className="h-10 px-3 rounded-xl text-sm font-semibold text-slate-600 bg-slate-50 border border-slate-200 hover:bg-slate-100 transition-all active:scale-95 inline-flex items-center gap-1.5">
+                <Pencil className="w-4 h-4" /> Sửa
+              </button>
+            )}
+            {canDeleteAny && (
+              <button onClick={ov ? delb : del} disabled={ov ? deleting : busy !== null}
+                className="h-10 px-3 rounded-xl text-sm font-semibold text-red-600 bg-red-50 border border-red-100 hover:bg-red-100 transition-all active:scale-95 inline-flex items-center gap-1.5 disabled:opacity-50">
+                <Trash2 className="w-4 h-4" /> Xoá
+              </button>
+            )}
+          </div>
           <div className="flex items-center gap-2">
             {ov && (
               <span className="text-xs font-semibold text-slate-500 tabular-nums">{bp.done + bp.submitted}/{bp.total} hoàn thành</span>
