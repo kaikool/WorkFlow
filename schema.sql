@@ -6834,6 +6834,7 @@ DECLARE
   v_a UUID;
   v_dept_id UUID;
   v_target_id UUID;
+  v_batch_id UUID;
 BEGIN
   FOR v_t IN
     SELECT * FROM task_recurring_templates
@@ -6849,6 +6850,8 @@ BEGIN
         next_run_at = _recurring_next_run(v_t.schedule_kind, v_t.weekly_dow, v_t.weekly_time, v_t.monthly_dom, v_t.monthly_time, v_t.timezone, NOW())
     WHERE id = v_t.id;
 
+    v_batch_id := gen_random_uuid();
+
     IF COALESCE(array_length(v_t.target_department_ids, 1), 0) > 0 THEN
       FOREACH v_dept_id IN ARRAY v_t.target_department_ids LOOP
         SELECT CASE
@@ -6862,9 +6865,9 @@ BEGIN
           ELSE _resolve_default_assignee(v_dept_id)
         END INTO v_target_id;
         IF v_target_id IS NULL THEN CONTINUE; END IF;
-        INSERT INTO tasks (title, description, priority, due_date, department_id, assignee_id, created_by, status, metadata, is_archived, requires_approval)
+        INSERT INTO tasks (title, description, priority, due_date, department_id, assignee_id, created_by, status, metadata, is_archived, requires_approval, batch_id)
         VALUES (v_t.title, v_t.description, v_t.priority, NOW() + (v_t.due_days_after_fire || ' days')::INTERVAL,
-                v_dept_id, v_target_id, v_uid, 'todo'::task_status, jsonb_build_object('from_recurring', true, 'recurring_template_id', v_t.id), FALSE, TRUE)
+                v_dept_id, v_target_id, v_uid, 'todo'::task_status, jsonb_build_object('from_recurring', true, 'recurring_template_id', v_t.id), FALSE, TRUE, v_batch_id)
         RETURNING id INTO v_task_id;
         INSERT INTO task_assignees (task_id, user_id) VALUES (v_task_id, v_target_id) ON CONFLICT DO NOTHING;
         INSERT INTO notifications (user_id, title, content, type, link)
@@ -6875,9 +6878,9 @@ BEGIN
 
     IF COALESCE(array_length(v_t.target_user_ids, 1), 0) > 0 THEN
       FOREACH v_a IN ARRAY v_t.target_user_ids LOOP
-        INSERT INTO tasks (title, description, priority, due_date, department_id, assignee_id, created_by, status, metadata, is_archived, requires_approval)
+        INSERT INTO tasks (title, description, priority, due_date, department_id, assignee_id, created_by, status, metadata, is_archived, requires_approval, batch_id)
         SELECT v_t.title, v_t.description, v_t.priority, NOW() + (v_t.due_days_after_fire || ' days')::INTERVAL,
-               p.department_id, p.id, v_uid, 'todo'::task_status, jsonb_build_object('from_recurring', true, 'recurring_template_id', v_t.id), FALSE, TRUE
+               p.department_id, p.id, v_uid, 'todo'::task_status, jsonb_build_object('from_recurring', true, 'recurring_template_id', v_t.id), FALSE, TRUE, v_batch_id
         FROM profiles p
         WHERE p.id = v_a AND p.is_active = TRUE AND p.role NOT IN ('admin','director','driver','secretary','hr_officer')
         RETURNING id INTO v_task_id;
