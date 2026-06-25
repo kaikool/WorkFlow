@@ -455,6 +455,17 @@ USING (
       AND (p.role = 'secretary' OR (p.role = 'manager' AND d.code = '13602'))
     )
     OR driver_id = auth.uid()
+)
+WITH CHECK (
+    auth.uid() = created_by 
+    OR EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+    OR EXISTS (
+      SELECT 1 FROM profiles p
+      LEFT JOIN departments d ON p.department_id = d.id
+      WHERE p.id = auth.uid() 
+      AND (p.role = 'secretary' OR (p.role = 'manager' AND d.code = '13602'))
+    )
+    OR driver_id = auth.uid()
 );
 
 -- Policies cho Phòng và Xe (Admin và Thư ký Tổ chức Tổng hợp toàn quyền, User chỉ xem)
