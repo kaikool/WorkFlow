@@ -195,7 +195,7 @@ export function TaskDetailDialog(props: Props) {
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent hideCloseButton className="app-dialog-sheet app-dialog-sheet--2xl shadow-2xl flex flex-col p-0 gap-0">
         {/* ═══ HEADER (Schedule-style: tinted bg + blur circle) ═══ */}
-        <div className="px-[var(--app-page-x)] py-5 sm:p-6 relative overflow-hidden backdrop-blur-xl border-b border-slate-100 bg-gradient-to-b from-slate-50/80 to-white/60">
+        <div className="px-[var(--app-page-x)] py-5 sm:p-6 relative backdrop-blur-xl border-b border-slate-100 bg-gradient-to-b from-slate-50/80 to-white/60">
           <div className="relative z-10 space-y-2.5 max-w-full">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">{hBadge}</div>
@@ -212,11 +212,11 @@ export function TaskDetailDialog(props: Props) {
                 </button>
               </div>
             </div>
-            <DialogTitle className="text-lg sm:text-xl font-bold leading-tight text-slate-900 break-words tabular-nums">
+            <DialogTitle className="text-lg sm:text-xl font-bold leading-tight text-slate-900 text-pretty tabular-nums">
               {hTitle}
             </DialogTitle>
             {hMeta.length > 0 && (
-              <p className="text-sm font-semibold text-slate-500">{hMeta}</p>
+              <p className="text-sm font-semibold text-slate-500 text-pretty">{hMeta}</p>
             )}
           </div>
           {/* Blur decoration */}
