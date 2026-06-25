@@ -307,8 +307,12 @@ export function TaskDetailDialog(props: Props) {
                           <button
                             onClick={async () => {
                               setBusy(c.id);
-                              const nextStatus = isSubmitted ? 'done' : 'done';
-                              const res = await updateTaskStatus(c.id, nextStatus, '[sys] Đã hoàn thành.');
+                              // todo → phải start trước, rồi mới complete
+                              if (isTodo) {
+                                const r1 = await updateTaskStatus(c.id, 'doing', '');
+                                if (!r1.ok) { setBusy(null); notifyError(r1.error ?? 'Lỗi', 'Lỗi'); return; }
+                              }
+                              const res = await updateTaskStatus(c.id, 'done', '[sys] Đã hoàn thành.');
                               setBusy(null);
                               if (res.ok) { notifySuccess(`Đã ghi nhận ${c.assignees?.[0]?.full_name ?? ''}`); onChanged?.(); }
                               else notifyError(res.error ?? 'Lỗi', 'Lỗi');
