@@ -36,8 +36,8 @@ export const SCOPE_LABEL: Record<'mine' | 'dept' | 'branch', string> = {
   branch: 'Toàn chi nhánh',
 };
 
-// Group "Quá hạn" / "Hôm nay" / "Tuần này" / "Sau này"
-export type DateGroup = 'overdue' | 'today' | 'this_week' | 'later' | 'no_deadline';
+// Group "Quá hạn" / "Hôm nay" / "Tuần này" / "Sau này" / "Đã hoàn thành"
+export type DateGroup = 'overdue' | 'today' | 'this_week' | 'later' | 'no_deadline' | 'completed';
 
 export const DATE_GROUP_LABEL: Record<DateGroup, string> = {
   overdue: 'Quá hạn',
@@ -45,4 +45,5 @@ export const DATE_GROUP_LABEL: Record<DateGroup, string> = {
   this_week: 'Tuần này',
   later: 'Sau này',
   no_deadline: 'Không hạn',
+  completed: 'Đã hoàn thành',
 };

@@ -169,3 +169,12 @@ export async function archiveTask(taskId: string, archive = true): Promise<Actio
   if (error) return { ok: false, error: error.message };
   return { ok: true };
 }
+
+export async function remindTask(taskId: string): Promise<{ ok: boolean; error?: string }> {
+  const { error } = await supabase.rpc('task_remind', {
+    p_task_id: taskId,
+  } as any);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+

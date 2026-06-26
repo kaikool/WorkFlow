@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import {
   Building2, Users, Pencil, Trash2,
   CheckCircle2, Loader2, Play, Send, Undo2, Clock, RotateCcw,
-  ChevronRight, Flag, X, FileText,
+  ChevronRight, Flag, X, FileText, Target, Bell,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -19,7 +19,7 @@ import {
   PRIORITY_LABEL, PRIORITY_BADGE_CLASS,
 } from '../_lib/constants';
 import { batchProgress } from '../_lib/batchHelpers';
-import { deleteTask, updateTaskStatus } from '../_lib/taskActions';
+import { archiveTask, deleteTask, updateTaskStatus, remindTask } from '../_lib/taskActions';
 import {
   canEditTask, canDeleteTask, canForceCompleteTask,
   canApproveTaskResult, canDelegateTask, canRejectSubmission, canReopenDone,
@@ -146,6 +146,12 @@ export function TaskDetailDialog(props: Props) {
     if (!await confirmDialog({ title: 'Xoá công việc?', confirmText: 'Xoá', danger: true, description: `Xoá "${task.title}"?` })) return;
     setBusy('del'); const r = await deleteTask(task.id); setBusy(null);
     if (!r.ok) { notifyError(r.error, 'Lỗi'); return; } notifySuccess('Đã xoá'); onChanged?.(); setTimeout(() => setIsOpen(false), 100);
+  };
+  const handleRemind = async () => {
+    if (!task) return;
+    if (!await confirmDialog({ title: 'Nhắc nhở hoàn thành?', confirmText: 'Nhắc nhở', description: 'Gửi thông báo nhắc nhở đến người thực hiện chưa hoàn thành.' })) return;
+    setBusy('remind'); const r = await remindTask(task.id); setBusy(null);
+    if (!r.ok) { notifyError(r.error, 'Lỗi'); return; } notifySuccess('Đã gửi nhắc nhở'); refetch(); onChanged?.();
   };
   const fcb = async () => {
     if (!await confirmDialog({ title: 'Ghi nhận lô?', confirmText: 'Xác nhận', description: `Đóng ${pendC.length} việc chưa nộp.` })) return;
@@ -396,7 +402,7 @@ export function TaskDetailDialog(props: Props) {
                 {canAp && <ActionBtn label="Duyệt" icon={<CheckCircle2 className="w-4 h-4" />} onClick={() => setOpenApp(true)} disabled={busy !== null} amber />}
                 {canS && !canSub && !canAp && <ActionBtn label="Bắt đầu" icon={busy === 'start' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />} onClick={() => st('doing', 'start', 'Lỗi')} disabled={busy !== null} />}
                 {canD && !canSub && !canAp && <ActionBtn label="Hoàn thành" icon={busy === 'done' ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />} onClick={() => st('done', 'done', 'Lỗi')} disabled={busy !== null} />}
-                {canFC && <ActionBtn label="Đã nhận" icon={busy === 'fc' ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />} onClick={fc} disabled={busy !== null} />}
+                {canFC && <ActionBtn label="Ghi nhận hoàn thành" icon={busy === 'fc' ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />} onClick={fc} disabled={busy !== null} />}
                 {canAp && <SecondaryBtn label="Trả về sửa" icon={<Undo2 className="w-4 h-4" />} onClick={() => setOpenRet(true)} disabled={busy !== null} />}
                 {!canAp && canRj && <SecondaryBtn label="Trả về" icon={<Undo2 className="w-4 h-4" />} onClick={() => setOpenRet(true)} disabled={busy !== null} />}
                 {canDl && <SecondaryBtn label={(task.assignees?.length ?? 0) === 0 ? 'Phân công' : 'Phân công lại'} icon={<Users className="w-4 h-4" />} onClick={() => setOpenDelegate(true)} disabled={busy !== null} />}
@@ -438,9 +444,17 @@ export function TaskDetailDialog(props: Props) {
           </div>
         </div>
 
-        {/* ═══ FOOTER ═══ */}
+        {/* 🔹 FOOTER 🔹 */}
         <DialogFooter className="app-dialog-sheet-footer flex flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-1.5">
+            {!ov && task && !ro && canFC && (
+              <button onClick={handleRemind} disabled={busy !== null}
+                title="Nhắc nhở hoàn thành"
+                className="h-9 px-3 rounded-xl bg-amber-50 border border-amber-200 hover:bg-amber-100 flex items-center justify-center transition-all active:scale-95 disabled:opacity-50 text-amber-600 font-semibold text-sm gap-1.5">
+                {busy === 'remind' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bell className="w-4 h-4" />}
+                <span className="hidden sm:inline">Nhắc nhở</span>
+              </button>
+            )}
             {canEditAny && (
               <button onClick={() => setOpenEdit(true)}
                 className="h-9 w-9 rounded-xl bg-slate-50 border border-slate-200 hover:bg-slate-100 flex items-center justify-center transition-all active:scale-95">

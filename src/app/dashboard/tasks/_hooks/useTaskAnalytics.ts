@@ -33,6 +33,7 @@ export interface AnalyticsResult {
   daily_completed: DailyPoint[];
   by_department: DeptStat[];
   top_people: PersonStat[];
+  top_overdue_people: PersonStat[];
   resource_view: ResourceViewItem[];
   recurring_active: number;
   role: string;

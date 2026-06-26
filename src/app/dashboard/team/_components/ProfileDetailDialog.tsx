@@ -54,8 +54,8 @@ export default function ProfileDetailDialog({
 
   const status: ProfileStatus = useMemo(() => {
     if (!target) return 'available';
-    return getProfileBadgeStatus(target, todaySchedules, ooo, new Date());
-  }, [target, todaySchedules, ooo]);
+    return getProfileBadgeStatus(target, todaySchedules, ooo, viewer, new Date());
+  }, [target, todaySchedules, ooo, viewer]);
 
   const isSelf = viewer && target && viewer.id === target.id;
   const canSeeSensitive = canViewSensitiveProfileFields(viewer, target);

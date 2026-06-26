@@ -57,3 +57,9 @@ export async function toggleRecurringTemplate(id: string, active: boolean): Prom
   if (error) return { ok: false, error: error.message };
   return { ok: true };
 }
+
+export async function forceRunRecurringTemplate(id: string): Promise<ActionResult> {
+  const { error } = await supabase.rpc('recurring_template_force_run', { p_id: id } as any);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}

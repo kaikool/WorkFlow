@@ -4867,6 +4867,7 @@ DECLARE
   v_daily         JSONB;
   v_by_dept       JSONB;
   v_top           JSONB;
+  v_top_overdue   JSONB;
   v_recur         INT;
 BEGIN
   IF v_uid IS NULL THEN RAISE EXCEPTION 'Chưa đăng nhập'; END IF;
@@ -4959,6 +4960,25 @@ BEGIN
     LIMIT 10
   ) p;
 
+  SELECT jsonb_agg(row_to_json(p.*) ORDER BY p.overdue DESC, p.active DESC)
+  INTO v_top_overdue
+  FROM (
+    SELECT pr.id AS user_id, pr.full_name, pr.avatar_url,
+           dpt.name AS department_name,
+           COUNT(ta.task_id) FILTER (WHERE t.status NOT IN ('done','canceled') AND t.is_archived = FALSE) AS active,
+           COUNT(ta.task_id) FILTER (WHERE t.due_date < v_now AND t.status NOT IN ('done','canceled') AND t.is_archived = FALSE) AS overdue,
+           COUNT(ta.task_id) FILTER (WHERE t.status = 'done' AND t.updated_at::date BETWEEN p_from AND p_to) AS completed
+    FROM task_assignees ta
+    JOIN tasks t ON t.id = ta.task_id
+    JOIN profiles pr ON pr.id = ta.user_id
+    LEFT JOIN departments dpt ON dpt.id = pr.department_id
+    WHERE (v_scope_dept IS NULL OR t.department_id = v_scope_dept)
+    GROUP BY pr.id, pr.full_name, pr.avatar_url, dpt.name
+    HAVING COUNT(ta.task_id) FILTER (WHERE t.due_date < v_now AND t.status NOT IN ('done','canceled') AND t.is_archived = FALSE) > 0
+    ORDER BY overdue DESC
+    LIMIT 10
+  ) p;
+
   SELECT COUNT(*) INTO v_recur
   FROM task_recurring_templates
   WHERE is_active = TRUE
@@ -4974,6 +4994,7 @@ BEGIN
     'daily_completed', COALESCE(v_daily, '[]'::jsonb),
     'by_department',   COALESCE(v_by_dept, '[]'::jsonb),
     'top_people',      COALESCE(v_top, '[]'::jsonb),
+    'top_overdue_people', COALESCE(v_top_overdue, '[]'::jsonb),
     'recurring_active', COALESCE(v_recur, 0),
     'role',            v_role,
     'scope_dept',      v_scope_dept,
@@ -7109,3 +7130,59 @@ END $$;
 GRANT EXECUTE ON FUNCTION recurring_fire_due() TO authenticated, service_role;
 
 NOTIFY pgrst, 'reload schema';
+
+CREATE OR REPLACE FUNCTION recurring_template_force_run(p_id UUID)
+RETURNS INT LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  v_count INT := 0;
+BEGIN
+  UPDATE task_recurring_templates SET next_run_at = NOW() - interval '1 minute' WHERE id = p_id;
+  SELECT public.recurring_fire_due() INTO v_count;
+  RETURN v_count;
+END;
+$$;
+GRANT EXECUTE ON FUNCTION recurring_template_force_run(UUID) TO authenticated, service_role;
+
+
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS last_reminded_at TIMESTAMPTZ;
+
+CREATE OR REPLACE FUNCTION task_remind(p_task_id UUID)
+RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  v_uid UUID := auth.uid();
+  v_task RECORD;
+  v_count INT := 0;
+BEGIN
+  IF v_uid IS NULL THEN RAISE EXCEPTION 'Chua dang nhap'; END IF;
+  
+  SELECT * INTO v_task FROM tasks WHERE id = p_task_id;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Khong tim thay cong viec'; END IF;
+  
+  -- Check permission: only creator or admin/director/manager of the creator can remind? Or maybe just user_can_see_task but must be creator/manager.
+  -- For simplicity, let's just check if user_can_see_task() is true, and maybe if they are the creator or have manager rights.
+  -- Actually, let's just allow the creator or admin to remind.
+  IF v_task.created_by != v_uid AND NOT EXISTS (SELECT 1 FROM profiles WHERE id = v_uid AND role IN ('admin', 'director')) THEN
+    -- Check if manager of the department
+    IF NOT EXISTS (SELECT 1 FROM profiles p JOIN profiles c ON p.department_id = c.department_id WHERE p.id = v_uid AND p.role = 'manager' AND c.id = v_task.created_by) THEN
+        RAISE EXCEPTION 'Chi nguoi giao viec hoac quan ly moi duoc nhac nho';
+    END IF;
+  END IF;
+
+  IF v_task.status IN ('done', 'canceled') THEN
+    RAISE EXCEPTION 'Cong viec da hoan thanh hoac huy, khong the nhac nho';
+  END IF;
+
+  IF v_task.last_reminded_at IS NOT NULL AND NOW() < v_task.last_reminded_at + interval '1 minute' THEN
+    RAISE EXCEPTION 'Ban vua nhac nho roi, vui long doi 1 phut roi thu lai';
+  END IF;
+
+  UPDATE tasks SET last_reminded_at = NOW() WHERE id = p_task_id;
+
+  INSERT INTO notifications (user_id, title, content, type, link)
+  SELECT ta.user_id, 'Nhac nho hoan thanh cong viec', 'Nguoi giao viec dang nhac ban hoan thanh: ' || v_task.title, 'task', '/dashboard/tasks?id=' || p_task_id::text
+  FROM task_assignees ta
+  WHERE ta.task_id = p_task_id AND ta.status NOT IN ('done', 'canceled');
+END;
+$$;
+GRANT EXECUTE ON FUNCTION task_remind(UUID) TO authenticated, service_role;
+

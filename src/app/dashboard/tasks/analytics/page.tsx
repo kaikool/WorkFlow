@@ -14,6 +14,7 @@ import { useTaskAnalytics } from '../_hooks/useTaskAnalytics';
 import { AnalyticsKpiCards } from '../_components/analytics/AnalyticsKpiCards';
 import { OverdueByDeptChart } from '../_components/analytics/OverdueByDeptChart';
 import { ResourceView } from '../_components/ResourceView';
+import { TopOverduePeopleList } from '../_components/analytics/TopOverduePeopleList';
 import { rowsToCsv, downloadCsv } from '../_lib/analyticsHelpers';
 import { DepartmentPicker } from '@/components/ui/department-picker';
 
@@ -120,6 +121,8 @@ export default function AnalyticsPage() {
               </h2>
               <OverdueByDeptChart data={data.by_department} />
             </section>
+
+            <TopOverduePeopleList data={data.top_overdue_people} />
           </div>
 
           {(data.resource_view?.length ?? 0) > 0 && (

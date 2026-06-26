@@ -60,6 +60,14 @@ export function canRecognize(profile: any): boolean {
   return !!profile && profile.role !== 'driver';
 }
 
+// Kiểm tra quyền xem badge "Đi công tác" (Business Trip)
+export function canViewBusinessTripBadge(viewer: any, target: any): boolean {
+  if (!viewer || !target) return false;
+  if (viewer.id === target.id) return true;
+  if (['admin', 'director'].includes(viewer.role)) return true;
+  return viewer.department_id === target.department_id;
+}
+
 export function canApproveLeave(profile: any, leave?: any): boolean {
   if (!profile) return false;
 

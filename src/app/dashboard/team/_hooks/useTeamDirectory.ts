@@ -21,7 +21,7 @@ export function useTeamDirectory() {
       const endOfDay = new Date(now); endOfDay.setHours(23, 59, 59, 999);
       const { data, error } = await supabase
         .from('schedules')
-        .select('id, type, status, created_by, start_time, end_time')
+        .select('id, type, status, created_by, start_time, end_time, schedule_participants(user_id)')
         .in('status', ['approved', 'in_progress'])
         .lte('start_time', endOfDay.toISOString())
         .gte('end_time', startOfDay.toISOString());

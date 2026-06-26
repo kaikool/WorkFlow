@@ -3,14 +3,14 @@
 import React, { useState } from 'react';
 import { Switch } from '@/components/ui/switch';
 import {
-  Calendar, Edit2, Loader2, Trash2, AlertCircle, Clock, Users,
+  Calendar, Edit2, Loader2, Trash2, AlertCircle, Clock, Users, Play,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { notifyError, notifySuccess } from '@/lib/notify';
 import { confirmDialog } from '@/components/ui/confirm-dialog';
 import {
-  deleteRecurringTemplate, toggleRecurringTemplate,
+  deleteRecurringTemplate, toggleRecurringTemplate, forceRunRecurringTemplate,
 } from '../_lib/recurringActions';
 import {
   formatScheduleHuman,
@@ -47,6 +47,21 @@ export function RecurringTemplateCard({ template, onEdit, onChanged }: Props) {
     setBusy(null);
     if (!res.ok) { notifyError(res.error, 'Không xoá được'); return; }
     notifySuccess('Đã xoá mẫu định kỳ');
+    onChanged();
+  };
+
+  const handleForceRun = async () => {
+    const ok = await confirmDialog({
+      title: 'Sinh công việc ngay?',
+      description: `Bạn có muốn ép hệ thống sinh công việc cho "${template.title}" ngay bây giờ không?`,
+      confirmText: 'Chạy ngay',
+    });
+    if (!ok) return;
+    setBusy('force_run');
+    const res = await forceRunRecurringTemplate(template.id);
+    setBusy(null);
+    if (!res.ok) { notifyError(res.error, 'Lỗi sinh công việc'); return; }
+    notifySuccess('Đã sinh công việc thành công');
     onChanged();
   };
 
@@ -105,6 +120,15 @@ export function RecurringTemplateCard({ template, onEdit, onChanged }: Props) {
 
       {/* Hàng 4: Actions */}
       <div className="flex gap-1.5 pt-1">
+        <button
+          onClick={handleForceRun}
+          disabled={busy !== null || !template.is_active}
+          className="h-9 px-3 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 flex items-center justify-center transition-all active:scale-95 disabled:opacity-50 gap-1.5 text-sm font-semibold mr-auto"
+          title="Chạy ngay"
+        >
+          {busy === 'force_run' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
+          Chạy ngay
+        </button>
         <button
           onClick={() => onEdit(template)}
           disabled={busy !== null}

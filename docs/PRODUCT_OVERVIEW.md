@@ -468,7 +468,8 @@ RPC `check_schedule_participant_conflicts(participants, start, end, ignore_id)` 
 **Tính năng**
 
 - **Danh bạ toàn chi nhánh**: avatar, số máy, số nội bộ (`extension`), vị trí ngồi (`seat_location`), title, phòng ban, ngày vào ngành. Search-as-you-type theo tên / phone / extension / title / ad_account (no-accent).
-- **Filter chip trạng thái** (Đang nghỉ / Đi công tác / Mới vào): compute realtime từ `schedules` (type=`leave`/`trip` đang active) + `profiles.branch_join_date` (≤30 ngày).
+- **Filter chip trạng thái** (Đang nghỉ / Đi công tác / Mới vào): compute realtime từ `schedules` (type=`leave`/`trip` đang active bao gồm cả người tạo lịch và `participants`) + `profiles.branch_join_date` (≤30 ngày).
+  - *Lưu ý phân quyền badge Đi công tác (Mô hình thác nước)*: Admin, Ban Giám Đốc (director) nhìn thấy trạng thái Đi công tác của toàn bộ cán bộ. Trưởng phòng (manager) và Nhân viên (staff) chỉ nhìn thấy trạng thái Đi công tác của các cán bộ cùng phòng ban với mình. Trạng thái Đang nghỉ phép vẫn hiển thị công khai.
 - **Stats hero**: tổng cán bộ, đang vắng mặt, mới gia nhập.
 - **2 view qua Tabs**:
   - **Danh bạ** — group theo phòng ban (Accordion, BGĐ + phòng mình mặc định mở).
@@ -520,7 +521,7 @@ Realtime channel: `team_realtime_sync` — subscribe `profiles`, `schedules`, `o
 
 Trang hồ sơ cá nhân — đồng bộ pattern với `ProfileDetailDialog` của module Team (xem §3.5), self-mode:
 
-- **Hero card**: avatar (upload bucket `avatars` qua `AvatarCropDialog` — pan + zoom 1:1), tên + chức danh + badge role + badge trạng thái (Đang nghỉ / Đi công tác / Mới gia nhập).
+- **Hero card**: avatar (upload bucket `avatars` qua `AvatarCropDialog` — pan + zoom 1:1), tên + chức danh + badge role + badge trạng thái (Đang nghỉ / Đi công tác / Mới gia nhập - trạng thái Đi công tác áp dụng mô hình thác nước giống trang Team).
 - **Thông tin liên hệ** (hiển thị trong danh bạ Nhân sự): phòng ban, email, số di động, số nội bộ, vị trí chỗ ngồi, ngày vào chi nhánh.
 - **Thông tin nhân sự** (chỉ self + bộ phận Nhân sự thấy): ngày sinh, giới tính, mã CBNV, AD account.
 - **OOO banner** + **Hoạt động gần đây** (5 task comment mới nhất).

@@ -42,11 +42,11 @@ export default function TeamPage() {
     const cache = new Map<string, ProfileStatus>();
     return (m: any): ProfileStatus => {
       if (cache.has(m.id)) return cache.get(m.id)!;
-      const s = getProfileBadgeStatus(m, todaySchedules, oooByUser.get(m.id) ?? null);
+      const s = getProfileBadgeStatus(m, todaySchedules, oooByUser.get(m.id) ?? null, profile);
       cache.set(m.id, s);
       return s;
     };
-  }, [todaySchedules, oooByUser]);
+  }, [todaySchedules, oooByUser, profile]);
 
   // Stats hero — đếm theo trạng thái.
   const stats = useMemo(() => {

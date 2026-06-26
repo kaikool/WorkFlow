@@ -2,6 +2,7 @@
 // Tách khỏi component để tái dùng giữa Card, Dialog, Widget.
 
 import { ProfileStatus, NEW_JOINER_DAYS } from './constants';
+import { canViewBusinessTripBadge } from '@/lib/permissions';
 
 // Bỏ dấu tiếng Việt + lowercase. Reuse cho search no-accent.
 export function normalizeSearch(s: string | null | undefined): string {
@@ -19,19 +20,20 @@ export function getProfileBadgeStatus(
   profile: any,
   todaySchedules: any[],
   oooActive: any | null,
+  viewer: any | null,
   now: Date = new Date(),
 ): ProfileStatus {
   if (!profile) return 'available';
 
   // On leave / on trip — chỉ approved + in_progress, start <= now <= end
   const mine = todaySchedules.filter(s =>
-    s.created_by === profile.id &&
+    (s.created_by === profile.id || (s.schedule_participants && s.schedule_participants.some((p: any) => p.user_id === profile.id))) &&
     ['approved', 'in_progress'].includes(s.status) &&
     new Date(s.start_time) <= now &&
     new Date(s.end_time) >= now,
   );
   if (mine.some(s => s.type === 'leave')) return 'on_leave';
-  if (mine.some(s => s.type === 'trip')) return 'on_trip';
+  if (mine.some(s => s.type === 'trip') && (!viewer || canViewBusinessTripBadge(viewer, profile))) return 'on_trip';
 
   // OOO — có message active
   if (oooActive && new Date(oooActive.ends_at) > now) return 'ooo';

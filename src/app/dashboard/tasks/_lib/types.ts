@@ -22,6 +22,7 @@ export interface TaskListItem {
   is_archived: boolean;
   requires_approval: boolean;
   batch_id: string | null;
+  last_reminded_at: string | null;
   is_overdue: boolean;
   department: { id: string; name: string } | null;
   creator: { id: string; full_name: string | null; avatar_url: string | null; department_id?: string | null } | null;
@@ -64,6 +65,7 @@ export type TaskCommentRow = Tables<'task_comments'>;
 export type TaskExtensionRow = Tables<'task_extension_requests'>;
 
 export interface TaskDetail extends TaskRow {
+  last_reminded_at?: string | null;
   department: { id: string; name: string } | null;
   creator: { id: string; full_name: string | null; avatar_url: string | null; department_id?: string | null } | null;
   assignees: Array<{ id: string; full_name: string | null; avatar_url: string | null }>;
