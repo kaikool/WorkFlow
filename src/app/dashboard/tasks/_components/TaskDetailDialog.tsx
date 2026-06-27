@@ -230,7 +230,6 @@ export function TaskDetailDialog(props: Props) {
   const hMeta = [
     hCreator ? { text: hCreator } : null,
     hDueDate ? { text: `Hạn ${format(new Date(hDueDate), 'dd/MM/yyyy HH:mm', { locale: vi })}` } : null,
-    dueOver ? { text: 'Quá hạn', cls: 'text-red-600 font-semibold' } : null,
   ].filter(Boolean);
 
   return (
