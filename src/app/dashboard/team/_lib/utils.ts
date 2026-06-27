@@ -27,7 +27,7 @@ export function getProfileBadgeStatus(
 
   // On leave / on trip — chỉ approved + in_progress, start <= now <= end
   const mine = todaySchedules.filter(s =>
-    (s.created_by === profile.id || (s.schedule_participants && s.schedule_participants.some((p: any) => p.user_id === profile.id))) &&
+    (s.created_by === profile.id || (s.schedule_participants && s.schedule_participants.some((p: any) => p.profile_id === profile.id))) &&
     ['approved', 'in_progress'].includes(s.status) &&
     new Date(s.start_time) <= now &&
     new Date(s.end_time) >= now,
