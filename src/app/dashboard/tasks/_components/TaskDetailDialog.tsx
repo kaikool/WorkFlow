@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import {
   Building2, Users, Pencil, Trash2,
   CheckCircle2, Loader2, Play, Send, Undo2, Clock, RotateCcw,
-  ChevronRight, Flag, X, FileText, Target, Bell,
+  ChevronDown, ChevronRight, Flag, X, FileText, Bell,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -19,7 +19,7 @@ import {
   PRIORITY_LABEL, PRIORITY_BADGE_CLASS,
 } from '../_lib/constants';
 import { batchProgress } from '../_lib/batchHelpers';
-import { archiveTask, deleteTask, updateTaskStatus, remindTask } from '../_lib/taskActions';
+import { deleteTask, updateTaskStatus, remindTask } from '../_lib/taskActions';
 import {
   canEditTask, canDeleteTask, canForceCompleteTask,
   canApproveTaskResult, canDelegateTask, canRejectSubmission, canReopenDone,
@@ -82,34 +82,43 @@ function SecondaryBtn({ label, icon, onClick, disabled }: {
 }
 
 // ═══════════════════════════════════════════════════
-// MAIN COMPONENT
+// MAIN COMPONENT — Unified layout for single & batch
 // ═══════════════════════════════════════════════════
 export function TaskDetailDialog(props: Props) {
   const { isOpen, setIsOpen, taskId, batchId, children = [], currentProfile, onChanged } = props;
   const isBatch = batchId != null && children.length > 0;
-  const [childId, setChildId] = useState<string | null>(null);
-  const [deleting, setDeleting] = useState(false); const [busy, setBusy] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [busy, setBusy] = useState<string | null>(null);
   const [openEdit, setOpenEdit] = useState(false);
-  const [openDelegate, setOpenDelegate] = useState(false); const [openExt, setOpenExt] = useState(false);
-  const [openSub, setOpenSub] = useState(false); const [openRet, setOpenRet] = useState(false);
-  const [openReo, setOpenReo] = useState(false); const [openApp, setOpenApp] = useState(false);
+  const [openDelegate, setOpenDelegate] = useState(false);
+  const [openExt, setOpenExt] = useState(false);
+  const [openSub, setOpenSub] = useState(false);
+  const [openRet, setOpenRet] = useState(false);
+  const [openReo, setOpenReo] = useState(false);
+  const [openApp, setOpenApp] = useState(false);
   const [openAppExt, setOpenAppExt] = useState<any>(null);
+  const [assigneesExpanded, setAssigneesExpanded] = useState(true);
 
-  const activeId = childId ?? taskId ?? null;
-  const { loading, task, refetch } = useTaskDetail(isOpen ? activeId : null);
+  // ── Data source: batch uses rep (first child) as the "main task" ──
+  const rep = isBatch ? children[0] : null;
+  const activeId = isBatch ? rep?.id : taskId;
+  const { loading, task, refetch } = useTaskDetail(isOpen ? (activeId ?? null) : null);
   useEffect(() => { if (task && onChanged) onChanged(); }, [task?.status, task?.updated_at]);
-  useEffect(() => { if (isOpen && !isBatch) setChildId(null); }, [isOpen, isBatch]);
 
-  const [cache, setCache] = useState<TaskListItem[]>([]);
-  useEffect(() => { if (isOpen && isBatch && children.length > 0) setCache(children); }, [isOpen, isBatch, children]);
-  const dc = isOpen ? children : cache; const rep = dc[0]; const bp = batchProgress(dc);
-  const sorted = useMemo(() => [...dc].sort((a, b) => {
-    if (a.is_overdue !== b.is_overdue) return a.is_overdue ? -1 : 1;
-    const sa = STATUS_ORDER[a.status] ?? 99, sb = STATUS_ORDER[b.status] ?? 99;
-    return sa - sb || (a.department?.name ?? '').localeCompare(b.department?.name ?? '');
-  }), [dc]);
+  // Batch children sorted by urgency
+  const sorted = useMemo(() => {
+    if (!isBatch) return [];
+    return [...children].sort((a, b) => {
+      if (a.is_overdue !== b.is_overdue) return a.is_overdue ? -1 : 1;
+      const sa = STATUS_ORDER[a.status] ?? 99, sb = STATUS_ORDER[b.status] ?? 99;
+      return sa - sb || (a.department?.name ?? '').localeCompare(b.department?.name ?? '');
+    });
+  }, [isBatch, children]);
 
-  // Permissions
+  const bp = useMemo(() => isBatch ? batchProgress(children) : null, [isBatch, children]);
+  const pendC = useMemo(() => children.filter(c => c.status !== 'done' && c.status !== 'canceled'), [children]);
+
+  // ── Permissions (computed from the loaded task detail) ──
   const isAss = task && (task.assignees ?? []).some((a: any) => a.id === currentProfile?.id);
   const isSelfApprove = task?.requires_approval && task.assignees?.some((a: any) => a.id === task.created_by);
   const dueOver = !!(task?.due_date && new Date(task.due_date) < new Date() && !['done', 'canceled'].includes(task?.status ?? ''));
@@ -125,108 +134,115 @@ export function TaskDetailDialog(props: Props) {
   const canFC = task && canForceCompleteTask(currentProfile, task);
   const canEd = task && canEditTask(currentProfile, task);
   const canDe = task && canDeleteTask(currentProfile, task);
-  const bCanEd = rep && canEditTask(currentProfile, rep as any);
-  const bCanDe = rep && canDeleteTask(currentProfile, rep as any);
-  const bCanFC = rep && canForceCompleteTask(currentProfile, rep as any);
-  const pendC = children.filter(c => c.status !== 'done' && c.status !== 'canceled');
 
-  // Handlers
-  const st = async (n: TaskStatus, k: string, e: string) => {
+  // For batch: check permissions from rep (first child)
+  const bCanFC = rep && canForceCompleteTask(currentProfile, rep as any);
+  const canRemind = isBatch ? bCanFC : canFC;
+
+  // ── Handlers (unified: auto-detect single vs batch) ──
+  const handleStatusChange = async (n: TaskStatus, k: string, e: string) => {
     if (!task) return; setBusy(k); const r = await updateTaskStatus(task.id, n); setBusy(null);
     if (!r.ok) { notifyError(r.error, e); return; } notifySuccess('Đã cập nhật'); onChanged?.();
   };
-  const fc = async () => {
-    if (!task) return;
-    if (!await confirmDialog({ title: 'Ghi nhận hoàn thành?', confirmText: 'Xác nhận', description: 'Đóng công việc dù chưa nộp.' })) return;
-    setBusy('fc'); const r = await updateTaskStatus(task.id, 'done', '[sys] Đã hoàn thành.'); setBusy(null);
-    if (!r.ok) { notifyError(r.error, 'Lỗi'); return; } notifySuccess('Đã cập nhật'); onChanged?.();
+
+  const handleForceComplete = async () => {
+    if (isBatch) {
+      // Batch: complete all pending children
+      if (pendC.length === 0) return;
+      if (!await confirmDialog({ title: 'Ghi nhận hoàn thành?', confirmText: 'Xác nhận', description: `Đóng ${pendC.length} việc chưa nộp.` })) return;
+      setDeleting(true); let ok = 0, fe: string | undefined;
+      for (const c of pendC) { const r = await updateTaskStatus(c.id, 'done', '[sys] Đã hoàn thành.'); if (r.ok) ok++; else if (!fe) fe = r.error; }
+      setDeleting(false);
+      if (ok === 0) { notifyError(fe ?? 'Lỗi', 'Lỗi'); return; }
+      notifySuccess(`Đã ghi nhận ${ok}/${pendC.length}`); onChanged?.();
+    } else {
+      // Single
+      if (!task) return;
+      if (!await confirmDialog({ title: 'Ghi nhận hoàn thành?', confirmText: 'Xác nhận', description: 'Đóng công việc dù chưa nộp.' })) return;
+      setBusy('fc'); const r = await updateTaskStatus(task.id, 'done', '[sys] Đã hoàn thành.'); setBusy(null);
+      if (!r.ok) { notifyError(r.error, 'Lỗi'); return; } notifySuccess('Đã cập nhật'); onChanged?.();
+    }
   };
-  const del = async () => {
-    if (!task) return;
-    if (!await confirmDialog({ title: 'Xoá công việc?', confirmText: 'Xoá', danger: true, description: `Xoá "${task.title}"?` })) return;
-    setBusy('del'); const r = await deleteTask(task.id); setBusy(null);
-    if (!r.ok) { notifyError(r.error, 'Lỗi'); return; } notifySuccess('Đã xoá'); onChanged?.(); setTimeout(() => setIsOpen(false), 100);
+
+  const handleDelete = async () => {
+    if (isBatch) {
+      if (!await confirmDialog({ title: 'Xoá công việc?', confirmText: 'Xoá', danger: true, description: `Xoá ${children.length} việc?` })) return;
+      setDeleting(true); let ok = 0, fe: string | undefined;
+      for (const c of children) { const r = await deleteTask(c.id); if (r.ok) ok++; else if (!fe) fe = r.error; }
+      setDeleting(false);
+      if (ok === 0) { notifyError(fe ?? 'Lỗi', 'Lỗi'); return; }
+      notifySuccess(`Đã xoá ${ok}/${children.length}`); setIsOpen(false); onChanged?.();
+      setTimeout(() => document.body.style.pointerEvents = '', 500);
+    } else {
+      if (!task) return;
+      if (!await confirmDialog({ title: 'Xoá công việc?', confirmText: 'Xoá', danger: true, description: `Xoá "${task.title}"?` })) return;
+      setBusy('del'); const r = await deleteTask(task.id); setBusy(null);
+      if (!r.ok) { notifyError(r.error, 'Lỗi'); return; } notifySuccess('Đã xoá'); onChanged?.(); setTimeout(() => setIsOpen(false), 100);
+    }
   };
+
   const handleRemind = async () => {
-    if (!task) return;
-    if (!await confirmDialog({ title: 'Nhắc nhở hoàn thành?', confirmText: 'Nhắc nhở', description: 'Gửi thông báo nhắc nhở đến người thực hiện chưa hoàn thành.' })) return;
-    setBusy('remind'); const r = await remindTask(task.id); setBusy(null);
-    if (!r.ok) { notifyError(r.error, 'Lỗi'); return; } notifySuccess('Đã gửi nhắc nhở'); refetch(); onChanged?.();
+    if (isBatch) {
+      if (pendC.length === 0) return;
+      if (!await confirmDialog({ title: 'Nhắc nhở hoàn thành?', confirmText: 'Nhắc nhở', description: `Gửi thông báo nhắc nhở đến người thực hiện của ${pendC.length} việc chưa hoàn thành.` })) return;
+      setBusy('remind'); let ok = 0, fe: string | undefined;
+      for (const c of pendC) { const r = await remindTask(c.id); if (r.ok) ok++; else if (!fe) fe = r.error; }
+      setBusy(null);
+      if (ok === 0) { notifyError(fe ?? 'Lỗi', 'Lỗi'); return; }
+      notifySuccess(`Đã nhắc nhở ${ok}/${pendC.length} công việc`); onChanged?.();
+    } else {
+      if (!task) return;
+      if (!await confirmDialog({ title: 'Nhắc nhở hoàn thành?', confirmText: 'Nhắc nhở', description: 'Gửi thông báo nhắc nhở đến người thực hiện chưa hoàn thành.' })) return;
+      setBusy('remind'); const r = await remindTask(task.id); setBusy(null);
+      if (!r.ok) { notifyError(r.error, 'Lỗi'); return; } notifySuccess('Đã gửi nhắc nhở'); refetch(); onChanged?.();
+    }
   };
-  const handleRemindBatch = async () => {
-    if (!await confirmDialog({ title: 'Nhắc nhở lô?', confirmText: 'Nhắc nhở', description: `Gửi thông báo nhắc nhở đến người thực hiện của ${pendC.length} việc chưa nộp.` })) return;
-    setBusy('remind_batch'); let ok = 0, fe: string | undefined;
-    for (const c of pendC) { const r = await remindTask(c.id); if (r.ok) ok++; else if (!fe) fe = r.error; }
+
+  // Quick-complete a single child in batch view
+  const handleQuickComplete = async (child: TaskListItem) => {
+    setBusy(child.id);
+    if (child.status === 'todo') {
+      const r1 = await updateTaskStatus(child.id, 'doing', '');
+      if (!r1.ok) { setBusy(null); notifyError(r1.error ?? 'Lỗi', 'Lỗi'); return; }
+    }
+    const res = await updateTaskStatus(child.id, 'done', '[sys] Đã hoàn thành.');
     setBusy(null);
-    if (ok === 0) { notifyError(fe ?? 'Lỗi', 'Lỗi'); return; }
-    notifySuccess(`Đã nhắc nhở ${ok}/${pendC.length} công việc`); refetch(); onChanged?.();
-  };
-  const fcb = async () => {
-    if (!await confirmDialog({ title: 'Ghi nhận lô?', confirmText: 'Xác nhận', description: `Đóng ${pendC.length} việc chưa nộp.` })) return;
-    setDeleting(true); let ok = 0, fe: string | undefined;
-    for (const c of pendC) { const r = await updateTaskStatus(c.id, 'done', '[sys] Đã hoàn thành.'); if (r.ok) ok++; else if (!fe) fe = r.error; }
-    setDeleting(false);
-    if (ok === 0) { notifyError(fe ?? 'Lỗi', 'Lỗi'); return; }
-    notifySuccess(`Đã ghi nhận ${ok}/${pendC.length}`); setIsOpen(false); onChanged?.();
-    setTimeout(() => document.body.style.pointerEvents = '', 500);
-  };
-  const delb = async () => {
-    if (!await confirmDialog({ title: 'Xoá lô?', confirmText: 'Xoá lô', danger: true, description: `Xoá ${children.length} việc?` })) return;
-    setDeleting(true); let ok = 0, fe: string | undefined;
-    for (const c of children) { const r = await deleteTask(c.id); if (r.ok) ok++; else if (!fe) fe = r.error; }
-    setDeleting(false);
-    if (ok === 0) { notifyError(fe ?? 'Lỗi', 'Lỗi'); return; }
-    notifySuccess(`Đã xoá ${ok}/${children.length}`); setIsOpen(false); onChanged?.();
-    setTimeout(() => document.body.style.pointerEvents = '', 500);
+    if (res.ok) { notifySuccess(`Đã ghi nhận ${child.assignees?.[0]?.full_name ?? ''}`); onChanged?.(); }
+    else notifyError(res.error ?? 'Lỗi', 'Lỗi');
   };
 
   if (!isOpen) return null;
 
-  const ov = isBatch && !childId;
+  // ── Header data (unified) ──
+  const hStatus = task?.status;
+  const hTitle = task?.title ?? rep?.title ?? 'Đang tải…';
+  const hCreator = task?.creator?.full_name ?? rep?.creator?.full_name;
+  const hDueDate = task?.due_date ?? rep?.due_date;
 
-  // Header decoration
-  // Dept label: nếu cùng phòng → hiện tên phòng, khác → "X phòng"
-  const uniqueDepts = [...new Set(dc.map(c => c.department?.name).filter(Boolean))];
-  const deptLabel = uniqueDepts.length === 1 && uniqueDepts[0] ? uniqueDepts[0] : `${dc.length} phòng`;
+  const hBadge = hStatus
+    ? <Badge className={cn("bg-white/60 backdrop-blur-md shadow-sm font-bold text-xs px-3 py-1 w-fit", STATUS_BADGE_CLASS[hStatus])}>{STATUS_LABEL[hStatus]}</Badge>
+    : null;
+
+  const hMeta = [
+    hCreator ? { text: hCreator } : null,
+    hDueDate ? { text: `Hạn ${format(new Date(hDueDate), 'dd/MM/yyyy HH:mm', { locale: vi })}` } : null,
+    dueOver ? { text: 'Quá hạn', cls: 'text-red-600 font-semibold' } : null,
+    isBatch ? { text: `${children.length} phòng/người`, cls: 'text-blue-600 font-medium' } : null,
+  ].filter(Boolean);
+
+  // Dept info
+  const uniqueDepts = isBatch ? [...new Set(children.map(c => c.department?.name).filter(Boolean))] : [];
   const allSameDept = uniqueDepts.length === 1;
-
-  const hBadge = ov
-    ? <Badge className="bg-white/60 backdrop-blur-md shadow-sm font-bold text-xs px-3 py-1 w-fit text-slate-600">Công việc · {deptLabel}</Badge>
-    : task?.status
-      ? <Badge className={cn("bg-white/60 backdrop-blur-md shadow-sm font-bold text-xs px-3 py-1 w-fit", STATUS_BADGE_CLASS[task.status])}>{STATUS_LABEL[task.status]}</Badge>
-      : null;
-
-  const hTitle = ov ? rep?.title : task?.title ?? 'Đang tải…';
-  const hMeta = ov
-    ? [{ icon: null, text: deptLabel },
-       rep?.creator ? { icon: null, text: rep.creator.full_name } : null,
-       rep?.due_date ? { icon: null, text: format(new Date(rep.due_date), 'dd/MM/yyyy', { locale: vi }) } : null,
-      ].filter(Boolean)
-    : task
-      ? [{ icon: null, text: task.creator?.full_name },
-         task.due_date ? { icon: null, text: `Hạn ${format(new Date(task.due_date), 'dd/MM/yyyy HH:mm', { locale: vi })}` } : null,
-         dueOver ? { icon: null, text: 'Quá hạn', cls: 'text-red-600 font-semibold' } : null,
-        ].filter(Boolean)
-      : [];
-
-  const canEditAny = ov ? bCanEd : canEd;
-  const canDeleteAny = ov ? bCanDe : canDe;
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent hideCloseButton className="app-dialog-sheet app-dialog-sheet--2xl shadow-2xl flex flex-col p-0 gap-0">
-        {/* ═══ HEADER (Schedule-style: tinted bg + blur circle) ═══ */}
+        {/* ═══ HEADER ═══ */}
         <div className="px-[var(--app-page-x)] py-5 sm:p-6 relative backdrop-blur-xl border-b border-slate-100 bg-gradient-to-b from-slate-50/80 to-white/60">
           <div className="relative z-10 space-y-2.5 max-w-full">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">{hBadge}</div>
               <div className="flex items-center gap-1">
-                {childId && (
-                  <button onClick={() => setChildId(null)}
-                    className="h-8 px-3 rounded-lg text-xs font-semibold text-slate-600 bg-white/60 backdrop-blur-md hover:bg-white transition-all active:scale-95">
-                    ← Quay lại
-                  </button>
-                )}
                 <button onClick={() => setIsOpen(false)}
                   className="h-8 w-8 rounded-lg bg-white/60 backdrop-blur-md hover:bg-white flex items-center justify-center transition-all active:scale-95">
                   <X className="w-4 h-4 text-slate-400" />
@@ -255,107 +271,132 @@ export function TaskDetailDialog(props: Props) {
           <div className="px-[var(--app-page-x)] py-4 space-y-5">
 
             {/* ─── 1. Tiến độ ─── */}
-            {!loading && (ov || task) && (
+            {!loading && task && (
               <div className="space-y-2">
                 <SectionLabel icon={<Flag className="w-4 h-4" />} label="Tiến độ" />
-                {ov ? (
-                  <div className="bg-slate-50 rounded-xl p-4 space-y-2">
-                    <div className="flex h-2 rounded-full overflow-hidden bg-white">
-                      {bp.done > 0 && <div className="bg-emerald-500" style={{ width: `${(bp.done / bp.total) * 100}%` }} />}
-                      {bp.submitted > 0 && <div className="bg-blue-400" style={{ width: `${(bp.submitted / bp.total) * 100}%` }} />}
-                      {bp.doing > 0 && <div className="bg-amber-400" style={{ width: `${(bp.doing / bp.total) * 100}%` }} />}
+                <div className="bg-slate-50 rounded-xl p-4 space-y-3">
+                  {/* Time-based progress bar (always shown) */}
+                  <TaskDueProgress createdAt={task.created_at} dueDate={task.due_date} status={task.status} />
+                  {task.priority !== 'medium' && (
+                    <span className={cn("inline-flex items-center gap-1 text-xs font-semibold", PRIORITY_BADGE_CLASS[task.priority])}>
+                      <Flag className="w-3 h-3" />{PRIORITY_LABEL[task.priority]}
+                    </span>
+                  )}
+                  {/* Batch: additional completion ratio bar */}
+                  {isBatch && bp && (
+                    <div className="space-y-1.5 pt-1 border-t border-slate-100">
+                      <div className="flex h-2 rounded-full overflow-hidden bg-white">
+                        {bp.done > 0 && <div className="bg-emerald-500" style={{ width: `${(bp.done / bp.total) * 100}%` }} />}
+                        {bp.submitted > 0 && <div className="bg-blue-400" style={{ width: `${(bp.submitted / bp.total) * 100}%` }} />}
+                        {bp.doing > 0 && <div className="bg-amber-400" style={{ width: `${(bp.doing / bp.total) * 100}%` }} />}
+                      </div>
+                      <p className="text-xs font-semibold text-slate-500">
+                        {bp.done + bp.submitted}/{bp.total} hoàn thành{bp.doing > 0 ? ` · ${bp.doing} đang làm` : ''}{bp.todo > 0 ? ` · ${bp.todo} chưa làm` : ''}
+                      </p>
                     </div>
-                    <p className="text-xs font-semibold text-slate-500">
-                      {bp.done + bp.submitted}/{bp.total} hoàn thành{bp.doing > 0 ? ` · ${bp.doing} đang làm` : ''}{bp.todo > 0 ? ` · ${bp.todo} chưa làm` : ''}
-                    </p>
-                  </div>
-                ) : task && (
-                  <div className="bg-slate-50 rounded-xl p-4 space-y-2">
-                    <TaskDueProgress createdAt={task.created_at} dueDate={task.due_date} status={task.status} />
-                    {task.priority !== 'medium' && (
-                      <span className={cn("inline-flex items-center gap-1 text-xs font-semibold", PRIORITY_BADGE_CLASS[task.priority])}>
-                        <Flag className="w-3 h-3" />{PRIORITY_LABEL[task.priority]}
-                      </span>
-                    )}
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             )}
 
             {/* ─── 2. Người thực hiện ─── */}
             <div className="space-y-2">
               <SectionLabel icon={<Users className="w-4 h-4" />} label="Người thực hiện" />
-              {ov ? (
-                <div className="space-y-1.5">
-                  {sorted.map(c => {
-                    const noAs = !c.assignees || c.assignees.length === 0;
-                    const canFC = canForceCompleteTask(currentProfile, c as any);
-                    const canApprove = canApproveTaskResult(currentProfile, c as any);
-                    const isTodo = c.status === 'todo';
-                    const isDoing = c.status === 'doing';
-                    const isSubmitted = c.status === 'submitted';
-                    const showQuick = (canFC && (isTodo || isDoing)) || (canApprove && isSubmitted);
-                    return (
-                      <div key={c.id}
-                        className={cn(
-                          'flex items-center gap-3 p-3 rounded-xl border transition-all',
-                          c.is_overdue ? 'border-red-100 bg-red-50/40' : 'border-slate-100 bg-slate-50/40',
-                        )}>
-                        <button type="button" onClick={() => setChildId(c.id)}
-                          className="flex items-center gap-3 flex-1 min-w-0 text-left">
-                          {allSameDept && c.assignees?.[0] ? (
-                            <Avatar className="w-9 h-9 shrink-0 border-2 border-white shadow-sm">
-                              <AvatarImage src={c.assignees[0].avatar_url ?? undefined} />
-                              <AvatarFallback className="text-[11px] font-bold bg-slate-200 text-slate-600">{c.assignees[0].full_name?.[0] ?? '?'}</AvatarFallback>
-                            </Avatar>
-                          ) : (
-                            <div className="p-2 bg-white rounded-xl shadow-sm shrink-0">
-                              <Building2 className={cn('w-4 h-4', c.is_overdue ? 'text-red-500' : 'text-slate-500')} />
+              {isBatch ? (
+                /* ── Batch: expandable assignee list ── */
+                <div className="space-y-2">
+                  {/* Summary row */}
+                  <button
+                    onClick={() => setAssigneesExpanded(!assigneesExpanded)}
+                    className="w-full flex items-center gap-3 p-3 rounded-xl border border-slate-100 bg-slate-50/40 hover:bg-slate-50 transition-all"
+                  >
+                    <div className="flex -space-x-1.5">
+                      {children.slice(0, 4).map((c, i) => (
+                        <Avatar key={c.id} className="w-8 h-8 border-2 border-white">
+                          <AvatarImage src={c.assignees?.[0]?.avatar_url ?? undefined} />
+                          <AvatarFallback className="text-[10px] font-bold bg-slate-200 text-slate-600">
+                            {c.assignees?.[0]?.full_name?.[0] ?? c.department?.name?.[0] ?? '?'}
+                          </AvatarFallback>
+                        </Avatar>
+                      ))}
+                      {children.length > 4 && (
+                        <div className="w-8 h-8 rounded-full bg-slate-200 border-2 border-white flex items-center justify-center text-[10px] font-bold text-slate-600">
+                          +{children.length - 4}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0 text-left">
+                      <p className="text-sm font-semibold text-slate-900">{children.length} người/phòng</p>
+                      <p className="text-xs text-slate-500">{pendC.length > 0 ? `${pendC.length} chưa hoàn thành` : 'Tất cả đã hoàn thành'}</p>
+                    </div>
+                    {assigneesExpanded
+                      ? <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />
+                      : <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
+                    }
+                  </button>
+                  {/* Expanded list */}
+                  {assigneesExpanded && (
+                    <div className="space-y-1.5">
+                      {sorted.map(c => {
+                        const noAs = !c.assignees || c.assignees.length === 0;
+                        const childCanFC = canForceCompleteTask(currentProfile, c as any);
+                        const childCanApprove = canApproveTaskResult(currentProfile, c as any);
+                        const isTodo = c.status === 'todo';
+                        const isDoing = c.status === 'doing';
+                        const isSubmitted = c.status === 'submitted';
+                        const showQuick = (childCanFC && (isTodo || isDoing)) || (childCanApprove && isSubmitted);
+                        return (
+                          <div key={c.id}
+                            className={cn(
+                              'flex items-center gap-3 p-3 rounded-xl border transition-all',
+                              c.is_overdue ? 'border-red-100 bg-red-50/40' : 'border-slate-100 bg-slate-50/40',
+                            )}>
+                            <div className="flex items-center gap-3 flex-1 min-w-0">
+                              {allSameDept && c.assignees?.[0] ? (
+                                <Avatar className="w-9 h-9 shrink-0 border-2 border-white shadow-sm">
+                                  <AvatarImage src={c.assignees[0].avatar_url ?? undefined} />
+                                  <AvatarFallback className="text-[11px] font-bold bg-slate-200 text-slate-600">{c.assignees[0].full_name?.[0] ?? '?'}</AvatarFallback>
+                                </Avatar>
+                              ) : (
+                                <div className="p-2 bg-white rounded-xl shadow-sm shrink-0">
+                                  <Building2 className={cn('w-4 h-4', c.is_overdue ? 'text-red-500' : 'text-slate-500')} />
+                                </div>
+                              )}
+                              <div className="min-w-0 flex-1">
+                                <p className="text-sm font-semibold text-slate-900 truncate">
+                                  {allSameDept
+                                    ? (c.assignees?.map((a: any) => a.full_name).filter(Boolean).join(', ') || c.department?.name || '—')
+                                    : (c.department?.name ?? '—')
+                                  }
+                                </p>
+                                {!allSameDept && (
+                                  <p className={cn('text-xs font-medium', c.is_overdue ? 'text-red-600' : 'text-slate-500')}>
+                                    {noAs ? 'Chưa phân công' : c.assignees!.map((a: any) => a.full_name).filter(Boolean).join(', ')}
+                                  </p>
+                                )}
+                              </div>
+                              <Badge variant="outline" className="text-xs font-semibold px-2 py-0.5 rounded-full border-slate-200 bg-white shrink-0">
+                                {STATUS_LABEL[c.status]}
+                              </Badge>
                             </div>
-                          )}
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm font-semibold text-slate-900 truncate">
-                              {allSameDept
-                                ? (c.assignees?.map((a: any) => a.full_name).filter(Boolean).join(', ') || c.department?.name || '—')
-                                : (c.department?.name ?? '—')
-                              }
-                            </p>
-                            {!allSameDept && (
-                              <p className={cn('text-xs font-medium', c.is_overdue ? 'text-red-600' : 'text-slate-500')}>
-                                {noAs ? 'Chưa phân công' : c.assignees!.map((a: any) => a.full_name).filter(Boolean).join(', ')}
-                              </p>
+                            {showQuick && (
+                              <button
+                                onClick={() => handleQuickComplete(c)}
+                                disabled={busy === c.id}
+                                className="shrink-0 w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 flex items-center justify-center transition-all active:scale-90 disabled:opacity-50"
+                                title={isSubmitted ? 'Duyệt' : 'Ghi nhận hoàn thành'}
+                              >
+                                {busy === c.id ? <Loader2 className="w-4 h-4 animate-spin text-emerald-600" /> : <CheckCircle2 className="w-4 h-4 text-emerald-600" />}
+                              </button>
                             )}
                           </div>
-                          <Badge variant="outline" className="text-xs font-semibold px-2 py-0.5 rounded-full border-slate-200 bg-white shrink-0">
-                            {STATUS_LABEL[c.status]}
-                          </Badge>
-                        </button>
-                        {showQuick && (
-                          <button
-                            onClick={async () => {
-                              setBusy(c.id);
-                              // todo → phải start trước, rồi mới complete
-                              if (isTodo) {
-                                const r1 = await updateTaskStatus(c.id, 'doing', '');
-                                if (!r1.ok) { setBusy(null); notifyError(r1.error ?? 'Lỗi', 'Lỗi'); return; }
-                              }
-                              const res = await updateTaskStatus(c.id, 'done', '[sys] Đã hoàn thành.');
-                              setBusy(null);
-                              if (res.ok) { notifySuccess(`Đã ghi nhận ${c.assignees?.[0]?.full_name ?? ''}`); onChanged?.(); }
-                              else notifyError(res.error ?? 'Lỗi', 'Lỗi');
-                            }}
-                            disabled={busy === c.id}
-                            className="shrink-0 w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 flex items-center justify-center transition-all active:scale-90 disabled:opacity-50"
-                            title={isSubmitted ? 'Duyệt' : 'Ghi nhận hoàn thành'}
-                          >
-                            {busy === c.id ? <Loader2 className="w-4 h-4 animate-spin text-emerald-600" /> : <CheckCircle2 className="w-4 h-4 text-emerald-600" />}
-                          </button>
-                        )}
-                      </div>
-                    );
-                  })}
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
-              ) : task?.assignees && task.assignees.length > 0 && (
+              ) : task?.assignees && task.assignees.length > 0 ? (
+                /* ── Single: inline assignees ── */
                 <div className="bg-slate-50/40 rounded-xl border border-slate-100 p-4">
                   <div className="flex items-center gap-3">
                     <div className="flex -space-x-1.5">
@@ -381,16 +422,15 @@ export function TaskDetailDialog(props: Props) {
                     )}
                   </div>
                 </div>
-              )}
-              {!ov && loading && (
+              ) : loading ? (
                 <div className="bg-slate-50 rounded-xl p-4 flex items-center justify-center">
                   <Loader2 className="w-5 h-5 animate-spin text-slate-400" />
                 </div>
-              )}
+              ) : null}
             </div>
 
             {/* ─── 3. Mô tả ─── */}
-            {!ov && task?.description && (
+            {task?.description && (
               <div className="space-y-2">
                 <SectionLabel icon={<FileText className="w-4 h-4" />} label="Mô tả" />
                 <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed bg-slate-50 rounded-xl p-4">
@@ -400,31 +440,29 @@ export function TaskDetailDialog(props: Props) {
             )}
 
             {/* ─── 4. Thao tác ─── */}
-            {ov ? (
-              <div className="flex flex-wrap gap-2">
-                {bCanFC && pendC.length > 0 && <ActionBtn label="Ghi nhận hoàn thành lô" icon={deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />} onClick={fcb} disabled={deleting} />}
-              </div>
-            ) : task && !ro && (
+            {task && !ro && (
               <div className="flex flex-wrap gap-2">
                 {canSub && <ActionBtn label="Gửi kết quả" icon={<Send className="w-4 h-4" />} onClick={() => setOpenSub(true)} disabled={busy !== null} />}
                 {canAp && <ActionBtn label="Duyệt" icon={<CheckCircle2 className="w-4 h-4" />} onClick={() => setOpenApp(true)} disabled={busy !== null} amber />}
-                {canS && !canSub && !canAp && <ActionBtn label="Bắt đầu" icon={busy === 'start' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />} onClick={() => st('doing', 'start', 'Lỗi')} disabled={busy !== null} />}
-                {canD && !canSub && !canAp && <ActionBtn label="Hoàn thành" icon={busy === 'done' ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />} onClick={() => st('done', 'done', 'Lỗi')} disabled={busy !== null} />}
-                {canFC && <ActionBtn label="Ghi nhận hoàn thành" icon={busy === 'fc' ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />} onClick={fc} disabled={busy !== null} />}
+                {canS && !canSub && !canAp && <ActionBtn label="Bắt đầu" icon={busy === 'start' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />} onClick={() => handleStatusChange('doing', 'start', 'Lỗi')} disabled={busy !== null} />}
+                {canD && !canSub && !canAp && <ActionBtn label="Hoàn thành" icon={busy === 'done' ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />} onClick={() => handleStatusChange('done', 'done', 'Lỗi')} disabled={busy !== null} />}
+                {(isBatch ? (bCanFC && pendC.length > 0) : canFC) && (
+                  <ActionBtn label="Ghi nhận hoàn thành" icon={deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />} onClick={handleForceComplete} disabled={deleting || busy !== null} />
+                )}
                 {canAp && <SecondaryBtn label="Trả về sửa" icon={<Undo2 className="w-4 h-4" />} onClick={() => setOpenRet(true)} disabled={busy !== null} />}
                 {!canAp && canRj && <SecondaryBtn label="Trả về" icon={<Undo2 className="w-4 h-4" />} onClick={() => setOpenRet(true)} disabled={busy !== null} />}
                 {canDl && <SecondaryBtn label={(task.assignees?.length ?? 0) === 0 ? 'Phân công' : 'Phân công lại'} icon={<Users className="w-4 h-4" />} onClick={() => setOpenDelegate(true)} disabled={busy !== null} />}
                 {canRq && <SecondaryBtn label="Gia hạn" icon={<Clock className="w-4 h-4" />} onClick={() => setOpenExt(true)} disabled={busy !== null} />}
               </div>
             )}
-            {!ov && task && !task.is_archived && task.status === 'done' && canRp && (
+            {task && !task.is_archived && task.status === 'done' && canRp && (
               <div className="flex flex-wrap gap-2">
                 <SecondaryBtn label="Mở lại" icon={<RotateCcw className="w-4 h-4" />} onClick={() => setOpenReo(true)} disabled={busy !== null} />
               </div>
             )}
 
-            {/* ─── 6. Bình luận ─── */}
-            {!ov && task && (
+            {/* ─── 5. Bình luận ─── */}
+            {task && (
               <div className="space-y-2 pt-1">
                 <SectionLabel icon={<FileText className="w-4 h-4" />} label="Bình luận" />
                 <div>
@@ -441,8 +479,8 @@ export function TaskDetailDialog(props: Props) {
               </div>
             )}
 
-            {/* ─── 7. Lịch sử ─── */}
-            {!ov && task && (task.extension_requests?.length > 0 || task.comments.some(c => c.content.startsWith('[Hệ thống]') || c.content.startsWith('[sys]'))) && (
+            {/* ─── 6. Lịch sử ─── */}
+            {task && (task.extension_requests?.length > 0 || task.comments.some(c => c.content.startsWith('[Hệ thống]') || c.content.startsWith('[sys]'))) && (
               <div className="space-y-2 pt-1">
                 <SectionLabel icon={<Clock className="w-4 h-4" />} label="Lịch sử thay đổi" />
                 <TaskTimeline task={task} />
@@ -452,10 +490,10 @@ export function TaskDetailDialog(props: Props) {
           </div>
         </div>
 
-        {/* 🔹 FOOTER 🔹 */}
+        {/* ═══ FOOTER (unified) ═══ */}
         <DialogFooter className="app-dialog-sheet-footer flex flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-1.5">
-            {!ov && task && !ro && canFC && (
+            {canRemind && !ro && (
               <button onClick={handleRemind} disabled={busy !== null}
                 title="Nhắc nhở hoàn thành"
                 className="h-9 px-3 rounded-xl bg-amber-50 border border-amber-200 hover:bg-amber-100 flex items-center justify-center transition-all active:scale-95 disabled:opacity-50 text-amber-600 font-semibold text-sm gap-1.5">
@@ -463,22 +501,14 @@ export function TaskDetailDialog(props: Props) {
                 <span className="hidden sm:inline">Nhắc nhở</span>
               </button>
             )}
-            {ov && bCanFC && pendC.length > 0 && (
-              <button onClick={handleRemindBatch} disabled={busy !== null}
-                title="Nhắc nhở lô"
-                className="h-9 px-3 rounded-xl bg-amber-50 border border-amber-200 hover:bg-amber-100 flex items-center justify-center transition-all active:scale-95 disabled:opacity-50 text-amber-600 font-semibold text-sm gap-1.5">
-                {busy === 'remind_batch' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bell className="w-4 h-4" />}
-                <span className="hidden sm:inline">Nhắc nhở lô</span>
-              </button>
-            )}
-            {canEditAny && (
+            {canEd && (
               <button onClick={() => setOpenEdit(true)}
                 className="h-9 w-9 rounded-xl bg-slate-50 border border-slate-200 hover:bg-slate-100 flex items-center justify-center transition-all active:scale-95">
                 <Pencil className="w-4 h-4 text-slate-500" />
               </button>
             )}
-            {canDeleteAny && (
-              <button onClick={ov ? delb : del} disabled={ov ? deleting : busy !== null}
+            {canDe && (
+              <button onClick={handleDelete} disabled={deleting || busy !== null}
                 className="h-9 w-9 rounded-xl bg-red-50 border border-red-100 hover:bg-red-100 flex items-center justify-center transition-all active:scale-95 disabled:opacity-50">
                 <Trash2 className="w-4 h-4 text-red-500" />
               </button>
@@ -491,11 +521,11 @@ export function TaskDetailDialog(props: Props) {
         </DialogFooter>
 
         {/* ─── Sub-dialogs ─── */}
-        {openEdit && (ov ? rep : task) && (
+        {openEdit && task && (
           <TaskEditDialog task={{
-            id: (ov ? rep! : task!).id, title: (ov ? rep! : task!).title,
-            description: (ov ? rep! : task!).description ?? null, priority: (ov ? rep! : task!).priority,
-            due_date: (ov ? rep! : task!).due_date ?? null, batch_id: (ov ? rep! : task!).batch_id ?? null,
+            id: task.id, title: task.title,
+            description: task.description ?? null, priority: task.priority,
+            due_date: task.due_date ?? null, batch_id: task.batch_id ?? null,
           }} onClose={() => setOpenEdit(false)} onChanged={() => { setOpenEdit(false); onChanged?.(); }} />
         )}
         {openDelegate && task && <TaskDelegateDialog task={task} currentAssigneeIds={task.assignees?.map((a: any) => a.id) ?? []} onClose={() => setOpenDelegate(false)} onChanged={() => { setOpenDelegate(false); onChanged?.(); }} />}
