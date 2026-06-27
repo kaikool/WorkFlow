@@ -48,17 +48,7 @@ export default function TeamPage() {
     };
   }, [todaySchedules, oooByUser, profile]);
 
-  // Stats hero — đếm theo trạng thái.
-  const stats = useMemo(() => {
-    const counts = { total: members.length, on_leave: 0, on_trip: 0, new_joiner: 0 };
-    for (const m of members) {
-      const s = getStatus(m);
-      if (s === 'on_leave') counts.on_leave++;
-      else if (s === 'on_trip') counts.on_trip++;
-      else if (s === 'new_joiner') counts.new_joiner++;
-    }
-    return counts;
-  }, [members, getStatus]);
+
 
   const filteredMembers = useMemo(() => {
     return members.filter((m) => {
@@ -98,27 +88,6 @@ export default function TeamPage() {
         description="Danh bạ và sơ đồ tổ chức chi nhánh"
       />
 
-      {/* Stats hero — luôn hiển thị */}
-      <div className="grid grid-cols-3 gap-3">
-        <StatCard
-          icon={<Users className="icon-sm" />}
-          tone="bg-primary/10 text-primary"
-          label="Tổng cán bộ"
-          value={stats.total}
-        />
-        <StatCard
-          icon={<Plane className="icon-sm" />}
-          tone="bg-amber-50 text-amber-700"
-          label="Đang vắng mặt"
-          value={stats.on_leave}
-        />
-        <StatCard
-          icon={<Sparkles className="icon-sm" />}
-          tone="bg-emerald-50 text-emerald-600"
-          label="Mới gia nhập"
-          value={stats.new_joiner}
-        />
-      </div>
 
       {/* Filter status = Tabs (đồng bộ pattern với module Tasks) */}
       <Tabs value={filter} onValueChange={(v) => setFilter(v as ProfileStatus | 'all')} className="w-full">
@@ -161,20 +130,4 @@ export default function TeamPage() {
   );
 }
 
-function StatCard({
-  icon, tone, label, value,
-}: {
-  icon: React.ReactNode; tone: string; label: string; value: number;
-}) {
-  return (
-    <div className="premium-card p-4 flex items-center gap-3">
-      <span className={`inline-flex h-10 w-10 items-center justify-center rounded-xl shrink-0 ${tone}`}>
-        {icon}
-      </span>
-      <div className="min-w-0">
-        <p className="text-meta truncate">{label}</p>
-        <p className="text-xl font-bold text-slate-900 tabular-nums leading-tight">{value}</p>
-      </div>
-    </div>
-  );
-}
+
