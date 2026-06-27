@@ -86,22 +86,21 @@ export function TaskTimeline({ task }: Props) {
 
   return (
     <section className="item-stack">
-      <h3 className="heading-card font-bold">Lịch sử</h3>
       <ol className="item-stack pl-1">
         {events.map((ev, i) => (
           <li key={i} className="flex gap-3">
             <div className={
-              'shrink-0 mt-0.5 w-7 h-7 rounded-full flex items-center justify-center text-white ' +
+              'shrink-0 mt-0.5 w-6 h-6 rounded-full flex items-center justify-center text-white ' +
               (ev.tone === 'success' ? 'bg-emerald-500' :
                 ev.tone === 'warning' ? 'bg-amber-500' :
                 ev.tone === 'danger' ? 'bg-red-500' :
-                'bg-slate-400')
+                'bg-slate-300')
             }>
               {ev.icon}
             </div>
             <div className="flex-1 min-w-0 pt-0.5">
-              <p className="text-sm text-slate-700 leading-relaxed">{ev.text}</p>
-              <p className="text-meta mt-0.5">
+              <p className="text-[13px] text-slate-600 leading-relaxed">{ev.text}</p>
+              <p className="text-xs text-slate-400 mt-0.5 font-medium">
                 {format(new Date(ev.time), 'HH:mm dd/MM/yyyy', { locale: vi })}
               </p>
             </div>
