@@ -231,7 +231,6 @@ export function TaskDetailDialog(props: Props) {
     hCreator ? { text: hCreator } : null,
     hDueDate ? { text: `Hạn ${format(new Date(hDueDate), 'dd/MM/yyyy HH:mm', { locale: vi })}` } : null,
     dueOver ? { text: 'Quá hạn', cls: 'text-red-600 font-semibold' } : null,
-    isBatch ? { text: allSameDept ? `${children.length} người` : `${uniqueDepts.length} phòng`, cls: 'text-blue-600 font-medium' } : null,
   ].filter(Boolean);
 
   return (
