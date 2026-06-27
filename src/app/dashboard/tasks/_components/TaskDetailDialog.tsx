@@ -470,89 +470,89 @@ export function TaskDetailDialog(props: Props) {
 
         {/* ═══ FOOTER — All actions consolidated here ═══ */}
         {task && (
-        <DialogFooter className="app-dialog-sheet-footer flex flex-row items-center justify-between gap-2">
-          {/* Left: secondary icon buttons */}
-          <div className="flex items-center gap-1">
+        <DialogFooter className="app-dialog-sheet-footer flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          {/* Secondary icon buttons — scrollable on mobile */}
+          <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide -mx-1 px-1">
             {canRemind && !ro && (
               <button onClick={handleRemind} disabled={busy !== null}
-                title="Nhắc nhở hoàn thành"
-                className="h-9 w-9 rounded-xl bg-amber-50 border border-amber-200 hover:bg-amber-100 flex items-center justify-center transition-all active:scale-95 disabled:opacity-50">
-                {busy === 'remind' ? <Loader2 className="w-4 h-4 animate-spin text-amber-600" /> : <Bell className="w-4 h-4 text-amber-600" />}
+                title="Nhắc nhở"
+                className="h-8 w-8 shrink-0 rounded-lg bg-amber-50 border border-amber-200 hover:bg-amber-100 flex items-center justify-center transition-all active:scale-95 disabled:opacity-50">
+                {busy === 'remind' ? <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-600" /> : <Bell className="w-3.5 h-3.5 text-amber-600" />}
               </button>
             )}
             {(canRj || canAp) && !ro && (
               <button onClick={() => setOpenRet(true)} disabled={busy !== null}
                 title={canAp ? 'Trả về sửa' : 'Trả về'}
-                className="h-9 w-9 rounded-xl bg-slate-50 border border-slate-200 hover:bg-slate-100 flex items-center justify-center transition-all active:scale-95 disabled:opacity-50">
-                <Undo2 className="w-4 h-4 text-slate-500" />
+                className="h-8 w-8 shrink-0 rounded-lg bg-slate-50 border border-slate-200 hover:bg-slate-100 flex items-center justify-center transition-all active:scale-95 disabled:opacity-50">
+                <Undo2 className="w-3.5 h-3.5 text-slate-500" />
               </button>
             )}
             {canDl && (
               <button onClick={() => setOpenDelegate(true)} disabled={busy !== null}
                 title={(task.assignees?.length ?? 0) === 0 ? 'Phân công' : 'Phân công lại'}
-                className="h-9 w-9 rounded-xl bg-slate-50 border border-slate-200 hover:bg-slate-100 flex items-center justify-center transition-all active:scale-95 disabled:opacity-50">
-                <Users className="w-4 h-4 text-slate-500" />
+                className="h-8 w-8 shrink-0 rounded-lg bg-slate-50 border border-slate-200 hover:bg-slate-100 flex items-center justify-center transition-all active:scale-95 disabled:opacity-50">
+                <Users className="w-3.5 h-3.5 text-slate-500" />
               </button>
             )}
             {canRq && (
               <button onClick={() => setOpenExt(true)} disabled={busy !== null}
                 title="Gia hạn"
-                className="h-9 w-9 rounded-xl bg-slate-50 border border-slate-200 hover:bg-slate-100 flex items-center justify-center transition-all active:scale-95 disabled:opacity-50">
-                <Clock className="w-4 h-4 text-slate-500" />
+                className="h-8 w-8 shrink-0 rounded-lg bg-slate-50 border border-slate-200 hover:bg-slate-100 flex items-center justify-center transition-all active:scale-95 disabled:opacity-50">
+                <Clock className="w-3.5 h-3.5 text-slate-500" />
               </button>
             )}
             {task && !task.is_archived && task.status === 'done' && canRp && (
               <button onClick={() => setOpenReo(true)} disabled={busy !== null}
                 title="Mở lại"
-                className="h-9 w-9 rounded-xl bg-slate-50 border border-slate-200 hover:bg-slate-100 flex items-center justify-center transition-all active:scale-95 disabled:opacity-50">
-                <RotateCcw className="w-4 h-4 text-slate-500" />
+                className="h-8 w-8 shrink-0 rounded-lg bg-slate-50 border border-slate-200 hover:bg-slate-100 flex items-center justify-center transition-all active:scale-95 disabled:opacity-50">
+                <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
               </button>
             )}
             {canEd && (
               <button onClick={() => setOpenEdit(true)}
                 title="Sửa"
-                className="h-9 w-9 rounded-xl bg-slate-50 border border-slate-200 hover:bg-slate-100 flex items-center justify-center transition-all active:scale-95">
-                <Pencil className="w-4 h-4 text-slate-500" />
+                className="h-8 w-8 shrink-0 rounded-lg bg-slate-50 border border-slate-200 hover:bg-slate-100 flex items-center justify-center transition-all active:scale-95">
+                <Pencil className="w-3.5 h-3.5 text-slate-500" />
               </button>
             )}
             {canDe && (
               <button onClick={handleDelete} disabled={deleting || busy !== null}
                 title="Xoá"
-                className="h-9 w-9 rounded-xl bg-red-50 border border-red-100 hover:bg-red-100 flex items-center justify-center transition-all active:scale-95 disabled:opacity-50">
-                <Trash2 className="w-4 h-4 text-red-500" />
+                className="h-8 w-8 shrink-0 rounded-lg bg-red-50 border border-red-100 hover:bg-red-100 flex items-center justify-center transition-all active:scale-95 disabled:opacity-50">
+                <Trash2 className="w-3.5 h-3.5 text-red-500" />
               </button>
             )}
           </div>
-          {/* Right: primary CTA — changes based on status */}
-          <div className="flex items-center gap-2">
+          {/* Primary CTA — right-aligned, full-width on mobile */}
+          <div className="flex items-center gap-2 sm:shrink-0">
             {canSub && (
               <button onClick={() => setOpenSub(true)} disabled={busy !== null}
-                className="min-h-11 px-5 rounded-xl font-semibold text-sm text-white bg-primary hover:bg-primary/90 transition-all active:scale-95 whitespace-nowrap inline-flex items-center gap-1.5 shadow-sm disabled:opacity-50">
+                className="w-full sm:w-auto min-h-10 px-4 rounded-xl font-semibold text-sm text-white bg-primary hover:bg-primary/90 transition-all active:scale-95 inline-flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50">
                 <Send className="w-4 h-4" /> Gửi kết quả
               </button>
             )}
             {canAp && (
               <button onClick={() => setOpenApp(true)} disabled={busy !== null}
-                className="min-h-11 px-5 rounded-xl font-semibold text-sm text-white bg-amber-600 hover:bg-amber-700 transition-all active:scale-95 whitespace-nowrap inline-flex items-center gap-1.5 shadow-sm disabled:opacity-50">
+                className="w-full sm:w-auto min-h-10 px-4 rounded-xl font-semibold text-sm text-white bg-amber-600 hover:bg-amber-700 transition-all active:scale-95 inline-flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50">
                 <CheckCircle2 className="w-4 h-4" /> Duyệt
               </button>
             )}
             {canS && !canSub && !canAp && (
               <button onClick={() => handleStatusChange('doing', 'start', 'Lỗi')} disabled={busy !== null}
-                className="min-h-11 px-5 rounded-xl font-semibold text-sm text-white bg-primary hover:bg-primary/90 transition-all active:scale-95 whitespace-nowrap inline-flex items-center gap-1.5 shadow-sm disabled:opacity-50">
+                className="w-full sm:w-auto min-h-10 px-4 rounded-xl font-semibold text-sm text-white bg-primary hover:bg-primary/90 transition-all active:scale-95 inline-flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50">
                 {busy === 'start' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />} Bắt đầu
               </button>
             )}
             {canD && !canSub && !canAp && (
               <button onClick={() => handleStatusChange('done', 'done', 'Lỗi')} disabled={busy !== null}
-                className="min-h-11 px-5 rounded-xl font-semibold text-sm text-white bg-emerald-600 hover:bg-emerald-700 transition-all active:scale-95 whitespace-nowrap inline-flex items-center gap-1.5 shadow-sm disabled:opacity-50">
+                className="w-full sm:w-auto min-h-10 px-4 rounded-xl font-semibold text-sm text-white bg-emerald-600 hover:bg-emerald-700 transition-all active:scale-95 inline-flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50">
                 {busy === 'done' ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />} Hoàn thành
               </button>
             )}
             {!canS && !canD && !canSub && !canAp && (isBatch ? (bCanFC && pendC.length > 0) : canFC) && !ro && (
               <button onClick={handleForceComplete} disabled={deleting || busy !== null}
-                className="min-h-11 px-5 rounded-xl font-semibold text-sm text-white bg-emerald-600 hover:bg-emerald-700 transition-all active:scale-95 whitespace-nowrap inline-flex items-center gap-1.5 shadow-sm disabled:opacity-50">
-                {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />} Ghi nhận hoàn thành
+                className="w-full sm:w-auto min-h-10 px-4 rounded-xl font-semibold text-sm text-white bg-emerald-600 hover:bg-emerald-700 transition-all active:scale-95 inline-flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50">
+                {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />} Ghi nhận
               </button>
             )}
           </div>
