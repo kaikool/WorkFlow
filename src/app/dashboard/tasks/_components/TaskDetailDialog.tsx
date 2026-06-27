@@ -153,6 +153,14 @@ export function TaskDetailDialog(props: Props) {
     setBusy('remind'); const r = await remindTask(task.id); setBusy(null);
     if (!r.ok) { notifyError(r.error, 'Lỗi'); return; } notifySuccess('Đã gửi nhắc nhở'); refetch(); onChanged?.();
   };
+  const handleRemindBatch = async () => {
+    if (!await confirmDialog({ title: 'Nhắc nhở lô?', confirmText: 'Nhắc nhở', description: `Gửi thông báo nhắc nhở đến người thực hiện của ${pendC.length} việc chưa nộp.` })) return;
+    setBusy('remind_batch'); let ok = 0, fe: string | undefined;
+    for (const c of pendC) { const r = await remindTask(c.id); if (r.ok) ok++; else if (!fe) fe = r.error; }
+    setBusy(null);
+    if (ok === 0) { notifyError(fe ?? 'Lỗi', 'Lỗi'); return; }
+    notifySuccess(`Đã nhắc nhở ${ok}/${pendC.length} công việc`); refetch(); onChanged?.();
+  };
   const fcb = async () => {
     if (!await confirmDialog({ title: 'Ghi nhận lô?', confirmText: 'Xác nhận', description: `Đóng ${pendC.length} việc chưa nộp.` })) return;
     setDeleting(true); let ok = 0, fe: string | undefined;
@@ -453,6 +461,14 @@ export function TaskDetailDialog(props: Props) {
                 className="h-9 px-3 rounded-xl bg-amber-50 border border-amber-200 hover:bg-amber-100 flex items-center justify-center transition-all active:scale-95 disabled:opacity-50 text-amber-600 font-semibold text-sm gap-1.5">
                 {busy === 'remind' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bell className="w-4 h-4" />}
                 <span className="hidden sm:inline">Nhắc nhở</span>
+              </button>
+            )}
+            {ov && bCanFC && pendC.length > 0 && (
+              <button onClick={handleRemindBatch} disabled={busy !== null}
+                title="Nhắc nhở lô"
+                className="h-9 px-3 rounded-xl bg-amber-50 border border-amber-200 hover:bg-amber-100 flex items-center justify-center transition-all active:scale-95 disabled:opacity-50 text-amber-600 font-semibold text-sm gap-1.5">
+                {busy === 'remind_batch' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bell className="w-4 h-4" />}
+                <span className="hidden sm:inline">Nhắc nhở lô</span>
               </button>
             )}
             {canEditAny && (

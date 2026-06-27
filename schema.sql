@@ -7181,7 +7181,7 @@ BEGIN
   INSERT INTO notifications (user_id, title, content, type, link)
   SELECT ta.user_id, 'Nhac nho hoan thanh cong viec', 'Nguoi giao viec dang nhac ban hoan thanh: ' || v_task.title, 'task', '/dashboard/tasks?id=' || p_task_id::text
   FROM task_assignees ta
-  WHERE ta.task_id = p_task_id AND ta.status NOT IN ('done', 'canceled');
+  WHERE ta.task_id = p_task_id;
 END;
 $$;
 GRANT EXECUTE ON FUNCTION task_remind(UUID) TO authenticated, service_role;
