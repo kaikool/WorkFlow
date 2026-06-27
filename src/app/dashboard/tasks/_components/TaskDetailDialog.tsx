@@ -97,7 +97,7 @@ export function TaskDetailDialog(props: Props) {
   const [openReo, setOpenReo] = useState(false);
   const [openApp, setOpenApp] = useState(false);
   const [openAppExt, setOpenAppExt] = useState<any>(null);
-  const [assigneesExpanded, setAssigneesExpanded] = useState(true);
+  const [assigneesExpanded, setAssigneesExpanded] = useState(false);
 
   // ── Data source: batch uses rep (first child) as the "main task" ──
   const rep = isBatch ? children[0] : null;
@@ -223,16 +223,16 @@ export function TaskDetailDialog(props: Props) {
     ? <Badge className={cn("bg-white/60 backdrop-blur-md shadow-sm font-bold text-xs px-3 py-1 w-fit", STATUS_BADGE_CLASS[hStatus])}>{STATUS_LABEL[hStatus]}</Badge>
     : null;
 
+  // Dept info for batch
+  const uniqueDepts = isBatch ? [...new Set(children.map(c => c.department?.name).filter(Boolean))] : [];
+  const allSameDept = uniqueDepts.length === 1;
+
   const hMeta = [
     hCreator ? { text: hCreator } : null,
     hDueDate ? { text: `Hạn ${format(new Date(hDueDate), 'dd/MM/yyyy HH:mm', { locale: vi })}` } : null,
     dueOver ? { text: 'Quá hạn', cls: 'text-red-600 font-semibold' } : null,
-    isBatch ? { text: `${children.length} phòng/người`, cls: 'text-blue-600 font-medium' } : null,
+    isBatch ? { text: allSameDept ? `${children.length} người` : `${uniqueDepts.length} phòng`, cls: 'text-blue-600 font-medium' } : null,
   ].filter(Boolean);
-
-  // Dept info
-  const uniqueDepts = isBatch ? [...new Set(children.map(c => c.department?.name).filter(Boolean))] : [];
-  const allSameDept = uniqueDepts.length === 1;
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -326,7 +326,7 @@ export function TaskDetailDialog(props: Props) {
                       )}
                     </div>
                     <div className="flex-1 min-w-0 text-left">
-                      <p className="text-sm font-semibold text-slate-900">{children.length} người/phòng</p>
+                      <p className="text-sm font-semibold text-slate-900">{allSameDept ? `${children.length} người` : `${uniqueDepts.length} phòng`}</p>
                       <p className="text-xs text-slate-500">{pendC.length > 0 ? `${pendC.length} chưa hoàn thành` : 'Tất cả đã hoàn thành'}</p>
                     </div>
                     {assigneesExpanded

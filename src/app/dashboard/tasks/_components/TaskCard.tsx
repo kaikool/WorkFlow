@@ -32,25 +32,23 @@ export const TaskCard = React.memo(function TaskCard({ representative, children,
     ? format(new Date(representative.due_date), 'dd/MM', { locale: vi })
     : null;
 
-  // People string: same dept → names, different dept → names · dept, quá nhiều → count
+  // People string: same dept → names, different dept → dept names
+  const uniqueDepts = multi ? [...new Set(children.map(c => c.department?.name).filter(Boolean))] : [];
+  const batchAllSameDept = uniqueDepts.length === 1;
   const totalPeople = multi ? children.length : (representative.assignees?.length ?? 0);
   const sameDept = representative.department?.id === currentProfile?.department_id;
   const rawNames = multi
-    ? [...new Set(children.map(c => c.department?.name).filter(Boolean))].join(', ')
+    ? (batchAllSameDept
+        ? children.flatMap(c => c.assignees?.map((a: any) => a.full_name).filter(Boolean) ?? []).join(', ')
+        : uniqueDepts.join(', '))
     : representative.assignees?.map(a => a.full_name).filter(Boolean).join(', ') || '';
-  // Batch: lấy tên người từ tất cả children để hiển thị
-  const allNames = multi
-    ? children.flatMap(c => c.assignees?.map((a: any) => a.full_name).filter(Boolean) ?? []).join(', ')
-    : rawNames;
-  const peopleLabel = totalPeople > 3
-    ? `${totalPeople} người`
-    : multi
-      ? sameDept
-        ? allNames || rawNames
-        : rawNames
-      : sameDept
-        ? rawNames || representative.department?.name || '—'
-        : (rawNames ? `${rawNames} · ${representative.department?.name ?? ''}` : representative.department?.name || '—');
+  const peopleLabel = multi
+    ? (batchAllSameDept
+        ? (totalPeople > 3 ? `${totalPeople} người` : rawNames || representative.department?.name || '—')
+        : (uniqueDepts.length > 3 ? `${uniqueDepts.length} phòng` : rawNames))
+    : sameDept
+      ? rawNames || representative.department?.name || '—'
+      : (rawNames ? `${rawNames} · ${representative.department?.name ?? ''}` : representative.department?.name || '—');
 
   return (
     <button
@@ -128,9 +126,9 @@ export const TaskCard = React.memo(function TaskCard({ representative, children,
           <span className="text-slate-400 truncate flex items-center gap-1">
             <Building2 className="w-3 h-3" />
             {multi
-              ? sameDept
+              ? batchAllSameDept
                 ? (representative.department?.name ?? '—')
-                : `${children.length} phòng`
+                : `${uniqueDepts.length} phòng`
               : (representative.department?.name ?? '—')}
           </span>
         </div>
